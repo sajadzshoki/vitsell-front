@@ -1,0 +1,58 @@
+@import "transition";
+
+:root{
+  --toastify-font-family: iranyekan, sans-serif
+}
+
+body {
+  font-family: iranyekan, sans-serif;
+  font-style: normal;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+div {
+  box-sizing: border-box;
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+input {
+  min-width: 0;
+  width: 100%;
+  @apply bg-transparent;
+  outline-offset: 0 !important;
+  outline: none !important;
+  font-family: iranyekan, sans-serif;
+  border: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+textarea {
+  font-family: inherit;
+  resize: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+
