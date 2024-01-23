@@ -55,7 +55,7 @@ export const copyData = async (string: string) => {
     const {t} = useI18n()
     await navigator.clipboard.writeText(string)
     // @ts-ignore
-    nuxtApp.$toast.show({type: 'success', message: t('Copied!')})
+    nuxtApp.$toast.success({type: 'success', message: t('Copied!')})
 }
 export const mapper = (data: Record<string, any>, map: Record<string, any>, keys: string[] = _keys(map)) => {
     let value: Record<string, any> = {}
