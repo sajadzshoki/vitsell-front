@@ -9,6 +9,7 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
+    "@nuxtjs/device": "^3.1.1",
     "@nuxtjs/i18n": "^8.0.0",
     "@unocss/nuxt": "^0.58.3",
     "nuxt": "^3.9.3",
@@ -20,6 +21,7 @@
     "vue-router": "^4.2.5"
   },
   "dependencies": {
+    "@vueuse/nuxt": "^10.9.0",
     "click-outside-vue3": "^4.0.1",
     "jalali-moment": "^3.3.11",
     "qrcode.vue": "^3.4.1",

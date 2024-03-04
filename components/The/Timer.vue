@@ -1,46 +1,29 @@
 <template>
-    <div class="flex justify-center">
-        <time v-if="modelValue === false" dir="ltr" class="text-center font-black text-primary-500 ">
-            {{ timer.minutes }}
-            :
-            {{ timer.seconds }}
-        </time>
-        <p v-else class="text-center font-black text-primary-500 cursor-pointer"
-           :class="loading ? 'cursor-not-allowed opacity-50' : ''" @click="sendAgain">
-            {{ $t('ارسال دوباره') }}</p>{{}}
-    </div>
+  <time dir="ltr" class="text-center font-black text-lg text-primary-500 ">
+    {{diff > d ? Math.floor(diff/d) + ':' : ''}}
+    {{diff > h ? Math.floor(diff%d/h) + ':' : ''}}
+    {{diff > m ? Math.floor(diff%h/m) + ':' : ''}}
+    {{Math.floor(diff%m)}}
+  </time>
 </template>
 
-<script setup>
-import {useTimer} from 'vue-timer-hook';
-import moment from "jalali-moment";
-
+<script lang="ts" setup>
 const props = defineProps({
-    modelValue,
-    second: {
-        type: Number,
-        default: 0
-    },
-    time: {
-        type: String
-    },
-    date: {
-        type: Date
-    }
+  time: {
+    type: String,
+  }
 })
-const emit = defineEmits([modelEmit, 'complete', 'sendAgain'])
-const value = useModel(props, emit)
-const loading = ref(false)
-const date = props.date || (props.time && moment(props.time).toDate()) || moment().add(props.second, 'seconds').toDate()
-let timer = useTimer(date);
-
-watch(timer.isExpired, () => {
-    value.value = timer.isExpired.value
+const m = 60
+const h = 60 * m
+const d = 24 * h
+const emit = defineEmits(['complete'])
+const value = defineModel()
+const {timestamp, pause, resume} = useTimestamp({controls: true, interval: 330})
+const diff = computed(() => (moment(props.time).valueOf() - timestamp.value)/1000)
+const isExpired = computed(() => diff.value <=0 )
+value.value = isExpired.value
+watch(isExpired, () => {
+  value.value = isExpired.value
 })
-const sendAgain = async () => {
-    loading.value = true
-    emit('sendAgain')
-    value.value = false
-    loading.value = false
-}
+defineExpose({timestamp, pause, resume,diff,isExpired})
 </script>

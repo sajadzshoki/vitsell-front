@@ -6,7 +6,9 @@ export default defineNuxtConfig({
         "@nuxtjs/i18n",
         "nuxt-icon",
         "nuxt-icons",
-        "nuxt-lodash"
+        "nuxt-lodash",
+        '@vueuse/nuxt',
+        '@nuxtjs/device'
     ],
     css: [
         "@unocss/reset/normalize.css",

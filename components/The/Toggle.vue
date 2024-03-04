@@ -19,8 +19,7 @@
 </template>
 
 <script setup>
-const props = defineProps({
-  modelValue,
+defineProps({
   mini: {
     type: Boolean,
     default: false
@@ -30,6 +29,5 @@ const props = defineProps({
     default: () => ({})
   }
 })
-const emit = defineEmits([modelEmit])
-const value = useModel(props, emit)
+const value = defineModel()
 </script>

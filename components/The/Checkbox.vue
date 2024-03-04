@@ -5,7 +5,5 @@
   </div>
 </template>
 <script setup>
-const props = defineProps({modelValue})
-const emit = defineEmits([modelEmit])
-const check = useModel(props, emit)
+const check = defineModel()
 </script>

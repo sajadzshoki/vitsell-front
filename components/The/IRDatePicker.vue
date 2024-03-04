@@ -47,11 +47,9 @@ const props = defineProps({
     focusable: {
         type: Boolean,
         default: true
-    },
-    modelValue
+    }
 })
-const emit = defineEmits([modelEmit])
-const value = useModel(props, emit)
+const value = defineModel()
 const show = ref(false)
 const focused = ref(false)
 const click = () => {

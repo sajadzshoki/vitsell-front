@@ -41,6 +41,8 @@ defineProps({
     default: () => ([])
   },
 })
+
+const {isDesktop , isMobile} = useDevice()
 </script>
 
 

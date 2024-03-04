@@ -36,7 +36,6 @@
 
 <script setup>
 const props = defineProps({
-  modelValue,
   edit: {
     type: Boolean,
     default: true
@@ -54,11 +53,10 @@ const props = defineProps({
     default: ''
   }
 })
-const emit = defineEmits([modelEmit])
 const image = ref({})
 const hovered = ref(false)
 const loadedPicture = ref(0)
-const value = useModel(props, emit)
+const value = defineModel()
 
 const drop = (e) => {
   hovered.value = false

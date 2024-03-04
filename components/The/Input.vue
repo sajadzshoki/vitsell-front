@@ -5,7 +5,7 @@
             :class="[value && !focused ? 'border-gray-200 bg-white' : focused ? 'border-primary-500 bg-white' : 'bg-gray-100 border-transparent']">
         <TheNuxtIcon v-if="prependIcon" :name="prependIcon" icon-type="svg"
                      :class="[iconColor ? iconColor : 'text-gray-400']"/>
-      <DatePicker v-if="date" v-model="value" format="YYYY-MM-DD[T]HH:mm:ssZ" class="text-text"
+      <IRDatePicker v-if="date" v-model="value" format="YYYY-MM-DD[T]HH:mm:ssZ" class="text-text"
                   display-format="jDD jMMMM jYYYY" :placeholder="placeholder"/>
         <input v-if="inputType !=='textarea'" dir="rtl"
                v-model="value" :type="inputType"
@@ -31,7 +31,6 @@
 </template>
 
 <script setup>
-
 const props = defineProps({
     prependIcon: {
         type: String,
@@ -80,10 +79,9 @@ const props = defineProps({
         type: Boolean,
         default: true
     },
-    modelValue,
 })
-const emit = defineEmits([modelEmit, 'append','update:modelValue'])
-const value = useModel(props, emit, 'modelValue', props.handler)
+const emit = defineEmits(['append','update:modelValue'])
+const value = defineModel()
 
 const focused = ref(false)
 </script>

@@ -75,13 +75,8 @@ const props = defineProps({
         type: String,
         default: ''
     },
-
-    modelValue,
 })
-const emit = defineEmits([modelEmit])
-const value = useModel(props, emit)
+const value = defineModel()
 const dropdown = ref(false)
-const route = useRoute()
-
 </script>
 

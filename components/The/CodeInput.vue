@@ -16,9 +16,8 @@
 <script setup>
 import VOtpInput from 'vue3-otp-input';
 
-const props = defineProps({modelValue})
-const emit = defineEmits([modelEmit, 'complete','change'])
-const value = useModel(props, emit)
+const emit = defineEmits(['complete','change'])
+const value = defineModel()
 const onChange = ($event) => {
     value.value = $event
     emit('change')

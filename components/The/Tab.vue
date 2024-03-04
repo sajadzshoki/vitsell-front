@@ -25,11 +25,9 @@ const props = defineProps({
     routable :{
         type : Boolean ,
         default : true
-    },
-    modelValue
+    }
 })
-const emit = defineEmits([modelEmit])
-const value = useModel(props,emit)
+const value = defineModel()
 const route = useRoute()
 const addToQuery = (key, v) => {
     value.value = v
