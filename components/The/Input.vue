@@ -5,7 +5,7 @@
             :class="[value && !focused ? 'border-gray-200 bg-white' : focused ? 'border-primary-500 bg-white' : 'bg-gray-100 border-transparent']">
         <TheNuxtIcon v-if="prependIcon" :name="prependIcon" icon-type="svg"
                      :class="[iconColor ? iconColor : 'text-gray-400']"/>
-      <IRDatePicker v-if="date" v-model="value" format="YYYY-MM-DD[T]HH:mm:ssZ" class="text-text"
+      <TheIRDatePicker v-if="date" v-model="value" format="YYYY-MM-DD[T]HH:mm:ssZ" class="text-text"
                   display-format="jDD jMMMM jYYYY" :placeholder="placeholder"/>
         <input v-if="inputType !=='textarea'" dir="rtl"
                v-model="value" :type="inputType"
