@@ -1,6 +1,6 @@
 <template>
     <div
-            v-click-outside="()=>focused = false"
+            v-on-click-outside="()=>focused = false"
             class="flex relative p-3 gap-1 b-rd-2 border-(0.4 solid) items-start"
             :class="[value && !focused ? 'border-gray-200 bg-white' : focused ? 'border-primary-500 bg-white' : 'bg-gray-100 border-transparent']">
         <TheNuxtIcon v-if="prependIcon" :name="prependIcon" icon-type="svg"
@@ -31,6 +31,7 @@
 </template>
 
 <script setup>
+import { vOnClickOutside } from '@vueuse/components'
 const props = defineProps({
     prependIcon: {
         type: String,

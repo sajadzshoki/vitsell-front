@@ -2,7 +2,7 @@
     <ClientOnly>
         <div class="flex flex-col grow relative border-(0.4 solid) b-rd-2"
              :class="[value && !focused ? 'border-gray-200 bg-white' : focused ? 'border-primary-500 bg-white' : 'bg-gray-100 border-transparent']">
-            <div class="flex p-3 b-rd-2 cursor-pointer" @click="click" v-click-outside="()=> focused = false">
+            <div class="flex p-3 b-rd-2 cursor-pointer" @click="click" v-on-click-outside="()=> focused = false">
                 <p class="c-gray-400 text-base font-medium grow">
                     {{
                     value ? moment(value).locale('fa').format('D MMMM YYYY | HH:mm') : focused ? '' : placeholder
@@ -32,6 +32,7 @@
 </template>
 
 <script setup>
+import { vOnClickOutside } from '@vueuse/components'
 import DatePicker from 'vue3-persian-datetime-picker'
 import moment from "jalali-moment";
 

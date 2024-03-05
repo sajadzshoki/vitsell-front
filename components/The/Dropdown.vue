@@ -1,6 +1,6 @@
 <template>
     <div class="flex relative items-center b-rd-3 gap-2 cursor-pointer border-1"
-         v-click-outside="()=>dropdown=false"
+         v-on-click-outside="()=>dropdown=false"
          :class="[dropdown ? 'border-secondary-900' : 'border-transparent'], [bgColor ? bgColor : 'bg-white'], [height ? height : ''] ,[px ? px : ''] , [width ? width : '']"
          @click="!disabled ? dropdown = !dropdown : ''">
         <TheNuxtIcon v-if="!disabled" :name="prependIcon" icon-type="svg" class="text-xl text-text"
@@ -22,6 +22,7 @@
 </template>
 
 <script setup>
+import { vOnClickOutside } from '@vueuse/components'
 const props = defineProps({
     title: {
         type: String,
