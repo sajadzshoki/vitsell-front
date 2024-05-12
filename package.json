@@ -21,6 +21,10 @@
     "vue-router": "^4.2.5"
   },
   "dependencies": {
+    "@neshan-maps-platform/vue3-openlayers": "^2.0.1",
+    "ol": "^8.2.0",
+    "vue-trend-chart": "^0.17.0",
+    "vue3-apexcharts": "^1.5.2",
     "@vueuse/components": "^10.9.0",
     "@vueuse/nuxt": "^10.9.0",
     "click-outside-vue3": "^4.0.1",
