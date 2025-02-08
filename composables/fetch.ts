@@ -1,31 +1,17 @@
 import type {NitroFetchOptions, NitroFetchRequest} from "nitropack";
 
-export const BASE_URL = "https://dastrass-back.vistatest.site"
-// export const BASE_URL = "http://192.168.3.233:3333"
-export const APP_CODE = "dastrass"
+export const BASE_URL = "https://test-back.vistatest.site"
+// export const BASE_URL = "http://localhost:3333"
+export const APP_CODE = "test"
 
 // const BASE_URL = ""
-
-const errorHandler = (error: any, config: Record<string, any>) => {
-    // @ts-ignore
-    const msg = error?.data?.errors?.map(e => (e.field + ':' + e.message)).join(' , ')
-    // @ts-ignore
-    if (!config?.headers?.['no-error']) {
-        const {$toast} = useNuxtApp()
-        // @ts-ignore
-        $toast?.error(msg || JSON.stringify(error?.data))
-    }
-    return {error}
-}
-
-export const useGet = async <T>(URL: string, config: NitroFetchOptions<NitroFetchRequest, 'get'> | {
-    headers?: Record<string, any>
-} = {}, controller: any = undefined): Promise<{
+export const useGet = async <T>(URL: string, config: NitroFetchOptions<NitroFetchRequest, 'get'> = {}, controller: any = undefined): Promise<{
     result?: T,
     error?: any
 }> => {
     controller = new AbortController()
     const signal = controller.signal
+    const {$toast} = useNuxtApp()
     const token = useCookie('token')
     _set(config, ['headers', 'Authorization'], token.value || '')
     _set(config, ['headers', 'app-code'], APP_CODE)
@@ -38,13 +24,18 @@ export const useGet = async <T>(URL: string, config: NitroFetchOptions<NitroFetc
         })
         return {result}
     } catch (error) {
-        return errorHandler(error, config)
+        // @ts-ignore
+        const msg = error?.data?.errors?.map(e => (e.field + ':' + e.message)).join(' , ')
+        // @ts-ignore
+        $toast?.error(msg || JSON.stringify(error?.data))
+        return {error}
     }
 }
 export const useDelete = async <T>(URL: string, config: NitroFetchOptions<NitroFetchRequest, 'delete'> = {}): Promise<{
     result?: T,
     error?: any
 }> => {
+    const {$toast} = useNuxtApp()
     const token = useCookie('token')
     _set(config, ['headers', 'Authorization'], token.value || '')
     _set(config, ['headers', 'app-code'], APP_CODE)
@@ -56,14 +47,19 @@ export const useDelete = async <T>(URL: string, config: NitroFetchOptions<NitroF
         })
         return {result}
     } catch (error) {
-        return errorHandler(error, config)
+        // @ts-ignore
+        const msg = error?.data?.errors?.map(e => (e.field + ':' + e.message)).join(' , ')
+        // @ts-ignore
+        $toast.error(msg || JSON.stringify(error?.data))
+        return {error}
     }
 }
 
-export const usePost = async <T, R = T>(URL: string, data: R , config: NitroFetchOptions<NitroFetchRequest, 'post'> = {}): Promise<{
+export const usePost = async <T, R = T>(URL: string, data: R, config: NitroFetchOptions<NitroFetchRequest, 'post'> = {}): Promise<{
     result?: T,
     error?: any
 }> => {
+    const {$toast} = useNuxtApp()
     const token = useCookie('token')
     _set(config, ['headers', 'Authorization'], token.value || '')
     _set(config, ['headers', 'app-code'], APP_CODE)
@@ -76,14 +72,19 @@ export const usePost = async <T, R = T>(URL: string, data: R , config: NitroFetc
         })
         return {result}
     } catch (error) {
-        return errorHandler(error, config)
+        // @ts-ignore
+        const msg = error?.data?.errors?.map(e => (e.field + ':' + e.message)).join(' , ')
+        // @ts-ignore
+        $toast.error(msg || JSON.stringify(error?.data))
+        return {error}
     }
 }
 
-export const usePut = async <T, R = T>(URL: string, data: Partial<R>, config: NitroFetchOptions<NitroFetchRequest, 'put'> = {}): Promise<{
+export const usePut = async <T,R = T>(URL: string, data: Partial<R>, config: NitroFetchOptions<NitroFetchRequest, 'put'> = {}): Promise<{
     result?: T,
     error?: any
 }> => {
+    const {$toast} = useNuxtApp()
     const token = useCookie('token')
     _set(config, ['headers', 'Authorization'], token.value || '')
     _set(config, ['headers', 'app-code'], APP_CODE)
@@ -96,6 +97,10 @@ export const usePut = async <T, R = T>(URL: string, data: Partial<R>, config: Ni
         })
         return {result}
     } catch (error) {
-        return errorHandler(error, config)
+        // @ts-ignore
+        const msg = error?.data?.errors?.map(e => (e.field + ':' + e.message)).join(' , ')
+        // @ts-ignore
+        $toast.error(msg || JSON.stringify(error?.data))
+        return {error}
     }
 }
