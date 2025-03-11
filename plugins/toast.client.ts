@@ -1,4 +1,5 @@
-import Vue3Toastify, {toast, ToastContainerOptions} from 'vue3-toastify';
+import Vue3Toastify, {toast} from 'vue3-toastify';
+import type {ToastContainerOptions} from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 
 export default defineNuxtPlugin((nuxtApp) => {
