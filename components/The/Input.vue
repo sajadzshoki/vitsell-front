@@ -1,114 +1,104 @@
+
 <template>
-  <div class="flex flex-col gap-1.5">
-    <p v-if="label" :class="labelClass">{{ label }}</p>
+  <div class="flex flex-col gap-1.5 relative bg-bg">
+
+    <p v-if="label" class="text-(sm gray-900) leading-6.5 px-1"
+       :class="[labelClass , focused &&'text-primary-600'] ">
+      {{ label }}
+    </p>
+
     <div
-        v-on-click-outside="()=>focused = false" class="flex relative px-3 py-1 gap-1 h-10 items-center"
-        :class="[value && !focused ? valueClassName : focused ? focusClassName : bgStyle,className]">
-      <TheNuxtIcon v-if="prependIcon" :name="prependIcon" icon-type="svg" :class="[iconColor ? iconColor : 'text-gray-400']"/>
-      <TheIRDatePicker v-if="date" v-model="value" format="YYYY-MM-DD[T]HH:mm:ssZ" class="text-text"
-                       display-format="jDD jMMMM jYYYY" :placeholder="placeholder"/>
-      <input v-if="inputType !=='textarea'" dir="rtl" v-model="value" :type="inputType" :inputmode="inputMode"
-             class="flex-grow bg-transparent placeholder-gray-50 text-gray-900 font-300 text-xs" :disabled="disabled"
-             :placeholder="!focused ? placeholder : value || ''" @focus="date ? inputType = 'date' : focused = true"/>
-      <textarea v-else v-model="value" :placeholder="placeholder" :disabled="disabled"
-                class="border-none text-sm font-400 grow c-gray-900 placeholder:(c-gray-400) outline-none bg-transparent h-24"
-                @focus="date ? inputType = 'date' : ''" @blur="date ? inputType = 'text' : ''"/>
-      <TheNuxtIcon v-if="password" :name="inputType === 'text' ? 'eye-slash' : 'eye'" icon-type="svg"
-                   class="!text-gray-400 cursor-pointer" @click="inputType = inputType ==='text' ? 'password' : 'text'"/>
-      <TheNuxtIcon v-if="appendIcon" :name="appendIcon" :icon-type="appendIconType" @click="$emit('append')"
-                   :class="[iconColor ? iconColor : 'text-gray-400',appendIconClass]"
-                   class="!svg:(w-3 h-3) p-2 bg-bg bg-opacity-30 border-(1 solid primary-700) justify-center rounded-full"/>
-      <p dir="ltr" class="font-400 text-xs text-gray-900 whitespace-nowrap" v-if="appendText">{{ appendText }}</p>
+        v-on-click-outside="()=>focused = false"
+        class="flex relative px-3 py-2 gap-1 h-12 items-center"
+        :class="[value && !focused ? valueClassName : focused ? focusClassName : bgStyle,className , inputTypeLocal==='textarea'&&'h-26']">
+
+      <TheNuxtIcon v-if="prependIcon" :name="prependIcon" icon-type="svg" :class="[iconColor ? iconColor : 'text-gray-400']"  />
+
+      <slot name="prependComponent" />
+      <!--     <TheIRDatePicker v-if="date" v-model="value" format="YYYY-MM-DD[T]HH:mm:ssZ" class="text-text" :class="calendarClass" display-format="jDD jMMMM jYYYY" :placeholder="placeholder"/>&ndash;&gt;-->
+
+      <input v-if="inputTypeLocal !=='textarea' && !date "
+             dir="rtl"
+             v-model="value"
+             :type="inputTypeLocal"
+             :inputmode="inputMode"
+             class="flex-grow h-9 bg-transparent placeholder-(gray-600 text-base) text-gray-900 font-300 text-xs"
+             :class="inputClass"
+             :disabled="disabled"
+             :placeholder="!focused ? placeholder : value || ''"
+             @focus="date ? inputTypeLocal = 'date' : focused = true"
+      />
+      <textarea v-else-if="!date"
+                v-model="value"
+                :placeholder="placeholder"
+                :disabled="disabled"
+                class="border-none text-sm font-400 grow c-gray-900 placeholder:(text-gray-600) outline-none bg-transparent h-20"
+                @focus="date ? inputTypeLocal = 'date' : ''"
+                @blur="date ? inputTypeLocal = 'text' : ''"
+      />
+
+      <TheNuxtIcon v-if="password"
+                   :name="inputTypeLocal === 'text' ? 'eye-slash' : 'eye'"
+                   icon-type="svg"
+                   class="text-gray-900 cursor-pointer"
+                   @click="inputTypeLocal = inputTypeLocal ==='text' ? 'password' : 'text'"
+      />
+
+      <TheNuxtIcon v-if="appendIcon"
+                   :name="appendIcon"
+                   :icon-type="appendIconType"
+                   @click="handleAppendIcon"
+                   :class="[iconColor ? iconColor : ' text-gray-400',appendIconClass]"
+                   class=" p-2 pr-1 bg-bg bg-opacity-30 justify-center rounded-full cursor-pointer"
+      />
+      <p dir="rtl" class="font-400 text-xs text-gray-900 whitespace-nowrap" v-if="appendText">{{ appendText }}</p>
     </div>
   </div>
 </template>
 
-<script setup>
+
+
+<script setup lang="ts">
 import {vOnClickOutside} from '@vueuse/components'
-
-const props = defineProps({
-  className: {
-    type: String,
-    default: 'rounded-md bg-bg'
-  },
-  valueClassName: {
-    type: String,
-    default: 'border-gray-200 bg-bg'
-  },
-  focusClassName: {
-    type: String,
-    default: 'border-(1 solid gray-100) !bg-bg'
-  },
-  labelClass: {
-    type: String,
-    default: 'text-(xs gray-600) font-400 leading-6'
-  },
-  prependIcon: {
-    type: String,
-    default: ''
-  },
-  appendIcon: {
-    type: String,
-    default: ''
-  },
-  appendIconType: {
-    type: String,
-    default: 'svg'
-  },
-  appendIconClass: {
-    type: String,
-    default: ''
-  },
-  appendText: {
-    type: String,
-    default: ''
-  },
-  inputType: {
-    type: String,
-    default: 'text'
-  },
-  placeholder: {
-    type: String,
-    default: ''
-  },
-  label: {
-    type: String,
-    default: ''
-  },
-  password: {
-    type: Boolean,
-    default: false
-  },
-  date: {
-    type: Boolean,
-    default: false
-  },
-  disabled: {
-    type: Boolean,
-    default: false
-  },
-  inputMode: {
-    type: String,
-    default: ''
-  },
-  iconColor: {
-    type: String,
-    default: ''
-  },
-  bgStyle: {
-    type: String,
-    default: 'bg-bg border-(1 solid gray-50)'
-  },
-  handler: {
-    default: undefined
-  },
-  focusable: {
-    type: Boolean,
-    default: false
-  },
+const props= withDefaults(defineProps<{
+  inputClass?: string;
+  calendarClass?: string;
+  className?: string;
+  valueClassName?: string;
+  focusClassName?: string;
+  labelClass?: string;
+  prependIcon?: string;
+  appendIcon?: string;
+  appendIconType?: string;
+  appendIconClass?: string;
+  appendText?: string;
+  inputType?:string;
+  placeholder?: string;
+  label?: string;
+  password?: boolean;
+  date?: boolean;
+  disabled?: boolean;
+  inputMode?: string;
+  iconColor?: string;
+  bgStyle?: string;
+  focusable?: boolean;
+}>(),{
+  className:'rounded-lg bg-gray-50',
+  valueClassName:'border-(1 solid gray-400) bg-bg',
+  focusClassName:'border-(2 solid primary-600) !bg-bg',
+  labelClass:'bg-gray-30',
+  appendIconType:'svg',
+  appendIconClass:'!svg:(w-5 h-5)',
+  inputType:'text',
 })
-defineEmits(['append', 'update:modelValue'])
-const value = defineModel()
 
-const focused = ref(false)
+const emit = defineEmits(['append', 'update:modelValue','clearInput'])
+const value = defineModel()
+const focused = ref(false);
+
+const handleAppendIcon = ()=>{
+  emit('append');
+  emit('clearInput')
+}
+const inputTypeLocal = ref(props.password ? 'password' : props.inputType)
 </script>
