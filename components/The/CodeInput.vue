@@ -19,15 +19,17 @@ import VOtpInput from 'vue3-otp-input';
 const emit = defineEmits(['complete','change'])
 const value = defineModel()
 const onChange = ($event) => {
-    value.value = $event
-    emit('change')
+  value.value = $event
+  emit('change')
 }
 </script>
 
 <style lang="scss">
-#code-input {
-  .otp-input {
-    @apply w-15 h-15 bg-gray-100 b-rd-2 text-center gap-2 <md:(w-12 h-12)
-  }
+#code-input{
+  @apply flex justify-evenly
 }
+.otp-input {
+  @apply w-15 h-15 mainBorder b-rd-2 text-center gap-2 <sm:(w-12 h-12)
+}
+
 </style>

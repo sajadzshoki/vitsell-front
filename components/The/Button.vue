@@ -1,6 +1,5 @@
 <template>
   <button :disabled="disable"
-          @click="link && navigateTo({name:link})"
           class="flex flexCenter rounded-full gap-3 cursor-pointer border-none relative hover:brightness-80 transition-brightness duration-100 "
           :class="[
           disable?'bg-primary-800 border-transparent':fill?'bg-primary-700 border-transparent ':'bg-transparent text-primary-200 border-(1 solid primary-200) ',
@@ -46,7 +45,6 @@ withDefaults(defineProps<{
   color?: string,
   badge?: number,
   loading?: boolean,
-  link?:string,
   cancel?: boolean,
 }>(), {
   fill: true,

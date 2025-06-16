@@ -21,6 +21,7 @@ const props = withDefaults(defineProps<{
   mini?: boolean,
   label?: string,
   routable?: boolean,
+  scroll?: boolean,
 }>(), {
   label: 'by'
 })
@@ -37,6 +38,14 @@ const addToQuery = (key, v) => {
         [props.label]: v
       }
     })
+  }
+  else if (props.scroll){
+    navigateTo({ hash: `#${v}` })
+    // Optional: Ensure smooth scrolling
+    const el = document.getElementById(v)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
   }
 }
 </script>
