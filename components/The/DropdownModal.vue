@@ -1,9 +1,8 @@
 <template>
-    <div class="bg-white-100 shadow-2xl rounded-t-2xl p-4 pb-8 z-2" @close="emit('close')">
+    <div class="p-4 z-2" @close="emit('close')">
         <div class="flex flex-col gap-2">
-            <div v-for="item in items" class="flex gap-2 px-1 py-2 border-(0 b-1 gray-100 solid) items-center" @click="value = item">
-<!--                <TheNuxtIcon name="nissan.png" icon-type="img" class="!w-12 !h-8"/>-->
-                <p class="c-gray-900 text-sm font-normal">{{typeof item?.label === 'number' ? item.label.toLocaleString() + ' ' + item.key : item.label}}</p>
+            <div v-for="item in items" class="flex gap-2 px-1 pb-2 border-b-(1 gray-100 solid) last:border-none items-center" @click="value = item">
+                <p class="text-(sm) font-400">{{typeof item?.label === 'number' ? item.label.toLocaleString() + ' ' + item.key : item.label}}</p>
             </div>
         </div>
     </div>
