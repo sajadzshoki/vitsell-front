@@ -3,15 +3,15 @@
        :class="showModal ? 'opacity-100' : 'opacity-0'"
        @click.self="emit('close')">
     <div
-        class="w-full   overflow-y-auto flex flex-col   fixed transition-all duration-300 ease-in-out"
+        class="overflow-y-auto flex flex-col  fixed transition-all duration-300 ease-in-out sm:(bottom-1/2 translate-y-1/2 rounded-xl max-h-4/5 max-w-xl !mx-4 min-w-100)"
         :class="[
-            border,
-            center ? 'bottom-1/2 translate-y-1/2 rounded-3xl max-h-4/5 max-w-xl !mx-4' : 'rounded-t-3xl bottom-0  max-h-2/3',
+            className,
+            center ? 'bottom-1/2 translate-y-1/2 rounded-xl max-h-4/5 max-w-xl !mx-4 min-w-100' : 'w-full rounded-t-xl bottom-0  max-h-2/3',
             showModal ? 'translate-y-0' : 'translate-y-full'
         ]"
     >
-      <div class="flex items-center bg-white justify-between sticky rounded-t-3xl top-0 w-full right-0 p-4 pb-0 z-10">
-        <TheNuxtIcon name="close" icon-type="svg" class=" text-(2xl)   rounded-lg cursor-pointer" @click="emit('close')"/>
+      <div v-if="withClose" class="flex items-center bg-white justify-between sticky rounded-t-xl top-0 w-full right-0 p-4 pb-0 z-5">
+        <TheNuxtIcon name="close" icon-type="svg" class=" text-(2xl) cursor-pointer" @click="emit('close')"/>
       </div>
       <div class="p-4 flex flex-col gap-3 bg-white">
         <slot/>
@@ -29,13 +29,13 @@ const showModal = ref(false)
 
 defineProps({
   title: String,
-  border: {
-    type: String,
-    default: 'rounded-t-3xl'
-  },
+  className:String,
   center: {
     type: Boolean,
     default: false
+  } , withClose: {
+    type: Boolean,
+    default: true
   }
 })
 

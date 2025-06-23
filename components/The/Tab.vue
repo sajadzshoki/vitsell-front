@@ -8,7 +8,7 @@
         @click="addToQuery(item.key, item.value)"
     >
       <input v-model="value" type="radio" :value="item.value" hidden />
-      <span class="leading-6.5 text-sm font-500 py-1.5">
+      <span class="leading-6.5 text-sm font-500 py-1.5" :class="[ item?.value === ( value )?'font-700':'font-500']">
         {{ item.label }}
       </span>
     </label>

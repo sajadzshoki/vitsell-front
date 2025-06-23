@@ -7,89 +7,74 @@
       @dragover.prevent
       @drop.stop.prevent="drop">
     <label
-        class="flex justify-center items-stretch bg-gray-100 rounded-2xl relative overflow-hidden cursor-pointer h-full"
-        :class="{'p-2' : !value}">
+        class="flex justify-center rounded-lg items-stretch relative  cursor-pointer h-full"
+        :class="[className]">
       <slot name="icon">
-        <div v-if="!value" class="flex flex-col item-stretch gap-3 p-2 border-(2 dashed) rounded-2xl grow"
-             :class="label ? 'border-(gray-200)' : 'border-transparent' ">
+        <div v-if="!value && !loading" class="flex flex-col item-stretch gap-3 px-2 rounded-2xl grow">
           <TheNuxtIcon
-              class="flex justify-center items-center text-gray-400 w-full h-full rounded-lg"
-              :class="label ? 'text-3xl' : 'text-8xl'"
+              class="flex justify-center items-center text-xl  w-full h-full rounded-lg"
+              :class="[iconClass]"
               :name="icon" icon-type="svg"/>
-          <p class="text-(xs gray-400) font-extrabold text-center">
-            {{ label }}
-          </p>
+
+          <p class="text-(2.5 ) font-500 text-center" :class="[labelClass]">{{ label }}</p>
         </div>
+        <TheNuxtIcon v-else-if="loading" name="Loading" icon-type="svg" class="text-3xl"/>
         <TheNuxtIcon
-            v-else
+            v-else-if="value && !loading && showValue"
             :name="value"
-            class="object-cover bg-gray-100 rounded-lg !w-full h-full"/>
+            class="object-cover rounded-lg  rounded-lg !w-full !h-full"/>
       </slot>
       <input
-          :disabled="!disabled" accept=".JPG,.PNG,.GIF,.SVG,.MP4,.WEBM,.MP3,.WAV,.OGG,.GLB,.GLTF"
-          alt="uploadImage" hidden type="file"
+          :disabled="disabled" accept=".JPG,.PNG,.GIF,.SVG,.MP4,.WEBM,.MP3,.WAV,.OGG,.GLB,.GLTF"
+          alt="uploadImage" hidden  type="file"
           @change="upload($event.target)"/>
     </label>
 
   </form>
+  <!--  <TheLog :data="loading" :fixed="false"/>-->
 </template>
 
-<script setup>
-const props = defineProps({
-  edit: {
-    type: Boolean,
-    default: true
-  },
-  disabled: {
-    type: Boolean,
-    default: true
-  },
-  icon: {
-    type: String,
-    default: 'upload-file'
-  },
-  label: {
-    type: String,
-    default: ''
-  }
-})
-const image = ref({})
-const hovered = ref(false)
-const loadedPicture = ref(0)
-const value = defineModel()
+<script setup lang="ts">
 
+const props = withDefaults(defineProps<{
+  className?:string,
+  edit?: boolean,
+  disabled?: boolean,
+  icon?: string,
+  iconClass?:string,
+  label?: string,
+  labelClass?: string,
+  showValue?: boolean,
+}>(),{
+  icon:'Upload',
+  showValue:true
+})
+const hovered = ref(false)
+const value = defineModel()
+const loading = ref(false)
 const drop = (e) => {
   hovered.value = false
   upload(e.dataTransfer)
 }
 
-const upload = (evt) => {
-  compile(evt.files[0])
+const upload =async (evt) => {
+  loading.value = true
+  await compile(evt.files[0])
+  loading.value = false
 }
 
-const compile = (file) => {
+const compile = async (file) => {
   const fileReader = new FileReader()
-  fileReader.addEventListener("loadstart", (event) => {
-    loadedPicture.value = ((event.loaded / event.total) * 100).toFixed(0)
-  })
-  fileReader.addEventListener("progress", (event) => {
-    loadedPicture.value = ((event.loaded / event.total) * 100).toFixed(0)
-  })
-  fileReader.addEventListener("load", async (event) => {
-    loadedPicture.value = ((event.loaded / event.total) * 100).toFixed(0)
-    image.value = {
-      file,
-      data: event?.target?.result,
-      name: file?.name
-    }
-    const fm = new FormData()
-    fm.append("file", image.value.file)
-    const {result} = await usePost('/upload', fm)
-      if(result){
-          value.value = result
-      }
-    // value.value = BASE_URL
-  })
+  const fm = new FormData()
+  fm.append("file", file)
+  const {result} = await usePost('/upload', fm)
+  if(result){
+    value.value = result
+  }
   fileReader.readAsDataURL(file)
+  // value.value = BASE_URL
 }
+
+
+
 </script>
