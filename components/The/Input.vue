@@ -3,14 +3,18 @@
   <div class="flex flex-col gap-1.5 relative bg-bg">
 
     <p v-if="label" class="text-(sm gray-900) leading-6.5 px-1"
-       :class="[labelClass , focused &&'text-primary-600'] ">
+       :class="[labelClass , focused &&'text-primary-600',validation&&'text-red'] ">
       {{ label }}
     </p>
 
     <div
         v-on-click-outside="()=>focused = false"
-        class="flex relative px-3 py-2 gap-1 h-12 items-center"
-        :class="[value && !focused ? valueClassName : focused ? focusClassName : bgStyle,className , inputTypeLocal==='textarea'&&'h-26']">
+        class="flex relative  rounded-lg bg-gray-50 px-3 py-2 gap-1 h-12 items-center"
+        :class="[value && !focused ? valueClassName : focused ? focusClassName : bgStyle,
+        className ,
+        validation&&'border-red',
+        disabled?'!bg-gray-100':'',
+        inputTypeLocal==='textarea'&&'h-26']">
 
       <TheNuxtIcon v-if="prependIcon" :name="prependIcon" icon-type="svg" :class="[iconColor ? iconColor : 'text-gray-400']"  />
 
@@ -82,8 +86,8 @@ const props= withDefaults(defineProps<{
   iconColor?: string;
   bgStyle?: string;
   focusable?: boolean;
+  validation?:boolean;
 }>(),{
-  className:'rounded-lg bg-gray-50',
   valueClassName:'border-(1 solid gray-400) bg-bg',
   focusClassName:'border-(2 solid primary-600) !bg-bg',
   labelClass:'bg-gray-30',
