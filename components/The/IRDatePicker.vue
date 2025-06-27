@@ -1,9 +1,12 @@
 <template>
   <ClientOnly>
     <div class="flex flex-col gap-1">
-      <p v-if="header" class="text-(sm secondary-500) font-medium">{{ header }}</p>
+      <p v-if="header" class="text-(sm secondary-500) font-medium" :class="[validation&&'text-red']">{{ header }}</p>
       <div class="flex flex-col relative border-(1 solid) rounded-lg h-12"
-           :class="[value && !focused ? 'border-gray-300 bg-transparent' : focused ? 'border-primary-500 bg-white' : 'bg-transparent border-gray-300']">
+           :class="[value && !focused ? 'border-gray-300 bg-transparent' :
+            focused ? 'border-primary-500 bg-white' :
+             'bg-transparent border-gray-300'
+             ,validation&&'border-red']">
         <div class="flex p-3 rounded-full cursor-pointer" @click="click" v-on-click-outside="()=> focused = false">
           <p class="text-(xs) font-400 grow" :class="value?'':'text-gray-500'">
             {{ type==='time'? value?.replace('.',':'): (value ? moment(value).locale(locale).format('YYYY/MM/DD') : focused ? '' : '')
@@ -48,6 +51,7 @@ const props = withDefaults(defineProps<{
   locale?:string;
   header?:string;
   type?:string;
+  validation?:boolean;
 }>(),{
   placeholder:'انتخاب کنید',
   focusable:true,
