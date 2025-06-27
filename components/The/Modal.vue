@@ -10,8 +10,9 @@
             showModal ? 'translate-y-0' : 'translate-y-full'
         ]"
     >
-      <div v-if="withClose" class="flex items-center bg-white justify-between sticky rounded-t-xl top-0 w-full right-0 p-4 pb-0 z-5">
+      <div v-if="withClose" class="grid grid-cols-3 items-center bg-white  sticky rounded-t-xl top-0 w-full right-0 p-4 pb-0 z-5">
         <TheNuxtIcon name="close" icon-type="svg" class=" text-(2xl) cursor-pointer" @click="handleClose"/>
+        <p class="font-600 text-md leading-6.5 justify-self-center">{{title}}</p>
       </div>
       <div class="p-4 flex flex-col gap-3 bg-white">
         <slot/>
@@ -42,16 +43,17 @@ defineProps({
 
 onMounted(() => {
   document.body.style.overflow = 'hidden'
+  // Trigger the animation after the component is mounted
   setTimeout(() => {
     showModal.value = true
-  }, 10)
+  }, 100)
 })
 const handleClose = () => {
   showModal.value = false;
   document.body.style.overflow = '';
   setTimeout(() => {
     emit('close');
-  }, 300);
+  }, 100);
 }
 onUnmounted(() => {
   document.body.style.overflow = ''

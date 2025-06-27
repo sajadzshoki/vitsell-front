@@ -18,7 +18,7 @@ withDefaults(defineProps<{
   inputMode?: string
   mini?:boolean
 }>(),{
-  placeholder:'جستجوی نام دکتر , کلینیک , تخصص ...'
+  placeholder:'جستجو'
 })
 
 const focused = ref(false)

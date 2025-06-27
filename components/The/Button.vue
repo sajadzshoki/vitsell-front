@@ -6,7 +6,8 @@
           disable?'opacity-40 cursor-not-allowed ':'',
           mini?'py-1 px-2 min-w-15':'py-2 px-3 min-w-20',
           cancel? !fill && 'border-red-500 text-red-500':'',
-          disable && cancel && '!border-(gray-50 1 solid) !text-gray-100 !bg-transparent']"
+          disable && cancel && '!border-(gray-50 1 solid) !text-gray-100 !bg-transparent',
+          appendIcon && 'flex-row-reverse']"
           :style="{
           borderColor: !fill && color ? color : '',
           borderWidth: !fill && color ? '0.5px' : '',
@@ -46,8 +47,10 @@ withDefaults(defineProps<{
   badge?: number,
   loading?: boolean,
   cancel?: boolean,
+  appendIcon ?: boolean
 }>(), {
   fill: true,
   badge: 0,
+  appendIcon :true
 })
 </script>

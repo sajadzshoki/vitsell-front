@@ -1,11 +1,15 @@
 <template>
   <div class="flex flex-col gap-1.5 relative w-full">
 
-    <p v-if="header" class="text-(xs ) font-500  leading-6 " :class="[header ] ">{{ header }}</p>
+    <p v-if="header" class="text-(xs ) font-500  leading-6 "
+       :class="[header, dropdown ? 'text-primary-600' : '',validation&&'text-red' ] ">{{ header }}</p>
 
-    <div ref="dropdownTriggerRef" class="flex relative items-center  gap-2 cursor-pointer px-3 "
+    <div ref="dropdownTriggerRef"
+         class="flex relative items-center bg-screen h-12 rounded-lg  gap-2 cursor-pointer px-3 "
          v-on-click-outside="()=>dropdown=false"
-         :class="[[dropdown ? 'border-(1 solid gray-400)' : 'border-(1 solid gray-300)'],[className]]"
+         :class="[[dropdown ? 'border-(1 solid gray-400)' : 'border-(1 solid gray-300)'],
+         className,
+         validation&&'border-red']"
          @click="!disabled && (dropdown = !dropdown) ">
       <TheNuxtIcon v-if="!disabled && prependIcon" :name="prependIcon" icon-type="svg" class="text-xl text-text"/>
 
@@ -39,7 +43,7 @@ const value = defineModel()
 const dropdown = ref(false)
 
 const props = withDefaults(defineProps<{
-  data: Array;
+  data: any[];
   title?: string;
   className?: string;
   appendText?: string;
@@ -47,14 +51,14 @@ const props = withDefaults(defineProps<{
   iconClass?: string;
   label?: string;
   header?: string;
-  disabled?: Boolean;
+  disabled?: boolean;
   headerClass?: string;
   appendIcon?: string;
   prependIcon?: string;
+  validation?: boolean;
 }>(), {
   data: () => ([]),
   label: 'title',
-  className: 'bg-screen h-12 rounded-lg ',
   appendIcon: 'arrow-down-1'
 })
 

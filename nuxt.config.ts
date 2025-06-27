@@ -10,6 +10,8 @@ export default defineNuxtConfig({
         "nuxt-icons",
         "nuxt-lodash",
         '@vueuse/nuxt',
+        "nuxt-swiper",
+        "@nuxtjs/device"
     ],
 
     css: [

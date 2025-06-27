@@ -1,32 +1,32 @@
 <template>
   <ClientOnly>
     <div class="flex flex-col gap-1">
-      <p v-if="head" class="text-(sm secondary-500) font-medium">{{ head }}</p>
+      <p v-if="header" class="text-(sm secondary-500) font-medium">{{ header }}</p>
       <div class="flex flex-col relative border-(1 solid) rounded-lg h-12"
            :class="[value && !focused ? 'border-gray-300 bg-transparent' : focused ? 'border-primary-500 bg-white' : 'bg-transparent border-gray-300']">
         <div class="flex p-3 rounded-full cursor-pointer" @click="click" v-on-click-outside="()=> focused = false">
-          <p class="c-gray-400 text-base font-medium grow">
-            {{
-              value ? moment(value).locale(locale).format('D MMMM YYYY | HH:mm') : focused ? '' : placeholder
+          <p class="text-(xs) font-400 grow" :class="value?'':'text-gray-500'">
+            {{ type==='time'? value?.replace('.',':'): (value ? moment(value).locale(locale).format('YYYY/MM/DD') : focused ? '' : '')
             }}</p>
           <TheNuxtIcon name="calendar" icon-type="svg" @click="emit('append')" class="text-5 c-gray-400"/>
+<!--          <TheNuxtIcon  name="arrow-down-1" icon-type="svg" class="text-(2xl gray-600) mr-auto"-->
+<!--                        :class="focused?'rotate-180':''"/>-->
         </div>
-        <div v-if="focused && focusable || value"
-             class="absolute top-0 right-0 transform -translate-y-1/2 -translate-x-1/6 px-2 bg-white z-2 ">
-          <p class="text-(sm gray-900) font-extrabold">{{ placeholder }}</p>
+        <div v-if=" !value"
+             class="absolute top-3.5 right-0 transform  px-3   ">
+          <p class="text-(sm gray-700) ">{{ placeholder }}</p>
         </div>
-        <!--            <date-picker v-model="dateTime" :show="show" :editable="true" format="YYYY-MM-DD"-->
-        <!--                         display-format="jYYYY/jMM/jDD" @close="show=false" custom-input="#my-custom-editable-input"/>-->
+
         <date-picker
             :editable="true"
-            format="YYYY-MM-DDTHH:mm:ssZ"
+            :format="type==='time'? 'hh.mm':'YYYY-MM-DDTHH:mm:ssZ'"
             display-format="jYYYY-jMM-jDD HH:mm"
             @close="show=false"
             :locale="locale"
             custom-input="#my-custom-editable-input"
             :show="show"
             color="#2E48BB"
-            type="datetime"
+            :type="type"
             v-model="value"
             compact-time
         />
@@ -36,32 +36,24 @@
   </ClientOnly>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {vOnClickOutside} from '@vueuse/components'
 import DatePicker from 'vue3-persian-datetime-picker'
 import moment from "jalali-moment";
 
-const props = defineProps({
-  placeholder: {
-    type: String,
-    default: ''
-  },
-  disabled: {
-    type: Boolean,
-    default: false
-  },
-  focusable: {
-    type: Boolean,
-    default: true
-  },
-  locale: {
-    type: String,
-    default: 'en'
-  },
-  head: {
-    type: String,
-    default: ''
-  }
+const props = withDefaults(defineProps<{
+  placeholder?:string;
+  disabled?:boolean;
+  focusable?:boolean;
+  locale?:string;
+  header?:string;
+  type?:string;
+}>(),{
+  placeholder:'انتخاب کنید',
+  focusable:true,
+  locale:'fa',
+  type:'datetime'
+
 })
 const emit = defineEmits(['append'])
 const value = defineModel()

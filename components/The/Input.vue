@@ -2,9 +2,9 @@
 <template>
   <div class="flex flex-col gap-1.5 relative bg-bg">
 
-    <p v-if="label" class="text-(sm gray-900) leading-6.5 px-1"
-       :class="[labelClass , focused &&'text-primary-600',validation&&'text-red'] ">
-      {{ label }}
+    <p v-if="header" class="text-(sm gray-900) leading-6.5 px-1"
+       :class="[headerClass , focused &&'text-primary-600',validation&&'text-red'] ">
+      {{ header }}
     </p>
 
     <div
@@ -70,7 +70,6 @@ const props= withDefaults(defineProps<{
   className?: string;
   valueClassName?: string;
   focusClassName?: string;
-  labelClass?: string;
   prependIcon?: string;
   appendIcon?: string;
   appendIconType?: string;
@@ -78,7 +77,8 @@ const props= withDefaults(defineProps<{
   appendText?: string;
   inputType?:string;
   placeholder?: string;
-  label?: string;
+  header?: string;
+  headerClass?: string;
   password?: boolean;
   date?: boolean;
   disabled?: boolean;

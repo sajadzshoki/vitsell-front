@@ -9,12 +9,14 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
+    "@nuxtjs/device": "3.2.4",
     "@nuxtjs/i18n": "^9.3.0",
     "@unocss/nuxt": "^66.0.0",
     "nuxt": "^3.16.0",
     "nuxt-icon": "^0.6.10",
     "nuxt-icons": "^3.2.1",
     "nuxt-lodash": "^2.5.3",
+    "nuxt-swiper": "2.0.1",
     "sass": "^1.85.1",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
@@ -27,6 +29,7 @@
     "jalali-moment": "^3.3.11",
     "ol": "^8.2.0",
     "qrcode.vue": "^3.4.1",
+    "swiper": "^11.2.8",
     "typescript": "^5.8.2",
     "vue-json-pretty": "^2.3.0",
     "vue-trend-chart": "^0.17.0",

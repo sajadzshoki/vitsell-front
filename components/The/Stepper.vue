@@ -23,7 +23,7 @@ interface Step {
 const props = defineProps<{
   steps: Step[]
 }>()
-// sample:
+// sample usage:
 // const steps = [
 //   { key: 'chooseTime', label: 'انتخاب زمان', isMatch: () => route.name === 'doctor-id-booking' },
 //   { key: 'personalInfo', label: 'ورود اطلاعات', isMatch: () => route.path.includes('personalInfo') },
