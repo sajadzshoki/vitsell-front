@@ -219,3 +219,13 @@ export const useWallets = async (isActive: Boolean | undefined = undefined): Pro
 
     return wallet
 }
+export const getCommentsAvg = (comments:any[])=>{
+    const scores =  comments?.map(e=>e.number)
+    const sum = scores?.reduce((sum,accumolator)=>sum + accumolator,0) || 0
+    const average = comments?.length > 0 ? sum / scores.length : 0
+    return average.toFixed(1)
+}
+
+export const truncateText = (text: string, maxLength: number = 50) => {
+    return text?.length > maxLength ? text?.slice(0, maxLength) + '...' : text;
+};
