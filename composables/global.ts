@@ -106,6 +106,12 @@ export const isoToDateTime = (time: string) => {
 export const isoToDate = (time: string) => {
     return moment(time).locale('fa').format('YYYY.MM.DD')
 }
+export const isoToTime = (time: string) => {
+    return moment(time).locale('fa').format('hh:mm')
+}
+export const isoToWeekDay = (time: string) => {
+    return moment(time).locale('fa').format('ddd')
+}
 
 export const isoToStandard = (time: string) => {
     return moment(time).format('MMM DD,YYYY hh:mmA')
@@ -218,4 +224,22 @@ export const useWallets = async (isActive: Boolean | undefined = undefined): Pro
     }
 
     return wallet
+}
+export const getCommentsAvg = (comments:any[])=>{
+    const scores =  comments?.map(e=>e.number)
+    const sum = scores?.reduce((sum,accumolator)=>sum + accumolator,0) || 0
+    const average = comments?.length > 0 ? sum / scores.length : 0
+    return average.toFixed(1)
+}
+
+export const truncateText = (text: string, maxLength: number = 50) => {
+    return text?.length > maxLength ? text?.slice(0, maxLength) + '...' : text;
+};
+export const isValidEmail=(email)=> {
+    const regex = /^\S+@\S+\.\S+$/;
+    return regex.test(email);
+}
+export const extractNumber = (str: string): number => {
+    const match = str.match(/\d+/)
+    return match ? parseInt(match[0]) : 0
 }
