@@ -29,7 +29,8 @@
              class="flex-grow h-9 bg-transparent placeholder-(gray-600 text-base) text-gray-900 font-300 text-xs"
              :class="inputClass"
              :disabled="disabled"
-             :placeholder="!focused ? placeholder : value || ''"
+             :placeholder="placeholder  || 'وارد کنید'"
+             @input="onInputLimit"
              @focus="date ? inputTypeLocal = 'date' : focused = true"
       />
       <textarea v-else-if="!date"
@@ -87,15 +88,23 @@ const props= withDefaults(defineProps<{
   bgStyle?: string;
   focusable?: boolean;
   validation?:boolean;
+
 }>(),{
   valueClassName:'border-(1 solid gray-400) bg-bg',
   focusClassName:'border-(2 solid primary-600) !bg-bg',
-  labelClass:'bg-gray-30',
+  labelClass:'',
   appendIconType:'svg',
+  focusable: true,
   appendIconClass:'!svg:(w-5 h-5)',
   inputType:'text',
 })
-
+const onInputLimit = (e: Event) => {
+  const input = e.target as HTMLInputElement;
+  if (input.value.length > props.maxLength) {
+    input.value = input.value.slice(0, props.maxLength);
+    value.value = input.value;
+  }
+};
 const emit = defineEmits(['append', 'update:modelValue','clearInput'])
 const value = defineModel()
 const focused = ref(false);
