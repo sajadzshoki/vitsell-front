@@ -11,6 +11,10 @@ body {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
+  -moz-font-feature-settings: "ss02";
+  -webkit-font-feature-settings: "ss02";
+  font-feature-settings: "ss02";
+  -webkit-tap-highlight-color: transparent;
 }
 
 div {

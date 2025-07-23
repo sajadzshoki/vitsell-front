@@ -1,111 +1,66 @@
 ﻿@font-face {
-    font-family: iranyekan;
-    font-style: normal;
-    font-weight: bold;
-    src: url('./woff/IRANYekanXFaNum-Bold.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
-}
-
-@font-face {
-    font-family: iranyekan;
+    font-family: IRANSansX;
     font-style: normal;
     font-weight: 100;
-    src: url('./woff/IRANYekanXFaNum-Thin.woff') format('woff'),
+    src: url("./woff/IRANSansX-Thin.woff") format("woff");
 }
 
 @font-face {
-    font-family: iranyekan;
+    font-family: IRANSansX;
+    font-style: normal;
+    font-weight: 200;
+    src: url("./woff/IRANSansX-UltraLight.woff") format("woff");
+}
+
+@font-face {
+    font-family: IRANSansX;
     font-style: normal;
     font-weight: 300;
-    src: url('./woff/IRANYekanXFaNum-Light.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
+    src: url("./woff/IRANSansX-Light.woff") format("woff");
 }
 
 @font-face {
-    font-family: iranyekan;
-    font-style: normal;
-    font-weight: normal;
-    src: url('./woff/IRANYekanXFaNum-Regular.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
-}
-
-@font-face {
-    font-family: iranyekan;
+    font-family: IRANSansX;
     font-style: normal;
     font-weight: 500;
-    src: url('./woff/IRANYekanXFaNum-Medium.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
+    src: url("./woff/IRANSansX-Medium.woff") format("woff");
 }
 
 @font-face {
-    font-family: iranyekan;
+    font-family: IRANSansX;
+    font-style: normal;
+    font-weight: 600;
+    src: url("./woff/IRANSansX-DemiBold.woff") format("woff");
+}
+
+@font-face {
+    font-family: IRANSansX;
     font-style: normal;
     font-weight: 800;
-    src: url('./woff/IRANYekanXFaNum-ExtraBold.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
+    src: url("./woff/IRANSansX-ExtraBold.woff") format("woff");
 }
 
 @font-face {
-    font-family: iranyekan;
+    font-family: IRANSansX;
     font-style: normal;
     font-weight: 900;
-    src: url('./woff/IRANYekanXFaNum-Black.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
+    src: url("./woff/IRANSansX-Black.woff") format("woff");
 }
 
 @font-face {
-    font-family: iranyekan;
-    font-style: normal;
-    font-weight: 950;
-    src: url('./woff/IRANYekanXFaNum-ExtraBlack.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
-}
-
-@font-face {
-    font-family: iranyekan-en;
+    font-family: IRANSansX;
     font-style: normal;
     font-weight: bold;
-    src: url('./woffen/iranyekanwebbold.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
+    src: url("./woff/IRANSansX-Bold.woff") format("woff");
 }
 
 @font-face {
-    font-family: iranyekan-en;
-    font-style: normal;
-    font-weight: 100;
-    src: url('./woffen/iranyekanwebthin.woff') format('woff'),
-}
-
-@font-face {
-    font-family: iranyekan-en;
-    font-style: normal;
-    font-weight: 300;
-    src: url('./woffen/iranyekanweblight.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
-}
-
-@font-face {
-    font-family: iranyekan-en;
+    font-family: IRANSansX;
     font-style: normal;
     font-weight: normal;
-    src: url('./woffen/iranyekanwebregular.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
+    src: url("./woff/IRANSansX-Regular.woff") format("woff");
 }
-
-@font-face {
-    font-family: iranyekan-en;
-    font-style: normal;
-    font-weight: 500;
-    src: url('./woffen/iranyekanwebmedium.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
-}
-
-@font-face {
-    font-family: iranyekan-en;
-    font-style: normal;
-    font-weight: 800;
-    src: url('./woffen/iranyekanwebextrabold.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
-}
-
-@font-face {
-    font-family: iranyekan-en;
-    font-style: normal;
-    font-weight: 900;
-    src: url('./woffen/iranyekanwebblack.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
-}
-
-@font-face {
-    font-family: iranyekan-en;
-    font-style: normal;
-    font-weight: 950;
-    src: url('./woffen/iranyekanwebextrablack.woff') format('woff'),  /* FF3.6+, IE9, Chrome6+, Saf5.1+*/
-}
+/*numbers in css body and inputs and ....*/
+/*-moz-font-feature-settings: "ss02";*/
+/*-webkit-font-feature-settings: "ss02";*/
+/*font-feature-settings: "ss02";*/
