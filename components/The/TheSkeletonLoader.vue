@@ -8,7 +8,7 @@
       <div class="shimmer w-full h-full"></div>
     </div>
 
-    <div :class="{ 'invisible': loading }">
+    <div  :class="{ 'invisible': loading }">
       <slot />
     </div>
   </div>
@@ -24,11 +24,11 @@ const variantClasses = computed(() => {
     case 'text':
       return 'rounded h-4'
     case 'card':
-      return 'rounded-xl '
+      return 'rounded-2xl '
     case 'circle':
       return 'rounded-full aspect-square'
     default:
-      return 'rounded-lg'
+      return 'rounded-xl'
   }
 })
 </script>

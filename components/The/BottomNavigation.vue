@@ -43,3 +43,77 @@ const Buttons = ref([
   },
 ])
 </script>
+
+<!--<template>-->
+<!--  <div class="sm:hidden bg-white z-4 shadow-[0_0px_5px_rgba(0,0,0,0.1)] fixed bottom-0 right-0 w-full py-3 flex px-4 justify-around  border-t-(0.5 solid gray-200)">-->
+<!--    <div @click="handleSelectItem(item.link)" v-for="item in items" class="cursor-pointer    flexCol items-center justify-baseline  ">-->
+<!--      <TheNuxtIcon :name="active(item) ? item.iconFill :item.icon"-->
+<!--                   icon-type="svg"-->
+<!--                   class="text-2xl  " />-->
+<!--      <p class="text-(2.5)  leading-5.5" :class="active(item)?'font-600 text-primary-600':'font-500'" >{{ item.label }}</p>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--  &lt;!&ndash;  <TheLog :data="config.public"/>&ndash;&gt;-->
+<!--</template>-->
+
+<!--<script setup lang="ts">-->
+<!--const route = useRoute()-->
+<!--const selectedItem = ref<string>('')-->
+<!--const config = useRuntimeConfig()-->
+<!--const handleSelectItem = (item:string)=>{-->
+<!--  navigateTo({name:item})-->
+<!--  selectedItem.value = item-->
+<!--}-->
+<!--const active = (item)=>{-->
+<!--  return selectedItem.value ===item.link || route.path.includes(item.link) || route.name === item.link-->
+<!--}-->
+<!--const userId = useCookie('userId');-->
+<!--const Buttons = ref([-->
+<!--  {-->
+<!--    label: 'خانه',-->
+<!--    icon: 'home',-->
+<!--    iconFill:'home-fill',-->
+<!--    link: 'index'-->
+<!--  },-->
+<!--  {-->
+<!--    label: 'دندان پزشکان',-->
+<!--    icon: 'bookmark',-->
+<!--    iconFill:'bookmark-fill',-->
+<!--    link: 'category'-->
+<!--  },-->
+<!--  {-->
+<!--    label: 'نوبت‌ها',-->
+<!--    icon: 'calendar-2',-->
+<!--    iconFill:'calendar-tick',-->
+<!--    link: userId.value?'appointment':'login'-->
+<!--  },-->
+<!--  {-->
+<!--    label: 'پروفایل',-->
+<!--    icon: 'profile',-->
+<!--    iconFill:'profile-1',-->
+<!--    link: userId.value?'profile':'login',-->
+<!--    // handler:()=>!userId.value ? navigateTo({name: 'login'}) : navigateTo({name: 'profile'})-->
+<!--  },-->
+<!--])-->
+<!--const ButtonsDentist = ref([-->
+<!--  {-->
+<!--    label: 'پروفایل',-->
+<!--    icon: 'profile',-->
+<!--    iconFill:'profile-1',-->
+<!--    link: 'dentistPanel-profile'-->
+<!--  },-->
+<!--  {-->
+<!--    label: 'ویزیت',-->
+<!--    icon: 'document-like',-->
+<!--    iconFill:'document-like-fill',-->
+<!--    link: 'dentistPanel-appointment'-->
+<!--  },-->
+<!--  {-->
+<!--    label: 'بیماران من',-->
+<!--    icon: 'health',-->
+<!--    iconFill:'health-fill',-->
+<!--    link: 'dentistPanel-patient'-->
+<!--  },-->
+<!--])-->
+<!--const items = computed(()=>  config.public.isDentist ? ButtonsDentist.value : Buttons.value)-->
+<!--</script>-->

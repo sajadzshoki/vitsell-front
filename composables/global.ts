@@ -219,6 +219,32 @@ export const useWallets = async (isActive: Boolean | undefined = undefined): Pro
 
     return wallet
 }
+export const useUser = async () => {
+    const userId = useCookie('userId')
+    const user = useLocalStorage<User | null>('user', null)
+    const loading = ref(false)
+    let fetched = false // prevent recursion
+    if (!user.value && userId.value && !fetched ) {
+        fetched = true
+        loading.value = true
+        const { result } = await useGet<User>(`/user/${userId.value}`, {
+            params: { 'with-profile': true }
+        })
+        user.value = result
+        loading.value = false
+    }
+
+    const fullName = computed(() => {
+        if (!user.value?.profile) return ''
+        return `${user.value.profile.firstname} ${user.value.profile.lastname}`
+    })
+    const avatar = computed(() => {
+        if (!user.value?.profile) return ''
+        return `${user.value.profile.avatar}`
+    })
+
+    return {user, fullName, avatar, loading}
+}
 export const getCommentsAvg = (comments:any[])=>{
     const scores =  comments?.map(e=>e.number)
     const sum = scores?.reduce((sum,accumolator)=>sum + accumolator,0) || 0
@@ -229,3 +255,11 @@ export const getCommentsAvg = (comments:any[])=>{
 export const truncateText = (text: string, maxLength: number = 50) => {
     return text?.length > maxLength ? text?.slice(0, maxLength) + '...' : text;
 };
+export const isValidEmail = (email) => {
+    const regex = /^\S+@\S+\.\S+$/;
+    return regex.test(email);
+}
+export const extractNumber = (str: string): number => {
+    const match = str.match(/\d+/)
+    return match ? parseInt(match[0]) : 0
+}

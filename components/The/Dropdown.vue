@@ -19,7 +19,9 @@
       </p>
       <!-----------------------------------------important part for showing the selected data---------------------------------------------------->
       <p v-else class="text-xs font-400 ">
-        {{ typeof value?.label === 'number' ? value.label.toLocaleString() + ' ' + value.key : value.label }}</p>
+<!--        {{ typeof value?.label === 'number' ? value.label.toLocaleString() + ' ' + value.key : value.label }}-->
+        {{selectedData}}
+      </p>
 
       <!------------------------------------------------------arrow icon---------------------------------------------------------------->
 
@@ -30,7 +32,7 @@
           v-show="dropdown"
           class="flex flex-col absolute  z-4 right-0 w-full bg-white rounded-lg max-h-40vh overflow-auto shadow-lg"
           :class="dropdownPosition === 'top' ? 'bottom-12' : 'top-12'">
-        <TheDropdownModal :items="data" v-model="value"/>
+        <TheDropdownModal :items="data" v-model="value" :object="object" :label="label"/>
       </div>
     </div>
   </div>
@@ -41,6 +43,17 @@ import {vOnClickOutside} from '@vueuse/components'
 
 const value = defineModel()
 const dropdown = ref(false)
+
+const selectedData = computed(() => {
+  if (!value.value || (typeof value.value === 'object' && Object.keys(value.value).length === 0)) {
+    return props.title || 'انتخاب کنید'
+  }
+  if (typeof value.value === 'object') {
+    return value.value?.label || value.value[props.label] || props.title || 'انتخاب کنید'
+  }
+  return value.value || props.title || 'انتخاب کنید'
+})
+
 
 const props = withDefaults(defineProps<{
   data: any[];
@@ -72,12 +85,27 @@ const checkDropdownPosition = () => {
     if (dropdownTriggerRef.value) {
       const rect = dropdownTriggerRef.value.getBoundingClientRect();
       const spaceBelow = windowHeight.value - rect.bottom;
-      dropdownPosition.value = spaceBelow < 200 ? 'top' : 'bottom';
+      dropdownPosition.value = spaceBelow < props.downHeight ? 'top' : 'bottom';
     }
   });
 };
 
-onMounted(checkDropdownPosition);
+const onScrollOrResize = () => {
+  checkDropdownPosition();
+};
+onMounted(() => {
+  checkDropdownPosition();
+  window.addEventListener('scroll', onScrollOrResize, true); // true to capture scrolling in nested containers too
+  window.addEventListener('resize', onScrollOrResize);
+});
 
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onScrollOrResize, true);
+  window.removeEventListener('resize', onScrollOrResize);
+});
+
+watch(() => windowHeight.value, () => {
+  checkDropdownPosition();
+});
 </script>
 

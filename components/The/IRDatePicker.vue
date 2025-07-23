@@ -1,33 +1,32 @@
 <template>
   <ClientOnly>
     <div class="flex flex-col gap-1">
-      <p v-if="header" class="text-(sm secondary-500) font-medium" :class="[validation&&'text-red']">{{ header }}</p>
+      <p v-if="head" class="text-(xs) font-500 leading-6" :class="[validation&&'text-red']">{{ head }}</p>
       <div class="flex flex-col relative border-(1 solid) rounded-lg h-12"
            :class="[value && !focused ? 'border-gray-300 bg-transparent' :
-            focused ? 'border-primary-500 bg-white' :
-             'bg-transparent border-gray-300'
-             ,validation&&'border-red']">
-        <div class="flex p-3 rounded-full cursor-pointer" @click="click" v-on-click-outside="()=> focused = false">
+            focused ? 'border-primary-600 bg-white' :
+             'bg-transparent border-gray-300',validation&&'border-red']">
+        <div class="flex items-center p-3 rounded-full cursor-pointer" @click="click" v-on-click-outside="()=> focused = false">
           <p class="text-(xs) font-400 grow" :class="value?'':'text-gray-500'">
             {{ type==='time'? value?.replace('.',':'): (value ? moment(value).locale(locale).format('YYYY/MM/DD') : focused ? '' : '')
             }}</p>
-          <TheNuxtIcon name="calendar" icon-type="svg" @click="emit('append')" class="text-5 c-gray-400"/>
-<!--          <TheNuxtIcon  name="arrow-down-1" icon-type="svg" class="text-(2xl gray-600) mr-auto"-->
-<!--                        :class="focused?'rotate-180':''"/>-->
+          <!--          <TheNuxtIcon :name="type ==='time'?'clock':'calendar'" icon-type="svg" @click="emit('append')" class="text-5 c-gray-400"/>-->
+          <TheNuxtIcon  name="arrow-down-1" icon-type="svg" class="text-(2xl gray-600) mr-auto"
+                        :class="focused?'rotate-180':''"/>
         </div>
         <div v-if=" !value"
              class="absolute top-3.5 right-0 transform  px-3   ">
           <p class="text-(sm gray-700) ">{{ placeholder }}</p>
         </div>
-
         <date-picker
             :editable="true"
-            :format="type==='time'? 'hh.mm':'YYYY-MM-DDTHH:mm:ssZ'"
+            :format="type==='time'? 'HH.mm':'YYYY-MM-DDTHH:mm:ssZ'"
             display-format="jYYYY-jMM-jDD HH:mm"
             @close="show=false"
             :locale="locale"
             custom-input="#my-custom-editable-input"
             :show="show"
+            :max="withMax&&getMaximum"
             color="#2E48BB"
             :type="type"
             v-model="value"
@@ -44,14 +43,16 @@ import {vOnClickOutside} from '@vueuse/components'
 import DatePicker from 'vue3-persian-datetime-picker'
 import moment from "jalali-moment";
 
+
 const props = withDefaults(defineProps<{
   placeholder?:string;
   disabled?:boolean;
   focusable?:boolean;
   locale?:string;
-  header?:string;
+  head?:string;
   type?:string;
   validation?:boolean;
+  withMax:boolean;
 }>(),{
   placeholder:'انتخاب کنید',
   focusable:true,
@@ -69,6 +70,7 @@ const click = () => {
 }
 const now = new moment
 const test = [moment(now).locale('fa').format('jYYYY/jMM/jDD'), '1300/01/01']
+const getMaximum = computed(() => moment().format('YYYY-MM-DDTHH:mm:ssZ'))
 </script>
 
 

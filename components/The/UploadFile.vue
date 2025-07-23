@@ -10,7 +10,7 @@
         class="flex justify-center rounded-lg items-stretch relative  cursor-pointer h-full"
         :class="[className]">
       <slot name="icon">
-        <div v-if="!value && !loading" class="flex flex-col item-stretch gap-3 px-2 rounded-2xl grow">
+        <div v-if="(!showValue ? true: !value) && !loading " class="flex flex-col item-stretch gap-3 px-2 rounded-2xl grow">
           <TheNuxtIcon
               class="flex justify-center items-center text-xl  w-full h-full rounded-lg"
               :class="[iconClass]"
@@ -46,7 +46,7 @@ const props = withDefaults(defineProps<{
   labelClass?: string,
   showValue?: boolean,
 }>(),{
-  icon:'Upload',
+  icon:'Upload-2',
   showValue:true
 })
 const hovered = ref(false)
