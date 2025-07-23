@@ -112,7 +112,9 @@ export const isoToTime = (time: string) => {
 export const isoToWeekDay = (time: string) => {
     return moment(time).locale('fa').format('ddd')
 }
-
+export const isoToWeekDayFirstLetter = (time: string) => {
+    return moment(time).locale('fa').format('dd')
+}
 export const isoToStandard = (time: string) => {
     return moment(time).format('MMM DD,YYYY hh:mmA')
 }
