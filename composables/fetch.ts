@@ -87,6 +87,7 @@ export const usePut = async <T, R = T>(URL: string, data: Partial<R>, config: Ni
     const token = useCookie('token')
     _set(config, ['headers', 'Authorization'], token.value || '')
     _set(config, ['headers', 'app-code'], APP_CODE)
+    _set(config, ['headers', 'no-error'], true)
     try {
         const result = await $fetch<T>(URL, {
             baseURL: BASE_URL,

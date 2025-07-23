@@ -106,6 +106,12 @@ export const isoToDateTime = (time: string) => {
 export const isoToDate = (time: string) => {
     return moment(time).locale('fa').format('YYYY.MM.DD')
 }
+export const isoToTime = (time: string) => {
+    return moment(time).locale('fa').format('hh:mm')
+}
+export const isoToWeekDay = (time: string) => {
+    return moment(time).locale('fa').format('ddd')
+}
 
 export const isoToStandard = (time: string) => {
     return moment(time).format('MMM DD,YYYY hh:mmA')
