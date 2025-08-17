@@ -7,7 +7,7 @@
     >
       <p class="text-(xs gray-600 nowrap) font-400 leading-6"
          :class="selectedDay==item.date?'!text-primary-600':''">
-        {{item.today?'امروز':isoToWeekDayFirstLetter(item) }}</p>
+        {{item.today?'امروز':isoToWeekDayFirstLetter(item.date) }}</p>
       <p class="text-(sm ) leading-6.5 font-500" :class="selectedDay==item.date?'!text-primary-600':''">{{
           item.day
         }}</p>
