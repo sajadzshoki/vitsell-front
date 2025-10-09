@@ -2,7 +2,8 @@
   <div class="flex flex-col gap-1.5 relative w-full">
 
     <p v-if="header" class="text-(xs ) font-500  leading-6 "
-       :class="[header, dropdown ? 'text-primary-600' : '',validation&&'text-red' ] ">{{ header }}</p>
+       :class="[header, dropdown ? 'text-primary-600' : '',
+       validation&&'text-red',disabled && '!text-gray-600'] ">{{ header }}</p>
 
     <div ref="dropdownTriggerRef"
          class="flex relative items-center bg-screen h-12 rounded-lg  gap-2 cursor-pointer px-3 "
@@ -13,17 +14,10 @@
          @click="!disabled && (dropdown = !dropdown) ">
       <TheNuxtIcon v-if="!disabled && prependIcon" :name="prependIcon" icon-type="svg" class="text-xl text-text"/>
 
-      <p v-if="!value" class="flex text-(gray-500 xs) font-400 select-none gap-2 grow ">
+      <p class="flex text-(gray-500 xs) font-400 select-none gap-2 grow ">
         <TheNuxtIcon v-if="icon" :name="icon" class="rounded-full text-xl" icon-type="svg" :class="[iconClass]"/>
-        {{ title || $t('انتخاب کنید') }}
+        {{ value ? selectedData : (placeholder || 'انتخاب کنید') }}
       </p>
-      <!-----------------------------------------important part for showing the selected data---------------------------------------------------->
-      <p v-else class="text-xs font-400 ">
-<!--        {{ typeof value?.label === 'number' ? value.label.toLocaleString() + ' ' + value.key : value.label }}-->
-        {{selectedData}}
-      </p>
-
-      <!------------------------------------------------------arrow icon---------------------------------------------------------------->
 
       <TheNuxtIcon v-if="!disabled && appendIcon" :name="appendIcon" icon-type="svg" class="text-2xl mr-auto"
                    :class="dropdown?'rotate-180':''"/>
@@ -32,7 +26,19 @@
           v-show="dropdown"
           class="flex flex-col absolute  z-4 right-0 w-full bg-white rounded-lg max-h-40vh overflow-auto shadow-lg"
           :class="dropdownPosition === 'top' ? 'bottom-12' : 'top-12'">
-        <TheDropdownModal :items="data" v-model="value" :object="object" :label="label"/>
+
+        <div class="p-4 z-2">
+          <div class="flex flex-col gap-2">
+            <div v-for="item in data"
+                 class="flex gap-2 px-1 pb-2 border-b-(1 gray-100 solid) last:border-none items-center"
+                 @click="object ? value = item : value = item">
+              <p class="text-(sm) font-400">
+                {{ typeof item?.label === 'number' ? item.label.toLocaleString() + ' ' + item.key : item[label] }}</p>
+            </div>
+            <p v-if="!data?.length"
+               class="text-(sm gray-600 center) py-2 ">هیچ موردی وجود ندارد</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -46,18 +52,27 @@ const dropdown = ref(false)
 
 const selectedData = computed(() => {
   if (!value.value || (typeof value.value === 'object' && Object.keys(value.value).length === 0)) {
-    return props.title || 'انتخاب کنید'
+    return props.placeholder || 'انتخاب کنید'
   }
   if (typeof value.value === 'object') {
-    return value.value?.label || value.value[props.label] || props.title || 'انتخاب کنید'
+    return value.value?.label || value.value[props.label] || props.placeholder || 'انتخاب کنید'
   }
-  return value.value || props.title || 'انتخاب کنید'
+  return value.value || props.placeholder || 'انتخاب کنید'
 })
+// const selectedData = computed(() => {
+//   if (!value.value || (typeof value.value === 'object' && Object.keys(value.value).length === 0)) {
+//     return props.data.find(e=> e.value===value.value)[props.label]|| props.placeholder || 'انتخاب کنید'
+//   }
+//   if (typeof value.value === 'object') {
+//     return value.value?.label || value.value[props.label] || props.placeholder || 'انتخاب کنید'
+//   }
+//   return props.data.find(e=> e.value===value.value)[props.label] || value.value || props.placeholder || 'انتخاب کنید'
+// })
 
 
 const props = withDefaults(defineProps<{
   data: any[];
-  title?: string;
+  placeholder?: string;
   className?: string;
   appendText?: string;
   icon?: string;
@@ -69,10 +84,13 @@ const props = withDefaults(defineProps<{
   appendIcon?: string;
   prependIcon?: string;
   validation?: boolean;
+  object?: boolean;
+  downHeight?: number;
 }>(), {
   data: () => ([]),
   label: 'title',
-  appendIcon: 'arrow-down-1'
+  appendIcon: 'arrow-down-1',
+  downHeight: 220
 })
 
 // modal open positions

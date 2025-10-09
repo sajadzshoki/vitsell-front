@@ -1,11 +1,16 @@
 <template>
+  <div>
+    <p  class="text-(sm gray-800) font-500 leading-6.5 px-1"
+        :class="[ validation && 'text-red' ,!header && 'h-6.5'] ">
+      {{ header || '' }}
+    </p>
   <div class="bg-secondary-500 py-4 px-3 rounded-lg flex items-center justify-between w-full cursor-pointer"
        :class="modal && 'border-( 2 solid primary-500)'"
        @click="modal=true">
     <p class="text-(xs gray-500)">{{ time ? time?.replace('.',':') :'ساعت' }}</p>
     <TheNuxtIcon name="time" icon-type="svg" class="text-gray-300"/>
   </div>
-  <TheModal title="ورود ساعت" v-if="modal" @close="modal = false" :with-close="false">
+  <TheModal title="ورود ساعت" v-if="modal" @close="modal = false"  :center="true" :with-close="false">
     <div class="flex gap-2 ">
       <div class="flexCol gap-2">
         <div class=" rounded-lg h-18 w-full flex flexCenter"
@@ -66,6 +71,13 @@
 <script setup lang="ts">
 import Input from "~/components/The/Input.vue";
 import {vOnClickOutside} from '@vueuse/components'
+
+const props = defineProps<{
+  validation?:boolean,
+  header?:string,
+  placeholder?:string
+}>()
+
 const time = defineModel()
 const modal = ref(false)
 const focusM = ref(false)
@@ -98,7 +110,7 @@ const addHour = () => {
 }
 const checkHourLength = () => {
   const val = hourRef.value?.value
-  if (val?.length >= 2) {
+  if (val >= 24) {
     nextTick(() => minuteRef.value?.focus())
   }
 }

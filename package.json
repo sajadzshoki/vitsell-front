@@ -29,6 +29,7 @@
     "jalali-moment": "^3.3.11",
     "ol": "^8.2.0",
     "qrcode.vue": "^3.4.1",
+    "socket.io-client": "^4.8.1",
     "swiper": "^11.2.8",
     "typescript": "^5.8.2",
     "vue-json-pretty": "^2.3.0",

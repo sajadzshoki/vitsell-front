@@ -1,13 +1,15 @@
 <template>
   <div class="flex items-center gap-1 ">
     <div
-        class="flex flexCenter  cursor-pointer border-(1 solid) h-4 w-4 b-rd-1  relative"
+        class="flex flexCenter  cursor-pointer border-(1 solid)    relative"
         @click="toggleCheck"
-        :class="isChecked ?'border-(1 gray-800 solid)':'border-gray-500'"
+        :class="[isChecked ?'border-(1 gray-800 solid)':'border-gray-500',circle?'rounded-full border-primary-600 w-6 h-6':'h-5 w-5 b-rd-1']"
     >
-      <div v-if="isChecked" class="!w-2.8 !h-2.8 b-rd-0.5 bg-primary-600"></div>
+      <div v-if="isChecked" class="  bg-primary-600 relative flex flexCenter" :class="circle?'rounded-full w-4.5 h-4.5':'!w-3.6 !h-3.6 b-rd-0.5'">
+        <TheNuxtIcon name="Tick" icon-type="svg"/>
+      </div>
     </div>
-    <p class="text-(sm)" :class="labelClass">{{ label }}</p>
+    <p class="text-(sm ) leading-6.5" :class="labelClass">{{ label }}</p>
   </div>
 </template>
 
@@ -19,6 +21,7 @@ const props = defineProps<{
   multi?: boolean
   label?: string,
   labelClass?: string,
+  circle?:boolean
 }>()
 
 const isChecked = computed(() => {

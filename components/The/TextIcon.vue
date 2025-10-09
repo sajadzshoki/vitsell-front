@@ -1,10 +1,15 @@
 <template>
-    <div class="flex gap-1">
-        <TheNuxtIcon name="location" icon-type="svg" class="text-5 c-primary-300"/>
-        <p class="text-sm" >{{}}</p>
+    <div class="flex gap-1 items-center">
+        <TheNuxtIcon :name="icon" icon-type="svg"  :class="iconClass"/>
+        <p class="text-sm" :class="textClass" >{{text}}</p>
     </div>
 </template>
 
-<script setup>
-
+<script setup lang="ts">
+defineProps<{
+  text: String | number,
+  textClass?: String,
+  icon:String
+  iconClass:String
+}>()
 </script>
