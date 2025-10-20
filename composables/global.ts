@@ -260,6 +260,20 @@ export const getCommentsAvg = (comments:any[])=>{
     return average.toFixed(1)
 }
 
+export const zarinpal =async (amount:string|number,description:string)=>{
+    console.log('online payment')
+    const userId=useCookie('userId')
+    const {result} = await usePost('transaction/zarinpal/get-url', {
+        amount: s2n(amount *1000),
+        type: 'PAYMENT',
+        redirectUrl: location.href,
+        userId: userId.value,
+        description: description || 'payment',
+
+    })
+    result && await window.open(result.url, '_self')
+}
+
 export const truncateText = (text: string, maxLength: number = 50) => {
     return text?.length > maxLength ? text?.slice(0, maxLength) + '...' : text;
 };
@@ -270,4 +284,85 @@ export const isValidEmail = (email) => {
 export const extractNumber = (str: string): number => {
     const match = str.match(/\d+/)
     return match ? parseInt(match[0]) : 0
+}
+
+export const chatWithAi = async (queryCategory: string = 'AiChat') => {
+    const userId = useCookie('userId')
+    const {$toast} = useNuxtApp()
+
+    // if (!userId.value) {
+    //     $toast.error('لطفا ابتدا وارد  حساب کاربری خود شوید')
+    //     return
+    // }
+    const {data: chat} = await useAsyncData('get-chat', () => getChats({
+        'fromUserId:eq': userId.value,
+        'title:eq': 'ChatGpt-chat',
+        'category:eq':queryCategory
+    }))
+    if (!chat?.value?.length) {
+        const {result} = await usePost('/chat', {
+            fromUserId: userId.value,
+            toUserId: userId.value,
+            title: 'ChatGpt-chat',
+            status: 'SUCCESS',
+            category:queryCategory
+        })
+        console.log(result)
+        if (result) {
+            navigateTo({name: 'ai-id', params: {id: result?.id}, query: {category: queryCategory}})
+        }
+    } else {
+        navigateTo({name: 'ai-id', params: {id: chat.value[0].id}, query: {category: queryCategory}})
+    }
+}
+
+export const useOtpTimer = () => {
+    const timeLeft = useState<number>('otp-timer-timeLeft', () => 0)
+    const intervalId = useState<ReturnType<typeof setInterval> | null>('otp-timer-interval', () => null)
+
+    const startTimer = (duration = 120) => {
+        clearTimer()
+        timeLeft.value = duration
+
+        intervalId.value = setInterval(() => {
+            if (timeLeft.value > 0) {
+                timeLeft.value--
+            } else {
+                clearTimer()
+            }
+        }, 1000)
+    }
+
+    const clearTimer = () => {
+        if (intervalId.value) {
+            clearInterval(intervalId.value)
+            intervalId.value = null
+        }
+    }
+
+    const isRunning = computed(() => timeLeft.value > 0)
+    const formattedTime = computed(() => {
+        const minutes = Math.floor(timeLeft.value / 60).toString().padStart(2, '0')
+        const seconds = (timeLeft.value % 60).toString().padStart(2, '0')
+        return `${minutes}:${seconds}`
+    })
+
+    return {
+        timeLeft,
+        startTimer,
+        clearTimer,
+        isRunning,
+        formattedTime
+    }
+}
+
+export const isValidIranianNationalCode = (input: any) => {
+    const code = String(input)
+    if (!/^\d{10}$/.test(code)) return false;
+    const check = +code[9];
+    const sum = code
+        .split('')
+        .slice(0, 9)
+        .reduce((acc, x, i) => acc + +x * (10 - i), 0) % 11;
+    return sum < 2 ? check == sum : check + sum == 11;
 }
