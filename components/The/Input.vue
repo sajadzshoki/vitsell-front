@@ -2,9 +2,12 @@
 <template>
   <div class="flex flex-col gap-1.5 relative bg-bg">
 
-    <p v-if="header" class="text-(sm gray-900) leading-6.5 px-1"
-       :class="[headerClass , focused &&'text-primary-600',validation&&'text-red'] ">
-      {{ header }}
+    <p v-if="header"
+       class="text-(sm gray-800) leading-6.5 px-1 font-medium"
+       :class="[headerClass, focused && 'text-red',validation&&'text-red']"
+    >
+      {{ header.replace('*', '') }}
+      <span v-if="header.includes('*')" class="text-red">*</span>
     </p>
 
     <div
