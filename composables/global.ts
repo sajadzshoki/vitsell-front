@@ -366,3 +366,15 @@ export const isValidIranianNationalCode = (input: any) => {
         .reduce((acc, x, i) => acc + +x * (10 - i), 0) % 11;
     return sum < 2 ? check == sum : check + sum == 11;
 }
+export async function shareModal(title: string, text: string, url: string): string {
+    try {
+        await share({
+            title: title,
+            text: text,
+            url: url
+        });
+    } catch (error: any) {
+        console.log(error)
+    }
+
+}
