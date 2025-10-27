@@ -31,14 +31,27 @@
           <div class="flex flex-col gap-2">
             <div v-for="item in data"
                  class="flex gap-2 px-1 pb-2 border-b-(1 gray-100 solid) last:border-none items-center"
-                 @click="object ? value = item : value = item">
+                 @click="multi ?null : value = item">
               <p class="text-(sm) font-400">
                 {{ typeof item?.label === 'number' ? item.label.toLocaleString() + ' ' + item.key : item[label] }}</p>
+              <TheCheckbox v-if="multi"
+                           v-model="value"
+                           :value="item"
+                           :multi="true"
+              />
             </div>
             <p v-if="!data?.length"
                class="text-(sm gray-600 center) py-2 ">هیچ موردی وجود ندارد</p>
           </div>
         </div>
+      </div>
+    </div>
+    <div>
+      <div class="flex flex-wrap gap-2">
+        <p v-if="multi" v-for="n in value"
+           class="px-2 leading-6 text-(xs primary-600 nowrap) font-500 rounded-full border-(1 solid primary-600)">
+          {{ n.label || n.title || n.name + ',' }}
+        </p>
       </div>
     </div>
   </div>
@@ -84,7 +97,7 @@ const props = withDefaults(defineProps<{
   appendIcon?: string;
   prependIcon?: string;
   validation?: boolean;
-  object?: boolean;
+  multi?: boolean;
   downHeight?: number;
 }>(), {
   data: () => ([]),
