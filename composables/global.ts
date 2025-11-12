@@ -378,3 +378,19 @@ export async function shareModal(title: string, text: string, url: string): stri
     }
 
 }
+
+
+export const NavigateApps = (lat: string | number, lng: string | number) => {
+    let destination = [lat, lng]
+    const navigationUrl = `geo:${destination}`;
+    window.open(navigationUrl, "_system")
+}
+export const geoCodingAddress = async (address: string, coords: Coordinate) => {
+    return await $fetch(`https://api.neshan.org/v1/search?term=${address}&lat=${coords[1]}&lng=${coords[0]}`,
+        {
+            method: 'GET',
+            headers: {
+                'Api-Key': NESHAN_API_KEY,
+            },
+        })
+}
