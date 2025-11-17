@@ -394,3 +394,8 @@ export const geoCodingAddress = async (address: string, coords: Coordinate) => {
             },
         })
 }
+
+const openNavigationApp = (lat,lng) => {
+    const navigationUrl = `geo:${[lat,lng]}`;
+    window.open(navigationUrl, "_system")
+}
