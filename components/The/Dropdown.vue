@@ -50,7 +50,14 @@
                 </div>
               </div>
               <TheNuxtIcon v-if="item.icon" :name="item.icon" icon-type="svg"/>
-              <p class="text-(sm) font-400">{{ item[label] }}</p>
+              <TheNuxtIcon name="close" icon-type="svg"
+                           class="text-(xs primary-500) -ml-2"
+                           v-if="selectedData == item[valueKey] && removable"
+              />
+              <p class="text-(sm) font-500 flex "
+                 :class="{'text-primary-500':selectedData == item[valueKey]}">
+                {{item[label]}}
+              </p>
             </div>
             <p v-if="!dropdownItems?.length"
                class="text-(sm gray-600 center) py-2 ">هیچ موردی وجود ندارد</p>
@@ -58,22 +65,18 @@
         </div>
       </div>
     </div>
-    <div>
-      <div class="flex flex-wrap gap-2">
-        <p
-            v-if="multi"
-            v-for="item in selectedItems"
-            :key="item[valueKey]"
-            @click="removeItem(item[valueKey])"
-            class="px-2 leading-6 text-(xs primary-600 nowrap) font-500 rounded-full border-(1 solid primary-600) flex gap-1 items-center"
-        >
-          {{ item[label] }}
-          <TheNuxtIcon name="close" icon-type="svg"/>
-        </p>
-
-
-
-      </div>
+    <!--selected multi items-->
+    <div class="flex flex-wrap gap-2">
+      <p
+          v-if="multi"
+          v-for="item in selectedItems"
+          :key="item[valueKey]"
+          @click="removeItem(item[valueKey])"
+          class="px-2 leading-6 text-(xs primary-600 nowrap) font-500 rounded-full border-(1 solid primary-600) flex gap-1 items-center"
+      >
+        {{ item[label] }}
+        <TheNuxtIcon name="close" icon-type="svg"/>
+      </p>
     </div>
   </div>
 </template>
@@ -99,12 +102,15 @@ const props = withDefaults(defineProps<{
   multi?: boolean;
   searchable?: boolean;
   downHeight?: number;
+  removable?: boolean;
 }>(), {
   data: () => ([]),
   label: 'title',
   valueKey: 'id',
   appendIcon: 'arrow-down-1',
-  downHeight: 220
+  downHeight: 220,
+  removable: true,
+
 })
 
 type SingleValue = string | number | null
@@ -125,7 +131,6 @@ const displayData = computed(() => {
   const item = props.data.find(i => i[key] === selectedData.value)
   return item ? item[props.label] : props.placeholder || 'انتخاب کنید'
 })
-
 
 
 const dropdownItems = computed(() => {
@@ -149,9 +154,13 @@ const hasValue = computed(() => {
 
 
 const handleSelect = (item) => {
-  if (props.multi) return
   const key = props.valueKey
-  selectedData.value = item[key]
+  if (props.multi) return
+  if (props.removable) {
+    if (item[key] == selectedData.value) {
+      selectedData.value = ''
+    } else selectedData.value = item[key]
+  } else selectedData.value = item[key]
 }
 
 const removeItem = (id: string | number) => {
@@ -189,7 +198,6 @@ const toggleItem = (item: any) => {
     selectedData.value.splice(index, 1)
   }
 }
-
 
 
 // modal open positions ---------------------------------------------------------
