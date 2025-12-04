@@ -172,7 +172,7 @@ const removeItem = (id: string | number) => {
 const selectedItems = computed(() => {
   if (!Array.isArray(selectedData.value)) return []
   const key = props.valueKey
-  return props.data.filter(item => selectedData.value.includes(item[key]))
+  return props.data.filter(item => selectedData.value?.includes(item[key]))
 })
 
 
