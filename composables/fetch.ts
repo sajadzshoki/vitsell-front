@@ -29,6 +29,7 @@ export const useGet = async <T>(URL: string, config: NitroFetchOptions<NitroFetc
     const token = useCookie('token')
     _set(config, ['headers', 'Authorization'], token.value || '')
     _set(config, ['headers', 'app-code'], APP_CODE)
+    // _set(config, ['headers', 'no-error'], true)
     try {
         const result = await $fetch<T>(URL, {
             baseURL: BASE_URL,
@@ -48,6 +49,7 @@ export const useDelete = async <T>(URL: string, config: NitroFetchOptions<NitroF
     const token = useCookie('token')
     _set(config, ['headers', 'Authorization'], token.value || '')
     _set(config, ['headers', 'app-code'], APP_CODE)
+    // _set(config, ['headers', 'no-error'], true)
     try {
         const result = await $fetch<T>(URL, {
             baseURL: BASE_URL,
@@ -67,6 +69,7 @@ export const usePost = async <T, R = T>(URL: string, data: R , config: NitroFetc
     const token = useCookie('token')
     _set(config, ['headers', 'Authorization'], token.value || '')
     _set(config, ['headers', 'app-code'], APP_CODE)
+    // _set(config, ['headers', 'no-error'], true)
     try {
         const result = await $fetch<T>(URL, {
             baseURL: BASE_URL,
@@ -87,7 +90,7 @@ export const usePut = async <T, R = T>(URL: string, data: Partial<R>, config: Ni
     const token = useCookie('token')
     _set(config, ['headers', 'Authorization'], token.value || '')
     _set(config, ['headers', 'app-code'], APP_CODE)
-    _set(config, ['headers', 'no-error'], true)
+    // _set(config, ['headers', 'no-error'], true)
     try {
         const result = await $fetch<T>(URL, {
             baseURL: BASE_URL,
