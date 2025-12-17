@@ -260,7 +260,7 @@ export const getCommentsAvg = (comments:any[])=>{
     return average.toFixed(1)
 }
 
-export const zarinpal =async (amount:string|number,description:string)=>{
+export const zarinpal =async (amount:string|number,description:string,walletId:string)=>{
     console.log('online payment')
     const userId=useCookie('userId')
     const {result} = await usePost('transaction/zarinpal/get-url', {
@@ -269,6 +269,7 @@ export const zarinpal =async (amount:string|number,description:string)=>{
         redirectUrl: location.href,
         userId: userId.value,
         description: description || 'payment',
+        walletId:walletId || undefined
 
     })
     result && await window.open(result.url, '_self')
