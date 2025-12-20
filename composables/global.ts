@@ -260,7 +260,7 @@ export const getCommentsAvg = (comments:any[])=>{
     return average.toFixed(1)
 }
 
-export const zarinpal =async (amount:string|number,description:string)=>{
+export const zarinpal =async (amount:string|number,description:string,walletId:string)=>{
     console.log('online payment')
     const userId=useCookie('userId')
     const {result} = await usePost('transaction/zarinpal/get-url', {
@@ -269,6 +269,7 @@ export const zarinpal =async (amount:string|number,description:string)=>{
         redirectUrl: location.href,
         userId: userId.value,
         description: description || 'payment',
+        walletId:walletId || undefined
 
     })
     result && await window.open(result.url, '_self')
@@ -398,4 +399,99 @@ export const geoCodingAddress = async (address: string, coords: Coordinate) => {
 const openNavigationApp = (lat,lng) => {
     const navigationUrl = `geo:${[lat,lng]}`;
     window.open(navigationUrl, "_system")
+}
+
+const farsiNumbers = {
+    patterns: {
+        single: {
+            range: [1, 9],
+            format: "value",
+            values: ['یک', 'دو', 'سه‌', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه']
+        },
+        teen: {
+            range: [11, 19],
+            format: "value + م",
+            values: ['یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده']
+        },
+        tens: {
+            range: [10, 90],
+            step: 10,
+            format: "value + (hasOne ? ' و ' + ones[one - 1] : 'م')",
+            values: ['ده', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود']
+        },
+        hundreds: {
+            range: [100, 900],
+            step: 100,
+            format: "value + (hasRemainder ? ' و ' + remainder : 'م')",
+            values: ['صد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد']
+        },
+        thousands: {
+            range: [1000, 999999],
+            step: 1000,
+            format: "value + (hasRemainder ? ' و ' + remainder : '')",
+            values: ['هزار']
+        },
+        millions: {
+            range: [1000000, 999999999],
+            step: 1000000,
+            format: "value + ' میلیون' + (hasRemainder ? ' و ' + remainder : '')",
+            values: ['میلیون']
+        },
+        billions: {
+            range: [1000000000, 999999999999],
+            step: 1000000000,
+            format: "value + ' میلیارد' + (hasRemainder ? ' و ' + remainder : '')",
+            values: ['میلیارد']
+        },
+    }
+}
+
+export const toFarsiNumber = (n: number, hasMim ?: boolean = true): string => {
+
+    if (typeof n !== 'number' || n < 1 || n > 999999999999) {
+        throw new Error('number must be between 1 and 999,999,999,999');
+    }
+
+    const getComponents = (num: number, divisor: number) => {
+        const main = Math.floor(num / divisor);
+        const remainder = num % divisor;
+        return {main, remainder};
+    };
+
+    const convert = (num: number): string => {
+        if (num <= 9) {
+            return farsiNumbers.patterns.single.values[num - 1] + (hasMim ? 'م' : '');
+        }
+        if (num > 10 && num < 20) {
+            return farsiNumbers.patterns.teen.values[num - 11] + (hasMim ? 'م' : '');
+        }
+        if (num < 100) {
+            const {main: ten, remainder: one} = getComponents(num, 10);
+            const tenStr = farsiNumbers.patterns.tens.values[ten - 1];
+            return one === 0 ? tenStr + (hasMim ? 'م' : '') : tenStr + ' و ' + convert(one);
+        }
+        if (num < 1000) {
+            const {main: hundred, remainder} = getComponents(num, 100);
+            const hundredStr = farsiNumbers.patterns.hundreds.values[hundred - 1];
+            return remainder === 0 ? hundredStr + (hasMim ? 'م' : '') : hundredStr + ' و ' + convert(remainder);
+        }
+        if (num < 1000000) {
+            const {main: thousand, remainder} = getComponents(num, 1000);
+            const thousandStr = (thousand === 1 ? '' : convert(thousand) + ' ') + farsiNumbers.patterns.thousands.values[0];
+            return remainder === 0 ? thousandStr : thousandStr + ' و ' + convert(remainder);
+        }
+        if (num < 1000000000) {
+            const {main: million, remainder} = getComponents(num, 1000000);
+            const millionStr = convert(million) + ' میلیون';
+            return remainder === 0 ? millionStr : millionStr + ' و ' + convert(remainder);
+        }
+        if (num < 1000000000000) {
+            const {main: billion, remainder} = getComponents(num, 1000000000);
+            const billionStr = convert(billion) + ' میلیارد';
+            return remainder === 0 ? billionStr : billionStr + ' و ' + convert(remainder);
+        }
+        return '';
+    };
+
+    return convert(n);
 }
