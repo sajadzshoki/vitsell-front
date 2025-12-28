@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center <sm:hidden">
-    <NuxtLink to="/" class="text-sm sm:text-base text-gray-500 pt-1">
+    <NuxtLink to="/public" class="text-sm sm:text-base text-gray-500 pt-1">
       خانه
     </NuxtLink>
 

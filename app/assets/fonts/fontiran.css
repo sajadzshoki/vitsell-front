@@ -2,63 +2,63 @@
     font-family: IRANSansX;
     font-style: normal;
     font-weight: 100;
-    src: url("./woff/IRANSansX-Thin.woff") format("woff");
+    src: url("woff/IRANSansX-Thin.woff") format("woff");
 }
 
 @font-face {
     font-family: IRANSansX;
     font-style: normal;
     font-weight: 200;
-    src: url("./woff/IRANSansX-UltraLight.woff") format("woff");
+    src: url("woff/IRANSansX-UltraLight.woff") format("woff");
 }
 
 @font-face {
     font-family: IRANSansX;
     font-style: normal;
     font-weight: 300;
-    src: url("./woff/IRANSansX-Light.woff") format("woff");
+    src: url("woff/IRANSansX-Light.woff") format("woff");
 }
 
 @font-face {
     font-family: IRANSansX;
     font-style: normal;
     font-weight: 500;
-    src: url("./woff/IRANSansX-Medium.woff") format("woff");
+    src: url("woff/IRANSansX-Medium.woff") format("woff");
 }
 
 @font-face {
     font-family: IRANSansX;
     font-style: normal;
     font-weight: 600;
-    src: url("./woff/IRANSansX-DemiBold.woff") format("woff");
+    src: url("woff/IRANSansX-DemiBold.woff") format("woff");
 }
 
 @font-face {
     font-family: IRANSansX;
     font-style: normal;
     font-weight: 800;
-    src: url("./woff/IRANSansX-ExtraBold.woff") format("woff");
+    src: url("woff/IRANSansX-ExtraBold.woff") format("woff");
 }
 
 @font-face {
     font-family: IRANSansX;
     font-style: normal;
     font-weight: 900;
-    src: url("./woff/IRANSansX-Black.woff") format("woff");
+    src: url("woff/IRANSansX-Black.woff") format("woff");
 }
 
 @font-face {
     font-family: IRANSansX;
     font-style: normal;
     font-weight: bold;
-    src: url("./woff/IRANSansX-Bold.woff") format("woff");
+    src: url("woff/IRANSansX-Bold.woff") format("woff");
 }
 
 @font-face {
     font-family: IRANSansX;
     font-style: normal;
     font-weight: normal;
-    src: url("./woff/IRANSansX-Regular.woff") format("woff");
+    src: url("woff/IRANSansX-Regular.woff") format("woff");
 }
 /*numbers in css body and inputs and ....*/
 /*-moz-font-feature-settings: "ss02";*/

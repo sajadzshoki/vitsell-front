@@ -4,6 +4,7 @@ export default defineNuxtConfig({
     ssr: false,
 
     modules: [
+        '@nuxt/ui',
         "@unocss/nuxt",
         "@nuxtjs/i18n",
         "nuxt-icon",
@@ -15,6 +16,10 @@ export default defineNuxtConfig({
     ],
 
     css: [
+        // "@nuxt/ui/css",
+        // '@nuxt/ui/styles',
+
+        '~/assets/css/main.css',
         "@unocss/reset/normalize.css",
         "@/assets/fonts/fontiran.css",
         "vue3-toastify/dist/index.css",

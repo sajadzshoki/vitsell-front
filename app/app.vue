@@ -1,12 +1,16 @@
 <template>
-  <NuxtLoadingIndicator />
-  <div class="flex flex-col min-h-screen max-w-full">
-    <Html dir="rtl"/>
+  <Html dir="rtl">
+  <Body>
+  <NuxtLoadingIndicator/>
+  <UApp>
     <NuxtLayout>
       <NuxtPage/>
     </NuxtLayout>
-  </div>
+  </UApp>
+  </Body>
+  </Html>
 </template>
+
 <script setup lang="ts">
 // const {isTablet , isMobile} = useDevice()
 // const userId = useCookie('userId');

@@ -126,7 +126,7 @@ const drawLine = (l: string) => {
 
 
 <style>
-@import '@neshan-maps-platform/vue3-openlayers/dist/style.css';
+@import '../../../node_modules/@neshan-maps-platform/vue3-openlayers/dist/style.css';
 </style>
 
 
