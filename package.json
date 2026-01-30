@@ -37,6 +37,7 @@
     "vue-json-pretty": "^2.3.0",
     "vue-trend-chart": "^0.17.0",
     "vue3-apexcharts": "^1.5.2",
+    "lodash-es": "^4.17.22",
     "vue3-marquee": "^4.2.2",
     "vue3-otp-input": "^1.0.0",
     "vue3-persian-datetime-picker": "^1.2.2",

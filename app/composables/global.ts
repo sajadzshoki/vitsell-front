@@ -1,6 +1,6 @@
 // @ts-nocheck
 import Moment from 'jalali-moment'
-
+// import {UAParser} from 'ua-parser-js'
 export const logger = (...args: any) => console.log('logger=>>>', ...args)
 export const moment = Moment
 export const s2n = (string: string | number) => (string + '').replace(/[^\d.]|\.\./ig, '')
@@ -494,4 +494,52 @@ export const toFarsiNumber = (n: number, hasMim ?: boolean = true): string => {
     };
 
     return convert(n);
+}
+export const useAppToast = () => {
+    const toast = useToast()
+    return {
+        success(title: string) {
+            toast.add({title: title})
+        },
+        error(title: string) {
+            toast.add({title: title, color: 'error'})
+        },
+
+    }
+}
+export const navToIndex = () => {
+    const userId = useCookie('userId')
+    if (!userId.value) {
+        navigateTo({name: 'index'})
+    }
+}
+export const useUserDevice = async (userId: string, userAgent: string,) => {
+    const p = new UAParser(userAgent).getResult()
+    const deviceType = p.device.type ?? 'desktop'
+    //({
+    //     deviceType,                       // mobile/tablet/console/smarttv/wearable/embedded
+    //     os: `${p.os.name ?? ''} ${p.os.version ?? ''}`.trim(),
+    //     browser: `${p.browser.name ?? ''} ${p.browser.version ?? ''}`.trim(),
+    //     deviceModel: `${p.device.vendor ?? ''} ${p.device.model ?? ''}`.trim() || null,
+    // })
+    const deviceName = deviceType + ' - ' + `${p.os.name ?? ''} ${p.os.version ?? ''}`.trim() + ' - ' + `${p.browser.name ?? ''} ${p.browser.version ?? ''}`.trim()
+    const {result} = await useGet('/Active-device', {
+        params: {
+            "userId:eq": userId
+        }
+    })
+    console.log('deviceName :', deviceName)
+    const duplicateDevice = result.find(i => i.deviceName == deviceName)
+    console.log('duplicateDevice :', duplicateDevice)
+    if (duplicateDevice) {
+        await usePut(`Active-device/${duplicateDevice.id}`, {
+            updatedAt: moment().toISOString()
+        })
+
+    } else {
+        await usePost('/Active-device', {
+            userId: userId,
+            deviceName: deviceName
+        })
+    }
 }

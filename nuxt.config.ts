@@ -9,7 +9,7 @@ export default defineNuxtConfig({
         "@nuxtjs/i18n",
         "nuxt-icon",
         "nuxt-icons",
-        "nuxt-lodash",
+        // "nuxt-lodash",
         '@vueuse/nuxt',
         "nuxt-swiper",
         "@nuxtjs/device"
@@ -25,7 +25,9 @@ export default defineNuxtConfig({
         "vue3-toastify/dist/index.css",
         "@/assets/styles/main.scss"
     ],
-
+    ui: {
+        colorMode: false,
+    },
     lodash: {
         prefix: "_",
         // prefixSkip: ["is"],
@@ -37,7 +39,24 @@ export default defineNuxtConfig({
             // ["isDate", "isLodashDate"], // => _isLodashDate
         ],
     },
-
+    imports: {
+        presets: [
+            {
+                from: 'lodash-es',
+                imports: [
+                    // put the lodash functions you actually use here:
+                    ['debounce', '_debounce'],
+                    ['cloneDeep', '_cloneDeep'],
+                    ['get', '_get'],
+                    ['set', '_set'],
+                    ['uniqBy', '_uniqBy'],
+                    ['sortBy', '_sortBy'],
+                    ['orderBy', '_orderBy'],
+                    ['clone', '_clone'],
+                ],
+            },
+        ],
+    },
     i18n: {
         locales: [
             {code: 'en', language: 'en-US'},
