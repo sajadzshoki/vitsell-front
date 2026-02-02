@@ -1,8 +1,8 @@
 import type {NitroFetchOptions, NitroFetchRequest} from "nitropack";
 
-export const BASE_URL = "https://test-back.vistatest.site"
+export const BASE_URL = "https://qotbnama-back.vistatest.site"
 // export const BASE_URL = "http://192.168.3.233:3333"
-export const APP_CODE = "test"
+export const APP_CODE = "qotbnama"
 
 // const BASE_URL = ""
 
