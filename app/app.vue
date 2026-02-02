@@ -5,7 +5,7 @@
   <UApp>
     <NuxtLayout>
       <NuxtPage/>
-      <TheDevTools/>
+      <TheDevToolsNew/>
     </NuxtLayout>
   </UApp>
   </Body>
