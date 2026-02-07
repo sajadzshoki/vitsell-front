@@ -4,6 +4,7 @@
     <TheNuxtIcon name="icon-Bold-Search" icon-type="svg" class="!svg:(w-5 h-5) text-gray-500"/>
     <input dir="rtl"
            v-model="value"
+           type="search"
            :inputmode="inputMode"
            class="flex-grow  placeholder-(gray-400 ) text-sm  " :disabled="disabled"
            :placeholder="!focused ? placeholder : value || placeholder "/>
@@ -18,7 +19,8 @@ withDefaults(defineProps<{
   inputMode?: string
   mini?:boolean
 }>(),{
-  placeholder:'جستجو'
+  placeholder:'جستجو',
+  inputMode:'text'
 })
 
 const focused = ref(false)

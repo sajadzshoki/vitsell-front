@@ -22,29 +22,24 @@
       <TheNuxtIcon v-if="prependIcon" :name="prependIcon" icon-type="svg" :class="[iconColor ? iconColor : 'text-gray-400']"  />
 
       <slot name="prependComponent" />
-      <!--     <TheIRDatePicker v-if="date" v-model="value" format="YYYY-MM-DD[T]HH:mm:ssZ" class="text-text" :class="calendarClass" display-format="jDD jMMMM jYYYY" :placeholder="placeholder"/>&ndash;&gt;-->
-
-      <input v-if="inputTypeLocal !=='textarea' && !date "
+      <input v-if="inputTypeLocal !=='textarea' "
              dir="rtl"
-             v-model="value"
+             v-model="modelValueComputed"
              :type="inputTypeLocal"
              :inputmode="inputMode"
-             :value="inputType === 'textNumber' && separateNumbers ? formatNumberWithCommas(value) : value"
              class="flex-grow h-9 bg-transparent placeholder-(gray-600 text-base) text-gray-900 font-300 text-xs"
              :class="inputClass"
              :disabled="disabled"
-             @input="filterInput"
+             @input="onInputLimit"
              :placeholder="placeholder  || 'وارد کنید'"
-             @focus="date ? inputTypeLocal = 'date' : focused = true"
+             @focus=" focused = true"
       />
-<!--             @input="onInputLimit"-->
       <textarea v-else-if="!date"
                 v-model="value"
                 :placeholder="placeholder || 'توضیحات'"
                 :disabled="disabled"
                 class="border-none text-sm font-400 grow c-gray-900 placeholder:(text-gray-600) outline-none bg-transparent h-20"
-                @focus="date ? inputTypeLocal = 'date' : ''"
-                @blur="date ? inputTypeLocal = 'text' : ''"
+
       />
 
       <TheNuxtIcon v-if="password"
@@ -93,9 +88,8 @@ const props= withDefaults(defineProps<{
   bgStyle?: string;
   focusable?: boolean;
   validation?:boolean;
-  justChar?: boolean;
-  maxLength?: number;
-  separateNumbers?: boolean
+  maxLength?:number;
+  separatable?:boolean;
 
 }>(),{
   valueClassName:'border-(1 solid gray-400) bg-bg',
@@ -105,15 +99,9 @@ const props= withDefaults(defineProps<{
   focusable: true,
   appendIconClass:'!svg:(w-5 h-5)',
   inputType:'text',
-  justChar:false
+
 })
-const onInputLimit = (e: Event) => {
-  const input = e.target as HTMLInputElement;
-  if (input.value.length > props.maxLength) {
-    input.value = input.value.slice(0, props.maxLength);
-    value.value = input.value;
-  }
-};
+
 const emit = defineEmits(['append', 'update:modelValue','clearInput'])
 const value = defineModel()
 const focused = ref(false);
@@ -124,39 +112,28 @@ const handleAppendIcon = ()=>{
 }
 const inputTypeLocal = ref(props.password ? 'password' : props.inputType)
 
-
-function formatNumberWithCommas(val: string | number): string {
-  const str = typeof val === 'number' ? val.toString() : val || ''
-  return str.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
-
-function filterInput(e: Event) {
+const onInputLimit = (e: Event) => {
   const input = e.target as HTMLInputElement;
-
-
   if (input.value.length > props.maxLength) {
     input.value = input.value.slice(0, props.maxLength);
     value.value = input.value;
   }
-
-  let newValue = input.value
-  if (props.inputType === 'textNumber') {
-    const cleanedValue = newValue.replace(/[^0-9]/g, '')
-    input.value = props.separateNumbers ? formatNumberWithCommas(cleanedValue) : cleanedValue
-    value.value = cleanedValue
-
-  } else if (props.inputType === 'text' && props.justChar) {
-    const cleanedValue = newValue.replace(/[^a-zA-Z\u0600-\u06FF\s]/g, '')
-    input.value = cleanedValue
-    value.value = cleanedValue
-
-  } else if (props.inputType === 'number' && props.inputMode === 'numeric') {
-    const numericValue = newValue.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '')
-    input.value = numericValue
-    value.value = numericValue
-
-  } else {
-    value.value = newValue
+};
+const modelValueComputed = computed({
+  get() {
+    if (props.separatable && value.value) {
+      return String(value.value).replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    return value.value;
+  },
+  set(newValue) {
+    if (props.separatable) {
+      value.value = String(newValue).replace(/,/g, "");
+    } else {
+      value.value = newValue;
+    }
   }
-}
+});
+
+
 </script>

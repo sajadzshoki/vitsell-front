@@ -27,7 +27,8 @@ const selected = defineModel()
 const props = withDefaults(defineProps<{
   title?: string,
   icon?: string,
-  items: Record<any, any>[]
+  items: Record<any, any>[],
+  Removable?: boolean
 }>(), {
   title: 'ترتيب',
   icon: 'sort'
@@ -39,9 +40,12 @@ const emit = defineEmits(['refresh'])
 
 const handleSelect = (item) => {
   try {
-
-    if (selected.value == item.value) {
-      selected.value = ''
+    if (props.Removable) {
+      if (selected.value == item.value) {
+        selected.value = ''
+      } else {
+        selected.value = item.value
+      }
     } else {
       selected.value = item.value
     }
