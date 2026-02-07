@@ -67,12 +67,18 @@ const props = withDefaults(defineProps<{
 
 const visible = computed(() => props.visible)
 
-onMounted(() => {
-  document.body.style.overflow = 'hidden'
-  setTimeout(() => {
-    showModal.value = true
-  }, 10)
-})
+watch(() => props.visible, (val) => {
+  if (val) {
+    document.body.style.overflow = 'hidden'
+    setTimeout(() => {
+      showModal.value = true
+    }, 10)
+  } else {
+    showModal.value = false
+    document.body.style.overflow = ''
+  }
+}, {immediate: true})
+
 
 const handleClose = () => {
   showModal.value = false

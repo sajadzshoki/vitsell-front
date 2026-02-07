@@ -8,7 +8,7 @@
       <div class="shimmer w-full h-full"></div>
     </div>
 
-    <div  :class="{ 'invisible': loading }">
+    <div  :class="[{ 'invisible': loading },className]">
       <slot />
     </div>
   </div>
@@ -17,6 +17,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   loading: boolean;
+  className?:string;
   variant?: 'default' | 'text' | 'card' | 'circle'
 }>()
 const variantClasses = computed(() => {

@@ -202,12 +202,17 @@ export const useWallets = async (isActive: Boolean | undefined = undefined): Pro
             "userId:eq": userId.value,
             "with-coin.with-gateways.active": true,
             "with-coin.with-gateways.with-gateway": true,
-            "isActive:eq": isActive
+            "isActive:eq": isActive,
+            // 'with-transactions':true,
         }
     })
     wallet.value = result
     if (!result?.length) {
         const {result: coins} = await useGet('/coin', {params: {"walletable:eq": true}})
+        if (!coins.length) {
+            $toast.error('No coints available')
+            return
+        }
         const wallets = coins?.map((e) => ({
             balance: 0,
             coinId: e.id,
@@ -219,7 +224,8 @@ export const useWallets = async (isActive: Boolean | undefined = undefined): Pro
                 "userId:eq": userId.value,
                 "with-coin.with-gateways.active": true,
                 "with-coin.with-gateways.with-gateway": true,
-                "isActive:eq": isActive
+                "isActive:eq": isActive,
+                // 'with-transactions':true,
             }
         })
         wallet.value = result || []
@@ -260,7 +266,7 @@ export const getCommentsAvg = (comments:any[])=>{
     return average.toFixed(1)
 }
 
-export const zarinpal =async (amount:string|number,description:string,walletId:string)=>{
+export const zarinpal =async (amount:string|number,walletId:string,description:string|null)=>{
     console.log('online payment')
     const userId=useCookie('userId')
     const {result} = await usePost('transaction/zarinpal/get-url', {
@@ -268,7 +274,7 @@ export const zarinpal =async (amount:string|number,description:string,walletId:s
         type: 'PAYMENT',
         redirectUrl: location.href,
         userId: userId.value,
-        description: description || 'payment',
+        // description: description || 'payment',
         walletId:walletId || undefined
 
     })
