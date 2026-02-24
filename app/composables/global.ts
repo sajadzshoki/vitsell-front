@@ -392,6 +392,7 @@ export const NavigateApps = (lat: string | number, lng: string | number) => {
     const navigationUrl = `geo:${destination}`;
     window.open(navigationUrl, "_system")
 }
+export  const hasEnglishChar = (str) => /[a-zA-Z]/.test(str);
 export const geoCodingAddress = async (address: string, coords: Coordinate) => {
     return await $fetch(`https://api.neshan.org/v1/search?term=${address}&lat=${coords[1]}&lng=${coords[0]}`,
         {
