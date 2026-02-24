@@ -9,12 +9,11 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
+    "@nuxt/icon": "^2.1.1",
     "@nuxtjs/device": "3.2.4",
     "@nuxtjs/i18n": "^9.3.0",
     "@unocss/nuxt": "^66.0.0",
     "nuxt": "^4.2.2",
-    "nuxt-icon": "^0.6.10",
-    "nuxt-icons": "^3.2.1",
     "nuxt-lodash": "^2.5.3",
     "nuxt-swiper": "2.0.1",
     "sass": "^1.85.1",
@@ -30,6 +29,7 @@
     "apexcharts": "^4.5.0",
     "jalali-moment": "^3.3.11",
     "ol": "^8.2.0",
+    "nuxt-icons": "^4.0.0",
     "qrcode.vue": "^3.4.1",
     "socket.io-client": "^4.8.1",
     "swiper": "^11.2.8",
