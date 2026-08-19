@@ -1,26 +1,40 @@
 // @ts-nocheck
 export default defineNuxtConfig({
-    devtools: {enabled: true},
+    devtools: {enabled: false},
     ssr: false,
-
+    devServer: {
+        port: 4000,
+      },
     modules: [
+        '@nuxt/ui',
         "@unocss/nuxt",
         "@nuxtjs/i18n",
-        "nuxt-icon",
+        "@nuxt/icon",
         "nuxt-icons",
-        "nuxt-lodash",
+        // "nuxt-lodash",
         '@vueuse/nuxt',
         "nuxt-swiper",
         "@nuxtjs/device"
     ],
 
     css: [
+        // "@nuxt/ui/css",
+        // '@nuxt/ui/styles',
+
+        '~/assets/css/main.css',
         "@unocss/reset/normalize.css",
         "@/assets/fonts/fontiran.css",
         "vue3-toastify/dist/index.css",
         "@/assets/styles/main.scss"
     ],
-
+    ui: {
+        colorMode: false,
+    },
+    icon: {
+        serverBundle: {
+            collections: ['tabler']
+        }
+    },
     lodash: {
         prefix: "_",
         // prefixSkip: ["is"],
@@ -32,7 +46,24 @@ export default defineNuxtConfig({
             // ["isDate", "isLodashDate"], // => _isLodashDate
         ],
     },
-
+    imports: {
+        presets: [
+            {
+                from: 'lodash-es',
+                imports: [
+                    // put the lodash functions you actually use here:
+                    ['debounce', '_debounce'],
+                    ['cloneDeep', '_cloneDeep'],
+                    ['get', '_get'],
+                    ['set', '_set'],
+                    ['uniqBy', '_uniqBy'],
+                    ['sortBy', '_sortBy'],
+                    ['orderBy', '_orderBy'],
+                    ['clone', '_clone'],
+                ],
+            },
+        ],
+    },
     i18n: {
         locales: [
             {code: 'en', language: 'en-US'},
