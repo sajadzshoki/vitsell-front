@@ -28,7 +28,8 @@ export default defineConfig({
         flexCol: 'flex flex-col',
         flexCenter: 'items-center justify-center',
         mainBorder:'border-(1 solid gray-200)',
-        primaryBorder:'border-(1 solid primary-600)'
+        primaryBorder:'border-(1 solid primary-600)',
+        'max-w-8xl':'max-w-1400px'
     },
     transformers: [
         transformerVariantGroup(),
