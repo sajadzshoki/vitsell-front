@@ -1,13 +1,15 @@
 // @ts-nocheck
 export default defineNuxtConfig({
-    devtools: {enabled: true},
+    devtools: {enabled: false},
     ssr: false,
-
+    devServer: {
+        port: 4000,
+      },
     modules: [
         '@nuxt/ui',
         "@unocss/nuxt",
         "@nuxtjs/i18n",
-        "nuxt-icon",
+        "@nuxt/icon",
         "nuxt-icons",
         // "nuxt-lodash",
         '@vueuse/nuxt',
@@ -27,6 +29,11 @@ export default defineNuxtConfig({
     ],
     ui: {
         colorMode: false,
+    },
+    icon: {
+        serverBundle: {
+            collections: ['tabler']
+        }
     },
     lodash: {
         prefix: "_",

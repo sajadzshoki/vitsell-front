@@ -453,7 +453,7 @@ const farsiNumbers = {
     }
 }
 
-export const toFarsiNumber = (n: number, hasMim ?: boolean = true): string => {
+export const toFarsiNumber = (n: number, hasMim: boolean = true): string => {
 
     if (typeof n !== 'number' || n < 1 || n > 999999999999) {
         throw new Error('number must be between 1 and 999,999,999,999');
