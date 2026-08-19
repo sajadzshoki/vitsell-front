@@ -121,10 +121,10 @@
                 class="w-full rounded-xl bg-white/80 b-(1 solid black/12) px-3 py-2 outline-none focus:(b-black/30 bg-white)"
                 @change="$emit('apply-prefs')"
             >
-              <option value="IRANSansX, sans-serif">Default</option>
-              <option value="Tahoma, IRANSansX, sans-serif">Tahoma</option>
+              <option value="Dana, sans-serif">Default</option>
+              <option value="Tahoma, Dana, sans-serif">Tahoma</option>
               <option value="serif">Serif</option>
-              <option value="Vazirmatn, IRANSansX, sans-serif">Vazirmatn</option>
+              <option value="Vazirmatn, Dana, sans-serif">Vazirmatn</option>
             </select>
           </div>
 

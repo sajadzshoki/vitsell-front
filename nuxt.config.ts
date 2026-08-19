@@ -28,8 +28,14 @@ export default defineNuxtConfig({
         "@/assets/styles/main.scss"
     ],
     ui: {
-        colorMode: false,
+        colorMode: true,
     },
+    colorMode: {
+        classSuffix: '',
+        preference: 'system',
+        fallback: 'light',
+    },
+    fonts: false,
     icon: {
         serverBundle: {
             collections: ['tabler']

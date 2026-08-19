@@ -393,7 +393,7 @@ const runSearch = async () => {
 const prefsKey = computed(() => `reader_prefs_${props.data?.id || props.data?.mainFile || "book"}`);
 
 const prefs = reactive({
-  fontFamily: "IRANSansX, sans-serif",
+  fontFamily: "Dana, sans-serif",
   fontSize: 14,
   lineHeight: 26,
   bg: "#F7F7F7",
@@ -485,7 +485,7 @@ const setText = (tc: string) => {
 };
 
 const resetPrefs = () => {
-  prefs.fontFamily = "IRANSansX, sans-serif";
+  prefs.fontFamily = "Dana, sans-serif";
   prefs.fontSize = 14;
   prefs.lineHeight = 26;
   prefs.bg = bookBgDefault;
