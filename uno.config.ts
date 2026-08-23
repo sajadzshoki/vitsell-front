@@ -9,7 +9,7 @@ import transformerVariantGroup from '@unocss/transformer-variant-group'
 export default defineConfig({
     theme: {
         fontFamily: {
-            sans: 'Dana, sans-serif',
+            sans: 'IRANYekanX, sans-serif',
         },
         colors: {
 

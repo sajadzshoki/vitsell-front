@@ -2,10 +2,16 @@
 @import "@nuxt/ui";
 
 @theme static {
-  --font-sans: 'Dana', sans-serif;
+  --font-sans: 'IRANYekanX', sans-serif;
+  
 }
-
+body {
+  -moz-font-feature-settings: "ss02";
+  -webkit-font-feature-settings: "ss02";
+  font-feature-settings: "ss02";
+}
 :root {
+  --toastify-font-family: IRANYekanX, sans-serif;
   --ui-radius: 0.25rem;
 
   --ui-primary: var(--ui-color-primary-500);

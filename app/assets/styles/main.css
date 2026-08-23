@@ -10,11 +10,11 @@
 }
 
 :root {
-  --toastify-font-family: Dana, sans-serif;
+  --toastify-font-family: IRANYekanX, sans-serif;
 }
 
 body {
-  font-family: Dana, sans-serif;
+  font-family: IRANYekanX, sans-serif;
   font-style: normal;
   padding: 0;
   margin: 0;
@@ -27,6 +27,7 @@ div {
 
 p, h1, h2, h3, h4, h5, h6 {
   margin: 0;
+  line-height: 28px;
 }
 
 a {
@@ -41,7 +42,7 @@ input {
   @apply bg-transparent;
   outline-offset: 0 !important;
   outline: none !important;
-  font-family: Dana, sans-serif;
+  font-family: IRANYekanX, sans-serif;
   border: none;
 }
 

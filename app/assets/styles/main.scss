@@ -10,12 +10,12 @@
 }
 
 :root{
-  --toastify-font-family: Dana, sans-serif;
+  --toastify-font-family: IRANYekanX, sans-serif;
 }
 
 
 body {
-  font-family: Dana, sans-serif;
+  font-family: IRANYekanX, sans-serif;
   font-style: normal;
   padding: 0;
   margin: 0;
@@ -25,6 +25,7 @@ body {
   -moz-font-feature-settings: "ss02";
   -webkit-font-feature-settings: "ss02";
   font-feature-settings: "ss02";
+  
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -48,7 +49,7 @@ input {
   @apply bg-transparent;
   outline-offset: 0 !important;
   outline: none !important;
-  font-family: Dana, sans-serif;
+  font-family: IRANYekanX, sans-serif;
   border: none;
 }
 
