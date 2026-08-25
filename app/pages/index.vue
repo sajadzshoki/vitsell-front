@@ -1,13 +1,11 @@
 <template>
-<div>
-
-  <UAvatar src="https://github.com/benjamincanac.png" size="xl"/>
-  <UBadge>Badge</UBadge>
-  <UBanner title="This is a banner with an important message." />
-</div>
+  <main class="flex flex-col gap-6 md:gap-10">
+    <TheHeroCarousel />
+    <TheHomeFeatures />
+    <TheHomeCategories />
+    <TheHomeDeals />
+  </main>
 </template>
 
 <script lang="ts" setup>
-
-
 </script>

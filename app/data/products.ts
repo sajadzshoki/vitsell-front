@@ -163,6 +163,12 @@ export const products: Product[] = [
 
 export const formatPrice = (n: number) => n.toLocaleString('fa-IR')
 
+export const dealsOfTheDay = products.filter(p => p.oldPrice).slice(0, 6)
+
+export const bestSellers = products.slice(0, 8)
+
+export const newArrivals = [...products].reverse().slice(0, 8)
+
 export const getProductById = (id: string): Product =>
   products.find(p => p.id === id) ?? products[0]!
 

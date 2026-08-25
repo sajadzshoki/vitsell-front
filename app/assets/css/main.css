@@ -3,13 +3,25 @@
 
 @theme static {
   --font-sans: 'IRANYekanX', sans-serif;
-  
+
+  /*
+    Brand primary — #2563EB as 500.
+    Opacity modifiers work: bg-primary/10, text-brand-500/50, border-primary/20, …
+    (Tailwind v4 + Nuxt UI resolve alpha from these theme colors.)
+  */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #2563EB;
+  --color-brand-600: #1d4ed8;
+  --color-brand-700: #1e40af;
+  --color-brand-800: #1e3a8a;
+  --color-brand-900: #172554;
+  --color-brand-950: #0f172a;
 }
-body {
-  -moz-font-feature-settings: "ss02";
-  -webkit-font-feature-settings: "ss02";
-  font-feature-settings: "ss02";
-}
+
 :root {
   --toastify-font-family: IRANYekanX, sans-serif;
   --ui-radius: 0.25rem;
@@ -41,7 +53,8 @@ body {
 }
 
 .dark {
-  --ui-primary: var(--ui-color-primary-400);
+  /* Keep brand primary identical to light (#2563EB / 500) */
+  --ui-primary: var(--ui-color-primary-500);
   --ui-secondary: var(--ui-color-secondary-400);
   --ui-success: var(--ui-color-success-400);
   --ui-info: var(--ui-color-info-400);
@@ -55,14 +68,98 @@ body {
   --ui-text-highlighted: white;
   --ui-text-inverted: var(--ui-color-neutral-900);
 
-  --ui-bg: var(--ui-color-neutral-900);
-  --ui-bg-muted: var(--ui-color-neutral-800);
-  --ui-bg-elevated: var(--ui-color-neutral-800);
-  --ui-bg-accented: var(--ui-color-neutral-700);
+  /* Neutral gray surfaces (not slate/blue-tinted) */
+  --ui-bg: var(--ui-color-neutral-950);
+  --ui-bg-muted: var(--ui-color-neutral-900);
+  --ui-bg-elevated: var(--ui-color-neutral-900);
+  --ui-bg-accented: var(--ui-color-neutral-800);
   --ui-bg-inverted: white;
 
   --ui-border: var(--ui-color-neutral-800);
   --ui-border-muted: var(--ui-color-neutral-700);
   --ui-border-accented: var(--ui-color-neutral-700);
   --ui-border-inverted: white;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: IRANYekanX, sans-serif;
+  background-color: var(--ui-bg);
+  color: var(--ui-text);
+  -moz-font-feature-settings: "ss02";
+  -webkit-font-feature-settings: "ss02";
+  font-feature-settings: "ss02";
+  -webkit-tap-highlight-color: transparent;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+textarea {
+  font-family: inherit;
+  resize: none;
+}
+
+input {
+  min-width: 0;
+  font-family: IRANYekanX, sans-serif;
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+input[type='search']::-webkit-search-decoration,
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-results-button,
+input[type='search']::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px -12px color-mix(in oklab, var(--ui-text-highlighted) 18%, transparent);
+  border-color: color-mix(in oklab, var(--ui-border-accented) 80%, transparent);
 }

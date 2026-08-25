@@ -18,14 +18,10 @@ export default defineNuxtConfig({
     ],
 
     css: [
-        // "@nuxt/ui/css",
-        // '@nuxt/ui/styles',
-
         '~/assets/css/main.css',
         "@unocss/reset/normalize.css",
         "@/assets/fonts/fontiran.css",
         "vue3-toastify/dist/index.css",
-        "@/assets/styles/main.scss"
     ],
     ui: {
         colorMode: true,

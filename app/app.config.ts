@@ -1,13 +1,13 @@
 export default defineAppConfig({
     ui: {
         colors: {
-            primary: 'green',
-            secondary: 'blue',
+            primary: 'brand',
+            secondary: 'cyan',
             success: 'green',
-            info: 'blue',
-            warning: 'yellow',
-            error: 'red',
-            neutral: 'slate',
+            info: 'sky',
+            warning: 'amber',
+            error: 'rose',
+            neutral: 'gray',
         },
         button: {
             base: 'cursor-pointer justify-center', slots: {
@@ -24,9 +24,8 @@ export default defineAppConfig({
 
         carousel: {
             slots: {
-                dots: '-bottom-5',
-                dot: '!w-2 !h-1  rounded-full  transition',
-                dotActive: 'bg-white w-4'
+                dots: 'bottom-4',
+                dot: 'w-2 h-2 rounded-full bg-accented transition-all data-[state=active]:bg-inverted data-[state=active]:w-8',
             }
         },
         pinInput: {
