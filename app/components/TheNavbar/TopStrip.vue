@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-inverted text-inverted/70 text-[12px]">
+  <div class="bg-default light:bg-inverted text-[12px]">
     <div class="mx-auto max-w-8xl px-3 sm:px-4 lg:px-6 h-8 flex items-center justify-between gap-3">
       <div class="flex items-center gap-4 min-w-0">
         <span class="hidden sm:inline-flex items-center gap-1.5 shrink-0">
@@ -15,14 +15,17 @@
         <button
           type="button"
           class="hover:text-inverted transition"
-          @click="navigateTo({ path: '/account', query: { tab: 'orders' } })"
+          @click="navigateTo('/account/orders')"
         >
           {{ $t('پیگیری سفارش') }}
         </button>
         <span class="text-inverted/30">|</span>
-        <button type="button" class="hover:text-inverted transition">
+        <NuxtLink
+          to="/seller"
+          class="hover:text-inverted transition"
+        >
           {{ $t('فروشنده شوید') }}
-        </button>
+        </NuxtLink>
         <span class="text-inverted/30">|</span>
         <button type="button" class="hover:text-inverted transition">
           {{ $t('اپلیکیشن موبایل') }}

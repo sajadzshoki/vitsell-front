@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-2xl">
+  <div class="">
     <div class="flex items-center justify-between gap-3 mb-4">
       <div class="flex items-center gap-2">
         <h1 class="text-lg font-bold text-highlighted">{{ $t('اعلان‌ها') }}</h1>
@@ -21,13 +21,13 @@
       </UButton>
     </div>
 
-    <div class="bg-default border border-muted rounded-2xl overflow-hidden">
+    <div class="bg-default border border-muted rounded-2xl ">
       <button
         v-for="item in notificationList"
         :key="item.id"
         type="button"
-        class="w-full flex items-start gap-3 px-4 py-3 text-start border-b border-muted last:border-b-0 transition hover:bg-muted/60"
-        :class="!item.read ? 'bg-primary/5' : ''"
+        class="w-full flex items-start gap-3 px-4 py-3 text-start border-b border-muted last:border-b-0 transition-all  cursor-pointer hover:(scale-[102%] shadow-lg bg-muted) "
+        :class="!item.read ? 'bg-primary/5 first:rounded-t-2xl' : ''"
         @click="onItemClick(item)"
       >
         <div

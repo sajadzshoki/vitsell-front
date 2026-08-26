@@ -1,8 +1,12 @@
 <template>
-  <header class="sticky top-0 z-40 bg-default/95 backdrop-blur-md border-b border-muted shadow-sm">
-    <TheNavbarTopStrip />
+  <header class="sticky top-0 z-40 bg-default/80 backdrop-blur-md border-b border-muted shadow-sm">
+    <div class="hidden md:block">
+      <TheNavbarTopStrip />
+    </div>
     <TheNavbarMainBar />
-    <TheNavbarSubNav />
+    <div class="hidden md:block">
+      <TheNavbarSubNav />
+    </div>
   </header>
 </template>
 

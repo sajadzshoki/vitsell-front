@@ -7,6 +7,7 @@ export default defineNuxtConfig({
       },
     modules: [
         '@nuxt/ui',
+        '@pinia/nuxt',
         "@unocss/nuxt",
         "@nuxtjs/i18n",
         "@nuxt/icon",

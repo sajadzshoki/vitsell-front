@@ -39,7 +39,7 @@ export const heroSlides: HeroSlide[] = [
     title: 'دنیای صدای بی‌سیم',
     subtitle: 'تا ۳۰٪ تخفیف روی هدفون‌ها و ایرپادهای برندهای معتبر',
     cta: 'مشاهده تخفیف‌ها',
-    to: '/category/audio',
+    to: '/search?q=هدفون&category=audio',
     image: '/images/mock/sony-xm5-midnight.jpg',
     icon: 'headphones',
     tone: 'primary',

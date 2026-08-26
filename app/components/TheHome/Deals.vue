@@ -1,7 +1,7 @@
 <template>
   <section>
-    <div class="bg-primary rounded-3xl overflow-hidden">
-      <div class="px-5 py-4 flex items-center justify-between gap-3 text-inverted">
+    <div class=" rounded-3xl overflow-hidden border-muted">
+      <div class="px-5 py-4 flex items-center justify-between gap-3 text-inverted bg-primary ">
         <div class="flex items-center gap-3 min-w-0">
           <UIcon name="i-tabler-bolt-filled" class="size-6 text-warning shrink-0" />
           <div class="min-w-0">
@@ -14,7 +14,7 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5 num shrink-0" dir="ltr">
+        <div class="flex items-center gap-1.5 num shrink-0 " dir="ltr">
           <template v-for="(part, i) in countdownParts" :key="part.key">
             <div
               class="w-9 h-9 rounded-lg bg-default/20 backdrop-blur text-inverted grid place-items-center font-bold text-sm"
@@ -29,7 +29,7 @@
         </div>
       </div>
 
-      <div class="px-3 pb-4 sm:px-4">
+      <div class="bg-default/80  ">
         <UCarousel
           v-slot="{ item }"
           :items="deals"
@@ -40,7 +40,7 @@
           next-icon="i-tabler-chevron-left"
           :ui="{
             item: 'basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 ps-3',
-            container: 'ms-0',
+            container: 'ms-0 p-4',
             prev: 'start-1 sm:start-2 z-20',
             next: 'end-1 sm:end-2 z-20',
           }"

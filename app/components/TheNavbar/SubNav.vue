@@ -36,20 +36,6 @@
               {{ $t(link.badge) }}
             </UBadge>
           </NuxtLink>
-
-          <button
-            v-else
-            type="button"
-            class="inline-flex items-center gap-1.5 text-xs md:text-sm text-toned hover:text-primary transition whitespace-nowrap py-1"
-            @click="onLinkClick(link)"
-          >
-            <UIcon
-              v-if="link.icon"
-              :name="`i-tabler-${link.icon}`"
-              class="size-4 shrink-0"
-            />
-            <span>{{ $t(link.label) }}</span>
-          </button>
         </li>
       </ul>
 
@@ -65,21 +51,11 @@
 </template>
 
 <script setup lang="ts">
-import { navQuickLinks, navSellerLink, type NavQuickLink } from '~/data/nav-links'
-
-const emit = defineEmits<{
-  openCategories: []
-}>()
+import { navQuickLinks, navSellerLink } from '~/data/nav-links'
 
 const links = navQuickLinks
 const seller = navSellerLink
 
 const { y } = useWindowScroll()
 const collapsed = computed(() => y.value > 48)
-
-function onLinkClick(link: NavQuickLink) {
-  if (link.id === 'categories') {
-    emit('openCategories')
-  }
-}
 </script>

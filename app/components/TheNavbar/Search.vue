@@ -1,5 +1,5 @@
 <template>
-  <div ref="wrapRef" class="relative flex-1 max-w-xl">
+  <div ref="wrapRef" class="relative flex-1 w-full md:max-w-xl">
     <!-- Border on wrapper so global input{border:none} cannot kill it; flex = icon/text align -->
     <label
       class="group flex items-center gap-2.5 h-12 w-full ps-4 pe-4 rounded-2xl bg-elevated hover:bg-muted focus-within:bg-default border-2 border-default focus-within:border-primary transition cursor-text"
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { popularSearches } from '~/data/categories'
+import { popularSearches, toSearchRoute } from '~/data/categories'
 import { products } from '~/data/products'
 
 const query = defineModel<string>({ default: '' })
@@ -86,13 +86,13 @@ function close() {
 function doSearch() {
   const q = query.value.trim()
   if (!q) return
-  navigateTo({ path: '/search', query: { q } })
+  navigateTo(toSearchRoute({ q }))
   close()
 }
 
 function pickPopular(s: string) {
   query.value = s
-  navigateTo({ path: '/search', query: { q: s } })
+  navigateTo(toSearchRoute({ q: s }))
   close()
 }
 

@@ -43,14 +43,19 @@
           <h3 class="font-bold text-highlighted text-lg">
             {{ $t(activeCategory?.name || '') }}
           </h3>
-          <button
-            type="button"
-            class="text-xs text-primary hover:text-primary/80 font-bold inline-flex items-center gap-1"
+          <span class="text-xs text-muted">
+            {{ $t('یک زیردسته را انتخاب کنید') }}
+          </span>
+          <UButton
+            color="primary"
+            variant="link"
+            size="xs"
+            trailing-icon="i-tabler-arrow-left"
+            class="font-bold shrink-0"
             @click="goCategory(activeCat)"
           >
-            {{ $t('مشاهده همه') }}
-            <span aria-hidden="true">←</span>
-          </button>
+            {{ $t('صفحه دسته') }}
+          </UButton>
         </div>
 
         <div
@@ -84,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { categories, getCategoryIcon } from '~/data/categories'
+import { categories, getCategoryIcon, toCategoryRoute, toSearchRoute } from '~/data/categories'
 
 const megaOpen = ref(false)
 const megaRef = ref<HTMLElement | null>(null)
@@ -99,12 +104,12 @@ function close() {
 }
 
 function goCategory(id: string) {
-  navigateTo({ name: 'category-id', params: { id } })
+  navigateTo(toCategoryRoute(id))
   close()
 }
 
 function goSearch(q: string) {
-  navigateTo({ path: '/search', query: { q } })
+  navigateTo(toSearchRoute({ q, category: activeCat.value }))
   close()
 }
 

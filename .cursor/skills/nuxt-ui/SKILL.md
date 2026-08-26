@@ -135,6 +135,29 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 - فیلتر/منوی جانبی در موبایل داخل `UDrawer` یا collapse؛ در `lg+` سایدبار ثابت.
 - گرید محصول/کارت کاملاً ریسپانسیو (`grid-cols-2` → `md:grid-cols-3` → `xl:grid-cols-4` یا معادل).
 
+## UnoCSS variant group (اجباری)
+
+پروژه `transformerVariantGroup` دارد. وقتی چند کلاس یک variant/breakpoint مشترک دارند، آن‌ها را گروه کن — تکرار پیشوند ممنوع.
+
+| ممنوع | مجاز |
+|---|---|
+| `lg:px-6 lg:py-4 lg:gap-4` | `lg:(px-6 py-4 gap-4)` |
+| `sm:px-4 sm:py-4 sm:gap-4` | `sm:(px-4 py-4 gap-4)` |
+| `hover:bg-elevated hover:text-primary` | `hover:(bg-elevated text-primary)` |
+| `md:flex md:items-center md:gap-3` | `md:(flex items-center gap-3)` |
+
+مثال واقعی (MainBar):
+
+```html
+<!-- بد -->
+<div class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 gap-3 sm:gap-4 flex items-center">
+
+<!-- خوب -->
+<div class="px-3 py-3 gap-3 sm:(px-4 py-4 gap-4) lg:(px-6) flex items-center">
+```
+
+اگر فقط یک یوتیلیتی برای آن breakpoint است، هر دو شکل قابل قبول است (`lg:px-6` یا `lg:(px-6)`)، ولی برای ۲+ همیشه گروه.
+
 ## سایز و radius
 
 - سایز کامپوننت‌های Nuxt UI را از prop `size` بگیر (`xs` تا `xl`)، نه padding/font ثابت پراکنده.
@@ -159,6 +182,7 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 - [ ] همه متن‌ها با `$t` / `t` هستند
 - [ ] RTL با `start`/`end` رعایت شده؛ پنل‌ها از لبه اشتباه بیرون نمی‌زنند
 - [ ] موبایل‌اول: فیلتر/منو در موبایل drawer یا collapse
+- [ ] UnoCSS variant group: به‌جای `lg:a lg:b` از `lg:(a b)` استفاده شده
 - [ ] سایز از prop Nuxt UI و radius از تم
 - [ ] تصویر خالی با `TheIcon` و `noImage.png`
 - [ ] داده داینامیک است؛ صفحه/کارت mock سخت‌کد ندارد

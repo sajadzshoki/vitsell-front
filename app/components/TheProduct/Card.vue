@@ -1,15 +1,22 @@
 <template>
   <NuxtLink
-    class="group card-hover flex flex-col w-full text-start bg-default border border-muted rounded-2xl p-3 cursor-pointer"
-    :class="compact ? '' : 'h-full'"
+    class="group card-hover text-start bg-default border border-muted rounded-2xl p-3 <md:(p-2 rounded-xl) cursor-pointer"
+    :class="isHorizontal
+      ? 'flex flex-row gap-3 sm:gap-4 items-stretch'
+      : 'flex flex-col w-full'"
     :to="{ name: 'product-id', params: { id: product.id } }"
   >
-    <div class="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3">
+    <div
+      class="relative overflow-hidden bg-muted rounded-xl shrink-0"
+      :class="isHorizontal
+        ? 'w-28 sm:w-36 md:w-40 aspect-square'
+        : 'aspect-square mb-3'"
+    >
       <TheIcon
         v-if="imageSrc"
         :name="imageSrc"
         icon-type="img"
-        class="!w-full !h-full object-cover transition duration-500 group-hover:scale-105"
+        class="!w-full !h-full object-cover transition-all duration-300 group-hover:scale-105"
       />
       <TheIcon
         v-else
@@ -34,7 +41,7 @@
 
       <div
         class="absolute bottom-2 inset-s-2 flex flex-col gap-2 transition opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100"
-        :class="{ 'sm:opacity-100': liked }"
+        :class="{ 'sm:opacity-100': liked || inCompare }"
       >
         <UButton
           type="button"
@@ -51,6 +58,21 @@
           @click.prevent.stop="onToggleWishlist"
         />
         <UButton
+          v-if="showCompareButton"
+          type="button"
+          :icon="inCompare ? 'i-tabler-check' : 'i-tabler-arrows-diff'"
+          color="neutral"
+          variant="solid"
+          size="sm"
+          square
+          class="rounded-full shadow-md backdrop-blur"
+          :class="inCompare
+            ? 'bg-inverted text-inverted hover:bg-inverted'
+            : 'bg-default/95 text-toned hover:bg-inverted hover:text-inverted'"
+          :aria-label="inCompare ? $t('حذف از مقایسه') : $t('افزودن به مقایسه')"
+          @click.prevent.stop="onToggleCompare"
+        />
+        <UButton
           type="button"
           icon="i-tabler-shopping-cart"
           color="neutral"
@@ -64,39 +86,67 @@
       </div>
     </div>
 
-    <div class="text-[10px] text-dimmed tracking-wider mb-1 uppercase">
-      {{ product.brand }}
-    </div>
+    <div
+      class="flex flex-col min-w-0"
+      :class="isHorizontal ? 'flex-1 py-0.5' : ''"
+    >
+      <div class="text-[10px] text-dimmed tracking-wider mb-1 uppercase">
+        {{ product.brand }}
+      </div>
 
-    <h3 class="text-[13px] leading-6 text-default line-clamp-2 min-h-12 mb-2 transition group-hover:text-primary">
-      {{ product.title }}
-    </h3>
+      <h3
+        class="text-[13px] leading-6 text-default line-clamp-2 mb-2 transition group-hover:text-primary"
+        :class="isHorizontal ? '' : 'min-h-12'"
+      >
+        {{ product.title }}
+      </h3>
 
-    <div class="flex items-center gap-1 mb-3">
-      <div class="flex items-center gap-0.5 bg-warning/10 text-warning rounded-md px-1.5 py-0.5">
-        <UIcon name="i-tabler-star-filled" class="size-3" />
-        <span class="text-[11px] font-semibold num">
-          {{ product.rating.toLocaleString('fa-IR') }}
+      <div class="flex items-center gap-1 mb-2 sm:mb-3 flex-wrap">
+        <div class="flex items-center gap-0.5 bg-warning/10 text-warning rounded-md px-1.5 py-0.5">
+          <UIcon name="i-tabler-star-filled" class="size-3" />
+          <span class="text-[11px] font-semibold num">
+            {{ product.rating.toLocaleString('fa-IR') }}
+          </span>
+        </div>
+        <span class="text-[11px] text-dimmed num">
+          ({{ product.reviews.toLocaleString('fa-IR') }} {{ $t('نظر') }})
+        </span>
+        <span
+          v-if="product.fastDelivery"
+          class="inline-flex items-center gap-1 text-[10px] text-warning"
+        >
+          <UIcon name="i-tabler-truck-delivery" class="size-3.5" />
+          {{ $t('ارسال سریع') }}
         </span>
       </div>
-      <span class="text-[11px] text-dimmed num">
-        ({{ product.reviews.toLocaleString('fa-IR') }} {{ $t('نظر') }})
-      </span>
-    </div>
 
-    <div class="mt-auto flex items-end justify-between gap-2">
-      <div class="flex flex-col">
-        <span
-          v-if="product.oldPrice"
-          class="text-[11px] text-dimmed line-through num"
-        >
-          {{ formatPrice(product.oldPrice) }}
-        </span>
-        <div class="flex items-baseline gap-1">
-          <span class="text-base font-extrabold text-highlighted num">
-            {{ formatPrice(product.price) }}
+      <p
+        v-if="product.inStock === false"
+        class="text-[11px] text-error mb-2"
+      >
+        {{ $t('ناموجود') }}
+      </p>
+      <p
+        v-else-if="product.reviews % 7 === 0"
+        class="text-[11px] text-error mb-2"
+      >
+        {{ $t('تنها ۱ عدد در انبار باقی مانده') }}
+      </p>
+
+      <div class="mt-auto flex items-end justify-between gap-2">
+        <div class="flex flex-col">
+          <span
+            v-if="product.oldPrice"
+            class="text-[11px] text-dimmed line-through num"
+          >
+            {{ formatPrice(product.oldPrice) }}
           </span>
-          <span class="text-[10px] text-muted">{{ $t('تومان') }}</span>
+          <div class="flex items-baseline gap-1">
+            <span class="text-base font-extrabold text-highlighted num">
+              {{ formatPrice(product.price) }}
+            </span>
+            <span class="text-[10px] text-muted">{{ $t('تومان') }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -109,13 +159,20 @@ import { formatPrice, type Product } from '~/data/products'
 const props = withDefaults(defineProps<{
   product: Product
   compact?: boolean
+  layout?: 'vertical' | 'horizontal'
 }>(), {
   compact: false,
+  layout: 'vertical',
 })
 
 const { isInWishlist, toggleWishlist, addToCart } = useShop()
+const compareStore = useCompareStore()
+const { toggleCompare, hasCompareItems } = useCompareActions()
 
 const liked = computed(() => isInWishlist(props.product.id))
+const inCompare = computed(() => compareStore.isInCompare(props.product.id))
+const showCompareButton = computed(() => hasCompareItems.value)
+const isHorizontal = computed(() => props.layout === 'horizontal')
 
 const discount = computed(() => {
   if (!props.product.oldPrice) return 0
@@ -135,5 +192,9 @@ function onToggleWishlist() {
 
 function onAddToCart() {
   addToCart(props.product.id)
+}
+
+function onToggleCompare() {
+  toggleCompare(props.product.id)
 }
 </script>

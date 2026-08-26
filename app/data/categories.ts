@@ -72,3 +72,30 @@ export function getCategoryIcon(id: string) {
   const name = categoryIcons[id] || 'category'
   return `i-tabler-${name}`
 }
+
+export function getCategoryById(id: string) {
+  return categories.find(c => c.id === id)
+}
+
+export function toCategoryIndexRoute(query?: { cat?: string }) {
+  return {
+    path: '/category',
+    ...(query?.cat ? { query: { cat: query.cat } } : {}),
+  }
+}
+
+export function toCategoryRoute(id: string) {
+  return { name: 'category-catId', params: { catId: id } }
+}
+
+export function toSearchRoute(query: { q?: string, category?: string }) {
+  const q = query.q?.trim()
+  const category = query.category?.trim()
+  return {
+    path: '/search',
+    query: {
+      ...(q ? { q } : {}),
+      ...(category ? { category } : {}),
+    },
+  }
+}

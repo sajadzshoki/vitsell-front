@@ -1,6 +1,26 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/*
+  Nuxt UI v4 draws many control borders with Tailwind `ring` / `ring-inset`
+  (Input/Select/Button outline…) and focus via outline + ring. We prefer
+  real `border` (set in app.config.ts) and no ring/outline halo.
+*/
+*,
+*::before,
+*::after {
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-inset-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+}
+
+*:focus,
+*:focus-visible,
+*:has(> a:focus-visible) {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
 @theme static {
   --font-sans: 'IRANYekanX', sans-serif;
 
@@ -14,13 +34,18 @@
   --color-brand-200: #bfdbfe;
   --color-brand-300: #93c5fd;
   --color-brand-400: #60a5fa;
+  /* --color-brand-500: #ffa600; */
+  /* --color-brand-500: #00bd78; */
   --color-brand-500: #2563EB;
   --color-brand-600: #1d4ed8;
   --color-brand-700: #1e40af;
   --color-brand-800: #1e3a8a;
   --color-brand-900: #172554;
   --color-brand-950: #0f172a;
+
 }
+
+@import "./color-mode-transition.css";
 
 :root {
   --toastify-font-family: IRANYekanX, sans-serif;
@@ -68,16 +93,16 @@
   --ui-text-highlighted: white;
   --ui-text-inverted: var(--ui-color-neutral-900);
 
-  /* Neutral gray surfaces (not slate/blue-tinted) */
-  --ui-bg: var(--ui-color-neutral-950);
-  --ui-bg-muted: var(--ui-color-neutral-900);
-  --ui-bg-elevated: var(--ui-color-neutral-900);
-  --ui-bg-accented: var(--ui-color-neutral-800);
+  /* Neutral gray surfaces — softer dark (900/800/700, not near-black 950) */
+  --ui-bg: var(--ui-color-neutral-900);
+  --ui-bg-muted: var(--ui-color-neutral-800);
+  --ui-bg-elevated: var(--ui-color-neutral-800);
+  --ui-bg-accented: var(--ui-color-neutral-700);
   --ui-bg-inverted: white;
 
-  --ui-border: var(--ui-color-neutral-800);
-  --ui-border-muted: var(--ui-color-neutral-700);
-  --ui-border-accented: var(--ui-color-neutral-700);
+  --ui-border: var(--ui-color-neutral-700);
+  --ui-border-muted: var(--ui-color-neutral-800);
+  --ui-border-accented: var(--ui-color-neutral-600);
   --ui-border-inverted: white;
 }
 
@@ -154,6 +179,28 @@ input[type='number'] {
   letter-spacing: -0.01em;
 }
 
+@keyframes cart-bump {
+  0%,
+  100% {
+    scale: 1;
+  }
+  35% {
+    scale: 1.28;
+  }
+  60% {
+    scale: 0.92;
+  }
+}
+
+.animate-cart-bump {
+  animation: cart-bump 0.45s ease;
+  transform-origin: center;
+}
+
+.account-avatar-gradient {
+  background: linear-gradient(to bottom right, var(--ui-primary), var(--ui-secondary));
+}
+
 .card-hover {
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
@@ -162,4 +209,15 @@ input[type='number'] {
   transform: translateY(-3px);
   box-shadow: 0 12px 30px -12px color-mix(in oklab, var(--ui-text-highlighted) 18%, transparent);
   border-color: color-mix(in oklab, var(--ui-border-accented) 80%, transparent);
+}
+
+/* Solid primary surfaces → white text (not bg-primary/10 etc.) */
+.bg-primary {
+  color: var(--ui-text-inverted);
+}
+
+/* Link-styled UButtons inherit dark text from global `a` otherwise */
+a.bg-primary,
+button.bg-primary {
+  color: var(--ui-text-inverted);
 }

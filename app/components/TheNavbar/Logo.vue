@@ -1,5 +1,5 @@
 <template>
-  <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
+  <NuxtLink to="/" class="flex items-center gap-2 shrink-0 <md:flex-col">
     <div class="size-10 rounded-xl bg-primary grid place-items-center text-inverted shadow-lg shadow-primary/20">
       <UIcon name="i-tabler-shopping-bag" class="size-5" />
     </div>

@@ -502,18 +502,53 @@ export const toFarsiNumber = (n: number, hasMim: boolean = true): string => {
 
     return convert(n);
 }
+type AppToastColor = 'success' | 'error' | 'warning' | 'info' | 'secondary' | 'primary' | 'neutral'
+
+const appToastIcons: Record<AppToastColor, string> = {
+    success: 'i-tabler-circle-check',
+    error: 'i-tabler-alert-circle',
+    warning: 'i-tabler-alert-triangle',
+    info: 'i-tabler-info-circle',
+    secondary: 'i-tabler-bell',
+    primary: 'i-tabler-bell',
+    neutral: 'i-tabler-bell',
+}
+
 export const useAppToast = () => {
     const toast = useToast()
-    return {
-        success(title: string) {
-            toast.add({title: title})
-        },
-        error(title: string) {
-            toast.add({title: title, color: 'error'})
-        },
 
+    const show = (
+        color: AppToastColor,
+        title: string,
+        description?: string,
+        icon?: string,
+    ) => {
+        toast.add({
+            title,
+            description,
+            color,
+            icon: icon || appToastIcons[color],
+        })
+    }
+
+    return {
+        success: (title: string, description?: string, icon?: string) =>
+            show('success', title, description, icon),
+        error: (title: string, description?: string, icon?: string) =>
+            show('error', title, description, icon),
+        warning: (title: string, description?: string, icon?: string) =>
+            show('warning', title, description, icon),
+        info: (title: string, description?: string, icon?: string) =>
+            show('info', title, description, icon),
+        secondary: (title: string, description?: string, icon?: string) =>
+            show('secondary', title, description, icon),
+        primary: (title: string, description?: string, icon?: string) =>
+            show('primary', title, description, icon),
+        neutral: (title: string, description?: string, icon?: string) =>
+            show('neutral', title, description, icon),
     }
 }
+
 export const navToIndex = () => {
     const userId = useCookie('userId')
     if (!userId.value) {

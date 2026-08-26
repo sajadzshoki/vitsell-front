@@ -13,6 +13,7 @@ export const navQuickLinks: NavQuickLink[] = [
     id: 'categories',
     label: 'دسته بندی محصولات',
     icon: 'menu-2',
+    to: '/category',
   },
   {
     id: 'corporate',
@@ -50,6 +51,49 @@ export const navQuickLinks: NavQuickLink[] = [
 export const navSellerLink: NavQuickLink = {
   id: 'seller',
   label: 'فروشنده شو',
-  to: '/account',
+  to: '/seller',
   accent: true,
 }
+
+export type BottomNavItem = {
+  id: string
+  label: string
+  icon: string
+  iconActive?: string
+  to?: string
+  badge?: 'cart'
+}
+
+/** Mobile bottom navigation (Digikala-style) */
+export const bottomNavItems: BottomNavItem[] = [
+  {
+    id: 'home',
+    label: 'خانه',
+    icon: 'home',
+    iconActive: 'home-filled',
+    to: '/',
+  },
+  {
+    id: 'categories',
+    label: 'دسته‌ها',
+    icon: 'layout-grid',
+    iconActive: 'layout-grid-filled',
+    to: '/category',
+  },
+  {
+    id: 'cart',
+    label: 'سبد خرید',
+    icon: 'shopping-cart',
+    iconActive: 'shopping-cart-filled',
+    to: '/cart',
+    badge: 'cart',
+  },
+  {
+    id: 'account',
+    label: 'حساب من',
+    icon: 'user',
+    iconActive: 'user-filled',
+    to: '/account',
+  },
+]
+
