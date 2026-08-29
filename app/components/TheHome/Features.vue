@@ -23,7 +23,5 @@
 </template>
 
 <script setup lang="ts">
-import { heroFeatures } from '~/data/hero'
-
-const features = heroFeatures
+const { heroFeatures: features } = useHome()
 </script>

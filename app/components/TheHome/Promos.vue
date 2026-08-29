@@ -58,9 +58,9 @@
 </template>
 
 <script setup lang="ts">
-import { homePromos, type HomePromo } from '~/data/home'
+import type { HomePromo } from '~/data/home'
 
-const promos = homePromos
+const { promos } = useHome()
 
 const toneClass = (tone: HomePromo['tone']) => {
   const map: Record<HomePromo['tone'], string> = {

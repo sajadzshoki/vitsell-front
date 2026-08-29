@@ -89,14 +89,28 @@
 </template>
 
 <script setup lang="ts">
-import { categories, getCategoryIcon, toCategoryRoute, toSearchRoute } from '~/data/categories'
+import { getCategoryIcon, toCategoryRoute, toSearchRoute } from '~/data/categories'
+
+const { categories, fetchCategories } = useCategories()
+await fetchCategories({ withCounts: false })
 
 const megaOpen = ref(false)
 const megaRef = ref<HTMLElement | null>(null)
-const activeCat = ref(categories[0]!.id)
+const activeCat = ref('')
+
+watch(
+  categories,
+  (list) => {
+    if (!activeCat.value && list[0]) activeCat.value = list[0].id
+    else if (activeCat.value && !list.some(c => c.id === activeCat.value) && list[0]) {
+      activeCat.value = list[0].id
+    }
+  },
+  { immediate: true },
+)
 
 const activeCategory = computed(() =>
-  categories.find(c => c.id === activeCat.value),
+  categories.value.find(c => c.id === activeCat.value),
 )
 
 function close() {

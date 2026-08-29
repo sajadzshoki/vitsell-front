@@ -23,6 +23,7 @@
         <UButton
           color="neutral"
           variant="outline"
+          :disabled="deleting"
           @click="cancelDelete"
         >
           {{ $t('انصراف') }}
@@ -30,6 +31,7 @@
         <UButton
           color="error"
           class="font-bold"
+          :loading="deleting"
           @click="onConfirm"
         >
           {{ $t('حذف آدرس') }}
@@ -42,14 +44,26 @@
 <script setup lang="ts">
 const emit = defineEmits<{
   confirmed: [payload: { id: string, wasEditing: boolean }]
+  failed: [payload: { error: unknown }]
 }>()
 
-const { open, pendingAddress, cancelDelete, confirmDelete } = useAddressDelete()
+const { t } = useI18n()
+const toast = useAppToast()
+const { open, pendingAddress, deleting, cancelDelete, confirmDelete } = useAddressDelete()
 
-function onConfirm() {
-  const result = confirmDelete()
-  if (result) {
-    emit('confirmed', result)
+function apiErrorMessage(error: any, fallback: string) {
+  const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+  return fromFields || error?.data?.message || fallback
+}
+
+async function onConfirm() {
+  const result = await confirmDelete()
+  if (!result) return
+  if (!result.ok) {
+    toast.error(apiErrorMessage(result.error, t('حذف آدرس ناموفق بود')))
+    emit('failed', { error: result.error })
+    return
   }
+  emit('confirmed', { id: result.id, wasEditing: result.wasEditing })
 }
 </script>

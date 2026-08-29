@@ -19,4 +19,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const isCategoryIndex = computed(() => route.path === '/category')
+
+const { fetchCategories } = useCategories()
+await fetchCategories({ withCounts: false })
 </script>

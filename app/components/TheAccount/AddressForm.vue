@@ -115,6 +115,7 @@
           variant="outline"
           size="lg"
           class="sm:min-w-28"
+          :disabled="saving"
           @click="$emit('cancel')"
         >
           {{ $t('انصراف') }}
@@ -125,6 +126,7 @@
           size="lg"
           class="font-bold sm:min-w-36"
           trailing-icon="i-tabler-check"
+          :loading="saving"
         >
           {{ isEditing ? $t('ذخیره تغییرات') : $t('ذخیره آدرس') }}
         </UButton>
@@ -134,7 +136,11 @@
 </template>
 
 <script setup lang="ts">
-import { getCitiesForProvince, getProvinceOptions } from '~/data/iran-locations'
+const props = withDefaults(defineProps<{
+  saving?: boolean
+}>(), {
+  saving: false,
+})
 
 const emit = defineEmits<{
   save: []
@@ -144,6 +150,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const store = useCheckoutStore()
 const { addressForm, editingAddressId } = storeToRefs(store)
+const { getCitiesForProvince, getProvinceOptions, fetchLocations } = useLocations()
+await fetchLocations()
+
+const saving = computed(() => props.saving)
 
 const isEditing = computed(() => !!editingAddressId.value)
 
@@ -153,7 +163,7 @@ const errors = reactive({
   address: '',
 })
 
-const provinceItems = computed(() => getProvinceOptions(t))
+const provinceItems = computed(() => getProvinceOptions())
 
 const cityItems = computed(() =>
   getCitiesForProvince(addressForm.value.province),
@@ -191,6 +201,7 @@ function validate() {
 }
 
 function onSubmit() {
+  if (props.saving) return
   if (!validate()) return
   emit('save')
 }

@@ -1,5 +1,5 @@
 <template>
-  <section>
+  <section v-if="deals.length">
     <div class=" rounded-3xl overflow-hidden border-muted">
       <div class="px-5 py-4 flex items-center justify-between gap-3 text-inverted bg-primary ">
         <div class="flex items-center gap-3 min-w-0">
@@ -31,6 +31,7 @@
 
       <div class="bg-default/80  ">
         <UCarousel
+          :key="`deals-${deals.length}`"
           v-slot="{ item }"
           :items="deals"
           arrows
@@ -54,9 +55,20 @@
 </template>
 
 <script setup lang="ts">
-import { dealsOfTheDay } from '~/data/products'
+import type { Product } from '~/data/products'
 
-const deals = dealsOfTheDay
+const { fetchProducts } = useProducts()
+
+const { data: dealsData } = await useAsyncData('home-deals', async () => {
+  const { result } = await fetchProducts({
+    onlyDiscount: true,
+    sort: 'bestrated',
+    pageSize: 12,
+  })
+  return (result.items ?? []).filter((p): p is Product => Boolean(p?.oldPrice))
+})
+
+const deals = computed(() => dealsData.value ?? [])
 
 const remaining = ref(5 * 3600 + 42 * 60 + 18)
 

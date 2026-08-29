@@ -12,12 +12,33 @@
       </div>
       <div class="flex-1 min-w-0">
         <h1 class="text-lg font-bold text-highlighted">{{ $t('علاقه‌مندی‌های من') }}</h1>
-        <p class="text-xs text-muted mt-1">{{ $t('لیست محصولاتی که می‌خواهید بعداً بخرید') }}</p>
+        <p class="text-xs text-muted mt-1">
+          <template v-if="loading">
+            {{ $t('در حال بارگذاری…') }}
+          </template>
+          <template v-else-if="wishlistProducts.length > 0">
+            {{ wishlistProducts.length.toLocaleString('fa-IR') }} {{ $t('محصول') }}
+          </template>
+          <template v-else>
+            {{ $t('لیست محصولاتی که می‌خواهید بعداً بخرید') }}
+          </template>
+        </p>
       </div>
     </div>
 
     <div
-      v-if="wishlistProducts.length === 0"
+      v-if="loading"
+      class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+    >
+      <USkeleton
+        v-for="n in 8"
+        :key="n"
+        class="aspect-3/4 rounded-2xl"
+      />
+    </div>
+
+    <div
+      v-else-if="wishlistProducts.length === 0"
       class="bg-default border border-muted rounded-3xl p-10 md:p-16 text-center"
     >
       <UIcon name="i-tabler-heart-off" class="size-24 text-primary/20 mx-auto mb-6" />
@@ -49,16 +70,37 @@
 </template>
 
 <script setup lang="ts">
-import { products, type Product } from '~/data/products'
-
 const { t } = useI18n()
-const { wishlist } = useShop()
+const toast = useAppToast()
+const { wishlistProducts, fetchWishlist } = useShop()
 
-const wishlistProducts = computed(() =>
-  wishlist.value
-    .map(id => products.find(p => p.id === id))
-    .filter((p): p is Product => !!p),
-)
+const loading = ref(true)
+
+function apiErrorMessage(error: any, fallback: string) {
+  const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+  return fromFields || error?.data?.message || fallback
+}
+
+async function loadWishlist() {
+  loading.value = true
+  try {
+    const { error } = await fetchWishlist()
+    if (error) {
+      toast.error(apiErrorMessage(error, t('بارگذاری علاقه‌مندی‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadWishlist()
+})
+
+definePageMeta({
+  middleware: 'auth',
+})
 
 useSeoMeta({
   title: () => t('علاقه‌مندی‌ها'),

@@ -32,7 +32,6 @@
 </template>
 
 <script setup lang="ts">
-import { bestSellers } from '~/data/products'
-
-const products = bestSellers.slice(0, 8)
+const { bestSellers } = useHome()
+const products = computed(() => bestSellers.value.slice(0, 8))
 </script>

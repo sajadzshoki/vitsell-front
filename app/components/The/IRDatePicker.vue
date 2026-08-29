@@ -11,15 +11,15 @@
       <div
         class="flex flex-col relative border rounded-xl h-12 bg-default transition"
         :class="[
-          focused ? 'border-primary' : 'border-muted',
+          focused || show ? 'border-primary' : 'border-muted',
           validation && 'border-error',
           disabled && 'opacity-60 pointer-events-none',
         ]"
+        v-on-click-outside="onClickOutside"
       >
         <div
           class="flex items-center px-3 h-full rounded-xl cursor-pointer"
-          @click="click"
-          v-on-click-outside="() => { focused = false; show = false }"
+          @click.stop="click"
         >
           <p
             v-if="!range"
@@ -38,11 +38,11 @@
           <UIcon
             name="i-tabler-chevron-down"
             class="size-5 text-dimmed shrink-0 transition-transform"
-            :class="[focused ? 'rotate-180' : '', iconClass]"
+            :class="[focused || show ? 'rotate-180' : '', iconClass]"
           />
         </div>
         <div
-          v-if="!displayValue && placeholder && !focused"
+          v-if="!displayValue && placeholder && !focused && !show"
           class="absolute inset-y-0 start-0 flex items-center px-3 pointer-events-none"
         >
           <p class="text-sm text-dimmed">{{ placeholder }}</p>
@@ -112,6 +112,16 @@ const click = () => {
   if (props.disabled) return
   show.value = !show.value
   focused.value = true
+}
+
+function onClickOutside(event: PointerEvent) {
+  const target = event.target as HTMLElement | null
+  // تقویم sibling تریگر است؛ کلیک روی آن نباید ببندد
+  if (target?.closest?.('.vpd-wrapper, .vpd-container, .vpd-main, .vpd-addon-list, .vpd-content')) {
+    return
+  }
+  focused.value = false
+  show.value = false
 }
 
 const showDate = computed(() => {

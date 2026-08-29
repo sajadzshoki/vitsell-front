@@ -1,15 +1,33 @@
 <template>
   <main class="flex flex-col gap-6 md:gap-10">
-    <TheHeroCarousel class="<md:hidden" />
-    <TheHomeFeatures class="<md:hidden" />
-    <TheHomeCircleStrip />
-    <TheHomeCategories />
+    <TheHeroCarousel
+      v-if="heroSlides.length"
+      class="<md:hidden"
+    />
+    <TheHomeFeatures
+      v-if="heroFeatures.length"
+      class="<md:hidden"
+    />
+    <TheHomeCircleStrip v-if="circles.length" />
+    <TheHomeCategories v-if="categories.length" />
     <TheHomeDeals />
-    <TheHomeBrands />
-    <TheHomeBestSellers />
-    <TheHomePromos />
+    <TheHomeBrands v-if="brands.length" />
+    <TheHomeBestSellers v-if="bestSellers.length" />
+    <TheHomePromos v-if="promos.length" />
   </main>
 </template>
 
 <script lang="ts" setup>
+const {
+  fetchHome,
+  heroSlides,
+  heroFeatures,
+  circles,
+  categories,
+  brands,
+  bestSellers,
+  promos,
+} = useHome()
+
+await useAsyncData('home-page', () => fetchHome({ force: true }))
 </script>

@@ -1,22 +1,45 @@
 import type { Product } from '~/data/products'
-import {
-  getProductCriteriaScores,
-  getProductQuestions,
-  getProductReviewSummary,
-  getProductReviews,
-  getProductSpecGroups,
-  type ProductReview,
-  type ProductReviewSort,
+import type {
+  ProductQuestion,
+  ProductReview,
+  ProductReviewSort,
+  ProductReviewSummary,
+  ProductSpecGroup,
 } from '~/data/product-detail'
 
-export function useProductDetail(product: MaybeRefOrGetter<Product>) {
-  const p = computed(() => toValue(product))
+function buildSpecGroups(product: Product): ProductSpecGroup[] {
+  if (!product.specs?.length) return []
+  return [{ title: 'مشخصات فنی', items: product.specs }]
+}
 
-  const specGroups = computed(() => getProductSpecGroups(p.value))
-  const reviewSummary = computed(() => getProductReviewSummary(p.value))
-  const criteriaScores = computed(() => getProductCriteriaScores(p.value))
-  const allReviews = computed(() => getProductReviews(p.value))
-  const questions = computed(() => getProductQuestions(p.value))
+function buildCriteriaScores(product: Product) {
+  if (!product.scores) return []
+  return Object.entries(product.scores).map(([label, score]) => ({ label, score }))
+}
+
+function buildReviewSummary(reviews: ProductReview[]): ProductReviewSummary {
+  const distribution = ([5, 4, 3, 2, 1] as const).map((stars) => {
+    const count = reviews.filter(r => r.rating === stars).length
+    const percent = reviews.length ? Math.round((count / reviews.length) * 100) : 0
+    return { stars, percent, count }
+  })
+  const recommendCount = reviews.filter(r => r.rating >= 4).length
+  const recommendPercent = reviews.length
+    ? Math.round((recommendCount / reviews.length) * 100)
+    : 0
+  return { recommendPercent, distribution }
+}
+
+export function useProductDetail(product: MaybeRefOrGetter<Product | null | undefined>) {
+  const p = computed(() => toValue(product))
+  const allReviews = ref<ProductReview[]>([])
+  const questions = ref<ProductQuestion[]>([])
+  const related = ref<Product[]>([])
+  const pending = ref(false)
+
+  const specGroups = computed(() => (p.value ? buildSpecGroups(p.value) : []))
+  const criteriaScores = computed(() => (p.value ? buildCriteriaScores(p.value) : []))
+  const reviewSummary = computed(() => buildReviewSummary(allReviews.value))
 
   const reviewSort = ref<ProductReviewSort>('newest')
   const filterVerified = ref(false)
@@ -26,15 +49,9 @@ export function useProductDetail(product: MaybeRefOrGetter<Product>) {
   const filteredReviews = computed(() => {
     let list = [...allReviews.value]
 
-    if (filterVerified.value) {
-      list = list.filter(r => r.verified)
-    }
-    if (filterWithImage.value) {
-      list = list.filter(r => r.hasImage)
-    }
-    if (filterStars.value !== null) {
-      list = list.filter(r => r.rating === filterStars.value)
-    }
+    if (filterVerified.value) list = list.filter(r => r.verified)
+    if (filterWithImage.value) list = list.filter(r => r.hasImage)
+    if (filterStars.value !== null) list = list.filter(r => r.rating === filterStars.value)
 
     switch (reviewSort.value) {
       case 'helpful':
@@ -57,18 +74,59 @@ export function useProductDetail(product: MaybeRefOrGetter<Product>) {
     filterStars.value = filterStars.value === stars ? null : stars
   }
 
+  async function loadExtras(productId: string, category?: string) {
+    pending.value = true
+    const { fetchProducts } = useProducts()
+    try {
+      const [reviewsRes, questionsRes, relatedRes] = await Promise.all([
+        useGet<ProductReview[]>(`/products/${encodeURIComponent(productId)}/reviews`, {
+          headers: { 'no-error': true },
+        }),
+        useGet<ProductQuestion[]>(`/products/${encodeURIComponent(productId)}/questions`, {
+          headers: { 'no-error': true },
+        }),
+        category
+          ? fetchProducts({ category, pageSize: 8, sort: 'bestselling' })
+          : Promise.resolve({ result: { items: [] as Product[] } }),
+      ])
+      allReviews.value = Array.isArray(reviewsRes.result) ? reviewsRes.result : []
+      questions.value = Array.isArray(questionsRes.result) ? questionsRes.result : []
+      related.value = (relatedRes.result?.items ?? []).filter(item => item.id !== productId).slice(0, 4)
+    }
+    finally {
+      pending.value = false
+    }
+  }
+
+  watch(
+    () => p.value?.id,
+    (id) => {
+      if (!id) {
+        allReviews.value = []
+        questions.value = []
+        related.value = []
+        return
+      }
+      loadExtras(id, p.value?.category)
+    },
+    { immediate: true },
+  )
+
   return {
     specGroups,
     reviewSummary,
     criteriaScores,
     allReviews,
     questions,
+    related,
+    pending,
     reviewSort,
     filterVerified,
     filterWithImage,
     filterStars,
     filteredReviews,
     toggleStarFilter,
+    loadExtras,
   }
 }
 

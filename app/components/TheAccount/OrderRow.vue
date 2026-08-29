@@ -75,11 +75,13 @@
 
 <script setup lang="ts">
 import { orderStatusMeta, type ShopOrder } from '~/data/account'
-import { formatPrice, getProductById } from '~/data/products'
+import { formatPrice } from '~/data/products'
 
 const props = defineProps<{
   order: ShopOrder
 }>()
+
+const { getCachedProduct } = useProducts()
 
 const orderLink = computed(() => `/order/${encodeURIComponent(props.order.id)}`)
 
@@ -88,7 +90,7 @@ const statusMeta = computed(() => orderStatusMeta[props.order.status])
 const visibleItems = computed(() =>
   props.order.items.slice(0, 3).map(item => ({
     ...item,
-    product: getProductById(item.productId),
+    product: getCachedProduct(item.productId),
   })),
 )
 

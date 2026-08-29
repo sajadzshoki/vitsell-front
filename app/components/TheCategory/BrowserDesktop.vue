@@ -174,7 +174,6 @@
 </template>
 
 <script setup lang="ts">
-import { products } from '~/data/products'
 import {
   getCategoryIcon,
   toCategoryRoute,
@@ -183,18 +182,11 @@ import {
 
 const {
   categories,
+  productCounts: productCountByCategory,
   activeId,
   activeCategory,
   selectCategory,
 } = useCategoryBrowser()
-
-const productCountByCategory = computed(() => {
-  const counts: Record<string, number> = {}
-  for (const c of categories) {
-    counts[c.id] = products.filter(p => p.category === c.id).length
-  }
-  return counts
-})
 
 const suggestedTerms = computed(() => {
   const subs = activeCategory.value?.subs ?? []

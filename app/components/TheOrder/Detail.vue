@@ -1,5 +1,22 @@
 <template>
-  <div v-if="order" class="space-y-5">
+  <div
+    v-if="loading"
+    class="space-y-5"
+  >
+    <USkeleton class="h-40 rounded-2xl" />
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <USkeleton class="lg:col-span-2 h-64 rounded-2xl" />
+      <div class="space-y-3">
+        <USkeleton class="h-36 rounded-2xl" />
+        <USkeleton class="h-48 rounded-2xl" />
+      </div>
+    </div>
+  </div>
+
+  <div
+    v-else-if="order"
+    class="space-y-5"
+  >
     <div class="bg-default border border-muted rounded-2xl p-5 md:p-6">
       <div class="flex items-start justify-between flex-wrap gap-3 mb-6">
         <div>
@@ -72,6 +89,7 @@
               class="flex gap-3 pb-4 border-b border-muted last:(border-b-0 pb-0)"
             >
               <NuxtLink
+                v-if="item.product"
                 :to="`/product/${item.product.id}`"
                 class="size-20 rounded-xl bg-muted overflow-hidden shrink-0"
               >
@@ -81,14 +99,37 @@
                   class="size-full object-cover hover:scale-105 transition"
                 >
               </NuxtLink>
+              <div
+                v-else
+                class="size-20 rounded-xl bg-muted overflow-hidden shrink-0 grid place-items-center"
+              >
+                <TheIcon
+                  icon-type="img"
+                  name="noImage.png"
+                  class="size-8 opacity-60"
+                />
+              </div>
               <div class="flex-1 min-w-0">
-                <div class="text-[10px] text-dimmed mb-1 uppercase">{{ item.product.brand }}</div>
+                <div
+                  v-if="item.product"
+                  class="text-[10px] text-dimmed mb-1 uppercase"
+                >
+                  {{ item.product.brand }}
+                </div>
                 <NuxtLink
+                  v-if="item.product"
                   :to="`/product/${item.product.id}`"
                   class="text-sm font-medium text-default hover:text-primary line-clamp-2 text-start block"
                 >
                   {{ item.product.title }}
                 </NuxtLink>
+                <p
+                  v-else
+                  class="text-sm font-medium text-muted"
+                >
+                  {{ $t('محصول') }}
+                  <span class="num" dir="ltr">{{ item.productId }}</span>
+                </p>
                 <div class="text-[11px] text-muted mt-1 num">
                   {{ $t('تعداد') }}: {{ item.qty.toLocaleString('fa-IR') }}
                 </div>
@@ -178,13 +219,18 @@
 
 <script setup lang="ts">
 import { orderStatusMeta, orderTrackingSteps } from '~/data/account'
-import { formatPrice, getProductById } from '~/data/products'
+import { formatPrice } from '~/data/products'
 
 const props = defineProps<{
   orderId: string
 }>()
 
-const { getOrderById } = useAccount()
+const { t } = useI18n()
+const toast = useAppToast()
+const { getOrderById, fetchOrder } = useAccount()
+const { getCachedProduct } = useProducts()
+
+const loading = ref(true)
 
 const order = computed(() => getOrderById(props.orderId))
 const statusMeta = computed(() =>
@@ -192,15 +238,39 @@ const statusMeta = computed(() =>
 )
 
 const lineItems = computed(() =>
-  (order.value?.items ?? [])
-    .map(item => ({
-      ...item,
-      product: getProductById(item.productId),
-    }))
-    .filter(item => item.product),
+  (order.value?.items ?? []).map(item => ({
+    ...item,
+    product: getCachedProduct(item.productId),
+  })),
 )
 
 const subtotal = computed(() =>
   lineItems.value.reduce((sum, item) => sum + item.price * item.qty, 0),
 )
+
+function apiErrorMessage(error: any, fallback: string) {
+  const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+  return fromFields || error?.data?.message || fallback
+}
+
+async function loadOrder() {
+  if (!props.orderId) {
+    loading.value = false
+    return
+  }
+  loading.value = true
+  try {
+    const { error } = await fetchOrder(props.orderId)
+    if (error && !getOrderById(props.orderId)) {
+      toast.error(apiErrorMessage(error, t('بارگذاری سفارش ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+watch(() => props.orderId, () => {
+  loadOrder()
+}, { immediate: true })
 </script>
