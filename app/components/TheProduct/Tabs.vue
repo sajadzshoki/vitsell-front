@@ -1,15 +1,16 @@
 <template>
-  <div class="mt-6 overflow-hidden md:bg-default md:rounded-3xl md:border md:border-muted">
+  <div class="mt-4 md:mt-6 overflow-hidden md:bg-default md:rounded-3xl md:border md:border-muted">
     <UTabs
       v-model="activeTab"
       :items="tabItems"
       variant="link"
       color="primary"
+      size="sm"
       class="w-full"
       :ui="{
         list: 'border-b border-muted rounded-none overflow-x-auto gap-0 px-0 md:px-4',
-        trigger: 'whitespace-nowrap font-medium px-3 py-2.5 text-xs md:px-5 md:py-4 md:text-sm',
-        content: 'px-0 pt-4 pb-2 md:p-6 lg:p-8',
+        trigger: 'whitespace-nowrap font-medium px-2.5 py-2 !text-[10px] md:(px-5 py-4 text-sm)',
+        content: 'px-0 pt-3 pb-1 md:p-6 lg:p-8',
       }"
     >
       <template #specs>
@@ -17,7 +18,7 @@
       </template>
 
       <template #desc>
-        <div class="text-sm text-toned space-y-3 md:space-y-4 leading-7 md:leading-8">
+        <div class="text-sm text-toned space-y-2.5 md:space-y-4 leading-6 md:leading-8">
           <p>{{ leadDesc }}</p>
           <p
             v-for="(paragraph, i) in descParagraphs"

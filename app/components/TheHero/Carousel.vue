@@ -1,6 +1,6 @@
 <template>
   <section 
-    class="select-none relative w-screen max-w-[100vw] ms-[calc(50%-50vw)] -mt-4 [--ui-bg-inverted:var(--ui-color-neutral-950)] [--ui-text-inverted:var(--ui-color-neutral-50)] [--ui-bg:var(--ui-color-neutral-50)] [--ui-text-highlighted:var(--ui-color-neutral-900)]"
+    class="select-none relative w-screen max-w-[100vw] ms-[calc(50%-50vw)] -mt-4 [--ui-bg-inverted:var(--ui-color-neutral-950)] [--ui-text-inverted:var(--ui-color-neutral-50)] [--ui-bg:var(--ui-color-neutral-50)] [--ui-bg-elevated:var(--ui-color-neutral-100)] [--ui-text-highlighted:var(--ui-color-neutral-900)] [--ui-text:var(--ui-color-neutral-800)]"
   >
     <UCarousel
       v-slot="{ item, index }"
@@ -69,10 +69,12 @@
               <UButton
                 :to="item.to"
                 color="neutral"
-                variant="solid"
+                variant="outline"
                 size="xl"
                 trailing-icon="i-tabler-arrow-left"
-                class="bg-default text-highlighted hover:bg-elevated font-bold shadow-lg"
+                :ui="{
+                  base: 'h-12 rounded-xl font-bold shadow-lg border-default/20 bg-default text-highlighted dark:text-black hover:bg-elevated',
+                }"
               >
                 {{ $t(item.cta) }}
               </UButton>

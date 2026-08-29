@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="flex items-center gap-3 pb-4 mb-4 border-b border-muted flex-wrap">
+    <div class="flex items-center gap-2 pb-3 mb-3 border-b border-muted flex-wrap">
       <div class="flex items-center gap-1 bg-warning/10 text-warning rounded-lg px-2 py-1">
         <UIcon name="i-tabler-star-filled" class="size-4" />
         <span class="text-sm font-bold num">
@@ -24,9 +24,9 @@
 
     <div
       v-if="product.colors?.length"
-      class="mb-5"
+      class="mb-3.5"
     >
-      <div class="text-xs text-muted mb-2">
+      <div class="text-xs text-muted mb-1.5">
         {{ $t('رنگ') }}:
         <span class="text-highlighted font-medium">
           {{ product.colors[colorIndex]?.name }}
@@ -52,12 +52,12 @@
 
     <p
       v-if="product.shortDesc"
-      class="text-sm text-toned leading-7 mb-5"
+      class="text-sm text-toned leading-6 mb-3.5"
     >
       {{ product.shortDesc }}
     </p>
 
-    <ul class="space-y-2 mb-5">
+    <ul class="space-y-1.5 mb-3">
       <li
         v-for="feature in features"
         :key="feature"

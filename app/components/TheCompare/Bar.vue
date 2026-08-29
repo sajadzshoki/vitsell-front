@@ -1,8 +1,9 @@
 <template>
-  <template v-if="items.length > 0">
+  <template v-if="items.length > 0 && !isComparePage">
     <div
       v-if="items.length === 1"
-      class="fixed bottom-[calc(3.75rem+env(safe-area-inset-bottom))] lg:bottom-4 inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
+      class="fixed inset-x-0 z-[60] flex justify-center px-4 pointer-events-none"
+      :class="barBottomClass"
     >
       <div class="pointer-events-auto flex items-center gap-2 bg-inverted text-inverted text-xs rounded-full px-4 py-2.5 shadow-xl">
         <UIcon name="i-tabler-arrows-diff" class="size-4 shrink-0" />
@@ -12,7 +13,8 @@
 
     <div
       v-else
-      class="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom))] lg:bottom-4 inset-x-0 z-40 px-3 lg:px-0 flex justify-center pointer-events-none"
+      class="fixed inset-x-0 z-[60] px-3 lg:px-0 flex justify-center pointer-events-none"
+      :class="barBottomClass"
     >
       <div class="pointer-events-auto w-full lg:w-auto max-w-2xl bg-default/95 backdrop-blur border border-muted shadow-2xl rounded-t-2xl lg:rounded-2xl px-3 sm:px-4 py-3">
         <div class="flex items-center gap-2 sm:gap-3">
@@ -74,14 +76,42 @@
       </div>
     </div>
 
-    <div :class="items.length === 1 ? 'h-14' : 'h-24'" />
+    <div :class="spacerClass" />
   </template>
 </template>
 
 <script setup lang="ts">
+const route = useRoute()
 const compareStore = useCompareStore()
+const { isBackwardPage } = useMobileBackward()
 
 const items = computed(() => compareStore.products)
+
+const pathNorm = computed(() => route.path.replace(/\/$/, '') || '/')
+const isComparePage = computed(() => pathNorm.value === '/compare')
+
+/** Product / cart use a taller fixed buy bar; other pages use bottom nav. */
+const hasMobileBuyBar = computed(() => {
+  return /^\/product\/[^/]+$/.test(pathNorm.value) || pathNorm.value === '/cart'
+})
+
+const barBottomClass = computed(() => {
+  if (hasMobileBuyBar.value) {
+    return 'bottom-[calc(5.25rem+env(safe-area-inset-bottom))] lg:bottom-4'
+  }
+  if (isBackwardPage.value) {
+    return 'bottom-4'
+  }
+  return 'bottom-[calc(3.75rem+env(safe-area-inset-bottom))] lg:bottom-4'
+})
+
+const spacerClass = computed(() => {
+  const base = items.value.length === 1 ? 'h-14' : 'h-24'
+  if (hasMobileBuyBar.value) {
+    return items.value.length === 1 ? 'h-28 lg:h-14' : 'h-40 lg:h-24'
+  }
+  return base
+})
 
 function onToggle(id: string) {
   compareStore.toggleCompare(id)

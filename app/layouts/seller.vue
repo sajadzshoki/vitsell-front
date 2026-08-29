@@ -34,6 +34,17 @@
           <span class="text-dimmed">/</span>
           <span class="text-toned">{{ $t('جزئیات سفارش') }}</span>
         </template>
+        <template v-else-if="isProductCreate">
+          <span class="text-dimmed">/</span>
+          <NuxtLink
+            to="/seller/products"
+            class="hover:text-primary transition"
+          >
+            {{ $t('محصولات') }}
+          </NuxtLink>
+          <span class="text-dimmed">/</span>
+          <span class="text-toned">{{ $t('افزودن محصول') }}</span>
+        </template>
         <template v-else-if="!isDashboard">
           <span class="text-dimmed">/</span>
           <span class="text-toned">{{ $t(pageTitle) }}</span>
@@ -78,5 +89,5 @@
 </template>
 
 <script setup lang="ts">
-const { isMobile, isDashboard, isOrderDetail, pageTitle, showDesktopSidebar } = useSellerLayout()
+const { isMobile, isDashboard, isOrderDetail, isProductCreate, pageTitle, showDesktopSidebar } = useSellerLayout()
 </script>

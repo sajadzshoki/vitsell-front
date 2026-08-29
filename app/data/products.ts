@@ -291,8 +291,23 @@ export const bestSellers = products.slice(0, 8)
 
 export const newArrivals = [...products].reverse().slice(0, 8)
 
-export const getProductById = (id: string): Product =>
-  products.find(p => p.id === id) ?? products[0]!
+export const getProductById = (id: string): Product => {
+  try {
+    const extras = useState<Product[]>('product-catalog-extras', () => [])
+    const extra = extras.value.find(p => p.id === id)
+    if (extra) return extra
+  }
+  catch {
+    // outside Nuxt request context
+  }
+  return products.find(p => p.id === id) ?? products[0]!
+}
+
+export function registerCatalogProduct(product: Product) {
+  const extras = useState<Product[]>('product-catalog-extras', () => [])
+  if (extras.value.some(p => p.id === product.id)) return
+  extras.value = [product, ...extras.value]
+}
 
 export const getRelatedProducts = (product: Product, limit = 4): Product[] =>
   products

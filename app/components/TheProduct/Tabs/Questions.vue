@@ -1,19 +1,36 @@
 <template>
   <div class="space-y-5 md:space-y-6">
-    <div class="flex items-center justify-between gap-3 flex-wrap">
-      <p class="text-sm text-muted">
-        <span class="num font-bold text-highlighted">{{ questions.length.toLocaleString('fa-IR') }}</span>
-        {{ $t('سؤال درباره این محصول') }}
-      </p>
+    <div class="rounded-2xl border border-muted bg-muted/30 p-4 md:p-5 flex flex-col sm:(flex-row items-center) gap-4">
+      <div class="flex items-start gap-3 flex-1 min-w-0">
+        <div class="size-11 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
+          <UIcon name="i-tabler-help-circle" class="size-5" />
+        </div>
+        <div class="min-w-0">
+          <h3 class="text-sm font-bold text-highlighted">
+            {{ $t('سؤال خود را بپرسید') }}
+          </h3>
+          <p class="text-xs text-muted leading-6 mt-1">
+            <span class="num font-bold text-highlighted">{{ questions.length.toLocaleString('fa-IR') }}</span>
+            {{ $t('سؤال درباره این محصول') }}
+            — {{ $t('پاسخ کارشناسان را ببینید یا سؤال جدید بپرسید.') }}
+          </p>
+        </div>
+      </div>
       <UButton
-        color="neutral"
-        variant="solid"
+        color="primary"
         size="md"
-        class="font-medium"
+        class="font-bold shrink-0 w-full sm:w-auto"
+        trailing-icon="i-tabler-message-question"
+        @click="openQuestionForm"
       >
         {{ $t('پرسیدن سؤال جدید') }}
       </UButton>
     </div>
+
+    <TheProductTabsQuestionForm
+      v-model:open="questionFormOpen"
+      :product="product"
+    />
 
     <div class="space-y-4">
       <article
@@ -79,18 +96,41 @@
             </UButton>
           </div>
         </div>
+
+        <div
+          v-else
+          class="rounded-xl bg-muted/40 border border-dashed border-muted p-3 ms-0 md:ms-10"
+        >
+          <p class="text-xs text-muted">
+            {{ $t('در انتظار پاسخ کارشناسان') }}
+          </p>
+        </div>
       </article>
+
+      <div
+        v-if="questions.length === 0"
+        class="text-center py-10"
+      >
+        <UIcon name="i-tabler-help-circle" class="size-12 text-dimmed mx-auto mb-3" />
+        <p class="text-sm text-muted">{{ $t('هنوز سؤالی ثبت نشده است') }}</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
-import { getProductQuestions } from '~/data/product-detail'
 
 const props = defineProps<{
   product: Product
 }>()
 
-const questions = computed(() => getProductQuestions(props.product))
+const { questions, requireAuth } = useProductDetail(() => props.product)
+
+const questionFormOpen = ref(false)
+
+function openQuestionForm() {
+  if (!requireAuth()) return
+  questionFormOpen.value = true
+}
 </script>

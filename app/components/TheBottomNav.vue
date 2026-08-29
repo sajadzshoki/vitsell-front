@@ -1,6 +1,5 @@
 <template>
   <nav
-    v-if="!hideForCartCheckout"
     class="md:hidden fixed inset-x-0 bottom-0 z-40 bg-default/95 backdrop-blur-md border-t border-muted pb-[env(safe-area-inset-bottom)]"
     :aria-label="$t('ناوبری پایین')"
   >
@@ -51,14 +50,7 @@
 import { bottomNavItems, type BottomNavItem } from '~/data/nav-links'
 
 const route = useRoute()
-const { cartCount, cartBump, cartLines, isLoggedIn } = useShop()
-const checkoutStore = useCheckoutStore()
-const { placedOrderId } = storeToRefs(checkoutStore)
-const hideForCartCheckout = computed(() =>
-  route.path === '/cart'
-  && cartLines.value.length > 0
-  && !placedOrderId.value,
-)
+const { cartCount, cartBump, isLoggedIn } = useShop()
 
 const items = computed(() =>
   bottomNavItems.map((item) => {

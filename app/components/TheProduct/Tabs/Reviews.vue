@@ -79,6 +79,37 @@
       </div>
     </div>
 
+    <!-- Add review CTA -->
+    <div class="rounded-2xl border border-muted bg-muted/30 p-4 md:p-5 flex flex-col sm:(flex-row items-center) gap-4">
+      <div class="flex items-start gap-3 flex-1 min-w-0">
+        <div class="size-11 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
+          <UIcon name="i-tabler-message-plus" class="size-5" />
+        </div>
+        <div class="min-w-0">
+          <h3 class="text-sm font-bold text-highlighted">
+            {{ $t('دیدگاه خود را بنویسید') }}
+          </h3>
+          <p class="text-xs text-muted leading-6 mt-1">
+            {{ $t('با اشتراک‌گذاری تجربه خرید، به دیگران در انتخاب کمک کنید.') }}
+          </p>
+        </div>
+      </div>
+      <UButton
+        color="primary"
+        size="md"
+        class="font-bold shrink-0 w-full sm:w-auto"
+        trailing-icon="i-tabler-pencil"
+        @click="openReviewForm"
+      >
+        {{ $t('افزودن نظر') }}
+      </UButton>
+    </div>
+
+    <TheProductTabsReviewForm
+      v-model:open="reviewFormOpen"
+      :product="product"
+    />
+
     <!-- Filters -->
     <div class="border-t border-muted pt-5 md:pt-6">
       <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
@@ -173,7 +204,15 @@ const {
   filterStars,
   filteredReviews,
   toggleStarFilter,
+  requireAuth,
 } = useProductDetail(() => props.product)
+
+const reviewFormOpen = ref(false)
+
+function openReviewForm() {
+  if (!requireAuth()) return
+  reviewFormOpen.value = true
+}
 
 const sortOptions: { label: string, value: ProductReviewSort }[] = [
   { label: 'جدیدترین', value: 'newest' },

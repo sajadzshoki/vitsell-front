@@ -45,7 +45,7 @@
         </button>
         <div
           v-if="i < checkoutSteps.length - 1"
-          class="flex-1 h-0.5 rounded-full transition min-w-8"
+          class="flex-1 h-0.5 rounded-full transition min-w-4"
           :class="i < step ? 'bg-success' : 'bg-muted'"
         />
       </template>

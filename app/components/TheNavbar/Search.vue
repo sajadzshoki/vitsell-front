@@ -31,12 +31,37 @@
             v-for="s in popularSearches"
             :key="s"
             type="button"
-            class="text-xs bg-elevated hover:bg-primary/10 hover:text-primary text-toned px-3 py-1.5 rounded-lg transition"
-            @click="pickPopular(s)"
+            class="text-xs bg-elevated hover:(bg-primary/10 text-primary) text-toned px-3 py-1.5 rounded-lg transition"
+            @click="pickTerm(s)"
           >
             {{ s }}
           </button>
         </div>
+
+        <template v-if="recentSearches.length">
+          <div class="text-[11px] text-dimmed mb-2 px-2 mt-3 pt-3 border-t border-muted flex items-center justify-between gap-2">
+            <span>{{ $t('جستجوهای اخیر') }}</span>
+            <button
+              type="button"
+              class="text-[10px] text-muted hover:text-primary transition"
+              @click="clearRecent"
+            >
+              {{ $t('پاک کردن') }}
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="s in recentSearches"
+              :key="s"
+              type="button"
+              class="inline-flex items-center gap-1.5 text-xs bg-elevated hover:(bg-primary/10 text-primary) text-toned px-3 py-1.5 rounded-lg transition"
+              @click="pickTerm(s)"
+            >
+              <UIcon name="i-tabler-history" class="size-3.5 shrink-0 text-dimmed" />
+              {{ s }}
+            </button>
+          </div>
+        </template>
       </div>
       <div v-else class="py-2">
         <button
@@ -65,10 +90,13 @@
 import { popularSearches, toSearchRoute } from '~/data/categories'
 import { products } from '~/data/products'
 
+const MAX_RECENT = 8
+
 const query = defineModel<string>({ default: '' })
 
 const open = ref(false)
 const wrapRef = ref<HTMLElement | null>(null)
+const recentSearches = useLocalStorage<string[]>('digishop-recent-searches', [])
 
 const suggestions = computed(() => {
   const q = query.value.trim()
@@ -83,15 +111,27 @@ function close() {
   open.value = false
 }
 
+function pushRecent(term: string) {
+  const q = term.trim()
+  if (!q) return
+  recentSearches.value = [q, ...recentSearches.value.filter(s => s !== q)].slice(0, MAX_RECENT)
+}
+
+function clearRecent() {
+  recentSearches.value = []
+}
+
 function doSearch() {
   const q = query.value.trim()
   if (!q) return
+  pushRecent(q)
   navigateTo(toSearchRoute({ q }))
   close()
 }
 
-function pickPopular(s: string) {
+function pickTerm(s: string) {
   query.value = s
+  pushRecent(s)
   navigateTo(toSearchRoute({ q: s }))
   close()
 }

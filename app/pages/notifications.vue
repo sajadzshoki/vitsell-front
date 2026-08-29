@@ -1,7 +1,7 @@
 <template>
-  <div class="">
+  <div>
     <div class="flex items-center justify-between gap-3 mb-4">
-      <div class="flex items-center gap-2">
+      <div class="hidden md:flex items-center gap-2">
         <h1 class="text-lg font-bold text-highlighted">{{ $t('اعلان‌ها') }}</h1>
         <span
           v-if="notificationCount > 0"
@@ -15,6 +15,7 @@
         color="neutral"
         variant="ghost"
         size="sm"
+        class="ms-auto md:ms-0"
         @click="markAllNotificationsRead"
       >
         {{ $t('علامت‌گذاری همه به عنوان خوانده‌شده') }}
@@ -55,12 +56,16 @@
 <script setup lang="ts">
 import type { ShopNotification } from '~/data/notifications'
 
+const { t } = useI18n()
+
 const {
   notificationList,
   notificationCount,
   markNotificationRead,
   markAllNotificationsRead,
 } = useShop()
+
+useMobileBackwardTitle(() => t('اعلان‌ها'))
 
 function onItemClick(item: ShopNotification) {
   markNotificationRead(item.id)

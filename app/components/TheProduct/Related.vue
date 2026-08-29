@@ -1,10 +1,10 @@
 <template>
   <section
-    v-if="items.length"
-    class="mt-10"
+    v-if="related.length"
+    class="mt-6 md:mt-10"
   >
-    <div class="flex items-center justify-between mb-5 gap-3">
-      <h2 class="text-lg font-bold text-highlighted">
+    <div class="flex items-center justify-between mb-3.5 md:mb-5 gap-3">
+      <h2 class="text-base md:text-lg font-bold text-highlighted">
         {{ $t('محصولات مشابه') }}
       </h2>
       <UButton
@@ -20,7 +20,7 @@
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       <TheProductCard
-        v-for="item in items"
+        v-for="item in related"
         :key="item.id"
         :product="item"
       />
@@ -29,12 +29,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Product } from '~/data/products'
+import { getRelatedProducts, type Product } from '~/data/products'
 
 const props = defineProps<{
   product: Product
-  related?: Product[]
 }>()
 
-const items = computed(() => props.related ?? [])
+const related = computed(() => getRelatedProducts(props.product))
 </script>

@@ -18,7 +18,7 @@ import {
   type SellerSalesPoint,
   type SellerShop,
 } from '~/data/seller'
-import { getProductById } from '~/data/products'
+import { getProductById, registerCatalogProduct, type Product } from '~/data/products'
 
 export function useSeller() {
   const shop = useState<SellerShop>('seller-shop', () =>
@@ -84,6 +84,21 @@ export function useSeller() {
     listings.value = listings.value.map(item =>
       item.productId === productId ? { ...item, status } : item,
     )
+  }
+
+  function addListingProduct(product: Product, stock: number) {
+    registerCatalogProduct(product)
+    listings.value = [
+      {
+        productId: product.id,
+        stock,
+        sold: 0,
+        views: 0,
+        status: 'pending',
+      },
+      ...listings.value,
+    ]
+    return product.id
   }
 
   function getOrderById(id: string) {
@@ -157,6 +172,7 @@ export function useSeller() {
     listingProducts,
     getListing,
     setListingStatus,
+    addListingProduct,
     getOrderById,
     advanceOrder,
     revertOrder,
