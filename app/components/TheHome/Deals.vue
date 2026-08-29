@@ -1,14 +1,14 @@
 <template>
   <section>
-    <div class=" rounded-3xl overflow-hidden border-muted">
-      <div class="px-5 py-4 flex items-center justify-between gap-3 text-inverted bg-primary ">
+    <div class=" rounded-3xl overflow-hidden border-primary/50 border ">
+      <div class="px-5 py-4 flex items-center justify-between gap-3 text-inverted bg-primary border-primary border ">
         <div class="flex items-center gap-3 min-w-0">
           <UIcon name="i-tabler-bolt-filled" class="size-6 text-warning shrink-0" />
           <div class="min-w-0">
-            <div class="font-bold text-sm md:text-base truncate">
+            <div class="font-bold text-sm md:text-base text-white  truncate">
               {{ $t('پیشنهاد شگفت‌انگیز') }}
             </div>
-            <div class="text-[11px] text-inverted/80 truncate">
+            <div class="text-[11px] text-inverted/80  text-white truncate">
               {{ $t('فقط برای مدت محدود') }}
             </div>
           </div>
@@ -17,13 +17,13 @@
         <div class="flex items-center gap-1.5 num shrink-0 " dir="ltr">
           <template v-for="(part, i) in countdownParts" :key="part.key">
             <div
-              class="w-9 h-9 rounded-lg bg-default/20 backdrop-blur text-inverted grid place-items-center font-bold text-sm"
+              class="w-9 h-9 rounded-lg  bg-default/20 backdrop-blur text-white grid place-items-center font-bold text-sm"
             >
               {{ part.value }}
             </div>
             <span
               v-if="i < countdownParts.length - 1"
-              class="text-inverted/70 font-bold"
+              class="text-white font-bold"
             >:</span>
           </template>
         </div>

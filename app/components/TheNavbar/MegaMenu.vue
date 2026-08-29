@@ -1,25 +1,28 @@
 <template>
-  <div ref="megaRef" class="hidden lg:block relative">
-    <button
-      type="button"
-      class="flex items-center gap-2 h-12 px-4 rounded-2xl text-sm font-bold text-default hover:bg-elevated transition"
-      @mouseenter="megaOpen = true"
-      @click="megaOpen = !megaOpen"
+  <div
+    ref="megaRef"
+    class="relative"
+    @mouseenter="megaOpen = true"
+    @mouseleave="megaOpen = false"
+  >
+    <NuxtLink
+      to="/category"
+      class="inline-flex items-center gap-1.5 text-xs md:text-sm text-toned hover:text-primary transition whitespace-nowrap py-1"
+      @click="close"
     >
-      <UIcon name="i-tabler-menu-2" class="size-5 shrink-0" />
-      {{ $t('دسته‌بندی ها') }}
+      <UIcon name="i-tabler-menu-2" class="size-4 shrink-0" />
+      <span>{{ $t('دسته بندی محصولات') }}</span>
       <UIcon
         name="i-tabler-chevron-down"
-        class="size-4 text-dimmed transition-transform"
+        class="size-3.5 text-dimmed transition-transform"
         :class="{ 'rotate-180': megaOpen }"
       />
-    </button>
+    </NuxtLink>
 
     <!-- digi-clone: absolute top-full right-0 → in RTL use start-0 so panel grows toward end -->
     <div
       v-if="megaOpen"
-      class="absolute top-full start-0 mt-2 w-[min(800px,90vw)] bg-default border border-muted rounded-3xl shadow-2xl overflow-hidden flex z-50 min-h-[25rem]"
-      @mouseleave="megaOpen = false"
+      class="absolute top-full start-0 mt-1 w-[min(800px,90vw)] bg-default border border-muted rounded-3xl shadow-2xl overflow-hidden flex z-50 min-h-[25rem]"
     >
       <div class="w-1/3 bg-muted py-3 border-e border-muted">
         <button
@@ -114,4 +117,9 @@ function goSearch(q: string) {
 }
 
 onClickOutside(megaRef, close)
+
+const { y } = useWindowScroll()
+watch(y, () => {
+  if (megaOpen.value) close()
+})
 </script>

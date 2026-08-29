@@ -1,11 +1,11 @@
 <template>
-  <div class="bg-default light:bg-inverted text-[12px] ">
+  <div class="bg-inverted text-inverted/65 text-[12px]">
     <div class="mx-auto max-w-8xl px-3 sm:px-4 lg:px-6 h-8 flex items-center justify-between gap-3">
       <div class="flex items-center gap-4 min-w-0">
         <span class="hidden sm:inline-flex items-center gap-1.5 shrink-0">
           <UIcon name="i-tabler-phone" class="size-3.5" />
           {{ $t('پشتیبانی ۲۴ ساعته:') }}
-          <span class="num " dir="ltr">۰۲۱-۹۱۰۰۰۰۰۰</span>
+          <span class="num text-inverted" dir="ltr">۰۲۱-۹۱۰۰۰۰۰۰</span>
         </span>
         <span class="text-success truncate">
           {{ $t('ارسال رایگان سفارش‌های بالای ۵۰۰ هزار تومان') }}

@@ -1,12 +1,12 @@
 <template>
   <div>
     <div
-      class="flex items-center gap-2 flex-wrap"
-      :class="size === 'sm' ? 'mb-2' : 'mb-3'"
+      class="flex items-center gap-1 flex-wrap"
+      :class="size === 'sm' ? 'mb-1' : 'mb-3'"
     >
-      <UBadge color="neutral" variant="subtle" size="sm">
+      <!-- <UBadge color="neutral" variant="subtle" size="sm">
         {{ product.brand }}
-      </UBadge>
+      </UBadge> -->
       <UBadge
         v-if="product.badge"
         color="primary"

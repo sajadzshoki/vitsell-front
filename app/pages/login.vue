@@ -67,21 +67,21 @@
             type="submit"
             color="primary"
             size="xl"
-            block
+            
             :loading="loading"
             :disabled="!canSubmitPhone"
             trailing-icon="i-tabler-arrow-left"
           >
-            {{ $t('ادامه') }}
+            {{ $t('دریافت کد') }}
           </UButton>
 
           <p class="text-xs text-dimmed text-center leading-relaxed">
             {{ $t('ورود شما به معنای پذیرش') }}
-            <NuxtLink to="/terms" class="text-primary hover:underline">
+            <NuxtLink to="/terms" class="!text-primary hover:underline">
               {{ $t('شرایط استفاده') }}
             </NuxtLink>
             {{ $t('و') }}
-            <NuxtLink to="/privacy" class="text-primary hover:underline">
+            <NuxtLink to="/privacy" class="!text-primary hover:underline">
               {{ $t('حریم خصوصی') }}
             </NuxtLink>
             {{ $t('است.') }}

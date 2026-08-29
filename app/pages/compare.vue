@@ -1,10 +1,10 @@
 <template>
-  <main class="max-w-7xl mx-auto py-4">
+  <main class="max-w-7xl mx-auto">
     <div
       v-if="items.length < 2"
-      class="max-w-2xl mx-auto px-3 sm:px-4 py-16"
+      class="max-w-2xl mx-auto py-10 md:py-16"
     >
-      <div class="bg-default border border-muted rounded-3xl p-10 text-center">
+      <div class="bg-default border border-muted rounded-3xl p-8 md:p-10 text-center">
         <UIcon
           name="i-tabler-arrows-diff"
           class="size-16 text-dimmed mx-auto mb-5"
@@ -27,7 +27,7 @@
     </div>
 
     <template v-else>
-      <div class="px-3 sm:px-4 flex items-center justify-between flex-wrap gap-3 mb-5">
+      <div class="hidden md:flex items-center justify-between flex-wrap gap-3 mb-5">
         <div class="flex items-center gap-3">
           <UButton
             type="button"
@@ -62,9 +62,23 @@
         </UButton>
       </div>
 
+      <div class="md:hidden flex justify-end mb-3">
+        <UButton
+          type="button"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          icon="i-tabler-x"
+          class="text-xs font-medium"
+          @click="clearAndGoHome"
+        >
+          {{ $t('پاک کردن همه') }}
+        </UButton>
+      </div>
+
       <div
         v-if="criteria.length >= 3"
-        class="px-3 sm:px-4 grid gap-4 lg:grid-cols-2 mb-4"
+        class="grid gap-4 lg:grid-cols-2 mb-4"
       >
         <div class="bg-default border border-muted rounded-2xl p-4">
           <div class="flex items-center justify-between mb-2">
@@ -124,7 +138,7 @@
         </div>
       </div>
 
-      <div class="mx-3 sm:mx-4 bg-default border border-muted rounded-2xl px-4 py-3 flex items-center justify-between mb-4">
+      <div class="bg-default border border-muted rounded-2xl px-4 py-3 flex items-center justify-between mb-4">
         <div>
           <span class="text-xs font-bold text-highlighted">{{ $t('فقط تفاوت‌ها را نمایش بده') }}</span>
           <p class="text-[11px] text-dimmed mt-0.5">
@@ -134,57 +148,21 @@
         <USwitch v-model="diffOnly" />
       </div>
 
-      <div class="lg:hidden sticky top-36 z-20 -mx-0 px-3 sm:px-4 bg-muted/95 backdrop-blur border-b border-muted py-2 mb-3">
-        <div
-          ref="headerRef"
-          class="overflow-x-auto no-scrollbar"
-          @scroll="onHeaderScroll"
-        >
-          <div
-            class="grid gap-3"
-            :style="gridStyle"
-          >
-            <div class="sticky inset-e-0 bg-muted px-4 py-2 text-[11px] text-dimmed">
-              {{ $t('کالا') }}
-            </div>
-            <div
-              v-for="(product, index) in items"
-              :key="`header-${product.id}`"
-              class="flex items-center gap-2 min-w-0 rounded-lg border-2 p-1"
-              :style="{ borderColor: productColor(index) }"
-            >
-              <TheIcon
-                :name="product.image || 'noImage.png'"
-                icon-type="img"
-                class="!size-10 rounded-lg object-cover bg-muted shrink-0"
-              />
-              <div class="min-w-0">
-                <div class="text-[11px] font-bold text-highlighted truncate">
-                  {{ product.title }}
-                </div>
-                <div class="text-[11px] font-extrabold text-highlighted num">
-                  {{ formatPrice(product.price) }}
-                  <span class="text-[9px] font-normal text-dimmed">{{ $t('تومان') }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <h2 class="px-3 sm:px-4 text-sm font-bold text-highlighted mb-3">
+      <h2 class="text-sm font-bold text-highlighted mb-3">
         {{ $t('خلاصه مقایسه') }}
       </h2>
-      <div class="overflow-x-auto no-scrollbar px-3 sm:px-4 mb-4 pb-1">
+      <div
+        class="overflow-x-auto no-scrollbar mb-4 pb-1"
+        :class="items.length <= 2 ? '' : '-mx-1 px-1'"
+      >
         <div
-          class="grid gap-3 sm:gap-4"
-          :style="gridStyle"
+          class="grid gap-3 sm:gap-4 items-stretch"
+          :style="summaryGridStyle"
         >
-          <div class="hidden sm:block" />
           <div
             v-for="(product, index) in items"
             :key="`summary-${product.id}`"
-            class="bg-default border-2 rounded-2xl p-3 relative"
+            class="bg-default border-2 rounded-2xl p-3 relative flex flex-col h-full min-w-0"
             :style="{ borderColor: productColor(index) }"
           >
             <UButton
@@ -200,7 +178,7 @@
             />
             <NuxtLink
               :to="{ name: 'product-id', params: { id: product.id } }"
-              class="block w-full h-32 rounded-xl bg-muted overflow-hidden mb-2.5"
+              class="block w-full aspect-square max-h-36 rounded-xl bg-muted overflow-hidden mb-2.5"
             >
               <TheIcon
                 :name="product.image || 'noImage.png'"
@@ -217,7 +195,7 @@
             >
               {{ product.title }}
             </NuxtLink>
-            <div class="flex items-center gap-1.5 mb-2.5">
+            <div class="flex items-center gap-1.5 mb-2.5 flex-wrap">
               <div class="flex items-center gap-0.5 bg-warning/10 text-warning rounded-md px-1.5 py-0.5">
                 <UIcon name="i-tabler-star-filled" class="size-3" />
                 <span class="text-[11px] font-semibold num">
@@ -235,10 +213,10 @@
                 {{ product.inStock === false ? $t('ناموجود') : $t('موجود در انبار') }}
               </span>
             </div>
-            <div class="mb-3">
+            <div class="mb-3 min-h-11">
               <span
                 v-if="product.oldPrice"
-                class="text-[11px] text-dimmed line-through num"
+                class="text-[11px] text-dimmed line-through num block"
               >
                 {{ formatPrice(product.oldPrice) }}
               </span>
@@ -255,7 +233,7 @@
               variant="outline"
               size="md"
               block
-              class="font-medium hover:text-primary hover:border-primary"
+              class="mt-auto font-medium hover:text-primary hover:border-primary"
               @click="addToCart(product.id)"
             >
               {{ $t('افزودن به سبد خرید') }}
@@ -264,16 +242,57 @@
         </div>
       </div>
 
-      <div class="mx-3 sm:mx-4 bg-default border border-muted rounded-2xl overflow-hidden">
-        <div class="px-4 py-3.5 border-b border-muted flex items-center justify-between">
+      <div class="bg-default border border-muted rounded-2xl">
+        <div class="px-4 py-3.5 border-b border-muted flex items-center justify-between gap-2 rounded-t-2xl">
           <h2 class="text-sm font-bold text-highlighted">
             {{ $t('مقایسه مشخصات فنی') }}
           </h2>
-          <span class="text-[11px] text-dimmed">{{ $t('بر اساس دسته‌بندی محصولات') }}</span>
+          <span class="text-[11px] text-dimmed shrink-0">{{ $t('بر اساس دسته‌بندی محصولات') }}</span>
         </div>
+
+        <div
+          class="lg:hidden sticky top-12 md:top-36 z-20 bg-default/95 backdrop-blur border-b border-muted"
+        >
+          <div
+            ref="headerRef"
+            class="overflow-x-auto no-scrollbar px-2 py-2"
+            @scroll="onHeaderScroll"
+          >
+            <div
+              class="grid gap-2"
+              :style="tableGridStyle"
+            >
+              <div class="sticky inset-e-0 z-10 bg-default px-2 py-2 text-[11px] text-dimmed flex items-center">
+                {{ $t('کالا') }}
+              </div>
+              <div
+                v-for="(product, index) in items"
+                :key="`header-${product.id}`"
+                class="flex items-center gap-2 min-w-0 rounded-lg border-2 p-1.5"
+                :style="{ borderColor: productColor(index) }"
+              >
+                <TheIcon
+                  :name="product.image || 'noImage.png'"
+                  icon-type="img"
+                  class="!size-9 rounded-lg object-cover bg-muted shrink-0"
+                />
+                <div class="min-w-0 flex-1">
+                  <div class="text-[11px] font-bold text-highlighted truncate">
+                    {{ product.title }}
+                  </div>
+                  <div class="text-[11px] font-extrabold text-highlighted num">
+                    {{ formatPrice(product.price) }}
+                    <span class="text-[9px] font-normal text-dimmed">{{ $t('تومان') }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div
           ref="tableRef"
-          class="overflow-x-auto"
+          class="overflow-x-auto rounded-b-2xl"
           @scroll="onTableScroll"
         >
           <div>
@@ -283,10 +302,10 @@
             >
               <div
                 class="grid border-b border-muted"
-                :style="gridStyle"
+                :style="tableGridStyle"
               >
                 <div
-                  class="px-4 py-2 bg-muted text-[11px] font-bold text-muted"
+                  class="px-3 sm:px-4 py-2 bg-muted text-[11px] font-bold text-muted"
                   :style="{ gridColumn: '1 / -1' }"
                 >
                   {{ section.title }}
@@ -297,10 +316,10 @@
                 :key="`${section.title}-${key}`"
                 class="grid border-b border-muted transition-opacity duration-300"
                 :class="{ 'opacity-40': diffOnly && isIdentical(key) }"
-                :style="gridStyle"
+                :style="tableGridStyle"
               >
                 <div
-                  class="sticky inset-e-0 z-10 px-4 py-3 text-[11px] text-muted border-s border-muted"
+                  class="sticky inset-e-0 z-10 px-3 sm:px-4 py-3 text-[11px] text-muted border-s border-muted"
                   :class="rowIndex % 2 === 1 ? 'bg-muted' : 'bg-default'"
                 >
                   {{ key }}
@@ -308,7 +327,7 @@
                 <div
                   v-for="product in items"
                   :key="`${product.id}-${key}`"
-                  class="px-4 py-3 text-xs leading-6"
+                  class="px-3 sm:px-4 py-3 text-xs leading-6 break-words min-w-0"
                   :class="[
                     rowIndex % 2 === 1 ? 'bg-muted' : 'bg-default',
                     isIdentical(key) ? 'text-muted' : 'text-highlighted font-medium',
@@ -322,7 +341,7 @@
         </div>
       </div>
 
-      <div class="mt-6 flex items-center justify-center gap-3 flex-wrap px-3 sm:px-4">
+      <div class="mt-6 flex items-center justify-center gap-3 flex-wrap">
         <UButton
           color="neutral"
           variant="outline"
@@ -354,6 +373,8 @@ const compareStore = useCompareStore()
 const { toggleCompare } = useCompareActions()
 const { addToCart } = useShop()
 
+useMobileBackwardTitle(() => t('مقایسه محصولات'))
+
 const diffOnly = ref(false)
 const headerRef = ref<HTMLElement | null>(null)
 const tableRef = ref<HTMLElement | null>(null)
@@ -371,10 +392,28 @@ const sections = computed(() => {
 
 const criteria = computed(() => radarCriteriaFor(items.value.map(item => item.category)))
 
-const gridStyle = computed(() => ({
-  gridTemplateColumns: `140px repeat(${items.value.length}, minmax(240px, 1fr))`,
-  minWidth: `${140 + 240 * items.value.length}px`,
-}))
+const summaryGridStyle = computed(() => {
+  const n = items.value.length
+  if (n <= 2) {
+    return {
+      gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
+    }
+  }
+  return {
+    gridTemplateColumns: `repeat(${n}, minmax(11rem, 1fr))`,
+    minWidth: `${n * 11}rem`,
+  }
+})
+
+const tableGridStyle = computed(() => {
+  const n = items.value.length
+  const label = 100
+  const col = 160
+  return {
+    gridTemplateColumns: `${label}px repeat(${n}, minmax(${col}px, 1fr))`,
+    minWidth: `${label + col * n}px`,
+  }
+})
 
 function productColor(index: number) {
   return radarChartColors[index % radarChartColors.length]!

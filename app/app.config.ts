@@ -16,7 +16,7 @@ export default defineAppConfig({
       neutral: 'gray',
     },
     button: {
-      base: 'cursor-pointer justify-center',
+      base: 'cursor-pointer justify-center rounded-lg',
       slots: {
         label: 'font-600',
       },
@@ -88,6 +88,8 @@ export default defineAppConfig({
     },
     carousel: {
       slots: {
+        prev: '!opacity-50 hover:!opacity-100 transition-opacity',
+        next: '!opacity-50 hover:!opacity-100 transition-opacity',
         dots: 'bottom-4',
         dot: 'w-2 h-2 rounded-full bg-accented transition-all data-[state=active]:bg-inverted data-[state=active]:w-8',
       },

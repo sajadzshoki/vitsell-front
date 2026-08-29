@@ -22,10 +22,8 @@
         <UButton
           type="button"
           color="primary"
-          size="xl"
-          block
-          class="flex-1 min-w-0 font-bold shadow-lg shadow-primary/25 h-11"
-          trailing-icon="i-tabler-arrow-left"
+          size="md"
+          class="ms-auto shrink-0 font-bold shadow-lg shadow-primary/25 h-10 px-4"
           @click="emit('next')"
         >
           {{ $t('ادامه فرآیند خرید') }}

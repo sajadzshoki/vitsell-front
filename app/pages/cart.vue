@@ -1,5 +1,8 @@
 <template>
-  <main class="w-full py-2 md:py-4">
+  <main
+    class="w-full py-2 md:py-4"
+    :class="{ 'max-md:pb-28': showMobileBar }"
+  >
     <TheCartStepSuccess v-if="placedOrderId" />
 
     <template v-else-if="cartLines.length === 0 && step === 0">
@@ -46,7 +49,7 @@
             v-if="step === 0"
             class="space-y-3"
           >
-            <div class="flex items-center justify-between mb-2">
+            <div class="hidden md:flex items-center justify-between mb-2">
               <h1 class="text-xl md:text-2xl font-bold text-highlighted">
                 {{ $t('سبد خرید') }}
                 <span class="text-sm font-normal text-muted num">
@@ -123,6 +126,12 @@ const store = useCheckoutStore()
 const { step, placedOrderId } = storeToRefs(store)
 
 const { cartLines, cartSubtotal, discountAmount, clearCart } = useShop()
+
+useMobileBackwardTitle(() => {
+  if (placedOrderId.value) return t('ثبت سفارش')
+  const stepName = checkoutSteps[step.value]?.name
+  return stepName ? t(stepName) : t('سبد خرید')
+})
 
 const canProceed = computed(() => store.canGoNext(cartLines.value.length > 0))
 

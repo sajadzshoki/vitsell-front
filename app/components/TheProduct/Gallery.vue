@@ -1,38 +1,56 @@
 <template>
-  <div class="flex flex-col gap-3">
-    <div
-      ref="stageRef"
-      class="relative w-full rounded-2xl overflow-hidden bg-muted md:aspect-square cursor-zoom-in select-none"
-      role="button"
-      tabindex="0"
-      :aria-label="$t('بزرگ‌نمایی تصویر')"
-      @mousemove="onMove"
-      @mouseenter="onEnter"
-      @mouseleave="onLeave"
-      @click="openFullscreen"
-      @keydown.enter.prevent="openFullscreen"
-    >
-      <img
-        :src="imageSrc(currentImage)"
-        :alt="product.title"
-        class="size-full object-cover will-change-transform transition-[scale] duration-150 ease-out"
-        :style="zoomStyle"
-        draggable="false"
-        loading="eager"
-        decoding="async"
+  <div class="flex flex-col gap-2">
+    <div class="relative w-full rounded-2xl overflow-hidden bg-muted">
+      <UCarousel
+        ref="carousel"
+        v-slot="{ item, index }"
+        :items="gallery"
+        :start-index="active"
+        wheel-gestures
+        class="w-full"
+        :ui="{
+          item: 'basis-full min-w-full ps-0',
+          container: 'ms-0',
+          viewport: 'overflow-hidden',
+        }"
+        @select="onSelect"
       >
+        <div
+          class="relative w-full aspect-square cursor-zoom-in select-none"
+          role="button"
+          tabindex="0"
+          :aria-label="$t('بزرگ‌نمایی تصویر')"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @mousemove="onMove"
+          @mouseenter="onEnter"
+          @mouseleave="onLeave"
+          @click="openFullscreen"
+          @keydown.enter.prevent="openFullscreen"
+        >
+          <img
+            :src="imageSrc(item)"
+            :alt="product.title"
+            class="size-full object-cover will-change-transform transition-[scale] duration-150 ease-out pointer-events-none"
+            :style="active === index ? zoomStyle : undefined"
+            draggable="false"
+            loading="eager"
+            decoding="async"
+          >
+        </div>
+      </UCarousel>
 
       <UBadge
         v-if="discount > 0"
         color="error"
         size="lg"
-        class="absolute top-4 inset-e-4 font-bold num shadow-lg shadow-error/30 pointer-events-none z-10"
+        class="absolute top-3 inset-e-3 font-bold num shadow-lg shadow-error/30 pointer-events-none z-10"
       >
         {{ discount.toLocaleString('fa-IR') }}٪ {{ $t('تخفیف') }}
       </UBadge>
 
       <div
-        class="absolute bottom-4 inset-s-4 flex items-center gap-2 z-10"
+        class="absolute bottom-3 inset-s-3 flex items-center gap-2 z-10"
         @click.stop
       >
         <UButton
@@ -59,17 +77,29 @@
           @click="onShare"
         />
       </div>
+
+      <div
+        v-if="gallery.length > 1"
+        class="absolute bottom-14 inset-x-0 z-10 flex justify-center gap-1.5 pointer-events-none"
+      >
+        <span
+          v-for="(_, index) in gallery"
+          :key="`dot-${index}`"
+          class="size-1.5 rounded-full transition-all"
+          :class="active === index ? 'bg-primary w-4' : 'bg-inverted/25'"
+        />
+      </div>
     </div>
 
-    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+    <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
       <button
         v-for="(image, index) in gallery"
         :key="`${image}-${index}`"
         type="button"
-        class="size-20 shrink-0 rounded-xl overflow-hidden border-2 transition"
+        class="size-16 md:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition"
         :class="active === index ? 'border-primary' : 'border-muted hover:border-accented'"
         :aria-label="$t('تصویر محصول')"
-        @click="active = index"
+        @click="select(index)"
       >
         <TheIcon
           :name="image || 'noImage.png'"
@@ -89,29 +119,44 @@
         header: 'bg-transparent border-0 min-h-0 p-3 sm:p-4 absolute top-0 inset-x-0 z-10',
         title: 'sr-only',
         description: 'sr-only',
-        body: 'bg-transparent p-0 sm:p-0 flex flex-col items-center justify-center gap-4 min-h-dvh',
+        body: 'bg-transparent p-0 sm:p-0 flex flex-col items-center justify-center gap-3 min-h-dvh',
         close: 'text-inverted hover:bg-default/10',
       }"
     >
       <template #body>
-        <div class="relative w-full max-w-5xl px-4 flex flex-col items-center gap-4">
-          <img
-            :src="imageSrc(currentImage)"
-            :alt="product.title"
-            class="max-h-[70dvh] w-auto max-w-full object-contain rounded-2xl"
-            loading="eager"
-            decoding="async"
+        <div class="relative w-full max-w-5xl px-3 sm:px-4 flex flex-col items-center gap-3">
+          <UCarousel
+            ref="fsCarousel"
+            v-slot="{ item }"
+            :items="gallery"
+            :start-index="active"
+            wheel-gestures
+            class="w-full"
+            :ui="{
+              item: 'basis-full min-w-full ps-0',
+              container: 'ms-0',
+            }"
+            @select="onSelect"
           >
+            <img
+              :src="imageSrc(item)"
+              :alt="product.title"
+              class="max-h-[70dvh] w-auto max-w-full mx-auto object-contain rounded-2xl"
+              loading="eager"
+              decoding="async"
+              draggable="false"
+            >
+          </UCarousel>
 
-          <div class="flex gap-2 overflow-x-auto no-scrollbar max-w-full pb-1">
+          <div class="flex gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-1">
             <button
               v-for="(image, index) in gallery"
               :key="`fs-${image}-${index}`"
               type="button"
-              class="size-16 sm:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition"
+              class="size-14 sm:size-16 shrink-0 rounded-xl overflow-hidden border-2 transition"
               :class="active === index ? 'border-primary' : 'border-inverted/20 hover:border-inverted/50'"
               :aria-label="$t('تصویر محصول')"
-              @click="active = index"
+              @click="select(index)"
             >
               <img
                 :src="imageSrc(image)"
@@ -142,6 +187,9 @@ const fullscreen = ref(false)
 const zooming = ref(false)
 const origin = ref({ x: 50, y: 50 })
 const stageRef = ref<HTMLElement | null>(null)
+const carousel = ref<{ emblaApi?: { scrollTo: (index: number) => void } | null } | null>(null)
+const fsCarousel = ref<{ emblaApi?: { scrollTo: (index: number) => void } | null } | null>(null)
+const dragMoved = ref(false)
 
 const liked = computed(() => isInWishlist(props.product.id))
 
@@ -151,8 +199,6 @@ const gallery = computed(() => {
   const fallback = props.product.image || 'noImage.png'
   return [fallback, fallback, fallback, fallback]
 })
-
-const currentImage = computed(() => gallery.value[active.value] || 'noImage.png')
 
 const discount = computed(() => {
   const { oldPrice, price } = props.product
@@ -181,19 +227,32 @@ function imageSrc(name: string) {
   return `/images/${name}`
 }
 
+function onSelect(index: number) {
+  active.value = index
+  zooming.value = false
+}
+
+function select(index: number) {
+  active.value = index
+  carousel.value?.emblaApi?.scrollTo(index)
+  fsCarousel.value?.emblaApi?.scrollTo(index)
+}
+
 function canHoverZoom() {
   if (!import.meta.client) return false
   return window.matchMedia('(hover: hover) and (pointer: fine)').matches
 }
 
-function onEnter() {
+function onEnter(event: MouseEvent) {
   if (!canHoverZoom() || fullscreen.value) return
+  stageRef.value = event.currentTarget as HTMLElement
   zooming.value = true
 }
 
 function onLeave() {
   zooming.value = false
   origin.value = { x: 50, y: 50 }
+  stageRef.value = null
 }
 
 function onMove(event: MouseEvent) {
@@ -206,7 +265,20 @@ function onMove(event: MouseEvent) {
   }
 }
 
+function onPointerDown() {
+  dragMoved.value = false
+}
+
+function onPointerMove(event: PointerEvent) {
+  if (event.buttons === 0) return
+  if (Math.abs(event.movementX) + Math.abs(event.movementY) > 4) {
+    dragMoved.value = true
+    zooming.value = false
+  }
+}
+
 function openFullscreen() {
+  if (dragMoved.value) return
   zooming.value = false
   fullscreen.value = true
 }

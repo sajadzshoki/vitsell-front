@@ -21,11 +21,15 @@ import { fa_ir } from '@nuxt/ui/locale'
 
 const network = useNetwork()
 const appConfig = useAppConfig()
+const route = useRoute()
 
-const toaster = computed(() => ({
-  position: 'top-center' as const,
-  duration: 3500,
-  expand: true,
-  ...(appConfig.toaster ?? {}),
-}))
+const toaster = computed(() => {
+  const isProductPage = /^\/product\//.test(route.path)
+  return {
+    duration: 3500,
+    expand: true,
+    ...(appConfig.toaster ?? {}),
+    position: (isProductPage ? 'bottom-center' : 'top-center') as 'bottom-center' | 'top-center',
+  }
+})
 </script>

@@ -1,10 +1,35 @@
 <template>
   <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
     <div class="hidden lg:flex items-center justify-between mb-5 gap-3">
-      <h2 class="font-bold text-highlighted">{{ $t('محصولات فروشگاه') }}</h2>
-      <div class="text-xs text-muted num">
-        {{ filtered.length.toLocaleString('fa-IR') }} {{ $t('کالا') }}
+      <h2 class="font-bold text-highlighted">
+        {{ $t('محصولات فروشگاه') }}
+      </h2>
+      <div class="flex items-center gap-3">
+        <div class="text-xs text-muted num">
+          {{ filtered.length.toLocaleString('fa-IR') }} {{ $t('کالا') }}
+        </div>
+        <UButton
+          to="/seller/products/new"
+          color="primary"
+          size="sm"
+          icon="i-tabler-plus"
+          class="font-medium"
+        >
+          {{ $t('افزودن محصول') }}
+        </UButton>
       </div>
+    </div>
+
+    <div class="lg:hidden mb-4">
+      <UButton
+        to="/seller/products/new"
+        color="primary"
+        block
+        icon="i-tabler-plus"
+        class="font-medium"
+      >
+        {{ $t('افزودن محصول') }}
+      </UButton>
     </div>
 
     <div class="flex flex-col sm:(flex-row items-center) gap-3 mb-4">
@@ -33,8 +58,21 @@
       v-if="filtered.length === 0"
       class="text-center py-12"
     >
-      <UIcon name="i-tabler-package" class="size-16 text-dimmed mx-auto mb-4" />
-      <p class="text-sm text-muted">{{ $t('محصولی با این فیلتر پیدا نشد') }}</p>
+      <UIcon
+        name="i-tabler-package"
+        class="size-16 text-dimmed mx-auto mb-4"
+      />
+      <p class="text-sm text-muted mb-4">
+        {{ $t('محصولی با این فیلتر پیدا نشد') }}
+      </p>
+      <UButton
+        to="/seller/products/new"
+        color="primary"
+        variant="soft"
+        icon="i-tabler-plus"
+      >
+        {{ $t('افزودن اولین محصول') }}
+      </UButton>
     </div>
     <div
       v-else

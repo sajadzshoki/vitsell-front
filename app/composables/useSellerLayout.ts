@@ -13,12 +13,19 @@ export function useSellerLayout() {
     /^\/seller\/orders\/[^/]+/.test(route.path),
   )
 
+  const isProductCreate = computed(() =>
+    route.path === '/seller/products/new' || route.path === '/seller/products/new/',
+  )
+
   const pageTitle = computed(() => {
     if (isDashboard.value) {
       return 'پیشخوان فروشنده'
     }
     if (isOrderDetail.value) {
       return 'جزئیات سفارش'
+    }
+    if (isProductCreate.value) {
+      return 'افزودن محصول'
     }
     const item = sellerNavItems.find(
       i => i.to !== '/seller' && (route.path === i.to || route.path.startsWith(`${i.to}/`)),
@@ -32,6 +39,7 @@ export function useSellerLayout() {
     isMobile,
     isDashboard,
     isOrderDetail,
+    isProductCreate,
     pageTitle,
     showDesktopSidebar,
   }

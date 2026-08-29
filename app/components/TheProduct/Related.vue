@@ -1,10 +1,10 @@
 <template>
   <section
     v-if="related.length"
-    class="mt-10"
+    class="mt-6 md:mt-10"
   >
-    <div class="flex items-center justify-between mb-5 gap-3">
-      <h2 class="text-lg font-bold text-highlighted">
+    <div class="flex items-center justify-between mb-3.5 md:mb-5 gap-3">
+      <h2 class="text-base md:text-lg font-bold text-highlighted">
         {{ $t('محصولات مشابه') }}
       </h2>
       <UButton

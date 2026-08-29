@@ -38,7 +38,7 @@
         </div>
         <div class="p-4">
           <div class="flex items-center gap-2 flex-wrap mb-2">
-            <span class="text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+            <span class="text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full <md:hidden">
               {{ $t(article.category) }}
             </span>
             <span class="text-[11px] text-dimmed">

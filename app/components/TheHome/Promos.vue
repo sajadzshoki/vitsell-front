@@ -25,7 +25,7 @@
             :to="promo.primaryCta.to"
             color="neutral"
             variant="solid"
-            class="bg-default text-highlighted hover:bg-elevated font-bold"
+            class="bg-default !text-highlighted hover:bg-elevated font-bold"
           >
             {{ $t(promo.primaryCta.label) }}
           </UButton>

@@ -1,7 +1,7 @@
 <template>
   <main
     v-if="product"
-    class="w-screen max-w-[100vw] ms-[calc(50%-50vw)] px-3 sm:px-4 lg:px-6"
+    class="w-screen max-w-[100vw] ms-[calc(50%-50vw)] px-3 sm:px-4 lg:px-6 max-lg:pb-28"
   >
     <div class="mx-auto max-w-9xl w-full">
       <UBreadcrumb
@@ -16,8 +16,8 @@
           size="lg"
         />
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6">
-          <div class="lg:col-span-4 lg:self-start flex flex-col gap-3">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-5">
+          <div class="lg:col-span-4 lg:self-start flex flex-col gap-2">
             <TheProductGallery :product="product" />
             <TheProductHeader
               :product="product"
@@ -57,6 +57,8 @@ const { t } = useI18n()
 const route = useRoute()
 
 const product = computed<Product>(() => getProductById(String(route.params.id)))
+
+useMobileBackwardTitle(() => product.value.title)
 
 const colorIndex = ref(0)
 const activeTab = ref('specs')
