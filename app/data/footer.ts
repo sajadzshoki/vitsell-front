@@ -71,19 +71,19 @@ export const footerColumns: FooterColumn[] = [
       { label: 'تماس با ما', to: staticPagePaths.contact },
       { label: 'فرصت‌های شغلی', to: staticPagePaths.careers },
       { label: 'بلاگ', to: staticPagePaths.blog },
-      { label: 'فروشنده شوید', to: '/seller' },
+      // { label: 'فروشنده شوید', to: '/seller' },
     ],
   },
-  {
-    id: 'sellers',
-    title: 'فروش در دیجی‌شاپ',
-    links: [
-      { label: 'پنل فروشنده', to: '/seller' },
-      { label: 'مدیریت محصولات', to: '/seller/products' },
-      { label: 'سفارش‌های فروشگاه', to: '/seller/orders' },
-      { label: 'مالی و تسویه', to: '/seller/finance' },
-    ],
-  },
+  // {
+  //   id: 'sellers',
+  //   title: 'فروش در دیجی‌شاپ',
+  //   links: [
+  //     { label: 'پنل فروشنده', to: '/seller' },
+  //     { label: 'مدیریت محصولات', to: '/seller/products' },
+  //     { label: 'سفارش‌های فروشگاه', to: '/seller/orders' },
+  //     { label: 'مالی و تسویه', to: '/seller/finance' },
+  //   ],
+  // },
   {
     id: 'support',
     title: 'خدمات مشتریان',

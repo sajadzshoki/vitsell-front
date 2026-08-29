@@ -10,12 +10,12 @@
         {{ avatarInitial }}
       </div>
       <div class="flex-1 min-w-0">
-        <div class="text-base font-bold text-highlighted truncate">
+        <p class="text-base font-bold text-highlighted truncate">
           {{ fullName }}
-        </div>
-        <div class="text-xs text-muted num" dir="ltr">
+        </p>
+        <p class="text-xs text-muted num" >
           {{ profile.phone }}
-        </div>
+        </p>
       </div>
     </div>
 

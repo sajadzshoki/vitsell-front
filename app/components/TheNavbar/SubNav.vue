@@ -39,13 +39,13 @@
         </li>
       </ul>
 
-      <NuxtLink
+      <!-- <NuxtLink
         v-if="seller.to"
         :to="seller.to"
         class="shrink-0 text-xs md:text-sm font-medium text-primary hover:text-primary/80 transition whitespace-nowrap"
       >
         {{ $t(seller.label) }}
-      </NuxtLink>
+      </NuxtLink> -->
     </nav>
   </div>
 </template>

@@ -1,30 +1,8 @@
 <template>
   <div class="bg-muted rounded-2xl p-5 lg:sticky lg:top-36 lg:z-10">
-    <div
-      v-if="product.oldPrice"
-      class="flex items-center justify-between mb-1"
-    >
-      <span class="text-xs text-dimmed line-through num">
-        {{ formatPrice(product.oldPrice) }}
-      </span>
-      <UBadge
-        color="error"
-        size="sm"
-        class="font-bold num"
-      >
-        {{ discount.toLocaleString('fa-IR') }}٪
-      </UBadge>
-    </div>
-
-    <div class="flex items-baseline gap-1 mb-5">
-      <span class="text-2xl font-black text-highlighted num">
-        {{ formatPrice(product.price) }}
-      </span>
-      <span class="text-xs text-muted">{{ $t('تومان') }}</span>
-    </div>
-
-    <div class="space-y-2.5 mb-4 pb-4 border-b border-accented">
-      <div class="flex items-center gap-2 text-xs text-success">
+    <div class="flex items-start justify-between">
+      <div class="space-y-2.5 mb-4 pb-4 ">
+      <!-- <div class="flex items-center gap-2 text-xs text-success">
         <UIcon name="i-tabler-shield-check" class="size-4 shrink-0" />
         <span>
           {{ $t('فروشنده') }}:
@@ -35,12 +13,40 @@
             {{ $t(sellerName) }}
           </NuxtLink>
         </span>
-      </div>
+      </div> -->
       <div class="flex items-center gap-2 text-xs text-toned">
         <span class="size-2 rounded-full bg-success shrink-0" />
         {{ product.inStock === false ? $t('ناموجود') : $t('موجود در انبار') }}
       </div>
     </div>
+    <div class="flexCol gap-1">
+      <div
+        v-if="product.oldPrice"
+        class="flex items-center gap-2 mr-auto w-fit mb-1 "
+      >
+        <span class="text-xs text-dimmed line-through num">
+          {{ formatPrice(product.oldPrice) }}
+        </span>
+        <UBadge
+          color="error"
+          size="sm"
+          class="font-bold num"
+        >
+          {{ discount.toLocaleString('fa-IR') }}٪
+        </UBadge>
+        
+      </div>
+  
+      <div class="flex items-baseline gap-1 mb-5 mr-auto w-fit">
+        <span class="text-2xl font-black text-highlighted num">
+          {{ formatPrice(product.price) }}
+        </span>
+        <span class="text-xs text-muted">{{ $t('تومان') }}</span>
+      </div>
+    </div>
+  </div>
+
+
 
     <div
       v-if="qty > 0"

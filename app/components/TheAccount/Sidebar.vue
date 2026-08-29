@@ -10,15 +10,15 @@
         <div class="text-sm font-bold text-highlighted truncate">
           {{ fullName }}
         </div>
-        <div class="text-[11px] text-muted num" dir="ltr">
+        <div class="text-[11px] text-muted num leading-5" >
           {{ profile.phone }}
         </div>
       </div>
     </div>
 
-    <ThePanelSwitch class="mt-4" />
+    <!-- <ThePanelSwitch class="mt-4" /> -->
 
-    <nav class="mt-3 pt-3 border-t border-muted space-y-1">
+    <nav class="mt-3 pt-3 space-y-1">
       <NuxtLink
         v-for="item in accountNavItems"
         :key="item.id"

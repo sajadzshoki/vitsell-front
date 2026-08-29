@@ -37,11 +37,11 @@
         v-if="isMobile && !isDashboard"
         :title="pageTitle"
       />
-
+<!-- 
       <ThePanelSwitch
         v-if="isMobile"
         class="mb-4 p-3 bg-default border border-muted rounded-2xl"
-      />
+      /> -->
 
       <div
         class="grid grid-cols-1 gap-5"

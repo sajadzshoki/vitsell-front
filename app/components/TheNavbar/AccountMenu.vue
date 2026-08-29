@@ -94,7 +94,7 @@ const accountRef = ref<HTMLElement | null>(null)
 
 const links = computed(() => [
   { label: t('پیشخوان'), icon: 'i-tabler-layout-dashboard', to: '/account' },
-  { label: t('پنل فروشنده'), icon: 'i-tabler-building-store', to: '/seller' },
+  // { label: t('پنل فروشنده'), icon: 'i-tabler-building-store', to: '/seller' },
   { label: t('سفارش‌های من'), icon: 'i-tabler-package', to: '/account/orders' },
   { label: t('علاقه‌مندی‌ها'), icon: 'i-tabler-heart', to: '/wishlist' },
   { label: t('آدرس‌ها'), icon: 'i-tabler-map-pin', to: '/account/addresses' },

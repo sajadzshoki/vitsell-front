@@ -8,6 +8,7 @@ import {
   defaultSellerWallet,
   sellerLowStockThreshold,
   sellerOrderNextStatus,
+  sellerOrderPrevStatus,
   type SellerListing,
   type SellerOrder,
   type SellerOrderStatus,
@@ -85,12 +86,26 @@ export function useSeller() {
     )
   }
 
+  function getOrderById(id: string) {
+    return orders.value.find(order => order.id === id) ?? null
+  }
+
   function advanceOrder(id: string) {
     const order = orders.value.find(item => item.id === id)
-    if (!order) return
+    if (!order) return false
     const next = sellerOrderNextStatus[order.status]
-    if (!next) return
+    if (!next) return false
     setOrderStatus(id, next)
+    return true
+  }
+
+  function revertOrder(id: string) {
+    const order = orders.value.find(item => item.id === id)
+    if (!order) return false
+    const prev = sellerOrderPrevStatus[order.status]
+    if (!prev) return false
+    setOrderStatus(id, prev)
+    return true
   }
 
   function setOrderStatus(id: string, status: SellerOrderStatus) {
@@ -142,7 +157,9 @@ export function useSeller() {
     listingProducts,
     getListing,
     setListingStatus,
+    getOrderById,
     advanceOrder,
+    revertOrder,
     setOrderStatus,
     replyToReview,
     requestPayout,

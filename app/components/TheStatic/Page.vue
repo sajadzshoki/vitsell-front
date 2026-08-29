@@ -138,15 +138,21 @@
               v-else-if="section.type === 'blog'"
               class="flex flex-col gap-4"
             >
-              <article
+              <NuxtLink
                 v-for="post in section.items"
                 :key="post.id"
-                class="flex flex-col sm:flex-row sm:items-start gap-4 p-4 rounded-xl border border-muted transition hover:(border-primary/30 bg-primary/5)"
+                :to="getBlogPostPath(post.id)"
+                class="group flex flex-col sm:flex-row sm:items-stretch gap-4 p-4 rounded-xl border border-muted transition hover:(border-primary/30 bg-primary/5)"
               >
-                <div class="size-16 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
-                  <UIcon name="i-tabler-article" class="size-7" />
+                <div class="w-full sm:w-36 md:w-44 shrink-0 rounded-xl overflow-hidden bg-muted aspect-[16/10] sm:aspect-auto">
+                  <img
+                    :src="post.image"
+                    :alt="post.title"
+                    class="size-full object-cover"
+                    loading="lazy"
+                  >
                 </div>
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 flex flex-col justify-center">
                   <div class="flex items-center gap-2 flex-wrap mb-1">
                     <span class="text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                       {{ $t(post.category) }}
@@ -158,7 +164,7 @@
                       · {{ $t(post.readTime) }}
                     </span>
                   </div>
-                  <h3 class="text-sm font-bold text-highlighted mb-1">
+                  <h3 class="text-sm font-bold text-highlighted mb-1 transition group-hover:text-primary">
                     {{ $t(post.title) }}
                   </h3>
                   <p class="text-sm text-toned leading-7 mb-2">
@@ -168,7 +174,7 @@
                     {{ $t('نویسنده') }}: {{ $t(post.author) }}
                   </p>
                 </div>
-              </article>
+              </NuxtLink>
             </div>
 
             <div
@@ -217,7 +223,7 @@
 
 <script setup lang="ts">
 import type { StaticPageId } from '~/data/static-pages'
-import { getStaticPage, staticPagePaths } from '~/data/static-pages'
+import { getBlogPostPath, getStaticPage, staticPagePaths } from '~/data/static-pages'
 
 const props = defineProps<{
   pageId: StaticPageId

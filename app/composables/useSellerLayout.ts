@@ -9,9 +9,16 @@ export function useSellerLayout() {
     () => route.path === '/seller' || route.path === '/seller/',
   )
 
+  const isOrderDetail = computed(() =>
+    /^\/seller\/orders\/[^/]+/.test(route.path),
+  )
+
   const pageTitle = computed(() => {
     if (isDashboard.value) {
       return 'پیشخوان فروشنده'
+    }
+    if (isOrderDetail.value) {
+      return 'جزئیات سفارش'
     }
     const item = sellerNavItems.find(
       i => i.to !== '/seller' && (route.path === i.to || route.path.startsWith(`${i.to}/`)),
@@ -24,6 +31,7 @@ export function useSellerLayout() {
   return {
     isMobile,
     isDashboard,
+    isOrderDetail,
     pageTitle,
     showDesktopSidebar,
   }

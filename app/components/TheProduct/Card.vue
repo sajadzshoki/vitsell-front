@@ -26,17 +26,10 @@
       />
 
       <span
-        v-if="product.badge"
-        class="absolute top-2 inset-e-2 bg-inverted text-inverted text-[10px] font-semibold px-2 py-1 rounded-lg"
+        v-if="categoryLabel"
+        class="absolute top-2 right-2 bg-inverted text-inverted text-[10px] font-semibold px-2 py-1 rounded-lg"
       >
-        {{ $t(product.badge) }}
-      </span>
-
-      <span
-        v-if="discount > 0"
-        class="absolute top-2 inset-s-2 bg-error text-inverted text-[11px] font-bold px-2 py-1 rounded-lg num shadow-lg shadow-error/30"
-      >
-        {{ discount.toLocaleString('fa-IR') }}٪
+        {{ $t(categoryLabel) }}
       </span>
 
       <div
@@ -90,10 +83,6 @@
       class="flex flex-col min-w-0"
       :class="isHorizontal ? 'flex-1 py-0.5' : ''"
     >
-      <div class="text-[10px] text-dimmed tracking-wider mb-1 uppercase">
-        {{ product.brand }}
-      </div>
-
       <h3
         class="text-[13px] leading-6 text-default line-clamp-2 mb-2 transition group-hover:text-primary"
         :class="isHorizontal ? '' : 'min-h-12'"
@@ -126,27 +115,35 @@
       >
         {{ $t('ناموجود') }}
       </p>
-      <p
-        v-else-if="product.reviews % 7 === 0"
-        class="text-[11px] text-error mb-2"
+
+
+      <div class="mt-auto flex flex-col items-end gap-0.5">
+        <p
+        v-if="product.reviews % 7 === 0"
+        class="text-[9px] text-error ml-auto"
       >
         {{ $t('تنها ۱ عدد در انبار باقی مانده') }}
       </p>
+        <div class="flex items-center gap-1.5">
 
-      <div class="mt-auto flex items-end justify-between gap-2">
-        <div class="flex flex-col">
           <span
             v-if="product.oldPrice"
             class="text-[11px] text-dimmed line-through num"
           >
             {{ formatPrice(product.oldPrice) }}
           </span>
-          <div class="flex items-baseline gap-1">
-            <span class="text-base font-extrabold text-highlighted num">
-              {{ formatPrice(product.price) }}
-            </span>
-            <span class="text-[10px] text-muted">{{ $t('تومان') }}</span>
-          </div>
+          <span
+            v-if="discount > 0"
+            class="bg-error text-inverted text-[11px] font-bold px-1.5 py-0.5 rounded-md num"
+          >
+            {{ discount.toLocaleString('fa-IR') }}٪
+          </span>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-base font-extrabold text-highlighted num">
+            {{ formatPrice(product.price) }}
+          </span>
+          <span class="text-[10px] text-muted">{{ $t('تومان') }}</span>
         </div>
       </div>
     </div>
@@ -154,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { formatPrice, type Product } from '~/data/products'
+import { categoryLabels, formatPrice, type Product } from '~/data/products'
 
 const props = withDefaults(defineProps<{
   product: Product
@@ -180,6 +177,12 @@ const discount = computed(() => {
     ((props.product.oldPrice - props.product.price) / props.product.oldPrice) * 100,
   )
 })
+
+const categoryLabel = computed(() =>
+  props.product.categoryLabel
+  || categoryLabels[props.product.category]
+  || '',
+)
 
 const imageSrc = computed(() => {
   const src = props.product.image?.trim()

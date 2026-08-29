@@ -23,7 +23,18 @@
         <template v-else>
           <span class="text-toned">{{ $t('پنل فروشنده') }}</span>
         </template>
-        <template v-if="!isDashboard">
+        <template v-if="isOrderDetail">
+          <span class="text-dimmed">/</span>
+          <NuxtLink
+            to="/seller/orders"
+            class="hover:text-primary transition"
+          >
+            {{ $t('سفارش‌های فروشگاه') }}
+          </NuxtLink>
+          <span class="text-dimmed">/</span>
+          <span class="text-toned">{{ $t('جزئیات سفارش') }}</span>
+        </template>
+        <template v-else-if="!isDashboard">
           <span class="text-dimmed">/</span>
           <span class="text-toned">{{ $t(pageTitle) }}</span>
         </template>
@@ -38,10 +49,10 @@
         :title="pageTitle"
       />
 
-      <ThePanelSwitch
+      <!-- <ThePanelSwitch
         v-if="isMobile"
         class="mb-4 p-3 bg-default border border-muted rounded-2xl"
-      />
+      /> -->
 
       <div
         class="grid grid-cols-1 gap-5"
@@ -67,5 +78,5 @@
 </template>
 
 <script setup lang="ts">
-const { isMobile, isDashboard, pageTitle, showDesktopSidebar } = useSellerLayout()
+const { isMobile, isDashboard, isOrderDetail, pageTitle, showDesktopSidebar } = useSellerLayout()
 </script>

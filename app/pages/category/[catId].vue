@@ -30,7 +30,10 @@
       :brand-route="brandRoute"
     />
 
-    <TheCategoryRelatedArticles :articles="articles" />
+    <TheCategoryRelatedArticles
+      :articles="articles"
+      :view-all-route="blogRoute"
+    />
 
     <TheCategorySeoBlock :seo="meta.seo" />
   </main>
@@ -46,6 +49,7 @@ const {
   brands,
   suggestedItems,
   articles,
+  blogRoute,
   productCount,
   searchAllRoute,
   searchRoute,

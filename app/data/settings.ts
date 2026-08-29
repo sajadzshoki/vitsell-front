@@ -8,7 +8,7 @@ export type SettingsLinkItem = {
 }
 
 export const settingsLinkItems: SettingsLinkItem[] = [
-  { id: 'seller', label: 'پنل فروشنده', icon: 'i-tabler-building-store', to: '/seller' },
+  // { id: 'seller', label: 'پنل فروشنده', icon: 'i-tabler-building-store', to: '/seller' },
   { id: 'faq', label: 'پرسش‌های متداول', icon: 'i-tabler-help', to: staticPagePaths.faq },
   { id: 'privacy', label: 'حریم خصوصی', icon: 'i-tabler-lock', to: staticPagePaths.privacy },
   { id: 'terms', label: 'شرایط استفاده', icon: 'i-tabler-file-text', to: staticPagePaths.terms },

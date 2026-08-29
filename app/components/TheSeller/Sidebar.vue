@@ -17,9 +17,9 @@
       </div>
     </div>
 
-    <ThePanelSwitch class="mt-4" />
+    <!-- <ThePanelSwitch class="mt-4" /> -->
 
-    <nav class="mt-3 pt-3 border-t border-muted space-y-1">
+    <nav class="mt-3 pt-3  space-y-1">
       <NuxtLink
         v-for="item in sellerNavItems"
         :key="item.id"

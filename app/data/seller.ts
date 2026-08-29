@@ -30,18 +30,40 @@ export type SellerOrderItem = {
   price: number
 }
 
+export type SellerOrderAddress = {
+  province: string
+  city: string
+  address: string
+  postalCode: string
+}
+
 export type SellerOrder = {
   id: string
   date: string
+  /** کلید مرتب‌سازی تاریخ به صورت YYYYMMDD میلادی/شمسی عددی لاتین */
+  dateKey: string
   status: SellerOrderStatus
   customerName: string
   customerPhone: string
   city: string
+  address: SellerOrderAddress
   items: SellerOrderItem[]
   total: number
   shippingMethod: string
   paymentMethod: string
+  note?: string
 }
+
+export type SellerOrderSort = 'newest' | 'oldest' | 'amount_desc' | 'amount_asc'
+
+export const sellerOrderSortOptions: { id: SellerOrderSort, label: string }[] = [
+  { id: 'newest', label: 'جدیدترین' },
+  { id: 'oldest', label: 'قدیمی‌ترین' },
+  { id: 'amount_desc', label: 'بیشترین مبلغ' },
+  { id: 'amount_asc', label: 'کمترین مبلغ' },
+]
+
+export const sellerOrdersPageSize = 5
 
 export type SellerReview = {
   id: string
@@ -118,15 +140,27 @@ export const sellerProductStatusMeta: Record<
 
 export const sellerOrderStatusMeta: Record<
   SellerOrderStatus,
-  { label: string; color: 'success' | 'info' | 'warning' | 'primary' | 'error' | 'neutral'; icon: string }
+  {
+    label: string
+    color: 'success' | 'info' | 'warning' | 'primary' | 'error' | 'neutral'
+    icon: string
+    step: number
+  }
 > = {
-  new: { label: 'سفارش جدید', color: 'warning', icon: 'i-tabler-bell' },
-  packing: { label: 'در حال آماده‌سازی', color: 'info', icon: 'i-tabler-box' },
-  shipped: { label: 'ارسال شده', color: 'primary', icon: 'i-tabler-truck-delivery' },
-  delivered: { label: 'تحویل شده', color: 'success', icon: 'i-tabler-check' },
-  returned: { label: 'مرجوعی', color: 'error', icon: 'i-tabler-arrow-back-up' },
-  cancelled: { label: 'لغو شده', color: 'neutral', icon: 'i-tabler-x' },
+  new: { label: 'سفارش جدید', color: 'warning', icon: 'i-tabler-bell', step: 0 },
+  packing: { label: 'در حال آماده‌سازی', color: 'info', icon: 'i-tabler-box', step: 1 },
+  shipped: { label: 'ارسال شده', color: 'primary', icon: 'i-tabler-truck-delivery', step: 2 },
+  delivered: { label: 'تحویل شده', color: 'success', icon: 'i-tabler-check', step: 3 },
+  returned: { label: 'مرجوعی', color: 'error', icon: 'i-tabler-arrow-back-up', step: 0 },
+  cancelled: { label: 'لغو شده', color: 'neutral', icon: 'i-tabler-x', step: 0 },
 }
+
+export const sellerOrderTrackingSteps = [
+  'ثبت سفارش',
+  'در حال آماده‌سازی',
+  'ارسال شد',
+  'تحویل داده شد',
+]
 
 export const sellerOrderNextStatus: Partial<Record<SellerOrderStatus, SellerOrderStatus>> = {
   new: 'packing',
@@ -134,10 +168,34 @@ export const sellerOrderNextStatus: Partial<Record<SellerOrderStatus, SellerOrde
   shipped: 'delivered',
 }
 
+export const sellerOrderPrevStatus: Partial<Record<SellerOrderStatus, SellerOrderStatus>> = {
+  packing: 'new',
+  shipped: 'packing',
+  delivered: 'shipped',
+}
+
 export const sellerOrderActionLabel: Partial<Record<SellerOrderStatus, string>> = {
   new: 'شروع آماده‌سازی',
   packing: 'ارسال سفارش',
   shipped: 'ثبت تحویل',
+}
+
+export const sellerOrderUndoLabel: Partial<Record<SellerOrderStatus, string>> = {
+  packing: 'بازگشت به سفارش جدید',
+  shipped: 'بازگشت به آماده‌سازی',
+  delivered: 'بازگشت به ارسال‌شده',
+}
+
+export const sellerOrderAdvanceConfirm: Partial<Record<SellerOrderStatus, string>> = {
+  new: 'آیا از شروع آماده‌سازی این سفارش مطمئن هستید؟',
+  packing: 'آیا از ثبت ارسال این سفارش مطمئن هستید؟',
+  shipped: 'آیا از ثبت تحویل این سفارش به مشتری مطمئن هستید؟',
+}
+
+export const sellerOrderUndoConfirm: Partial<Record<SellerOrderStatus, string>> = {
+  packing: 'وضعیت به «سفارش جدید» برمی‌گردد. ادامه می‌دهید؟',
+  shipped: 'وضعیت به «در حال آماده‌سازی» برمی‌گردد. ادامه می‌دهید؟',
+  delivered: 'وضعیت به «ارسال شده» برمی‌گردد. ادامه می‌دهید؟',
 }
 
 export const defaultSellerListings: SellerListing[] = [
@@ -159,22 +217,37 @@ export const defaultSellerOrders: SellerOrder[] = [
   {
     id: 'SL-20411',
     date: '۱۴۰۳/۰۹/۲۲',
+    dateKey: '14030922',
     status: 'new',
     customerName: 'نگار موسوی',
     customerPhone: '09123334455',
     city: 'تهران',
+    address: {
+      province: 'تهران',
+      city: 'تهران',
+      address: 'خیابان شریعتی، نرسیده به میرداماد، کوچه بهار، پلاک ۸، واحد ۴',
+      postalCode: '1949632145',
+    },
     items: [{ productId: 'iphone-16-pro', qty: 1, price: 89_900_000 }],
     total: 89_900_000,
     shippingMethod: 'پیک اکسپرس',
     paymentMethod: 'پرداخت آنلاین',
+    note: 'تحویل در ساعات اداری ترجیح داده می‌شود.',
   },
   {
     id: 'SL-20408',
     date: '۱۴۰۳/۰۹/۲۱',
+    dateKey: '14030921',
     status: 'packing',
     customerName: 'رضا کریمی',
     customerPhone: '09351234567',
     city: 'کرج',
+    address: {
+      province: 'البرز',
+      city: 'کرج',
+      address: 'گوهردشت، فاز ۳، خیابان ارم، پلاک ۲۲',
+      postalCode: '3145678901',
+    },
     items: [
       { productId: 'sony-xm5', qty: 1, price: 18_500_000 },
       { productId: 'airpods-pro-2', qty: 1, price: 12_400_000 },
@@ -184,64 +257,242 @@ export const defaultSellerOrders: SellerOrder[] = [
     paymentMethod: 'پرداخت آنلاین',
   },
   {
+    id: 'SL-20398',
+    date: '۱۴۰۳/۰۹/۲۰',
+    dateKey: '14030920',
+    status: 'new',
+    customerName: 'الهام جعفری',
+    customerPhone: '09125556677',
+    city: 'قم',
+    address: {
+      province: 'قم',
+      city: 'قم',
+      address: 'بلوار امین، کوچه ۱۲، پلاک ۵',
+      postalCode: '3713890012',
+    },
+    items: [
+      { productId: 'airpods-pro-2', qty: 2, price: 12_400_000 },
+    ],
+    total: 24_800_000,
+    shippingMethod: 'پست پیشتاز',
+    paymentMethod: 'پرداخت آنلاین',
+  },
+  {
     id: 'SL-20391',
     date: '۱۴۰۳/۰۹/۱۸',
+    dateKey: '14030918',
     status: 'shipped',
     customerName: 'سارا محمدی',
     customerPhone: '09127654321',
     city: 'اصفهان',
+    address: {
+      province: 'اصفهان',
+      city: 'اصفهان',
+      address: 'خیابان چهارباغ عباسی، کوچه گلستان، پلاک ۱۷',
+      postalCode: '8145612345',
+    },
     items: [{ productId: 'galaxy-s25-ultra', qty: 1, price: 72_400_000 }],
     total: 72_400_000,
     shippingMethod: 'پست پیشتاز',
     paymentMethod: 'پرداخت آنلاین',
   },
   {
+    id: 'SL-20382',
+    date: '۱۴۰۳/۰۹/۱۶',
+    dateKey: '14030916',
+    status: 'packing',
+    customerName: 'کیانوش مرادی',
+    customerPhone: '09361112233',
+    city: 'رشت',
+    address: {
+      province: 'گیلان',
+      city: 'رشت',
+      address: 'خیابان مطهری، بعد از میدان فرهنگ، پلاک ۴۱',
+      postalCode: '4135678901',
+    },
+    items: [{ productId: 'xiaomi-robot-vac', qty: 1, price: 15_900_000 }],
+    total: 15_900_000,
+    shippingMethod: 'تیپاکس',
+    paymentMethod: 'پرداخت در محل',
+  },
+  {
     id: 'SL-20370',
     date: '۱۴۰۳/۰۹/۱۲',
+    dateKey: '14030912',
     status: 'delivered',
     customerName: 'امیر حسینی',
     customerPhone: '09199887766',
     city: 'مشهد',
+    address: {
+      province: 'خراسان رضوی',
+      city: 'مشهد',
+      address: 'بلوار وکیل‌آباد، بین وکیل‌آباد ۱۸ و ۲۰، پلاک ۹۰',
+      postalCode: '9178945123',
+    },
     items: [{ productId: 'ps5-pro', qty: 1, price: 32_500_000 }],
     total: 32_500_000,
     shippingMethod: 'تیپاکس',
     paymentMethod: 'پرداخت در محل',
   },
   {
+    id: 'SL-20361',
+    date: '۱۴۰۳/۰۹/۰۹',
+    dateKey: '14030909',
+    status: 'shipped',
+    customerName: 'نیلوفر اکبری',
+    customerPhone: '09134445566',
+    city: 'یزد',
+    address: {
+      province: 'یزد',
+      city: 'یزد',
+      address: 'صفائیه، خیابان تیمسار فلاحی، پلاک ۱۲',
+      postalCode: '8916789012',
+    },
+    items: [
+      { productId: 'sony-xm5', qty: 1, price: 18_500_000 },
+      { productId: 'jbl-charge-5', qty: 1, price: 7_400_000 },
+    ],
+    total: 25_900_000,
+    shippingMethod: 'پست پیشتاز',
+    paymentMethod: 'پرداخت آنلاین',
+  },
+  {
     id: 'SL-20355',
     date: '۱۴۰۳/۰۹/۰۵',
+    dateKey: '14030905',
     status: 'delivered',
     customerName: 'مینا رضایی',
     customerPhone: '09211223344',
     city: 'شیراز',
+    address: {
+      province: 'فارس',
+      city: 'شیراز',
+      address: 'خیابان زند، کوچه بهار، پلاک ۳، واحد ۲',
+      postalCode: '7134567890',
+    },
     items: [{ productId: 'macbook-m4', qty: 1, price: 145_000_000 }],
     total: 145_000_000,
     shippingMethod: 'پست پیشتاز',
     paymentMethod: 'پرداخت آنلاین',
   },
   {
+    id: 'SL-20340',
+    date: '۱۴۰۳/۰۹/۰۱',
+    dateKey: '14030901',
+    status: 'delivered',
+    customerName: 'فرهاد صالحی',
+    customerPhone: '09127778899',
+    city: 'تهران',
+    address: {
+      province: 'تهران',
+      city: 'تهران',
+      address: 'سعادت‌آباد، میدان کاج، خیابان سرو غربی، پلاک ۲۸',
+      postalCode: '1998612345',
+    },
+    items: [{ productId: 'lg-oled-c4', qty: 1, price: 98_000_000 }],
+    total: 98_000_000,
+    shippingMethod: 'پیک اکسپرس',
+    paymentMethod: 'پرداخت آنلاین',
+  },
+  {
+    id: 'SL-20328',
+    date: '۱۴۰۳/۰۸/۳۰',
+    dateKey: '14030830',
+    status: 'new',
+    customerName: 'مهدی کاظمی',
+    customerPhone: '09390001122',
+    city: 'اهواز',
+    address: {
+      province: 'خوزستان',
+      city: 'اهواز',
+      address: 'کیانپارس، خیابان ۳ غربی، پلاک ۱۵',
+      postalCode: '6155678901',
+    },
+    items: [{ productId: 'iphone-16-pro', qty: 1, price: 89_900_000 }],
+    total: 89_900_000,
+    shippingMethod: 'تیپاکس',
+    paymentMethod: 'پرداخت آنلاین',
+  },
+  {
     id: 'SL-20312',
     date: '۱۴۰۳/۰۸/۲۸',
+    dateKey: '14030828',
     status: 'returned',
     customerName: 'حسین نادری',
     customerPhone: '09370001122',
     city: 'تبریز',
+    address: {
+      province: 'آذربایجان شرقی',
+      city: 'تبریز',
+      address: 'ولیعصر، خیابان ۲۹ بهمن، پلاک ۶۶',
+      postalCode: '5166612345',
+    },
     items: [{ productId: 'jbl-charge-5', qty: 1, price: 7_400_000 }],
     total: 7_400_000,
+    shippingMethod: 'پست پیشتاز',
+    paymentMethod: 'پرداخت آنلاین',
+    note: 'کالا آسیب‌دیده دریافت شده؛ درخواست مرجوعی تأیید شد.',
+  },
+  {
+    id: 'SL-20301',
+    date: '۱۴۰۳/۰۸/۲۴',
+    dateKey: '14030824',
+    status: 'delivered',
+    customerName: 'زهرا نوری',
+    customerPhone: '09121110022',
+    city: 'کرمان',
+    address: {
+      province: 'کرمان',
+      city: 'کرمان',
+      address: 'خیابان شریعتی، کوچه ۱۲، پلاک ۹',
+      postalCode: '7614567890',
+    },
+    items: [{ productId: 'apple-watch-ultra', qty: 1, price: 21_800_000 }],
+    total: 21_800_000,
     shippingMethod: 'پست پیشتاز',
     paymentMethod: 'پرداخت آنلاین',
   },
   {
     id: 'SL-20288',
     date: '۱۴۰۳/۰۸/۱۹',
+    dateKey: '14030819',
     status: 'cancelled',
     customerName: 'پارسا احمدی',
     customerPhone: '09120001122',
     city: 'اهواز',
+    address: {
+      province: 'خوزستان',
+      city: 'اهواز',
+      address: 'زیتون کارمندی، خیابان ۱۸، پلاک ۷',
+      postalCode: '6134512345',
+    },
     items: [{ productId: 'apple-watch-ultra', qty: 1, price: 21_800_000 }],
     total: 21_800_000,
     shippingMethod: 'پیک اکسپرس',
     paymentMethod: 'پرداخت آنلاین',
+    note: 'لغو توسط خریدار قبل از آماده‌سازی.',
+  },
+  {
+    id: 'SL-20275',
+    date: '۱۴۰۳/۰۸/۱۴',
+    dateKey: '14030814',
+    status: 'delivered',
+    customerName: 'سپیده رحیمی',
+    customerPhone: '09126667788',
+    city: 'همدان',
+    address: {
+      province: 'همدان',
+      city: 'همدان',
+      address: 'بلوار آیت‌الله مدنی، پلاک ۳۳',
+      postalCode: '6515678901',
+    },
+    items: [
+      { productId: 'airpods-pro-2', qty: 1, price: 12_400_000 },
+      { productId: 'sony-xm5', qty: 1, price: 18_500_000 },
+    ],
+    total: 30_900_000,
+    shippingMethod: 'تیپاکس',
+    paymentMethod: 'پرداخت در محل',
   },
 ]
 

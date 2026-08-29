@@ -7,15 +7,6 @@ export type CategorySuggestedItem = {
   query: string
 }
 
-export type CategoryArticle = {
-  id: string
-  title: string
-  excerpt: string
-  image: string
-  /** Placeholder until blog/news routes exist */
-  to?: string
-}
-
 export type CategoryPageMeta = {
   hero: {
     image: string
@@ -27,35 +18,7 @@ export type CategoryPageMeta = {
     heading: string
     paragraphs: string[]
   }
-  articles: CategoryArticle[]
 }
-
-const defaultArticles = (categoryName: string): CategoryArticle[] => [
-  {
-    id: 'guide-buy',
-    title: `راهنمای خرید ${categoryName}`,
-    excerpt: 'نکات مهم قبل از خرید، مقایسه برندها و پیشنهادهای کارشناسی.',
-    image: '/images/mock/hero-tech-ecosystem.jpg',
-  },
-  {
-    id: 'compare',
-    title: `مقایسه محبوب‌ترین محصولات ${categoryName}`,
-    excerpt: 'جدول مقایسه مشخصات، قیمت و امتیاز کاربران.',
-    image: '/images/mock/galaxy-s25-ultra.jpg',
-  },
-  {
-    id: 'trends',
-    title: `ترندهای ${categoryName} در سال ۱۴۰۴`,
-    excerpt: 'جدیدترین تکنولوژی‌ها و مدل‌های پرطرفدار بازار.',
-    image: '/images/mock/macbook-m4-spaceblack.jpg',
-  },
-  {
-    id: 'tips',
-    title: 'نکات نگهداری و افزایش عمر دستگاه',
-    excerpt: 'راهکارهای ساده برای استفاده بهتر و ماندگاری بیشتر.',
-    image: '/images/mock/sony-xm5-midnight.jpg',
-  },
-]
 
 export const categoryPageMeta: Record<string, CategoryPageMeta> = {
   mobile: {
@@ -73,7 +36,6 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
         'با مقایسه قیمت، امتیاز کاربران و موجودی انبار می‌توانید بهترین تصمیم را بگیرید. تیم پشتیبانی دیجی‌شاپ در تمام مراحل خرید همراه شماست.',
       ],
     },
-    articles: defaultArticles('موبایل'),
   },
   laptop: {
     hero: {
@@ -90,7 +52,6 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
         'امکان مقایسه مشخصات فنی، مشاهده نظرات خریداران و بهره‌مندی از تخفیف‌های دوره‌ای از مزایای خرید از دیجی‌شاپ است.',
       ],
     },
-    articles: defaultArticles('لپ‌تاپ'),
   },
   audio: {
     hero: {
@@ -107,7 +68,6 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
         'برای انتخاب مناسب به نوع اتصال، عمر باتری، مقاومت در برابر آب و کاربرد (ورزش، سفر، گیمینگ) توجه کنید.',
       ],
     },
-    articles: defaultArticles('صوتی'),
   },
   tv: {
     hero: {
@@ -123,7 +83,6 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
         'سایز مناسب را بر اساس فاصله viewing و ابعاد اتاق انتخاب کنید. مدل‌های هوشمند با سیستم‌عامل Tizen و webOS در دسترس هستند.',
       ],
     },
-    articles: defaultArticles('تلویزیون'),
   },
   camera: {
     hero: {
@@ -139,7 +98,6 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
         'برای انتخاب دوربین به سنسور، لنز، تثبیت تصویر و قابلیت فیلم‌برداری ۴K توجه کنید.',
       ],
     },
-    articles: defaultArticles('دوربین'),
   },
   watch: {
     hero: {
@@ -155,7 +113,6 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
         'مدل‌های ورزشی، لوکس و اقتصادی برای هر سلیقه و بودجه.',
       ],
     },
-    articles: defaultArticles('ساعت هوشمند'),
   },
   gaming: {
     hero: {
@@ -167,11 +124,10 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
     seo: {
       heading: 'خرید کنسول بازی',
       paragraphs: [
-        'کنسول‌های نسل جدید، دسته بازی، هدست گیمینگ و акسسوری‌های مرتبط.',
+        'کنسول‌های نسل جدید، دسته بازی، هدست گیمینگ و اکسسوری‌های مرتبط.',
         'برای انتخاب کنسول به کتابخانه بازی، قدرت پردازشی و نوع نمایشگر توجه کنید.',
       ],
     },
-    articles: defaultArticles('گیمینگ'),
   },
   home: {
     hero: {
@@ -187,7 +143,6 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
         'از جاروبرقی رباتیک تا یخچال و ماشین لباسشویی — همه با گارانتی معتبر.',
       ],
     },
-    articles: defaultArticles('لوازم خانگی'),
   },
   fashion: {
     hero: {
@@ -203,7 +158,6 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
         'سایزبندی استاندارد، امکان مرجوعی و ارسال رایگان برای سفارش‌های بالای حد نصاب.',
       ],
     },
-    articles: defaultArticles('مد'),
   },
   beauty: {
     hero: {
@@ -219,7 +173,6 @@ export const categoryPageMeta: Record<string, CategoryPageMeta> = {
         'راهنمای انتخاب بر اساس نوع پوست و نیازهای مراقبتی.',
       ],
     },
-    articles: defaultArticles('زیبایی'),
   },
 }
 
@@ -250,7 +203,6 @@ export function getCategoryPageMeta(id: string): CategoryPageMeta {
         'در دیجی‌شاپ می‌توانید محصولات متنوع این دسته را با بهترین قیمت و ارسال سریع تهیه کنید.',
       ],
     },
-    articles: defaultArticles('محصولات'),
   }
 }
 

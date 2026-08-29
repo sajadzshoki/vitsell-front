@@ -7,11 +7,15 @@ import {
 import {
   buildSuggestedItems,
   getCategoryPageMeta,
-  type CategoryArticle,
   type CategoryPageMeta,
   type CategorySuggestedItem,
 } from '~/data/category-pages'
-import { products, type Product } from '~/data/products'
+import {
+  getBlogPostPath,
+  getRelatedBlogPosts,
+  staticPagePaths,
+} from '~/data/static-pages'
+import { products } from '~/data/products'
 
 export function useCategoryPage() {
   const route = useRoute()
@@ -76,7 +80,19 @@ export function useCategoryPage() {
     })
   })
 
-  const articles = computed<CategoryArticle[]>(() => meta.value.articles)
+  const articles = computed(() =>
+    getRelatedBlogPosts(catId.value).map(post => ({
+      id: post.id,
+      title: post.title,
+      excerpt: post.excerpt,
+      image: post.image,
+      category: post.category,
+      readTime: post.readTime,
+      to: getBlogPostPath(post.id),
+    })),
+  )
+
+  const blogRoute = staticPagePaths.blog
 
   const productCount = computed(() => categoryProducts.value.length)
 
@@ -102,6 +118,7 @@ export function useCategoryPage() {
     brands,
     suggestedItems,
     articles,
+    blogRoute,
     productCount,
     searchAllRoute,
     searchRoute,
