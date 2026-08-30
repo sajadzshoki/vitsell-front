@@ -117,18 +117,16 @@
 </template>
 
 <script setup lang="ts">
-import { getProductById } from '~/data/products'
-
 const { isMobile } = useDevice()
 const { profile } = useAccount()
-const { shop, shopInitial, orders, lowStockListings } = useSeller()
+const { shop, shopInitial, orders, lowStockListings, resolveProduct } = useSeller()
 
 const recentOrders = computed(() => orders.value.slice(0, 3))
 
 const lowStockItems = computed(() =>
   lowStockListings.value.map(item => ({
     ...item,
-    product: getProductById(item.productId),
+    product: resolveProduct(item.productId),
   })),
 )
 </script>

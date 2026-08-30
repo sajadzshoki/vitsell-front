@@ -103,11 +103,13 @@ const cards = computed(() => [
 ])
 
 function onPayout() {
-  const ok = requestPayout()
-  if (ok) {
-    toast.success(t('درخواست تسویه ثبت شد'))
-    return
-  }
-  toast.warning(t('موجودی قابل برداشت ندارید'))
+  void (async () => {
+    const ok = await requestPayout()
+    if (ok) {
+      toast.success(t('درخواست تسویه ثبت شد'))
+      return
+    }
+    toast.warning(t('موجودی قابل برداشت ندارید'))
+  })()
 }
 </script>

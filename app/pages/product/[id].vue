@@ -45,7 +45,10 @@
         :product="product"
       />
 
-      <TheProductRelated :product="product" :related="related" />
+      <TheProductRelated
+        :product="product"
+        :related="related"
+      />
     </div>
   </main>
 </template>
@@ -60,7 +63,7 @@ const { fetchProduct } = useProducts()
 const productId = computed(() => String(route.params.id ?? ''))
 const product = ref<Product | null>(null)
 
-const { related } = useProductDetail(product)
+const { related, fetchDetail } = useProductDetail(product)
 
 async function loadProduct() {
   const id = productId.value
@@ -74,6 +77,7 @@ async function loadProduct() {
     throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
   }
   product.value = result
+  await fetchDetail({ force: true })
 }
 
 await loadProduct()
@@ -82,7 +86,7 @@ watch(productId, () => {
   loadProduct()
 })
 
-useMobileBackwardTitle(() => product.value.title)
+useMobileBackwardTitle(() => product.value?.title ?? '')
 
 const colorIndex = ref(0)
 const activeTab = ref('specs')

@@ -56,6 +56,10 @@
 <script setup lang="ts">
 import type { ShopNotification } from '~/data/notifications'
 
+definePageMeta({
+  middleware: 'auth',
+})
+
 const { t } = useI18n()
 
 const {

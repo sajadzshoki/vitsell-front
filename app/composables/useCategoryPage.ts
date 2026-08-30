@@ -148,7 +148,7 @@ export function useCategoryPage() {
       }))
   }
 
-  await load()
+  void load()
 
   watch(catId, () => {
     load()

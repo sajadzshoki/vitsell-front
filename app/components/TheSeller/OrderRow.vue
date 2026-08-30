@@ -107,12 +107,14 @@ import {
   sellerOrderStatusMeta,
   type SellerOrder,
 } from '~/data/seller'
-import { formatPrice, getProductById } from '~/data/products'
+import { formatPrice } from '~/data/products'
 
 const props = defineProps<{
   order: SellerOrder
   compact?: boolean
 }>()
+
+const { resolveProduct } = useSeller()
 
 const orderLink = computed(() => `/seller/orders/${encodeURIComponent(props.order.id)}`)
 
@@ -121,7 +123,7 @@ const statusMeta = computed(() => sellerOrderStatusMeta[props.order.status])
 const visibleItems = computed(() =>
   props.order.items.slice(0, 3).map(item => ({
     ...item,
-    product: getProductById(item.productId),
+    product: resolveProduct(item.productId),
   })),
 )
 

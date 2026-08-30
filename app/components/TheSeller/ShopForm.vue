@@ -56,6 +56,7 @@
         color="primary"
         size="lg"
         class="font-bold"
+        :loading="saving"
         @click="onSave"
       >
         {{ saved ? $t('ذخیره شد') : $t('ذخیره تغییرات') }}
@@ -78,22 +79,33 @@ import type { SellerShop } from '~/data/seller'
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { shop } = useSeller()
+const { shop, updateShop } = useSeller()
 
 const saved = ref(false)
+const saving = ref(false)
 const form = ref<SellerShop>({ ...shop.value })
 
 watch(shop, (value) => {
   form.value = { ...value }
 })
 
-function onSave() {
-  shop.value = { ...form.value }
-  saved.value = true
-  toast.success(t('اطلاعات فروشگاه ذخیره شد'))
-  setTimeout(() => {
-    saved.value = false
-  }, 2000)
+async function onSave() {
+  saving.value = true
+  try {
+    const { result, error } = await updateShop(form.value)
+    if (error || !result) {
+      toast.error(t('ذخیره اطلاعات فروشگاه ناموفق بود'))
+      return
+    }
+    saved.value = true
+    toast.success(t('اطلاعات فروشگاه ذخیره شد'))
+    setTimeout(() => {
+      saved.value = false
+    }, 2000)
+  }
+  finally {
+    saving.value = false
+  }
 }
 
 function onCancel() {

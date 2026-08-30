@@ -106,14 +106,14 @@
 
 <script setup lang="ts">
 import { sellerProductStatusMeta, type SellerListing } from '~/data/seller'
-import { formatPrice, getProductById } from '~/data/products'
+import { formatPrice } from '~/data/products'
 
 const props = defineProps<{
   listing: SellerListing
 }>()
 
-const { setListingStatus } = useSeller()
+const { setListingStatus, resolveProduct } = useSeller()
 
-const product = computed(() => getProductById(props.listing.productId))
+const product = computed(() => resolveProduct(props.listing.productId))
 const statusMeta = computed(() => sellerProductStatusMeta[props.listing.status])
 </script>

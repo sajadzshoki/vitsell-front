@@ -10,7 +10,7 @@
     />
     <TheHomeCircleStrip v-if="circles.length" />
     <TheHomeCategories v-if="categories.length" />
-    <TheHomeDeals />
+    <TheHomeDeals v-if="dealsOfTheDay.length" />
     <TheHomeBrands v-if="brands.length" />
     <TheHomeBestSellers v-if="bestSellers.length" />
     <TheHomePromos v-if="promos.length" />
@@ -27,6 +27,7 @@ const {
   brands,
   bestSellers,
   promos,
+  dealsOfTheDay,
 } = useHome()
 
 await useAsyncData('home-page', () => fetchHome({ force: true }))

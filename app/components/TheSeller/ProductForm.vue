@@ -343,7 +343,7 @@ import type { ProductColor } from '~/data/products'
 const { t } = useI18n()
 const toast = useAppToast()
 const router = useRouter()
-const { addListingProduct, setListingStatus } = useSeller()
+const { addListingProduct } = useSeller()
 
 const categoryOptions = getSellerCategoryOptions()
 const form = ref<SellerProductFormValues>(emptySellerProductForm())
@@ -433,9 +433,13 @@ async function onSubmit(sendForReview: boolean) {
   submitting.value = true
   try {
     const stock = Number.parseInt(form.value.stock.replace(/[^\d]/g, '') || '0', 10)
-    const productId = addListingProduct(product, stock)
-    if (!sendForReview) {
-      setListingStatus(productId, stock > 0 ? 'inactive' : 'out_of_stock')
+    const status = sendForReview
+      ? 'pending' as const
+      : (stock > 0 ? 'inactive' as const : 'out_of_stock' as const)
+    const productId = await addListingProduct(product, stock, status)
+    if (!productId) {
+      toast.error(t('ثبت محصول ناموفق بود'))
+      return
     }
 
     toast.success(

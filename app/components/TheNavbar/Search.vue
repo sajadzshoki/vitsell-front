@@ -88,7 +88,7 @@
 
 <script setup lang="ts">
 import { popularSearches, toSearchRoute } from '~/data/categories'
-import { products } from '~/data/products'
+import type { Product } from '~/data/products'
 
 const MAX_RECENT = 8
 
@@ -97,15 +97,22 @@ const query = defineModel<string>({ default: '' })
 const open = ref(false)
 const wrapRef = ref<HTMLElement | null>(null)
 const recentSearches = useLocalStorage<string[]>('digishop-recent-searches', [])
+const suggestions = ref<Product[]>([])
+const { fetchProducts } = useProducts()
 
-const suggestions = computed(() => {
-  const q = query.value.trim()
-  if (!q) return []
-  const lower = q.toLowerCase()
-  return products
-    .filter(p => p.title.includes(q) || p.brand.toLowerCase().includes(lower))
-    .slice(0, 5)
-})
+watchDebounced(
+  query,
+  async (value) => {
+    const q = value.trim()
+    if (!q) {
+      suggestions.value = []
+      return
+    }
+    const { result } = await fetchProducts({ q, pageSize: 5, page: 1 })
+    suggestions.value = result.items.slice(0, 5)
+  },
+  { debounce: 250 },
+)
 
 function close() {
   open.value = false

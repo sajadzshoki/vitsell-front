@@ -71,6 +71,7 @@
             size="md"
             class="font-medium shrink-0"
             :disabled="!draft.trim()"
+            :loading="sending"
             @click="onReply"
           >
             {{ $t('ارسال پاسخ') }}
@@ -83,7 +84,6 @@
 
 <script setup lang="ts">
 import type { SellerReview } from '~/data/seller'
-import { getProductById } from '~/data/products'
 
 const props = defineProps<{
   review: SellerReview
@@ -91,16 +91,27 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { replyToReview } = useSeller()
+const { replyToReview, resolveProduct } = useSeller()
 
-const product = computed(() => getProductById(props.review.productId))
+const product = computed(() => resolveProduct(props.review.productId))
 const draft = ref('')
+const sending = ref(false)
 
-function onReply() {
+async function onReply() {
   const text = draft.value.trim()
   if (!text) return
-  replyToReview(props.review.id, text)
-  draft.value = ''
-  toast.success(t('پاسخ ثبت شد'))
+  sending.value = true
+  try {
+    const ok = await replyToReview(props.review.id, text)
+    if (!ok) {
+      toast.error(t('ثبت پاسخ ناموفق بود'))
+      return
+    }
+    draft.value = ''
+    toast.success(t('پاسخ ثبت شد'))
+  }
+  finally {
+    sending.value = false
+  }
 }
 </script>

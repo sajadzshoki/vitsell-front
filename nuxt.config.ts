@@ -78,5 +78,11 @@ export default defineNuxtConfig({
         warnHtmlMessage: false
     },
 
+    runtimeConfig: {
+        public: {
+            apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://digishop-back.vistatest.top/api/v1',
+        },
+    },
+
     compatibilityDate: "2025-03-09"
 })

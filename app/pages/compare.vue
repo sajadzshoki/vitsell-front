@@ -382,7 +382,25 @@ const syncing = ref(false)
 
 const items = computed(() => compareStore.products)
 
+const primaryCategory = computed(() => items.value[0]?.category ?? '')
+
+watch(
+  primaryCategory,
+  (category) => {
+    if (category) void compareStore.fetchTemplates(category)
+  },
+  { immediate: true },
+)
+
 const sections = computed(() => {
+  const fromApi = compareStore.templates.sections as { title: string, rows: string[] }[]
+  if (fromApi?.length) {
+    const base = [...fromApi]
+    if (base[0] && !base[0].rows.includes('برند')) {
+      base[0] = { ...base[0], rows: ['برند', ...base[0].rows] }
+    }
+    return base
+  }
   const base = compareSectionsFor(items.value.map(item => item.category))
   if (base.length && !base[0]!.rows.includes('برند')) {
     base[0] = { ...base[0]!, rows: ['برند', ...base[0]!.rows] }
@@ -390,7 +408,11 @@ const sections = computed(() => {
   return base
 })
 
-const criteria = computed(() => radarCriteriaFor(items.value.map(item => item.category)))
+const criteria = computed(() => {
+  const fromApi = compareStore.templates.radarCriteria
+  if (fromApi?.length) return fromApi.slice(0, 6)
+  return radarCriteriaFor(items.value.map(item => item.category))
+})
 
 const summaryGridStyle = computed(() => {
   const n = items.value.length

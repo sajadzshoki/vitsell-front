@@ -89,9 +89,8 @@
 
 <script setup lang="ts">
 import type { SellerProductStatus } from '~/data/seller'
-import { getProductById } from '~/data/products'
 
-const { listings } = useSeller()
+const { listings, resolveProduct } = useSeller()
 
 const query = ref('')
 const statusFilter = ref<'all' | SellerProductStatus>('all')
@@ -111,7 +110,7 @@ const filtered = computed(() => {
       return false
     }
     if (!q) return true
-    return getProductById(listing.productId).title.includes(q)
+    return resolveProduct(listing.productId).title.includes(q)
   })
 })
 </script>
