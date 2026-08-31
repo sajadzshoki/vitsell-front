@@ -120,12 +120,12 @@ export const sellerNavItems: {
   icon: string
   to: string
 }[] = [
-  { id: 'dashboard', label: 'پیشخوان فروشنده', icon: 'i-tabler-layout-dashboard', to: '/seller' },
+  { id: 'dashboard', label: 'پیشخوان مدیریت', icon: 'i-tabler-layout-dashboard', to: '/seller' },
   { id: 'products', label: 'محصولات', icon: 'i-tabler-package', to: '/seller/products' },
-  { id: 'orders', label: 'سفارش‌های فروشگاه', icon: 'i-tabler-shopping-bag', to: '/seller/orders' },
+  { id: 'orders', label: 'سفارش‌ها', icon: 'i-tabler-shopping-bag', to: '/seller/orders' },
   { id: 'reviews', label: 'نظرات مشتریان', icon: 'i-tabler-message-2', to: '/seller/reviews' },
   { id: 'finance', label: 'مالی و تسویه', icon: 'i-tabler-wallet', to: '/seller/finance' },
-  { id: 'shop', label: 'تنظیمات فروشگاه', icon: 'i-tabler-building-store', to: '/seller/shop' },
+  { id: 'shop', label: 'تنظیمات سایت', icon: 'i-tabler-settings', to: '/seller/shop' },
 ]
 
 export const sellerProductStatusMeta: Record<

@@ -24,7 +24,7 @@ const orderId = computed(() => String(route.params.id ?? ''))
 
 definePageMeta({
   layout: 'seller',
-  middleware: 'auth',
+  middleware: ['auth', 'admin'],
 })
 
 useSeoMeta({

@@ -50,7 +50,7 @@ export const navQuickLinks: NavQuickLink[] = [
 
 export const navSellerLink: NavQuickLink = {
   id: 'seller',
-  label: 'فروشنده شو',
+  label: 'پنل مدیریت',
   to: '/seller',
   accent: true,
 }

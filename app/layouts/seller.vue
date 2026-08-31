@@ -18,10 +18,10 @@
           to="/seller"
           class="hover:text-primary transition"
         >
-          {{ $t('پنل فروشنده') }}
+          {{ $t('پنل مدیریت') }}
         </NuxtLink>
         <template v-else>
-          <span class="text-toned">{{ $t('پنل فروشنده') }}</span>
+          <span class="text-toned">{{ $t('پنل مدیریت') }}</span>
         </template>
         <template v-if="isOrderDetail">
           <span class="text-dimmed">/</span>
@@ -29,7 +29,7 @@
             to="/seller/orders"
             class="hover:text-primary transition"
           >
-            {{ $t('سفارش‌های فروشگاه') }}
+            {{ $t('سفارش‌ها') }}
           </NuxtLink>
           <span class="text-dimmed">/</span>
           <span class="text-toned">{{ $t('جزئیات سفارش') }}</span>

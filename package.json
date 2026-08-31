@@ -3,8 +3,14 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
+    "build:store": "nuxt build --dotenv .env.store",
+    "build:admin": "nuxt build --dotenv .env.admin",
     "dev": "nuxt dev",
+    "dev:store": "nuxt dev --port 4000 --dotenv .env.store",
+    "dev:admin": "nuxt dev --port 4001 --dotenv .env.admin",
     "generate": "nuxt generate",
+    "generate:store": "nuxt generate --dotenv .env.store",
+    "generate:admin": "nuxt generate --dotenv .env.admin",
     "preview": "nuxt preview",
     "postinstall": "patch-package && nuxt prepare"
   },

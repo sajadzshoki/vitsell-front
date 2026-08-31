@@ -10,12 +10,13 @@
     <template #body>
       <nav class="flex flex-col -mx-4">
         <NuxtLink
+          v-if="isAdmin"
           to="/seller"
           class="flex items-center gap-3 px-4 py-3.5 text-start border-b border-muted hover:bg-muted transition"
           @click="open = false"
         >
-          <UIcon name="i-tabler-building-store" class="size-5 text-primary shrink-0" />
-          <span class="flex-1 text-sm font-medium text-primary">{{ $t('فروشنده شوید') }}</span>
+          <UIcon name="i-tabler-settings" class="size-5 text-primary shrink-0" />
+          <span class="flex-1 text-sm font-medium text-primary">{{ $t('پنل مدیریت') }}</span>
           <UIcon name="i-tabler-chevron-left" class="size-4 text-dimmed shrink-0" />
         </NuxtLink>
         <div
@@ -83,7 +84,18 @@ const open = defineModel<boolean>('open', { default: false })
 const expanded = ref('')
 
 const { categories, fetchCategories } = useCategories()
+const { profile, profileLoaded, fetchProfile } = useAccount()
+const { isLoggedIn } = useShop()
+
+const isAdmin = computed(() => profile.value.role === 'admin')
+
 await fetchCategories({ withCounts: false })
+
+watch(open, async (v) => {
+  if (v && isLoggedIn.value && !profileLoaded.value) {
+    await fetchProfile()
+  }
+})
 
 function toggle(id: string) {
   expanded.value = expanded.value === id ? '' : id

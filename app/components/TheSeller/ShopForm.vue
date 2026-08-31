@@ -1,22 +1,22 @@
 <template>
   <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
     <h2 class="hidden lg:block font-bold text-highlighted mb-5">
-      {{ $t('تنظیمات فروشگاه') }}
+      {{ $t('تنظیمات سایت') }}
     </h2>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <TheFormInput
         v-model="form.name"
-        :label="$t('نام فروشگاه')"
+        :label="$t('نام سایت')"
       />
       <TheFormInput
         v-model="form.slug"
-        :label="$t('شناسه فروشگاه')"
+        :label="$t('شناسه سایت')"
         dir="ltr"
       />
       <TheFormInput
         v-model="form.phone"
-        :label="$t('شماره تماس فروشگاه')"
+        :label="$t('شماره تماس')"
         dir="ltr"
         digits-only
         maxlength="11"
@@ -33,7 +33,7 @@
       />
       <TheFormInput
         :model-value="shop.joinDate"
-        :label="$t('تاریخ عضویت')"
+        :label="$t('تاریخ راه‌اندازی')"
         disabled
       />
     </div>

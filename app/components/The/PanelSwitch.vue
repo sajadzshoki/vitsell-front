@@ -27,7 +27,7 @@ const route = useRoute()
 
 const items = [
   { label: 'حساب کاربری', icon: 'i-tabler-user', to: '/account' },
-  { label: 'پنل فروشنده', icon: 'i-tabler-building-store', to: '/seller' },
+  { label: 'پنل مدیریت', icon: 'i-tabler-settings', to: '/seller' },
 ] as const
 
 function isActive(to: string) {

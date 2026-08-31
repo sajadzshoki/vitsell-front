@@ -132,7 +132,10 @@
             @update:model-value="passwordError = ''"
           />
 
-          <div class="flex items-center justify-between gap-2 -mt-3">
+          <div
+            v-if="!isAdminApp"
+            class="flex items-center justify-between gap-2 -mt-3"
+          >
             <UButton
               type="button"
               color="neutral"
@@ -153,6 +156,20 @@
               {{ $t('فراموشی رمز عبور') }}
             </UButton>
           </div>
+          <div
+            v-else
+            class="flex justify-end -mt-3"
+          >
+            <UButton
+              type="button"
+              color="neutral"
+              variant="link"
+              size="xs"
+              @click="showPassword = !showPassword"
+            >
+              {{ showPassword ? $t('مخفی کردن رمز') : $t('نمایش رمز') }}
+            </UButton>
+          </div>
 
           <UButton
             type="submit"
@@ -166,6 +183,7 @@
           </UButton>
 
           <UButton
+            v-if="!isAdminApp"
             type="button"
             color="primary"
             variant="link"
@@ -355,7 +373,16 @@
     </div>
 
     <div class="mt-8 flex justify-center">
+      <a
+        v-if="isAdminApp && storeUrl"
+        :href="storeUrl"
+        class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition"
+      >
+        <UIcon name="i-tabler-arrow-right" class="size-4" />
+        {{ $t('بازگشت به فروشگاه') }}
+      </a>
       <NuxtLink
+        v-else-if="!isAdminApp"
         to="/"
         class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition"
       >
@@ -373,6 +400,7 @@ definePageMeta({
 
 const { t } = useI18n()
 const route = useRoute()
+const { isAdminApp, storeUrl } = useAppMode()
 const { isLoggedIn, login } = useShop()
 const { checkPhone, requestOtp, verifyOtp, loginWithPassword, resetPassword } = useAuth()
 const toast = useAppToast()
@@ -380,9 +408,12 @@ const toast = useAppToast()
 function redirectAfterLogin() {
   const raw = route.query.redirect
   if (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) {
+    if (isAdminApp && !raw.startsWith('/seller') && raw !== '/login') {
+      return '/seller'
+    }
     return raw
   }
-  return '/'
+  return isAdminApp ? '/seller' : '/'
 }
 const { startTimer, clearTimer, isRunning, formattedTime } = useOtpTimer()
 
@@ -408,6 +439,10 @@ const loading = ref(false)
 const devCode = ref<string | null>(null)
 
 const subtitle = computed(() => {
+  if (isAdminApp) {
+    if (step.value === 'password') return t('ورود مدیر سایت')
+    return t('پنل مدیریت دیجی‌شاپ')
+  }
   if (step.value === 'password') return t('ورود با رمز عبور')
   if (step.value === 'otp' && otpPurpose.value === 'reset') return t('بازیابی رمز عبور')
   if (step.value === 'otp') return t('تأیید شماره موبایل')
@@ -502,6 +537,30 @@ async function submitPhone() {
     const { result, error } = await checkPhone(phone.value)
     if (error) {
       phoneError.value = apiErrorMessage(error, t('بررسی شماره ناموفق بود'))
+      toast.error(phoneError.value)
+      return
+    }
+
+    if (isAdminApp) {
+      if (!result?.isAdmin) {
+        phoneError.value = t('این شماره دسترسی مدیر ندارد')
+        toast.error(phoneError.value)
+        return
+      }
+      if (!result.hasPassword) {
+        phoneError.value = t('برای این حساب ابتدا رمز عبور تنظیم کنید')
+        toast.error(phoneError.value)
+        return
+      }
+      step.value = 'password'
+      password.value = ''
+      passwordError.value = ''
+      showPassword.value = false
+      return
+    }
+
+    if (result?.isAdmin) {
+      phoneError.value = t('حساب مدیر از فروشگاه قابل ورود نیست')
       toast.error(phoneError.value)
       return
     }

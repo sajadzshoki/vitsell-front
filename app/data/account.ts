@@ -30,6 +30,7 @@ export type AccountProfile = {
   birth: string
   gender: string
   hasPassword?: boolean
+  role?: 'customer' | 'seller' | 'admin'
 }
 
 export const defaultProfile: AccountProfile = {

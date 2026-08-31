@@ -40,16 +40,16 @@ Layout: `account` — همه با middleware `auth`
 
 ### پنل فروشنده
 
-Layout: `seller` — همه با middleware `auth`
+Layout: `seller` — middleware `auth` + `admin` (فقط `role === 'admin'`)
 
 | Route | فایل | توضیح |
 |-------|------|--------|
-| `/seller` | `seller/index.vue` | داشبورد فروشنده |
-| `/seller/shop` | `seller/shop.vue` | تنظیمات فروشگاه |
-| `/seller/products` | `seller/products/index.vue` | لیست محصولات فروشگاه |
+| `/seller` | `seller/index.vue` | داشبورد مدیریت |
+| `/seller/shop` | `seller/shop.vue` | تنظیمات سایت |
+| `/seller/products` | `seller/products/index.vue` | لیست محصولات |
 | `/seller/products/new` | `seller/products/new.vue` | افزودن محصول |
-| `/seller/orders` | `seller/orders/index.vue` | سفارش‌های فروشنده |
-| `/seller/orders/:id` | `seller/orders/[id].vue` | جزئیات سفارش فروشنده |
+| `/seller/orders` | `seller/orders/index.vue` | سفارش‌ها |
+| `/seller/orders/:id` | `seller/orders/[id].vue` | جزئیات سفارش |
 | `/seller/reviews` | `seller/reviews.vue` | نظرات |
 | `/seller/finance` | `seller/finance.vue` | مالی / تسویه |
 
@@ -95,10 +95,12 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 |--------|------|------|--------|
 | `POST` | `/auth/otp/request` | — | درخواست OTP — body: `{ phone }` |
 | `POST` | `/auth/otp/verify` | — | تأیید OTP — body: `{ phone, code }` → `{ token, profile }` |
-| `POST` | `/auth/check` | — | بررسی شماره — body: `{ phone }` → `{ hasPassword }` |
-| `POST` | `/auth/login` | — | ورود با رمز — body: `{ phone, password }` → `{ token, profile }` |
-| `POST` | `/auth/password/reset` | — | بازیابی رمز — body: `{ phone, code, password, passwordConfirmation }` |
-| `GET` | `/auth/me` | ✅ | کاربر جاری |
+| `POST` | `/auth/check` | — | فروشگاه: `{ hasPassword, isAdmin? }` |
+| `POST` | `/auth/login` | — | ورود مشتری با رمز |
+| `POST` | `/auth/password/reset` | — | بازیابی رمز مشتری |
+| `POST` | `/auth/admin/check` | — | پنل ادمین: `{ isAdmin, hasPassword }` |
+| `POST` | `/auth/admin/login` | — | ورود مدیر (فقط Origin=`ADMIN_URL`) |
+| `GET` | `/auth/me` | ✅ | کاربر جاری (+ `role`) |
 | `POST` | `/auth/logout` | ✅ | خروج |
 
 ### دسته‌بندی و محصول
@@ -182,13 +184,15 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `POST` | `/notifications/:id/read` | خوانده‌شدن یک مورد |
 | `POST` | `/notifications/read-all` | خواندن همه |
 
-### فروشنده — `/api/v1/seller` (همه Auth)
+### پنل مدیریت — `/api/v1/seller` (Auth + Admin)
 
 | Method | Path | توضیح |
 |--------|------|--------|
-| `GET` | `/seller/shop` | اطلاعات فروشگاه |
-| `PUT` | `/seller/shop` | به‌روزرسانی فروشگاه |
-| `GET` | `/seller/listings` | لیستینگ محصولات |
+| `GET` | `/seller/shop` | تنظیمات سایت |
+| `PUT` | `/seller/shop` | به‌روزرسانی تنظیمات سایت |
+| `GET` | `/seller/listings` | لیست محصولات پنل |
+| `POST` | `/seller/listings` | افزودن محصول |
+| `PATCH` | `/seller/listings/:productId` | تغییر وضعیت محصول |
 | `GET` | `/seller/orders` | سفارش‌ها |
 | `GET` | `/seller/orders/:id` | جزئیات سفارش |
 | `PATCH` | `/seller/orders/:id/status` | تغییر وضعیت سفارش |
@@ -197,7 +201,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET` | `/seller/payouts` | پرداخت‌ها / تسویه |
 | `GET` | `/seller/sales` | فروش‌ها |
 
-Seed فروشنده نمونه: شماره `09121234567` (طبق README بک‌اند).
+ادمین نمونه (سید): شماره `09121234567` با `role: admin`.
 
 ---
 
