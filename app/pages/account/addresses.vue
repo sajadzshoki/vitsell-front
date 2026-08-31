@@ -8,7 +8,7 @@
         {{ $t('آدرس‌های من') }}
       </h2>
       <UButton
-        v-if="!showForm"
+        v-if="!showForm && !loading"
         color="primary"
         variant="soft"
         size="sm"
@@ -20,15 +20,27 @@
       </UButton>
     </div>
 
+    <div
+      v-if="loading"
+      class="grid grid-cols-1 md:grid-cols-2 gap-3"
+    >
+      <USkeleton
+        v-for="n in 2"
+        :key="n"
+        class="h-36 rounded-2xl"
+      />
+    </div>
+
     <TheAccountAddressForm
-      v-if="showForm"
+      v-else-if="showForm"
       class="mb-4 sm:mb-5"
+      :saving="saving"
       @save="onSave"
       @cancel="closeForm"
     />
 
     <div
-      v-if="!showForm && addresses.length === 0"
+      v-else-if="addresses.length === 0"
       class="text-center py-12"
     >
       <UIcon name="i-tabler-map-pin-off" class="size-14 text-dimmed mx-auto mb-4" />
@@ -44,7 +56,7 @@
     </div>
 
     <div
-      v-else-if="!showForm"
+      v-else
       class="grid grid-cols-1 md:grid-cols-2 gap-3"
     >
       <TheAccountAddressCard
@@ -68,6 +80,26 @@ const { addresses, editingAddressId } = storeToRefs(checkoutStore)
 const { requestDelete } = useAddressDelete()
 
 const showForm = ref(false)
+const loading = ref(true)
+const saving = ref(false)
+
+function apiErrorMessage(error: any, fallback: string) {
+  const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+  return fromFields || error?.data?.message || fallback
+}
+
+async function loadAddresses() {
+  loading.value = true
+  try {
+    const { error } = await checkoutStore.fetchAddresses()
+    if (error) {
+      toast.error(apiErrorMessage(error, t('بارگذاری آدرس‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 function openForm() {
   checkoutStore.beginAddAddress()
@@ -80,19 +112,27 @@ function openEdit(id: string) {
 }
 
 function closeForm() {
+  if (saving.value) return
   checkoutStore.cancelAddressForm()
   showForm.value = false
 }
 
-function onSave() {
+async function onSave() {
+  if (saving.value) return
   const isEdit = !!editingAddressId.value
-  const ok = checkoutStore.submitAddressForm()
-  if (!ok) {
-    toast.error(t('نام، موبایل و آدرس الزامی است'))
-    return
+  saving.value = true
+  try {
+    const { ok, error } = await checkoutStore.submitAddressForm()
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('نام، موبایل و آدرس الزامی است')))
+      return
+    }
+    toast.success(t(isEdit ? 'آدرس به‌روزرسانی شد' : 'آدرس ذخیره شد'))
+    showForm.value = false
   }
-  toast.success(t(isEdit ? 'آدرس به‌روزرسانی شد' : 'آدرس ذخیره شد'))
-  showForm.value = false
+  finally {
+    saving.value = false
+  }
 }
 
 function onDelete(id: string) {
@@ -105,6 +145,10 @@ function onDeleteConfirmed({ wasEditing }: { id: string, wasEditing: boolean }) 
     showForm.value = false
   }
 }
+
+onMounted(() => {
+  loadAddresses()
+})
 
 definePageMeta({
   layout: 'account',

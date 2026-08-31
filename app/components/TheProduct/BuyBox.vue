@@ -94,7 +94,10 @@
         {{ inCompare ? $t('در لیست مقایسه — برای حذف کلیک کنید') : $t('افزودن به مقایسه') }}
       </UButton>
 
-      <div class="mt-4 pt-4 border-t border-accented space-y-2.5">
+      <div
+        v-if="buyNotes.length"
+        class="mt-4 pt-4 border-t border-accented space-y-2.5"
+      >
         <div
           v-for="note in buyNotes"
           :key="note.text"
@@ -124,7 +127,10 @@
         {{ inCompare ? $t('در لیست مقایسه — برای حذف کلیک کنید') : $t('افزودن به مقایسه') }}
       </UButton>
 
-      <div class="bg-muted rounded-2xl p-4 space-y-2.5">
+      <div
+        v-if="buyNotes.length"
+        class="bg-muted rounded-2xl p-4 space-y-2.5"
+      >
         <div
           v-for="note in buyNotes"
           :key="note.text"
@@ -147,7 +153,6 @@
 </template>
 
 <script setup lang="ts">
-import { productBuyNotes } from '~/data/product-detail'
 import { formatPrice, type Product } from '~/data/products'
 
 const props = defineProps<{
@@ -160,7 +165,7 @@ const { addToCart, getCartQty, updateQty } = useShop()
 const compareStore = useCompareStore()
 const { toggleCompare } = useCompareActions()
 
-const buyNotes = productBuyNotes
+const buyNotes = computed(() => props.product.buyNotes ?? [])
 
 const qty = computed(() => getCartQty(props.product.id))
 const inCompare = computed(() => compareStore.isInCompare(props.product.id))

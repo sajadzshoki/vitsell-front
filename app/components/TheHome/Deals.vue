@@ -54,9 +54,8 @@
 </template>
 
 <script setup lang="ts">
-import { dealsOfTheDay } from '~/data/products'
-
-const deals = dealsOfTheDay
+const { dealsOfTheDay } = useHome()
+const deals = computed(() => dealsOfTheDay.value)
 
 const remaining = ref(5 * 3600 + 42 * 60 + 18)
 

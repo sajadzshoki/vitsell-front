@@ -57,7 +57,10 @@
       {{ product.shortDesc }}
     </p>
 
-    <ul class="space-y-1.5 mb-3">
+    <ul
+      v-if="features.length"
+      class="space-y-1.5 mb-3"
+    >
       <li
         v-for="feature in features"
         :key="feature"
@@ -71,10 +74,9 @@
 </template>
 
 <script setup lang="ts">
-import { productDetailFeatures } from '~/data/product-detail'
 import type { Product } from '~/data/products'
 
-defineProps<{
+const props = defineProps<{
   product: Product
 }>()
 
@@ -84,5 +86,5 @@ const emit = defineEmits<{
 
 const colorIndex = defineModel<number>('colorIndex', { default: 0 })
 
-const features = productDetailFeatures
+const features = computed(() => props.product.features ?? [])
 </script>

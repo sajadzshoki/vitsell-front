@@ -14,7 +14,5 @@
 </template>
 
 <script setup lang="ts">
-import { homeBrands } from '~/data/home'
-
-const brands = homeBrands
+const { brands } = useHome()
 </script>

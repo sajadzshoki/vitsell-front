@@ -1,6 +1,6 @@
 <template>
   <section
-    v-if="related.length"
+    v-if="items.length"
     class="mt-6 md:mt-10"
   >
     <div class="flex items-center justify-between mb-3.5 md:mb-5 gap-3">
@@ -20,7 +20,7 @@
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       <TheProductCard
-        v-for="item in related"
+        v-for="item in items"
         :key="item.id"
         :product="item"
       />
@@ -29,11 +29,12 @@
 </template>
 
 <script setup lang="ts">
-import { getRelatedProducts, type Product } from '~/data/products'
+import type { Product } from '~/data/products'
 
 const props = defineProps<{
   product: Product
+  related?: Product[]
 }>()
 
-const related = computed(() => getRelatedProducts(props.product))
+const items = computed(() => props.related ?? [])
 </script>

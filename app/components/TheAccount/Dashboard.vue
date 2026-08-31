@@ -74,7 +74,17 @@
 
 <script setup lang="ts">
 const { isMobile } = useDevice()
-const { profile, orders, fullName, avatarInitial } = useAccount()
+const { profile, orders, ordersLoaded, fullName, avatarInitial, fetchOrders } = useAccount()
+const checkoutStore = useCheckoutStore()
 
 const recentOrders = computed(() => orders.value.slice(0, 3))
+
+onMounted(() => {
+  if (!checkoutStore.addressesLoaded) {
+    checkoutStore.fetchAddresses()
+  }
+  if (!ordersLoaded.value) {
+    fetchOrders()
+  }
+})
 </script>

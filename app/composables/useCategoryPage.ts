@@ -1,100 +1,64 @@
-import {
-  categories,
-  getCategoryById,
-  toSearchRoute,
-  type Category,
-} from '~/data/categories'
-import {
-  buildSuggestedItems,
-  getCategoryPageMeta,
-  type CategoryPageMeta,
-  type CategorySuggestedItem,
+import type { Category } from '~/data/categories'
+import { toSearchRoute } from '~/data/categories'
+import type {
+  CategoryPageMeta,
+  CategorySuggestedItem,
 } from '~/data/category-pages'
-import {
-  getBlogPostPath,
-  getRelatedBlogPosts,
-  staticPagePaths,
-} from '~/data/static-pages'
-import { products } from '~/data/products'
+import type { Product } from '~/data/products'
+
+type CategoryPagePayload = {
+  meta: CategoryPageMeta | null
+  suggested: CategorySuggestedItem[]
+}
+
+type BlogPostSummary = {
+  id: string
+  title: string
+  excerpt: string
+  image: string
+  category: string
+  readTime: string
+  relatedCategories?: string[]
+}
+
+const emptyMeta = (): CategoryPageMeta => ({
+  hero: {
+    image: '',
+    eyebrow: '',
+    title: '',
+    subtitle: '',
+  },
+  seo: {
+    heading: '',
+    paragraphs: [],
+  },
+})
 
 export function useCategoryPage() {
   const route = useRoute()
   const { t } = useI18n()
+  const { categories, fetchCategories, getCategoryById } = useCategories()
+  const { fetchProducts } = useProducts()
 
   const catId = computed(() => String(route.params.catId ?? ''))
+  const category = ref<Category | undefined>()
+  const meta = ref<CategoryPageMeta>(emptyMeta())
+  const suggestedItems = ref<CategorySuggestedItem[]>([])
+  const popularProducts = ref<Product[]>([])
+  const dealProducts = ref<Product[]>([])
+  const brands = ref<string[]>([])
+  const articles = ref<{
+    id: string
+    title: string
+    excerpt: string
+    image: string
+    category: string
+    readTime: string
+    to: string
+  }[]>([])
+  const productCount = ref(0)
 
-  const category = computed<Category | undefined>(() => getCategoryById(catId.value))
-
-  watch(
-    category,
-    (value) => {
-      if (catId.value && !value) {
-        throw createError({
-          statusCode: 404,
-          statusMessage: t('دسته‌بندی یافت نشد'),
-        })
-      }
-    },
-    { immediate: true },
-  )
-
-  const meta = computed<CategoryPageMeta>(() => getCategoryPageMeta(catId.value))
-
-  const categoryProducts = computed(() =>
-    products.filter(p => p.category === catId.value),
-  )
-
-  const popularProducts = computed(() =>
-    [...categoryProducts.value]
-      .sort((a, b) => b.reviews - a.reviews)
-      .slice(0, 12),
-  )
-
-  const dealProducts = computed(() =>
-    categoryProducts.value
-      .filter(p => p.oldPrice)
-      .sort((a, b) => b.reviews - a.reviews)
-      .slice(0, 8),
-  )
-
-  const brands = computed(() =>
-    Array.from(new Set(categoryProducts.value.map(p => p.brand)))
-      .sort((a, b) => a.localeCompare(b, 'fa')),
-  )
-
-  const suggestedItems = computed<CategorySuggestedItem[]>(() => {
-    const cat = category.value
-    if (!cat) return []
-
-    const fallback = meta.value.hero.image
-    const base = buildSuggestedItems(cat, fallback)
-
-    return base.map((item, index) => {
-      const match = categoryProducts.value.find(p =>
-        p.title.includes(item.query) || p.brand.includes(item.query),
-      )
-      return {
-        ...item,
-        image: match?.image ?? categoryProducts.value[index % Math.max(categoryProducts.value.length, 1)]?.image ?? fallback,
-      }
-    })
-  })
-
-  const articles = computed(() =>
-    getRelatedBlogPosts(catId.value).map(post => ({
-      id: post.id,
-      title: post.title,
-      excerpt: post.excerpt,
-      image: post.image,
-      category: post.category,
-      readTime: post.readTime,
-      to: getBlogPostPath(post.id),
-    })),
-  )
-
-  const blogRoute = staticPagePaths.blog
-
-  const productCount = computed(() => categoryProducts.value.length)
+  const blogRoute = '/blog'
 
   const searchAllRoute = computed(() =>
     toSearchRoute({ q: category.value?.name, category: catId.value }),
@@ -108,18 +72,100 @@ export function useCategoryPage() {
     return toSearchRoute({ q: brand, category: catId.value })
   }
 
+  async function load() {
+    await fetchCategories({ withCounts: false })
+    const id = catId.value
+    if (!id) {
+      throw createError({ statusCode: 404, statusMessage: t('دسته‌بندی یافت نشد') })
+    }
+
+    const [{ result: cat }, { result: page }, popular, deals, { result: blog }] = await Promise.all([
+      useGet<Category>(`/categories/${encodeURIComponent(id)}`, { headers: { 'no-error': true } }),
+      useGet<CategoryPagePayload>(`/category-pages/${encodeURIComponent(id)}`, {
+        headers: { 'no-error': true },
+      }),
+      fetchProducts({ category: id, sort: 'bestselling', pageSize: 12 }),
+      fetchProducts({ category: id, onlyDiscount: true, sort: 'bestselling', pageSize: 8 }),
+      useGet<BlogPostSummary[]>('/blog', { headers: { 'no-error': true } }),
+    ])
+
+    const resolved = cat ?? getCategoryById(id)
+    if (!resolved) {
+      throw createError({ statusCode: 404, statusMessage: t('دسته‌بندی یافت نشد') })
+    }
+
+    category.value = resolved
+    meta.value = page?.meta ?? emptyMeta()
+    if (!meta.value.hero.title) {
+      meta.value = {
+        ...meta.value,
+        hero: {
+          ...meta.value.hero,
+          title: resolved.name,
+          subtitle: meta.value.hero.subtitle || resolved.name,
+        },
+        seo: {
+          heading: meta.value.seo.heading || resolved.name,
+          paragraphs: meta.value.seo.paragraphs,
+        },
+      }
+    }
+
+    popularProducts.value = popular.result.items
+    dealProducts.value = deals.result.items
+    productCount.value = popular.result.total
+    brands.value = Array.from(new Set(popular.result.items.map(p => p.brand)))
+      .sort((a, b) => a.localeCompare(b, 'fa'))
+
+    const fallbackImage = meta.value.hero.image || popular.result.items[0]?.image || ''
+    const apiSuggested = page?.suggested ?? []
+    suggestedItems.value = apiSuggested.map((item, index) => ({
+      ...item,
+      image:
+        item.image
+        || popular.result.items.find(p =>
+          p.title.includes(item.query) || p.brand.includes(item.query),
+        )?.image
+        || popular.result.items[index % Math.max(popular.result.items.length, 1)]?.image
+        || fallbackImage,
+    }))
+
+    const posts = Array.isArray(blog) ? blog : []
+    articles.value = posts
+      .filter(post =>
+        !post.relatedCategories?.length
+        || post.relatedCategories.includes(id),
+      )
+      .slice(0, 4)
+      .map(post => ({
+        id: post.id,
+        title: post.title,
+        excerpt: post.excerpt,
+        image: post.image,
+        category: post.category,
+        readTime: post.readTime,
+        to: `/blog/${post.id}`,
+      }))
+  }
+
+  void load()
+
+  watch(catId, () => {
+    load()
+  })
+
   return {
     catId,
-    category,
+    category: computed(() => category.value),
     categories,
-    meta,
-    popularProducts,
-    dealProducts,
-    brands,
-    suggestedItems,
-    articles,
+    meta: computed(() => meta.value),
+    popularProducts: computed(() => popularProducts.value),
+    dealProducts: computed(() => dealProducts.value),
+    brands: computed(() => brands.value),
+    suggestedItems: computed(() => suggestedItems.value),
+    articles: computed(() => articles.value),
     blogRoute,
-    productCount,
+    productCount: computed(() => productCount.value),
     searchAllRoute,
     searchRoute,
     brandRoute,

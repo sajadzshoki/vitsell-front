@@ -1,11 +1,4 @@
 import {
-  defaultSellerListings,
-  defaultSellerOrders,
-  defaultSellerPayouts,
-  defaultSellerReviews,
-  defaultSellerSales,
-  defaultSellerShop,
-  defaultSellerWallet,
   sellerLowStockThreshold,
   sellerOrderNextStatus,
   sellerOrderPrevStatus,
@@ -18,30 +11,32 @@ import {
   type SellerSalesPoint,
   type SellerShop,
 } from '~/data/seller'
-import { getProductById, registerCatalogProduct, type Product } from '~/data/products'
+import type { Product } from '~/data/products'
+
+const emptyShop = (): SellerShop => ({
+  name: '',
+  slug: '',
+  phone: '',
+  email: '',
+  city: '',
+  about: '',
+  rating: 0,
+  reviewCount: 0,
+  joinDate: '',
+})
 
 export function useSeller() {
-  const shop = useState<SellerShop>('seller-shop', () =>
-    structuredClone(defaultSellerShop),
-  )
-  const listings = useState<SellerListing[]>('seller-listings', () =>
-    structuredClone(defaultSellerListings),
-  )
-  const orders = useState<SellerOrder[]>('seller-orders', () =>
-    structuredClone(defaultSellerOrders),
-  )
-  const reviews = useState<SellerReview[]>('seller-reviews', () =>
-    structuredClone(defaultSellerReviews),
-  )
-  const payouts = useState<SellerPayout[]>('seller-payouts', () =>
-    structuredClone(defaultSellerPayouts),
-  )
-  const sales = useState<SellerSalesPoint[]>('seller-sales', () =>
-    structuredClone(defaultSellerSales),
-  )
-  const wallet = useState('seller-wallet', () =>
-    structuredClone(defaultSellerWallet),
-  )
+  const { fetchProduct, getCachedProduct, remember } = useProducts()
+
+  const shop = useState<SellerShop>('seller-shop', emptyShop)
+  const listings = useState<SellerListing[]>('seller-listings', () => [])
+  const orders = useState<SellerOrder[]>('seller-orders', () => [])
+  const reviews = useState<SellerReview[]>('seller-reviews', () => [])
+  const payouts = useState<SellerPayout[]>('seller-payouts', () => [])
+  const sales = useState<SellerSalesPoint[]>('seller-sales', () => [])
+  const loaded = useState('seller-loaded', () => false)
+  const pending = useState('seller-pending', () => false)
+  const inFlight = useState<Promise<void> | null>('seller-inflight', () => null)
 
   const shopInitial = computed(() => shop.value.name.trim().charAt(0) || 'ف')
 
@@ -69,89 +64,240 @@ export function useSeller() {
     ),
   )
 
+  const wallet = computed(() => {
+    const monthSales = sales.value.reduce((sum, point) => sum + point.value, 0)
+    const pendingAmount = payouts.value
+      .filter(p => p.status === 'pending')
+      .reduce((sum, p) => sum + p.amount, 0)
+    const paidAmount = payouts.value
+      .filter(p => p.status === 'paid')
+      .reduce((sum, p) => sum + p.amount, 0)
+    return {
+      available: Math.max(0, monthSales - pendingAmount - paidAmount),
+      pending: pendingAmount,
+      monthSales,
+    }
+  })
+
+  function resolveProduct(productId: string): Product {
+    return getCachedProduct(productId) ?? {
+      id: productId,
+      title: productId,
+      brand: '',
+      category: '',
+      categoryLabel: '',
+      price: 0,
+      rating: 0,
+      reviews: 0,
+      image: '',
+      inStock: false,
+      fastDelivery: false,
+    }
+  }
+
   const listingProducts = computed(() =>
     listings.value.map(listing => ({
       ...listing,
-      product: getProductById(listing.productId),
+      product: resolveProduct(listing.productId),
     })),
   )
+
+  async function hydrateProducts(ids: string[]) {
+    const unique = [...new Set(ids.filter(Boolean))]
+    await Promise.all(unique.map(id => fetchProduct(id)))
+  }
+
+  async function fetchSeller(options?: { force?: boolean }) {
+    if (loaded.value && !options?.force) return
+    if (inFlight.value) return inFlight.value
+
+    pending.value = true
+    const run = (async () => {
+      try {
+        const [
+          shopRes,
+          listingsRes,
+          ordersRes,
+          reviewsRes,
+          payoutsRes,
+          salesRes,
+        ] = await Promise.all([
+          useGet<SellerShop>('/seller/shop', { headers: { 'no-error': true } }),
+          useGet<SellerListing[]>('/seller/listings', { headers: { 'no-error': true } }),
+          useGet<SellerOrder[]>('/seller/orders', { headers: { 'no-error': true } }),
+          useGet<SellerReview[]>('/seller/reviews', { headers: { 'no-error': true } }),
+          useGet<SellerPayout[]>('/seller/payouts', { headers: { 'no-error': true } }),
+          useGet<SellerSalesPoint[]>('/seller/sales', { headers: { 'no-error': true } }),
+        ])
+
+        if (shopRes.result) shop.value = shopRes.result
+        listings.value = Array.isArray(listingsRes.result) ? listingsRes.result : []
+        orders.value = Array.isArray(ordersRes.result) ? ordersRes.result : []
+        reviews.value = Array.isArray(reviewsRes.result) ? reviewsRes.result : []
+        payouts.value = Array.isArray(payoutsRes.result) ? payoutsRes.result : []
+        sales.value = Array.isArray(salesRes.result) ? salesRes.result : []
+        loaded.value = true
+
+        const productIds = [
+          ...listings.value.map(l => l.productId),
+          ...reviews.value.map(r => r.productId),
+          ...orders.value.flatMap(o => o.items.map(i => i.productId)),
+        ]
+        await hydrateProducts(productIds)
+      }
+      finally {
+        pending.value = false
+        inFlight.value = null
+      }
+    })()
+
+    inFlight.value = run
+    return run
+  }
 
   function getListing(productId: string) {
     return listings.value.find(item => item.productId === productId) ?? null
   }
 
-  function setListingStatus(productId: string, status: SellerProductStatus) {
+  async function setListingStatus(productId: string, status: SellerProductStatus) {
+    const { result, error } = await usePatch<SellerListing>(
+      `/seller/listings/${encodeURIComponent(productId)}`,
+      { status },
+      { headers: { 'no-error': true } },
+    )
+    if (error) return false
+    if (result) {
+      listings.value = listings.value.map(item =>
+        item.productId === productId ? { ...item, ...result } : item,
+      )
+      return true
+    }
     listings.value = listings.value.map(item =>
       item.productId === productId ? { ...item, status } : item,
     )
+    return true
   }
 
-  function addListingProduct(product: Product, stock: number) {
-    registerCatalogProduct(product)
-    listings.value = [
+  async function addListingProduct(product: Product, stock: number, status: SellerProductStatus = 'pending') {
+    const { result, error } = await usePost<{ listing: SellerListing, product: Product }>(
+      '/seller/listings',
       {
-        productId: product.id,
+        product: {
+          id: product.id,
+          title: product.title,
+          shortName: product.shortName,
+          brand: product.brand,
+          category: product.category,
+          categoryLabel: product.categoryLabel,
+          price: product.price,
+          oldPrice: product.oldPrice,
+          image: product.image,
+          gallery: product.gallery,
+          colors: product.colors,
+          shortDesc: product.shortDesc,
+          specs: product.specs,
+          badge: product.badge,
+          inStock: product.inStock,
+          fastDelivery: product.fastDelivery,
+        },
         stock,
-        sold: 0,
-        views: 0,
-        status: 'pending',
+        status,
       },
-      ...listings.value,
-    ]
-    return product.id
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result) return null
+
+    remember([result.product ?? product])
+    const listing = result.listing ?? {
+      productId: product.id,
+      stock,
+      sold: 0,
+      views: 0,
+      status,
+    }
+    listings.value = [listing, ...listings.value.filter(l => l.productId !== listing.productId)]
+    return listing.productId
   }
 
   function getOrderById(id: string) {
     return orders.value.find(order => order.id === id) ?? null
   }
 
-  function advanceOrder(id: string) {
+  async function setOrderStatus(id: string, status: SellerOrderStatus) {
+    const { result, error } = await usePatch<SellerOrder>(
+      `/seller/orders/${encodeURIComponent(id)}/status`,
+      { status },
+      { headers: { 'no-error': true } },
+    )
+    if (error) return false
+    if (result) {
+      orders.value = orders.value.map(order => (order.id === id ? result : order))
+      return true
+    }
+    orders.value = orders.value.map(order =>
+      order.id === id ? { ...order, status } : order,
+    )
+    return true
+  }
+
+  async function advanceOrder(id: string) {
     const order = orders.value.find(item => item.id === id)
     if (!order) return false
     const next = sellerOrderNextStatus[order.status]
     if (!next) return false
-    setOrderStatus(id, next)
-    return true
+    return setOrderStatus(id, next)
   }
 
-  function revertOrder(id: string) {
+  async function revertOrder(id: string) {
     const order = orders.value.find(item => item.id === id)
     if (!order) return false
     const prev = sellerOrderPrevStatus[order.status]
     if (!prev) return false
-    setOrderStatus(id, prev)
-    return true
+    return setOrderStatus(id, prev)
   }
 
-  function setOrderStatus(id: string, status: SellerOrderStatus) {
-    orders.value = orders.value.map(order =>
-      order.id === id ? { ...order, status } : order,
+  async function replyToReview(id: string, reply: string) {
+    const { result, error } = await usePost<SellerReview>(
+      `/seller/reviews/${encodeURIComponent(id)}/reply`,
+      { reply },
+      { headers: { 'no-error': true } },
     )
-  }
-
-  function replyToReview(id: string, reply: string) {
+    if (error) return false
+    if (result) {
+      reviews.value = reviews.value.map(review => (review.id === id ? result : review))
+      return true
+    }
     reviews.value = reviews.value.map(review =>
       review.id === id ? { ...review, reply } : review,
     )
+    return true
   }
 
-  function requestPayout() {
-    if (wallet.value.available <= 0) return false
-    const amount = wallet.value.available
-    payouts.value = [
-      {
-        id: `PO-${Date.now().toString().slice(-4)}`,
-        date: new Intl.DateTimeFormat('fa-IR').format(new Date()),
-        amount,
-        status: 'pending',
-      },
-      ...payouts.value,
-    ]
-    wallet.value = {
-      ...wallet.value,
-      pending: wallet.value.pending + amount,
-      available: 0,
+  async function updateShop(payload: Partial<SellerShop>) {
+    const body = {
+      name: payload.name ?? shop.value.name,
+      phone: payload.phone ?? shop.value.phone,
+      email: payload.email ?? shop.value.email,
+      city: payload.city ?? shop.value.city,
+      about: payload.about ?? shop.value.about,
     }
+    const { result, error } = await usePut<SellerShop>('/seller/shop', body, {
+      headers: { 'no-error': true },
+    })
+    if (error || !result) return { result: null as SellerShop | null, error }
+    shop.value = result
+    return { result, error: null as null }
+  }
+
+  async function requestPayout() {
+    if (wallet.value.available <= 0) return false
+    const { result, error } = await usePost<SellerPayout>(
+      '/seller/payouts',
+      { amount: wallet.value.available },
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result) return false
+    payouts.value = [result, ...payouts.value]
     return true
   }
 
@@ -163,6 +309,8 @@ export function useSeller() {
     payouts,
     sales,
     wallet,
+    loaded,
+    pending,
     shopInitial,
     activeListings,
     newOrdersCount,
@@ -170,6 +318,7 @@ export function useSeller() {
     unansweredReviews,
     lowStockListings,
     listingProducts,
+    resolveProduct,
     getListing,
     setListingStatus,
     addListingProduct,
@@ -178,6 +327,8 @@ export function useSeller() {
     revertOrder,
     setOrderStatus,
     replyToReview,
+    updateShop,
     requestPayout,
+    fetchSeller,
   }
 }

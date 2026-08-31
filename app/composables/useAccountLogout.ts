@@ -6,8 +6,8 @@ export function useAccountLogout() {
     open.value = true
   }
 
-  function confirmLogout() {
-    logout()
+  async function confirmLogout() {
+    await logout()
     open.value = false
     navigateTo('/')
   }

@@ -19,6 +19,7 @@
     <TheAccountAddressForm
       v-if="showAddressForm"
       class="mb-4"
+      :saving="saving"
       @save="onSaveAddress"
       @cancel="closeAddressForm"
     />
@@ -83,24 +84,39 @@ const {
   editingAddressId,
 } = storeToRefs(store)
 
+const saving = ref(false)
+
+function apiErrorMessage(error: any, fallback: string) {
+  const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+  return fromFields || error?.data?.message || fallback
+}
+
 function openAddressForm() {
   store.beginAddAddress()
   showAddressForm.value = true
 }
 
 function closeAddressForm() {
+  if (saving.value) return
   store.cancelAddressForm()
   showAddressForm.value = false
 }
 
-function onSaveAddress() {
+async function onSaveAddress() {
+  if (saving.value) return
   const isEdit = !!editingAddressId.value
-  const ok = store.submitAddressForm()
-  if (!ok) {
-    toast.error(t('نام، موبایل و آدرس الزامی است'))
-    return
+  saving.value = true
+  try {
+    const { ok, error } = await store.submitAddressForm()
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('نام، موبایل و آدرس الزامی است')))
+      return
+    }
+    toast.success(t(isEdit ? 'آدرس به‌روزرسانی شد' : 'آدرس ذخیره شد'))
+    showAddressForm.value = false
   }
-  toast.success(t(isEdit ? 'آدرس به‌روزرسانی شد' : 'آدرس ذخیره شد'))
-  showAddressForm.value = false
+  finally {
+    saving.value = false
+  }
 }
 </script>

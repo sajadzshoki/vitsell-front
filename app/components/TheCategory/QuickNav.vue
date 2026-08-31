@@ -21,9 +21,11 @@
 </template>
 
 <script setup lang="ts">
-import { categories, getCategoryIcon, toCategoryRoute, type Category } from '~/data/categories'
+import { getCategoryIcon, toCategoryRoute } from '~/data/categories'
 
 defineProps<{
   activeId: string
 }>()
+
+const { categories } = useCategories()
 </script>

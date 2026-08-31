@@ -271,24 +271,25 @@ async function onSubmit() {
   if (!validate()) return
 
   submitting.value = true
-  await new Promise(resolve => setTimeout(resolve, 500))
+  try {
+    const ok = await addReview({
+      rating: form.rating,
+      text: form.text,
+      pros: form.pros,
+      cons: form.cons,
+      recommend: form.recommend,
+    })
 
-  const ok = addReview({
-    rating: form.rating,
-    text: form.text,
-    pros: form.pros,
-    cons: form.cons,
-    recommend: form.recommend,
-  })
+    if (!ok) {
+      toast.error(t('ثبت دیدگاه ناموفق بود'))
+      return
+    }
 
-  submitting.value = false
-
-  if (!ok) {
+    toast.success(t('دیدگاه شما با موفقیت ثبت شد'))
     open.value = false
-    return
   }
-
-  toast.success(t('دیدگاه شما با موفقیت ثبت شد'))
-  open.value = false
+  finally {
+    submitting.value = false
+  }
 }
 </script>

@@ -344,7 +344,7 @@ import {
   sellerOrderUndoConfirm,
   sellerOrderUndoLabel,
 } from '~/data/seller'
-import { formatPrice, getProductById } from '~/data/products'
+import { formatPrice } from '~/data/products'
 
 const props = defineProps<{
   orderId: string
@@ -352,7 +352,7 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { getOrderById, advanceOrder, revertOrder } = useSeller()
+const { getOrderById, advanceOrder, revertOrder, resolveProduct } = useSeller()
 
 const order = computed(() => getOrderById(props.orderId))
 
@@ -374,12 +374,10 @@ const showTracking = computed(() => {
 })
 
 const lineItems = computed(() =>
-  (order.value?.items ?? [])
-    .map(item => ({
-      ...item,
-      product: getProductById(item.productId),
-    }))
-    .filter(item => item.product),
+  (order.value?.items ?? []).map(item => ({
+    ...item,
+    product: resolveProduct(item.productId),
+  })),
 )
 
 const subtotal = computed(() =>
@@ -425,12 +423,12 @@ function openStatusConfirm(mode: StatusConfirmMode) {
   confirmOpen.value = true
 }
 
-function confirmStatusChange() {
+async function confirmStatusChange() {
   if (!order.value) return
   const id = order.value.id
   const ok = pendingMode.value === 'undo'
-    ? revertOrder(id)
-    : advanceOrder(id)
+    ? await revertOrder(id)
+    : await advanceOrder(id)
 
   confirmOpen.value = false
 

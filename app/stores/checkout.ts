@@ -1,7 +1,6 @@
 import {
   checkoutPaymentOptions,
   checkoutShippingOptions,
-  defaultAddresses,
   addressToForm,
   emptyAddressForm,
   type CheckoutAddress,
@@ -10,20 +9,20 @@ import {
   type CheckoutShippingId,
   type CheckoutStepId,
 } from '~/data/checkout'
+import type { ShopOrder } from '~/data/account'
 
 export const useCheckoutStore = defineStore('checkout', () => {
   const step = ref<CheckoutStepId>(0)
-  const addresses = ref<CheckoutAddress[]>(structuredClone(defaultAddresses))
-  const selectedAddressId = ref(
-    addresses.value.find(a => a.isDefault)?.id ?? addresses.value[0]?.id ?? '',
-  )
-  const showAddressForm = ref(addresses.value.length === 0)
+  const addresses = ref<CheckoutAddress[]>([])
+  const selectedAddressId = ref('')
+  const showAddressForm = ref(true)
   const editingAddressId = ref<string | null>(null)
   const addressForm = ref<CheckoutAddressForm>(emptyAddressForm())
   const shippingMethod = ref<CheckoutShippingId>('express')
   const paymentMethod = ref<CheckoutPaymentId>('online')
   const placedOrderId = ref<string | null>(null)
   const lastOrderTotal = ref(0)
+  const addressesLoaded = ref(false)
 
   const selectedAddress = computed(() =>
     addresses.value.find(a => a.id === selectedAddressId.value) ?? null,
@@ -38,6 +37,26 @@ export const useCheckoutStore = defineStore('checkout', () => {
   )
 
   const shippingCost = computed(() => shippingOption.value?.price ?? 0)
+
+  async function fetchAddresses() {
+    const { result, error } = await useGet<CheckoutAddress[]>('/account/addresses', {
+      headers: { 'no-error': true },
+    })
+    if (error) {
+      return { result: null as CheckoutAddress[] | null, error }
+    }
+    addresses.value = Array.isArray(result) ? result : []
+    addressesLoaded.value = true
+    const stillSelected = addresses.value.some(a => a.id === selectedAddressId.value)
+    if (!stillSelected) {
+      selectedAddressId.value =
+        addresses.value.find(a => a.isDefault)?.id
+        ?? addresses.value[0]?.id
+        ?? ''
+    }
+    showAddressForm.value = addresses.value.length === 0
+    return { result: addresses.value, error: null as null }
+  }
 
   function goToStep(next: CheckoutStepId) {
     if (next > step.value) return
@@ -82,44 +101,26 @@ export const useCheckoutStore = defineStore('checkout', () => {
     addressForm.value = emptyAddressForm()
   }
 
-  function removeAddress(id: string) {
-    const removed = addresses.value.find(a => a.id === id)
-    let next = addresses.value.filter(a => a.id !== id)
-
-    if (removed?.isDefault && next.length > 0) {
-      next = next.map((a, index) => ({ ...a, isDefault: index === 0 }))
-    }
-
-    addresses.value = next
-
-    if (selectedAddressId.value === id) {
-      selectedAddressId.value = next.find(a => a.isDefault)?.id ?? next[0]?.id ?? ''
-    }
-
-    if (editingAddressId.value === id) {
-      cancelAddressForm()
-    }
-
-    if (next.length === 0) {
-      showAddressForm.value = true
-    }
+  async function removeAddress(id: string) {
+    const { error } = await useDelete(`/account/addresses/${encodeURIComponent(id)}`, {
+      headers: { 'no-error': true },
+    })
+    if (error) return { ok: false as const, error }
+    await fetchAddresses()
+    if (editingAddressId.value === id) cancelAddressForm()
+    return { ok: true as const, error: null }
   }
 
-  function addAddress(payload: Omit<CheckoutAddress, 'id'>) {
-    const id = `a${Date.now()}`
-    const next: CheckoutAddress = { ...payload, id }
-    if (next.isDefault) {
-      addresses.value = addresses.value.map(a => ({ ...a, isDefault: false }))
-    }
-    addresses.value = [...addresses.value, next]
-    selectedAddressId.value = id
-    showAddressForm.value = false
-    addressForm.value = emptyAddressForm()
-  }
-
-  function submitAddressForm() {
+  async function submitAddressForm() {
     const f = addressForm.value
-    if (!f.fullName.trim() || !f.phone.trim() || !f.address.trim()) return false
+    if (!f.fullName.trim() || !f.phone.trim() || !f.address.trim()) {
+      return { ok: false as const, error: null }
+    }
+
+    const editingId = editingAddressId.value
+    const existing = editingId
+      ? addresses.value.find(a => a.id === editingId)
+      : null
 
     const payload = {
       title: f.title.trim() || 'منزل',
@@ -129,31 +130,58 @@ export const useCheckoutStore = defineStore('checkout', () => {
       city: f.city.trim() || 'تهران',
       address: f.address.trim(),
       postalCode: f.postalCode.trim(),
+      isDefault: existing?.isDefault ?? addresses.value.length === 0,
     }
 
-    if (editingAddressId.value) {
-      const id = editingAddressId.value
-      const prev = addresses.value.find(a => a.id === id)
-      if (!prev) return false
-
-      addresses.value = addresses.value.map(a =>
-        a.id === id ? { ...payload, id, isDefault: prev.isDefault } : a,
+    if (editingId) {
+      const { result, error } = await usePut<CheckoutAddress>(
+        `/account/addresses/${encodeURIComponent(editingId)}`,
+        payload,
+        { headers: { 'no-error': true } },
       )
-      editingAddressId.value = null
-      addressForm.value = emptyAddressForm()
-      showAddressForm.value = false
-      return true
+      if (error || !result) return { ok: false as const, error }
+    }
+    else {
+      const { result, error } = await usePost<CheckoutAddress>('/account/addresses', payload, {
+        headers: { 'no-error': true },
+      })
+      if (error || !result) return { ok: false as const, error }
+      selectedAddressId.value = result.id
     }
 
-    addAddress({
-      ...payload,
-      isDefault: addresses.value.length === 0,
-    })
-    return true
+    editingAddressId.value = null
+    addressForm.value = emptyAddressForm()
+    showAddressForm.value = false
+    await fetchAddresses()
+    return { ok: true as const, error: null }
   }
 
-  function placeOrder(total: number) {
-    const id = `BZ-${Math.floor(100000 + Math.random() * 900000)}`
+  async function placeOrder(total: number, discountCode?: string | null) {
+    if (!selectedAddressId.value) return null
+
+    const { result, error } = await usePost<{
+      order?: ShopOrder
+      orderId?: string
+      paymentUrl?: string
+    }>('/checkout/place', {
+      addressId: selectedAddressId.value,
+      shippingMethod: shippingMethod.value,
+      paymentMethod: paymentMethod.value,
+      ...(discountCode ? { discountCode } : {}),
+    }, { headers: { 'no-error': true } })
+
+    if (error || !result) return null
+
+    if (result.paymentUrl) {
+      if (import.meta.client) {
+        window.location.href = result.paymentUrl
+      }
+      placedOrderId.value = result.orderId ?? null
+      lastOrderTotal.value = total
+      return result.orderId ?? null
+    }
+
+    const id = result.order?.id ?? result.orderId ?? null
     placedOrderId.value = id
     lastOrderTotal.value = total
     return id
@@ -176,15 +204,16 @@ export const useCheckoutStore = defineStore('checkout', () => {
     paymentMethod,
     placedOrderId,
     lastOrderTotal,
+    addressesLoaded,
     selectedAddress,
     shippingOption,
     paymentOption,
     shippingCost,
+    fetchAddresses,
     goToStep,
     canGoNext,
     nextStep,
     prevStep,
-    addAddress,
     beginAddAddress,
     beginEditAddress,
     cancelAddressForm,

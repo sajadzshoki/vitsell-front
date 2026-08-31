@@ -1,10 +1,19 @@
 import type {NitroFetchOptions, NitroFetchRequest} from "nitropack";
 
-export const BASE_URL = "https://test-back.vistatest.site"
-// export const BASE_URL = "http://192.168.3.233:3333"
+/** Fallback when runtimeConfig is unavailable (e.g. early module load). Prefer getApiBase(). */
+export const BASE_URL = "https://digishop-back.vistatest.top/api/v1"
 export const APP_CODE = "test"
 
-// const BASE_URL = ""
+export function getApiBase() {
+    try {
+        const config = useRuntimeConfig()
+        const base = config.public?.apiBase
+        if (typeof base === 'string' && base.length) return base
+    } catch {
+        /* outside Nuxt context */
+    }
+    return BASE_URL
+}
 
 const errorHandler = (error: any, config: Record<string, any>) => {
     // @ts-ignore
@@ -27,12 +36,15 @@ export const useGet = async <T>(URL: string, config: NitroFetchOptions<NitroFetc
     controller = new AbortController()
     const signal = controller.signal
     const token = useCookie('token')
-    _set(config, ['headers', 'Authorization'], token.value || '')
+    const authHeader = token.value
+        ? (token.value.startsWith('Bearer ') ? token.value : `Bearer ${token.value}`)
+        : ''
+    _set(config, ['headers', 'Authorization'], authHeader)
     _set(config, ['headers', 'app-code'], APP_CODE)
     // _set(config, ['headers', 'no-error'], true)
     try {
         const result = await $fetch<T>(URL, {
-            baseURL: BASE_URL,
+            baseURL: getApiBase(),
             method: 'GET',
             signal,
             ...config,
@@ -47,12 +59,15 @@ export const useDelete = async <T>(URL: string, config: NitroFetchOptions<NitroF
     error?: any
 }> => {
     const token = useCookie('token')
-    _set(config, ['headers', 'Authorization'], token.value || '')
+    const authHeader = token.value
+        ? (token.value.startsWith('Bearer ') ? token.value : `Bearer ${token.value}`)
+        : ''
+    _set(config, ['headers', 'Authorization'], authHeader)
     _set(config, ['headers', 'app-code'], APP_CODE)
     // _set(config, ['headers', 'no-error'], true)
     try {
         const result = await $fetch<T>(URL, {
-            baseURL: BASE_URL,
+            baseURL: getApiBase(),
             method: 'DELETE',
             ...config,
         })
@@ -67,12 +82,15 @@ export const usePost = async <T, R = T>(URL: string, data: R , config: NitroFetc
     error?: any
 }> => {
     const token = useCookie('token')
-    _set(config, ['headers', 'Authorization'], token.value || '')
+    const authHeader = token.value
+        ? (token.value.startsWith('Bearer ') ? token.value : `Bearer ${token.value}`)
+        : ''
+    _set(config, ['headers', 'Authorization'], authHeader)
     _set(config, ['headers', 'app-code'], APP_CODE)
     // _set(config, ['headers', 'no-error'], true)
     try {
         const result = await $fetch<T>(URL, {
-            baseURL: BASE_URL,
+            baseURL: getApiBase(),
             method: 'POST',
             body: data as Record<string, any>,
             ...config,
@@ -88,13 +106,39 @@ export const usePut = async <T, R = T>(URL: string, data: Partial<R>, config: Ni
     error?: any
 }> => {
     const token = useCookie('token')
-    _set(config, ['headers', 'Authorization'], token.value || '')
+    const authHeader = token.value
+        ? (token.value.startsWith('Bearer ') ? token.value : `Bearer ${token.value}`)
+        : ''
+    _set(config, ['headers', 'Authorization'], authHeader)
     _set(config, ['headers', 'app-code'], APP_CODE)
     // _set(config, ['headers', 'no-error'], true)
     try {
         const result = await $fetch<T>(URL, {
-            baseURL: BASE_URL,
+            baseURL: getApiBase(),
             method: 'PUT',
+            body: data as Record<string, any>,
+            ...config,
+        })
+        return {result}
+    } catch (error) {
+        return errorHandler(error, config)
+    }
+}
+
+export const usePatch = async <T, R = T>(URL: string, data: Partial<R>, config: NitroFetchOptions<NitroFetchRequest, 'patch'> = {}): Promise<{
+    result?: T,
+    error?: any
+}> => {
+    const token = useCookie('token')
+    const authHeader = token.value
+        ? (token.value.startsWith('Bearer ') ? token.value : `Bearer ${token.value}`)
+        : ''
+    _set(config, ['headers', 'Authorization'], authHeader)
+    _set(config, ['headers', 'app-code'], APP_CODE)
+    try {
+        const result = await $fetch<T>(URL, {
+            baseURL: getApiBase(),
+            method: 'PATCH',
             body: data as Record<string, any>,
             ...config,
         })

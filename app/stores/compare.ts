@@ -1,5 +1,5 @@
 import { COMPARE_MAX } from '~/data/compare'
-import { products as allProducts, type Product } from '~/data/products'
+import type { Product } from '~/data/products'
 
 const STORAGE_KEY = 'digishop-compare'
 
@@ -23,12 +23,19 @@ function writeStoredIds(ids: string[]) {
 
 export const useCompareStore = defineStore('compare', () => {
   const ids = ref<string[]>(readStoredIds())
+  const productsById = ref<Record<string, Product>>({})
+  const templates = ref<{ sections: unknown[], radarCriteria: string[] }>({
+    sections: [],
+    radarCriteria: [],
+  })
+
+  const { fetchProduct } = useProducts()
 
   const count = computed(() => ids.value.length)
 
   const products = computed<Product[]>(() =>
     ids.value
-      .map(id => allProducts.find(product => product.id === id))
+      .map(id => productsById.value[id])
       .filter((product): product is Product => Boolean(product)),
   )
 
@@ -36,7 +43,31 @@ export const useCompareStore = defineStore('compare', () => {
 
   watch(ids, (value) => {
     writeStoredIds(value)
+    hydrateProducts()
   }, { deep: true })
+
+  async function hydrateProducts() {
+    await Promise.all(ids.value.map(async (id) => {
+      if (productsById.value[id]) return
+      const { result } = await fetchProduct(id)
+      if (result) {
+        productsById.value = { ...productsById.value, [id]: result }
+      }
+    }))
+  }
+
+  async function fetchTemplates(category: string) {
+    if (!category) {
+      templates.value = { sections: [], radarCriteria: [] }
+      return templates.value
+    }
+    const { result } = await useGet<{ sections: unknown[], radarCriteria: string[] }>(
+      `/compare/templates/${encodeURIComponent(category)}`,
+      { headers: { 'no-error': true } },
+    )
+    templates.value = result ?? { sections: [], radarCriteria: [] }
+    return templates.value
+  }
 
   function isInCompare(id: string) {
     return ids.value.includes(id)
@@ -60,13 +91,20 @@ export const useCompareStore = defineStore('compare', () => {
     ids.value = []
   }
 
+  if (import.meta.client) {
+    hydrateProducts()
+  }
+
   return {
     ids,
     count,
     products,
     hasItems,
+    templates,
     isInCompare,
     toggleCompare,
     clearCompare,
+    hydrateProducts,
+    fetchTemplates,
   }
 })

@@ -26,6 +26,9 @@ export type Product = {
   fastDelivery?: boolean
   shortDesc?: string
   shortName?: string
+  description?: string
+  features?: string[]
+  buyNotes?: { icon: string, text: string }[]
   scores?: Record<string, number>
   specs?: ProductSpec[]
 }

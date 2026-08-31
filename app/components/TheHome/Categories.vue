@@ -29,5 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { categories, getCategoryIcon, toCategoryRoute } from '~/data/categories'
+import { getCategoryIcon, toCategoryRoute } from '~/data/categories'
+
+const { categories } = useHome()
 </script>

@@ -1,6 +1,6 @@
-import { cartDiscountCodes } from '~/data/cart'
-import { products, type Product } from '~/data/products'
-import { defaultNotifications, type ShopNotification } from '~/data/notifications'
+import type { Product } from '~/data/products'
+import type { ShopNotification } from '~/data/notifications'
+import type { AccountProfile } from '~/data/account'
 
 export type CartLine = {
   id: string
@@ -9,31 +9,25 @@ export type CartLine = {
 }
 
 export function useShop() {
-  const cart = useState<Record<string, number>>('shop-cart', () => ({
-    'iphone-16-pro': 1,
-    'sony-xm5': 2,
-  }))
+  const { token, logoutRemote, fetchMe, setToken } = useAuth()
+  const { profile, fetchProfile, fetchOrders } = useAccount()
+  const { remember } = useProducts()
+  const router = useRouter()
+
+  const cartLines = useState<CartLine[]>('shop-cart-lines', () => [])
   const cartBump = useState('shop-cart-bump', () => 0)
-  const wishlist = useState<string[]>('shop-wishlist', () => [])
-  const notificationList = useState<ShopNotification[]>(
-    'shop-notification-list',
-    () => structuredClone(defaultNotifications),
-  )
-  const isLoggedIn = useState('shop-logged-in', () => false)
+  const wishlistProducts = useState<Product[]>('shop-wishlist-products', () => [])
+  const notificationList = useState<ShopNotification[]>('shop-notification-list', () => [])
+  const isLoggedIn = useState('shop-logged-in', () => !!token.value)
   const discountCode = useState<string | null>('shop-discount-code', () => null)
+  const discountCodes = useState<Record<string, number>>('shop-discount-codes', () => ({}))
+  const authHydrated = useState('shop-auth-hydrated', () => false)
+  const shopPending = useState('shop-pending', () => false)
+
+  const wishlist = computed(() => wishlistProducts.value.map(p => p.id))
 
   const cartCount = computed(() =>
-    Object.values(cart.value).reduce((sum, n) => sum + n, 0),
-  )
-
-  const cartLines = computed<CartLine[]>(() =>
-    Object.entries(cart.value)
-      .map(([id, qty]) => {
-        const product = products.find(p => p.id === id)
-        if (!product || qty <= 0) return null
-        return { id, qty, product }
-      })
-      .filter((line): line is CartLine => line !== null),
+    cartLines.value.reduce((sum, line) => sum + line.qty, 0),
   )
 
   const cartSubtotal = computed(() =>
@@ -42,75 +36,192 @@ export function useShop() {
 
   const discountAmount = computed(() => {
     if (!discountCode.value) return 0
-    const pct = cartDiscountCodes[discountCode.value] ?? 0
+    const pct = discountCodes.value[discountCode.value] ?? 0
     return Math.floor(cartSubtotal.value * pct)
   })
 
-  const wishlistCount = computed(() => wishlist.value.length)
+  const wishlistCount = computed(() => wishlistProducts.value.length)
 
   const notificationCount = computed(
     () => notificationList.value.filter(n => !n.read).length,
   )
 
-  function isInWishlist(id: string) {
-    return wishlist.value.includes(id)
-  }
-
-  function toggleWishlist(id: string) {
-    const i = wishlist.value.indexOf(id)
-    if (i >= 0) {
-      wishlist.value = wishlist.value.filter(x => x !== id)
-    }
-    else {
-      wishlist.value = [...wishlist.value, id]
-    }
-  }
-
-  function getCartQty(id: string) {
-    return cart.value[id] || 0
+  function requireAuth() {
+    if (isLoggedIn.value && token.value) return true
+    router.push({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
+    return false
   }
 
   function bumpCart() {
     cartBump.value += 1
   }
 
-  function addToCart(id: string, qty = 1) {
-    cart.value = {
-      ...cart.value,
-      [id]: (cart.value[id] || 0) + qty,
-    }
-    bumpCart()
+  function isInWishlist(id: string) {
+    return wishlistProducts.value.some(p => p.id === id)
   }
 
-  function updateQty(id: string, qty: number) {
-    const prev = cart.value[id] || 0
-    if (qty <= 0) {
-      const next = { ...cart.value }
-      delete next[id]
-      cart.value = next
+  function getCartQty(id: string) {
+    return cartLines.value.find(l => l.id === id)?.qty || 0
+  }
+
+  async function fetchDiscountCodes() {
+    const { result } = await useGet<Record<string, number>>('/discount-codes', {
+      headers: { 'no-error': true },
+    })
+    discountCodes.value = result && typeof result === 'object' ? result : {}
+  }
+
+  async function fetchCart() {
+    if (!token.value) {
+      cartLines.value = []
       return
     }
-    cart.value = {
-      ...cart.value,
-      [id]: qty,
+    const { result } = await useGet<CartLine[]>('/cart', { headers: { 'no-error': true } })
+    cartLines.value = Array.isArray(result) ? result : []
+    remember(cartLines.value.map(l => l.product))
+  }
+
+  async function fetchWishlist() {
+    if (!token.value) {
+      wishlistProducts.value = []
+      return { result: [] as Product[], error: null as null }
+    }
+    const { result, error } = await useGet<Product[]>('/wishlist', {
+      headers: { 'no-error': true },
+    })
+    if (error) {
+      return { result: null as Product[] | null, error }
+    }
+    wishlistProducts.value = Array.isArray(result) ? result : []
+    remember(wishlistProducts.value)
+    return { result: wishlistProducts.value, error: null as null }
+  }
+
+  async function fetchNotifications() {
+    if (!token.value) {
+      notificationList.value = []
+      return
+    }
+    const { result } = await useGet<ShopNotification[]>('/notifications', {
+      headers: { 'no-error': true },
+    })
+    notificationList.value = Array.isArray(result) ? result : []
+  }
+
+  async function hydrateShop() {
+    if (!token.value) {
+      cartLines.value = []
+      wishlistProducts.value = []
+      notificationList.value = []
+      return
+    }
+    shopPending.value = true
+    try {
+      await Promise.all([
+        fetchCart(),
+        fetchWishlist(),
+        fetchNotifications(),
+        fetchDiscountCodes(),
+        fetchOrders(),
+      ])
+    }
+    finally {
+      shopPending.value = false
+    }
+  }
+
+  if (import.meta.client && !authHydrated.value) {
+    authHydrated.value = true
+    isLoggedIn.value = !!token.value
+    fetchDiscountCodes()
+    if (token.value) {
+      fetchMe().then(({ result, error }) => {
+        if (result) {
+          profile.value = result
+          isLoggedIn.value = true
+          hydrateShop()
+        }
+        else if (error) {
+          setToken(null)
+          isLoggedIn.value = false
+        }
+      })
+    }
+  }
+
+  async function toggleWishlist(id: string) {
+    if (!requireAuth()) return
+    if (isInWishlist(id)) {
+      await useDelete(`/wishlist/${encodeURIComponent(id)}`, { headers: { 'no-error': true } })
+      wishlistProducts.value = wishlistProducts.value.filter(p => p.id !== id)
+      return
+    }
+    const { result } = await usePost<Product>('/wishlist', { productId: id }, {
+      headers: { 'no-error': true },
+    })
+    if (result) {
+      wishlistProducts.value = [...wishlistProducts.value, result]
+      remember([result])
+    }
+    else {
+      await fetchWishlist()
+    }
+  }
+
+  async function addToCart(id: string, qty = 1) {
+    if (!requireAuth()) return
+    const { result } = await usePost<CartLine>('/cart', { productId: id, qty }, {
+      headers: { 'no-error': true },
+    })
+    if (result) {
+      const others = cartLines.value.filter(l => l.id !== result.id)
+      cartLines.value = [...others, result]
+      remember([result.product])
+      bumpCart()
+    }
+    else {
+      await fetchCart()
+      bumpCart()
+    }
+  }
+
+  async function updateQty(id: string, qty: number) {
+    if (!requireAuth()) return
+    const prev = getCartQty(id)
+    if (qty <= 0) {
+      await removeFromCart(id)
+      return
+    }
+    const { result } = await usePatch<CartLine | { removed: true }>(
+      `/cart/${encodeURIComponent(id)}`,
+      { qty },
+      { headers: { 'no-error': true } },
+    )
+    if (result && 'product' in result) {
+      cartLines.value = cartLines.value.map(l => (l.id === id ? result : l))
+      remember([result.product])
+    }
+    else {
+      await fetchCart()
     }
     if (qty > prev) bumpCart()
   }
 
-  function removeFromCart(id: string) {
-    if (!(id in cart.value)) return
-    const next = { ...cart.value }
-    delete next[id]
-    cart.value = next
+  async function removeFromCart(id: string) {
+    if (!requireAuth()) return
+    await useDelete(`/cart/${encodeURIComponent(id)}`, { headers: { 'no-error': true } })
+    cartLines.value = cartLines.value.filter(l => l.id !== id)
   }
 
-  function clearCart() {
-    cart.value = {}
+  async function clearCart() {
+    if (!requireAuth()) return
+    await useDelete('/cart', { headers: { 'no-error': true } })
+    cartLines.value = []
   }
 
   function applyDiscount(code: string): boolean {
     const normalized = code.trim().toUpperCase()
-    if (!normalized || !(normalized in cartDiscountCodes)) {
+    if (!normalized || !(normalized in discountCodes.value)) {
       return false
     }
     discountCode.value = normalized
@@ -121,37 +232,71 @@ export function useShop() {
     discountCode.value = null
   }
 
-  function markNotificationRead(id: string) {
-    notificationList.value = notificationList.value.map(n =>
-      n.id === id ? { ...n, read: true } : n,
+  async function markNotificationRead(id: string) {
+    if (!requireAuth()) return
+    const { result } = await usePost<ShopNotification>(
+      `/notifications/${encodeURIComponent(id)}/read`,
+      {},
+      { headers: { 'no-error': true } },
     )
+    if (result) {
+      notificationList.value = notificationList.value.map(n =>
+        n.id === id ? result : n,
+      )
+    }
+    else {
+      notificationList.value = notificationList.value.map(n =>
+        n.id === id ? { ...n, read: true } : n,
+      )
+    }
   }
 
-  function markAllNotificationsRead() {
+  async function markAllNotificationsRead() {
+    if (!requireAuth()) return
+    await usePost('/notifications/read-all', {}, { headers: { 'no-error': true } })
     notificationList.value = notificationList.value.map(n => ({ ...n, read: true }))
   }
 
-  function login() {
+  function login(accessToken?: string, accountProfile?: AccountProfile) {
+    if (accessToken) setToken(accessToken)
+    if (accountProfile) profile.value = accountProfile
     isLoggedIn.value = true
+    hydrateShop()
+    fetchProfile()
   }
 
-  function logout() {
+  async function logout() {
+    await logoutRemote()
+    setToken(null)
     isLoggedIn.value = false
+    cartLines.value = []
+    wishlistProducts.value = []
+    notificationList.value = []
+    discountCode.value = null
+    profile.value = {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      birth: '',
+      gender: '',
+    }
   }
 
   return {
-    cart,
-    cartBump,
     cartLines,
+    cartBump,
     cartSubtotal,
     discountCode,
     discountAmount,
     wishlist,
+    wishlistProducts,
     notificationList,
     isLoggedIn,
     cartCount,
     wishlistCount,
     notificationCount,
+    shopPending,
     isInWishlist,
     toggleWishlist,
     getCartQty,
@@ -165,5 +310,9 @@ export function useShop() {
     markAllNotificationsRead,
     login,
     logout,
+    fetchCart,
+    fetchWishlist,
+    fetchNotifications,
+    hydrateShop,
   }
 }

@@ -1,6 +1,7 @@
 export function useAddressDelete() {
   const open = useState('address-delete-open', () => false)
   const pendingId = useState<string | null>('address-delete-id', () => null)
+  const deleting = useState('address-delete-busy', () => false)
 
   const checkoutStore = useCheckoutStore()
 
@@ -16,25 +17,36 @@ export function useAddressDelete() {
   }
 
   function cancelDelete() {
+    if (deleting.value) return
     open.value = false
     pendingId.value = null
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     const id = pendingId.value
-    if (!id) return null
+    if (!id || deleting.value) return null
 
     const wasEditing = checkoutStore.editingAddressId === id
-    checkoutStore.removeAddress(id)
-    cancelDelete()
-
-    return { id, wasEditing }
+    deleting.value = true
+    try {
+      const { ok, error } = await checkoutStore.removeAddress(id)
+      if (!ok) {
+        return { id, wasEditing, ok: false as const, error }
+      }
+      open.value = false
+      pendingId.value = null
+      return { id, wasEditing, ok: true as const, error: null }
+    }
+    finally {
+      deleting.value = false
+    }
   }
 
   return {
     open,
     pendingId,
     pendingAddress,
+    deleting,
     requestDelete,
     cancelDelete,
     confirmDelete,

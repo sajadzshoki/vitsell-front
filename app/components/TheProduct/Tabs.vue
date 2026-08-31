@@ -19,12 +19,18 @@
 
       <template #desc>
         <div class="text-sm text-toned space-y-2.5 md:space-y-4 leading-6 md:leading-8">
-          <p>{{ leadDesc }}</p>
+          <p v-if="leadDesc">{{ leadDesc }}</p>
           <p
             v-for="(paragraph, i) in descParagraphs"
             :key="i"
           >
-            {{ $t(paragraph) }}
+            {{ paragraph }}
+          </p>
+          <p
+            v-if="!leadDesc && !descParagraphs.length"
+            class="text-muted"
+          >
+            {{ $t('توضیحات این محصول هنوز ثبت نشده است.') }}
           </p>
         </div>
       </template>
@@ -41,10 +47,6 @@
 </template>
 
 <script setup lang="ts">
-import {
-  productDefaultDesc,
-  productDescParagraphs,
-} from '~/data/product-detail'
 import type { Product } from '~/data/products'
 
 const props = defineProps<{
@@ -56,11 +58,13 @@ const activeTab = defineModel<string>({ default: 'specs' })
 const { t } = useI18n()
 const { specGroups } = useProductDetail(() => props.product)
 
-const descParagraphs = productDescParagraphs
+const descParagraphs = computed(() => {
+  const raw = props.product.description?.trim()
+  if (!raw) return [] as string[]
+  return raw.split(/\n+/).map(p => p.trim()).filter(Boolean)
+})
 
-const leadDesc = computed(() =>
-  props.product.shortDesc || t(productDefaultDesc),
-)
+const leadDesc = computed(() => props.product.shortDesc || '')
 
 const tabItems = computed(() => [
   { label: t('مشخصات فنی'), value: 'specs', slot: 'specs' as const },

@@ -77,10 +77,13 @@
 </template>
 
 <script setup lang="ts">
-import { categories, getCategoryIcon, toCategoryRoute, toSearchRoute } from '~/data/categories'
+import { getCategoryIcon, toCategoryRoute, toSearchRoute } from '~/data/categories'
 
 const open = defineModel<boolean>('open', { default: false })
 const expanded = ref('')
+
+const { categories, fetchCategories } = useCategories()
+await fetchCategories({ withCounts: false })
 
 function toggle(id: string) {
   expanded.value = expanded.value === id ? '' : id

@@ -45,41 +45,72 @@
         :product="product"
       />
 
-      <TheProductRelated :product="product" />
+      <TheProductRelated
+        :product="product"
+        :related="related"
+      />
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
-import { getProductById, type Product } from '~/data/products'
+import type { Product } from '~/data/products'
 
 const { t } = useI18n()
 const route = useRoute()
+const { fetchProduct } = useProducts()
 
-const product = computed<Product>(() => getProductById(String(route.params.id)))
+const productId = computed(() => String(route.params.id ?? ''))
+const product = ref<Product | null>(null)
 
-useMobileBackwardTitle(() => product.value.title)
+const { related, fetchDetail } = useProductDetail(product)
+
+async function loadProduct() {
+  const id = productId.value
+  if (!id) {
+    product.value = null
+    throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
+  }
+  const { result, error } = await fetchProduct(id)
+  if (!result || error) {
+    product.value = null
+    throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
+  }
+  product.value = result
+  await fetchDetail({ force: true })
+}
+
+await loadProduct()
+
+watch(productId, () => {
+  loadProduct()
+})
+
+useMobileBackwardTitle(() => product.value?.title ?? '')
 
 const colorIndex = ref(0)
 const activeTab = ref('specs')
 
-watch(() => route.params.id, () => {
+watch(productId, () => {
   colorIndex.value = 0
   activeTab.value = 'specs'
 })
 
-const breadcrumbItems = computed(() => [
-  { label: t('خانه'), to: '/' },
-  {
-    label: t(product.value.categoryLabel),
-    to: { name: 'category-catId', params: { catId: product.value.category } },
-  },
-  { label: product.value.brand },
-  { label: product.value.title },
-])
+const breadcrumbItems = computed(() => {
+  if (!product.value) return []
+  return [
+    { label: t('خانه'), to: '/' },
+    {
+      label: t(product.value.categoryLabel),
+      to: { name: 'category-catId', params: { catId: product.value.category } },
+    },
+    { label: product.value.brand },
+    { label: product.value.title },
+  ]
+})
 
 useSeoMeta({
-  title: () => product.value.title,
-  description: () => product.value.shortDesc,
+  title: () => product.value?.title ?? '',
+  description: () => product.value?.shortDesc ?? product.value?.title ?? '',
 })
 </script>

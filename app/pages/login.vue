@@ -118,14 +118,11 @@
             </div>
           </div>
 
-          <!-- Force LTR so digits fill left → right -->
-          <div
-            class="flex justify-center py-1"
-            dir="ltr"
-            style="direction: ltr"
-          >
+          <!-- dir on UPinInput (reka ConfigProvider); wrapper alone is not enough -->
+          <div class="flex justify-center py-1" dir="ltr">
             <UPinInput
               v-model="otp"
+              dir="ltr"
               otp
               :length="5"
               size="xl"
@@ -140,6 +137,17 @@
               @complete="onOtpComplete"
             />
           </div>
+
+          <UAlert
+            v-if="devCode"
+            color="warning"
+            variant="subtle"
+            :title="$t('کد توسعه')"
+            :description="devCode"
+            class="text-center"
+            :ui="{ description: 'num text-lg font-bold tracking-widest text-highlighted', title: 'text-xs' }"
+            dir="ltr"
+          />
 
           <p v-if="otpError" class="text-sm text-error text-center">
             {{ otpError }}
@@ -197,6 +205,7 @@ definePageMeta({
 const { t } = useI18n()
 const route = useRoute()
 const { isLoggedIn, login } = useShop()
+const { requestOtp, verifyOtp } = useAuth()
 const toast = useAppToast()
 
 function redirectAfterLogin() {
@@ -214,9 +223,27 @@ const otp = ref<string[]>([])
 const phoneError = ref('')
 const otpError = ref('')
 const loading = ref(false)
+/** Shown when API returns OTP in development */
+const devCode = ref<string | null>(null)
 
 const canSubmitPhone = computed(() => /^09\d{9}$/.test(phone.value) && !loading.value)
 const canSubmitOtp = computed(() => otp.value.filter(Boolean).length === 5 && !loading.value)
+
+function apiErrorMessage(error: any, fallback: string) {
+  const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+  return fromFields || error?.data?.message || fallback
+}
+
+function notifyDevCode(code: string | undefined, fallbackTitle: string) {
+  if (code) {
+    devCode.value = code
+    toast.success(`${t('کد توسعه')}: ${code}`, fallbackTitle)
+  }
+  else {
+    devCode.value = null
+    toast.success(fallbackTitle, t('کد را وارد کنید'))
+  }
+}
 
 if (import.meta.client && isLoggedIn.value) {
   navigateTo(redirectAfterLogin())
@@ -235,15 +262,17 @@ async function submitPhone() {
   loading.value = true
   phoneError.value = ''
   try {
-    await new Promise(r => setTimeout(r, 600))
+    const { result, error } = await requestOtp(phone.value)
+    if (error) {
+      phoneError.value = apiErrorMessage(error, t('ارسال کد تأیید ناموفق بود'))
+      toast.error(phoneError.value)
+      return
+    }
     step.value = 'otp'
     otp.value = []
     otpError.value = ''
     startTimer(120)
-    toast.success(
-      t('کد تأیید ارسال شد'),
-      t('برای تست هر ۵ رقم را وارد کنید'),
-    )
+    notifyDevCode(result?.devCode, t('کد تأیید ارسال شد'))
   }
   finally {
     loading.value = false
@@ -254,6 +283,7 @@ function backToPhone() {
   step.value = 'phone'
   otp.value = []
   otpError.value = ''
+  devCode.value = null
   clearTimer()
 }
 
@@ -262,12 +292,14 @@ async function resendOtp() {
   otpError.value = ''
   otp.value = []
   try {
-    await new Promise(r => setTimeout(r, 500))
+    const { result, error } = await requestOtp(phone.value)
+    if (error) {
+      otpError.value = apiErrorMessage(error, t('ارسال مجدد ناموفق بود'))
+      toast.error(otpError.value)
+      return
+    }
     startTimer(120)
-    toast.success(
-      t('کد جدید ارسال شد'),
-      t('برای تست هر ۵ رقم را وارد کنید'),
-    )
+    notifyDevCode(result?.devCode, t('کد جدید ارسال شد'))
   }
   finally {
     loading.value = false
@@ -286,8 +318,14 @@ async function submitOtp() {
   loading.value = true
   otpError.value = ''
   try {
-    await new Promise(r => setTimeout(r, 500))
-    login()
+    const { result, error } = await verifyOtp(phone.value, code)
+    if (error || !result?.token) {
+      otpError.value = apiErrorMessage(error, t('کد تأیید نادرست است'))
+      toast.error(otpError.value)
+      return
+    }
+
+    login(result.token, result.profile)
     clearTimer()
     toast.success(
       t('ورود موفق'),

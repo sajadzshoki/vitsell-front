@@ -102,18 +102,17 @@ async function onSubmit() {
   if (!validate()) return
 
   submitting.value = true
-  await new Promise(resolve => setTimeout(resolve, 500))
-
-  const ok = addQuestion({ question: form.question })
-
-  submitting.value = false
-
-  if (!ok) {
+  try {
+    const ok = await addQuestion({ question: form.question })
+    if (!ok) {
+      toast.error(t('ثبت سؤال ناموفق بود'))
+      return
+    }
+    toast.success(t('سؤال شما ثبت شد'))
     open.value = false
-    return
   }
-
-  toast.success(t('سؤال شما ثبت شد'))
-  open.value = false
+  finally {
+    submitting.value = false
+  }
 }
 </script>

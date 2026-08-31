@@ -48,7 +48,5 @@
 </template>
 
 <script setup lang="ts">
-import { homeCircleItems } from '~/data/home'
-
-const items = homeCircleItems
+const { circles: items } = useHome()
 </script>

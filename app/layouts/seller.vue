@@ -90,4 +90,7 @@
 
 <script setup lang="ts">
 const { isMobile, isDashboard, isOrderDetail, isProductCreate, pageTitle, showDesktopSidebar } = useSellerLayout()
+const { fetchSeller } = useSeller()
+
+await useAsyncData('seller-panel', () => fetchSeller())
 </script>

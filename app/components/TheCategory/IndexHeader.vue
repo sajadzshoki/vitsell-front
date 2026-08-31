@@ -56,7 +56,8 @@
 </template>
 
 <script setup lang="ts">
-import { categories, popularSearches, toSearchRoute } from '~/data/categories'
+import { popularSearches, toSearchRoute } from '~/data/categories'
 
-const categoryCount = categories.length
+const { categories } = useCategories()
+const categoryCount = computed(() => categories.value.length)
 </script>

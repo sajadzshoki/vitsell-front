@@ -210,17 +210,37 @@ async function onSubmit() {
   if (!validate()) return
 
   submitting.value = true
-  await new Promise(resolve => setTimeout(resolve, 800))
-  submitting.value = false
+  try {
+    const phone = form.value.phone.replace(/\D/g, '')
+    const { result, error } = await usePost<{ message: string }>(
+      '/contact',
+      {
+        fullName: form.value.fullName.trim(),
+        phone,
+        ...(form.value.email.trim() ? { email: form.value.email.trim() } : {}),
+        subject: form.value.subject,
+        message: form.value.message.trim(),
+      },
+      { headers: { 'no-error': true } },
+    )
 
-  toast.success(t('پیام شما ثبت شد. به زودی با شما تماس می‌گیریم.'))
+    if (error || !result) {
+      toast.error(t('ارسال پیام ناموفق بود. دوباره تلاش کنید.'))
+      return
+    }
 
-  form.value = {
-    fullName: '',
-    phone: '',
-    email: '',
-    subject: '',
-    message: '',
+    toast.success(t('پیام شما ثبت شد. به زودی با شما تماس می‌گیریم.'))
+
+    form.value = {
+      fullName: '',
+      phone: '',
+      email: '',
+      subject: '',
+      message: '',
+    }
+  }
+  finally {
+    submitting.value = false
   }
 }
 </script>

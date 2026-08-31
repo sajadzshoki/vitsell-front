@@ -106,9 +106,9 @@
 </template>
 
 <script setup lang="ts">
-import { heroSlides, type HeroSlideTone } from '~/data/hero'
+import type { HeroSlideTone } from '~/data/hero'
 
-const slides = heroSlides
+const { heroSlides: slides } = useHome()
 
 const toneClass = (tone: HeroSlideTone) => {
   if (tone === 'inverted') return ''

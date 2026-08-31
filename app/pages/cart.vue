@@ -125,7 +125,20 @@ const toast = useAppToast()
 const store = useCheckoutStore()
 const { step, placedOrderId } = storeToRefs(store)
 
-const { cartLines, cartSubtotal, discountAmount, clearCart } = useShop()
+const {
+  cartLines,
+  cartSubtotal,
+  discountAmount,
+  discountCode,
+  clearCart,
+  clearDiscount,
+  hydrateShop,
+  isLoggedIn,
+} = useShop()
+
+if (import.meta.client && isLoggedIn.value) {
+  await Promise.all([hydrateShop(), store.fetchAddresses()])
+}
 
 useMobileBackwardTitle(() => {
   if (placedOrderId.value) return t('ثبت سفارش')
@@ -153,7 +166,7 @@ const crumbs = computed(() =>
     })),
 )
 
-function onNext() {
+async function onNext() {
   if (!canProceed.value) return
   if (step.value < 4) {
     store.nextStep()
@@ -163,8 +176,13 @@ function onNext() {
     toast.error(t('آدرس تحویل را انتخاب کنید'))
     return
   }
-  store.placeOrder(total.value)
-  clearCart()
+  const id = await store.placeOrder(total.value, discountCode.value)
+  if (!id) {
+    toast.error(t('ثبت سفارش ناموفق بود'))
+    return
+  }
+  await clearCart()
+  clearDiscount()
   toast.success(t('سفارش ثبت شد'))
 }
 

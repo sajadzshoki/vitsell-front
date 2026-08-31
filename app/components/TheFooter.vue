@@ -72,17 +72,12 @@
 </template>
 
 <script setup lang="ts">
-import {
-  footerAbout,
-  footerColumns,
-  footerCopyright,
-  footerSocials,
-  footerTrustItems,
-} from '~/data/footer'
+const { footer, fetchFooter } = useFooter()
+await fetchFooter()
 
-const trustItems = footerTrustItems
-const about = footerAbout
-const socials = footerSocials
-const columns = footerColumns
-const copyright = footerCopyright
+const trustItems = computed(() => footer.value.trustItems)
+const about = computed(() => footer.value.about)
+const socials = computed(() => footer.value.socials)
+const columns = computed(() => footer.value.columns)
+const copyright = computed(() => footer.value.copyright)
 </script>

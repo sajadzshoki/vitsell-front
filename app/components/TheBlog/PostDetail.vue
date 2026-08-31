@@ -151,11 +151,16 @@ import {
 
 const props = defineProps<{
   post: StaticBlogPost
+  morePosts?: StaticBlogPost[]
 }>()
 
 const blogIndexPath = staticPagePaths.blog
 
-const morePosts = computed(() => getMoreBlogPosts(props.post.id))
+const morePosts = computed(() =>
+  props.morePosts?.length
+    ? props.morePosts
+    : getMoreBlogPosts(props.post.id),
+)
 
 const categoryLinks = computed(() =>
   props.post.relatedCategories

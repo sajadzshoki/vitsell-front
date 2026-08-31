@@ -1,23 +1,35 @@
 import {
-  categories,
-  getCategoryById,
   type Category,
 } from '~/data/categories'
 
 export function useCategoryBrowser(initialId?: string) {
   const route = useRoute()
   const router = useRouter()
+  const { categories, getCategoryById, productCounts } = useCategories()
 
-  const activeId = ref(
-    (typeof route.query.cat === 'string' && getCategoryById(route.query.cat))
-      ? route.query.cat
-      : initialId ?? categories[0]!.id,
-  )
+  const resolveInitialId = () => {
+    const fromQuery = typeof route.query.cat === 'string' ? route.query.cat : ''
+    if (fromQuery && getCategoryById(fromQuery)) return fromQuery
+    if (initialId && getCategoryById(initialId)) return initialId
+    return categories.value[0]?.id ?? 'mobile'
+  }
+
+  const activeId = ref(resolveInitialId())
 
   const expandedSubs = ref<Set<string>>(new Set())
 
   const activeCategory = computed<Category | undefined>(() =>
     getCategoryById(activeId.value),
+  )
+
+  watch(
+    categories,
+    (list) => {
+      if (!getCategoryById(activeId.value) && list[0]) {
+        activeId.value = list[0].id
+      }
+    },
+    { immediate: true },
   )
 
   watch(
@@ -53,6 +65,7 @@ export function useCategoryBrowser(initialId?: string) {
 
   return {
     categories,
+    productCounts,
     activeId,
     activeCategory,
     selectCategory,

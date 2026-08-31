@@ -14,6 +14,9 @@
 </template>
 
 <script setup lang="ts">
+const { fetchCategories } = useCategories()
+await fetchCategories({ withCounts: true })
+
 useSeoMeta({
   title: () => 'دسته‌بندی کالاها',
   description: () => 'مرور همه دسته‌بندی‌ها و زیردسته‌های دیجی‌شاپ',
