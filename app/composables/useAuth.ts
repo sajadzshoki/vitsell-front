@@ -27,6 +27,14 @@ export function useAuth() {
     )
   }
 
+  async function loginWithPassword(phone: string, password: string) {
+    return usePost<AuthVerifyResult>(
+      '/auth/login',
+      { phone, password },
+      { headers: { 'no-error': true } },
+    )
+  }
+
   async function fetchMe() {
     return useGet<AccountProfile>('/auth/me', {
       headers: { 'no-error': true },
@@ -50,6 +58,7 @@ export function useAuth() {
     token,
     requestOtp,
     verifyOtp,
+    loginWithPassword,
     fetchMe,
     logoutRemote,
     setToken,

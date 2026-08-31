@@ -29,6 +29,7 @@ export type AccountProfile = {
   phone: string
   birth: string
   gender: string
+  hasPassword?: boolean
 }
 
 export const defaultProfile: AccountProfile = {
@@ -38,6 +39,7 @@ export const defaultProfile: AccountProfile = {
   phone: '09121234567',
   birth: '۱۳۷۰/۰۵/۱۲',
   gender: 'مرد',
+  hasPassword: false,
 }
 
 export const accountNavItems: {

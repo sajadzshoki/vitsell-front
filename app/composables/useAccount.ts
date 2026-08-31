@@ -7,6 +7,7 @@ const emptyProfile = (): AccountProfile => ({
   phone: '',
   birth: '',
   gender: '',
+  hasPassword: false,
 })
 
 export function useAccount() {
@@ -69,6 +70,27 @@ export function useAccount() {
     return { result, error }
   }
 
+  async function setPassword(payload: {
+    password: string
+    passwordConfirmation: string
+    currentPassword?: string
+  }) {
+    const body = {
+      password: payload.password,
+      passwordConfirmation: payload.passwordConfirmation,
+      ...(payload.currentPassword ? { currentPassword: payload.currentPassword } : {}),
+    }
+    const { result, error } = await usePut<{ message: string, hasPassword: boolean }>(
+      '/account/password',
+      body,
+      { headers: { 'no-error': true } },
+    )
+    if (result?.hasPassword) {
+      profile.value = { ...profile.value, hasPassword: true }
+    }
+    return { result, error }
+  }
+
   async function fetchOrders() {
     const { result, error } = await useGet<ShopOrder[]>('/account/orders', {
       headers: { 'no-error': true },
@@ -110,6 +132,7 @@ export function useAccount() {
     getOrderById,
     fetchProfile,
     updateProfile,
+    setPassword,
     fetchOrders,
     fetchOrder,
   }

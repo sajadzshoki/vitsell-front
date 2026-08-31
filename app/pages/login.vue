@@ -14,13 +14,40 @@
           {{ $t('دیجی‌شاپ') }}
         </h1>
         <p class="mt-1 text-sm text-muted">
-          {{ step === 'phone' ? $t('ورود یا ثبت‌نام') : $t('تأیید شماره موبایل') }}
+          {{ subtitle }}
         </p>
       </div>
     </div>
 
     <!-- Form panel -->
     <div class="rounded-3xl border border-muted bg-default p-6 sm:p-8 shadow-sm">
+      <div
+        v-if="step !== 'otp'"
+        class="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
+        role="tablist"
+      >
+        <UButton
+          type="button"
+          :color="mode === 'otp' ? 'primary' : 'neutral'"
+          :variant="mode === 'otp' ? 'solid' : 'ghost'"
+          size="sm"
+          class="justify-center font-medium"
+          @click="switchMode('otp')"
+        >
+          {{ $t('کد تأیید') }}
+        </UButton>
+        <UButton
+          type="button"
+          :color="mode === 'password' ? 'primary' : 'neutral'"
+          :variant="mode === 'password' ? 'solid' : 'ghost'"
+          size="sm"
+          class="justify-center font-medium"
+          @click="switchMode('password')"
+        >
+          {{ $t('رمز عبور') }}
+        </UButton>
+      </div>
+
       <Transition
         mode="out-in"
         enter-active-class="transition-opacity duration-200 ease-out"
@@ -30,9 +57,84 @@
         leave-from-class="opacity-100"
         leave-to-class="opacity-0"
       >
-        <!-- Phone step -->
+        <!-- Password login -->
         <form
-          v-if="step === 'phone'"
+          v-if="mode === 'password'"
+          key="password"
+          class="flex flex-col gap-5"
+          @submit.prevent="submitPasswordLogin"
+        >
+          <div class="text-start">
+            <h2 class="text-base font-bold text-highlighted">
+              {{ $t('ورود با رمز عبور') }}
+            </h2>
+            <p class="mt-1.5 text-sm text-muted leading-relaxed">
+              {{ $t('شماره موبایل و رمز عبور خود را وارد کنید.') }}
+            </p>
+          </div>
+
+          <TheFormInput
+            v-model="phone"
+            :label="$t('شماره موبایل')"
+            name="phone"
+            :error="phoneError"
+            required
+            digits-only
+            type="tel"
+            inputmode="numeric"
+            autocomplete="tel"
+            :maxlength="11"
+            dir="ltr"
+            icon="i-tabler-device-mobile"
+            :placeholder="$t('۰۹۱۲۳۴۵۶۷۸۹')"
+            @update:model-value="phoneError = ''"
+          />
+
+          <TheFormInput
+            v-model="password"
+            :label="$t('رمز عبور')"
+            name="password"
+            :error="passwordError"
+            required
+            :type="showPassword ? 'text' : 'password'"
+            autocomplete="current-password"
+            dir="ltr"
+            icon="i-tabler-lock"
+            :trailing-icon="showPassword ? 'i-tabler-eye-off' : 'i-tabler-eye'"
+            :placeholder="$t('رمز عبور')"
+            @update:model-value="passwordError = ''"
+          />
+
+          <UButton
+            type="button"
+            color="neutral"
+            variant="link"
+            size="xs"
+            class="self-start -mt-3"
+            @click="showPassword = !showPassword"
+          >
+            {{ showPassword ? $t('مخفی کردن رمز') : $t('نمایش رمز') }}
+          </UButton>
+
+          <UButton
+            type="submit"
+            color="primary"
+            size="xl"
+            block
+            :loading="loading"
+            :disabled="!canSubmitPassword"
+          >
+            {{ $t('ورود') }}
+          </UButton>
+
+          <p class="text-xs text-dimmed text-center leading-relaxed">
+            {{ $t('هنوز رمز ندارید؟ از تب کد تأیید وارد شوید و در پروفایل رمز بگذارید.') }}
+          </p>
+        </form>
+
+        <!-- Phone step (OTP) -->
+        <form
+          v-else-if="step === 'phone'"
           key="phone"
           class="flex flex-col gap-5"
           @submit.prevent="submitPhone"
@@ -67,7 +169,7 @@
             type="submit"
             color="primary"
             size="xl"
-            
+            block
             :loading="loading"
             :disabled="!canSubmitPhone"
             trailing-icon="i-tabler-arrow-left"
@@ -118,7 +220,6 @@
             </div>
           </div>
 
-          <!-- dir on UPinInput (reka ConfigProvider); wrapper alone is not enough -->
           <div class="flex justify-center py-1" dir="ltr">
             <UPinInput
               v-model="otp"
@@ -205,7 +306,7 @@ definePageMeta({
 const { t } = useI18n()
 const route = useRoute()
 const { isLoggedIn, login } = useShop()
-const { requestOtp, verifyOtp } = useAuth()
+const { requestOtp, verifyOtp, loginWithPassword } = useAuth()
 const toast = useAppToast()
 
 function redirectAfterLogin() {
@@ -217,17 +318,29 @@ function redirectAfterLogin() {
 }
 const { startTimer, clearTimer, isRunning, formattedTime } = useOtpTimer()
 
+const mode = ref<'otp' | 'password'>('otp')
 const step = ref<'phone' | 'otp'>('phone')
 const phone = ref('')
+const password = ref('')
+const showPassword = ref(false)
 const otp = ref<string[]>([])
 const phoneError = ref('')
+const passwordError = ref('')
 const otpError = ref('')
 const loading = ref(false)
 /** Shown when API returns OTP in development */
 const devCode = ref<string | null>(null)
 
+const subtitle = computed(() => {
+  if (mode.value === 'password') return t('ورود با رمز عبور')
+  return step.value === 'phone' ? t('ورود یا ثبت‌نام') : t('تأیید شماره موبایل')
+})
+
 const canSubmitPhone = computed(() => /^09\d{9}$/.test(phone.value) && !loading.value)
 const canSubmitOtp = computed(() => otp.value.filter(Boolean).length === 5 && !loading.value)
+const canSubmitPassword = computed(
+  () => /^09\d{9}$/.test(phone.value) && password.value.length >= 1 && !loading.value,
+)
 
 function apiErrorMessage(error: any, fallback: string) {
   const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
@@ -242,6 +355,21 @@ function notifyDevCode(code: string | undefined, fallbackTitle: string) {
   else {
     devCode.value = null
     toast.success(fallbackTitle, t('کد را وارد کنید'))
+  }
+}
+
+function switchMode(next: 'otp' | 'password') {
+  mode.value = next
+  phoneError.value = ''
+  passwordError.value = ''
+  otpError.value = ''
+  if (next === 'otp') {
+    step.value = 'phone'
+  }
+  else {
+    clearTimer()
+    otp.value = []
+    devCode.value = null
   }
 }
 
@@ -337,6 +465,44 @@ async function submitOtp() {
   catch {
     otpError.value = t('کد تأیید نادرست است')
     toast.error(t('کد تأیید نادرست است'))
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+async function submitPasswordLogin() {
+  if (!/^09\d{9}$/.test(phone.value)) {
+    phoneError.value = t('شماره موبایل معتبر نیست')
+    return
+  }
+  if (!password.value) {
+    passwordError.value = t('رمز عبور را وارد کنید')
+    return
+  }
+
+  loading.value = true
+  phoneError.value = ''
+  passwordError.value = ''
+  try {
+    const { result, error } = await loginWithPassword(phone.value, password.value)
+    if (error || !result?.token) {
+      passwordError.value = apiErrorMessage(error, t('شماره موبایل یا رمز عبور نادرست است'))
+      toast.error(passwordError.value)
+      return
+    }
+
+    login(result.token, result.profile)
+    toast.success(
+      t('ورود موفق'),
+      t('به دیجی‌شاپ خوش آمدید'),
+      'i-tabler-check',
+    )
+    await navigateTo(redirectAfterLogin())
+  }
+  catch {
+    passwordError.value = t('شماره موبایل یا رمز عبور نادرست است')
+    toast.error(passwordError.value)
   }
   finally {
     loading.value = false
