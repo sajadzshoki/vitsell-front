@@ -1,5 +1,5 @@
 <template>
-  <header class="sticky top-0 z-40 bg-default/80 backdrop-blur-md border-b border-muted shadow-sm">
+  <header class="sticky top-0 z-40 bg-default/80 backdrop-blur-md border-b border-muted shadow-sm [overflow-anchor:none]">
     <div class="hidden md:block">
       <TheNavbarTopStrip />
     </div>

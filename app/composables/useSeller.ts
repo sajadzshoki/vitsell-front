@@ -215,17 +215,69 @@ export function useSeller() {
       { status },
       { headers: { 'no-error': true } },
     )
-    if (error) return false
-    if (result) {
+    if (!error && result) {
       listings.value = listings.value.map(item =>
         item.productId === productId ? { ...item, ...result } : item,
       )
       return true
     }
+    // front-only fallback
+    if (!getListing(productId)) return false
     listings.value = listings.value.map(item =>
       item.productId === productId ? { ...item, status } : item,
     )
     return true
+  }
+
+  async function updateListingProduct(
+    productId: string,
+    product: Product,
+    stock: number,
+    status?: SellerProductStatus,
+  ) {
+    const listing = getListing(productId)
+    if (!listing) return false
+
+    const nextStatus = status
+      ?? (stock <= 0 && listing.status === 'active' ? 'out_of_stock' : listing.status)
+
+    const { result, error } = await usePatch<{ listing: SellerListing, product: Product }>(
+      `/seller/listings/${encodeURIComponent(productId)}`,
+      {
+        product: {
+          ...product,
+          id: productId,
+        },
+        stock,
+        status: nextStatus,
+      },
+      { headers: { 'no-error': true } },
+    )
+
+    const nextProduct = { ...product, id: productId }
+    remember([(!error && result?.product) ? result.product : nextProduct])
+
+    const nextListing: SellerListing = (!error && result?.listing)
+      ? result.listing
+      : {
+          ...listing,
+          stock,
+          status: nextStatus,
+        }
+
+    listings.value = listings.value.map(item =>
+      item.productId === productId ? nextListing : item,
+    )
+    return true
+  }
+
+  async function updateListingStock(productId: string, stock: number) {
+    const listing = getListing(productId)
+    if (!listing) return false
+    const status: SellerProductStatus = stock <= 0
+      ? (listing.status === 'inactive' ? 'inactive' : 'out_of_stock')
+      : (listing.status === 'out_of_stock' ? 'active' : listing.status)
+    return updateListingProduct(productId, resolveProduct(productId), stock, status)
   }
 
   async function addListingProduct(product: Product, stock: number, status: SellerProductStatus = 'pending') {
@@ -372,6 +424,8 @@ export function useSeller() {
     resolveProduct,
     getListing,
     setListingStatus,
+    updateListingProduct,
+    updateListingStock,
     addListingProduct,
     getOrderById,
     advanceOrder,

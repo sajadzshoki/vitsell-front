@@ -2,7 +2,7 @@
   <div class="bg-muted border border-muted rounded-2xl p-3 sm:p-4">
     <div class="flex items-start gap-3">
       <NuxtLink
-        :to="`/product/${listing.productId}`"
+        :to="`/seller/products/${listing.productId}`"
         class="shrink-0 cursor-pointer"
       >
         <img
@@ -26,7 +26,7 @@
       <div class="flex-1 min-w-0">
         <div class="flex items-start justify-between gap-2">
           <NuxtLink
-            :to="`/product/${listing.productId}`"
+            :to="`/seller/products/${listing.productId}`"
             class="text-sm font-medium text-highlighted line-clamp-2 hover:text-primary transition cursor-pointer"
           >
             {{ product.title }}
@@ -90,12 +90,20 @@
               {{ $t('فعال کردن') }}
             </UButton>
             <UButton
+              :to="`/seller/products/${listing.productId}`"
+              color="primary"
+              variant="soft"
+              size="xs"
+              icon="i-tabler-eye"
+              :aria-label="$t('جزئیات محصول')"
+            />
+            <UButton
               :to="`/product/${listing.productId}`"
               color="neutral"
               variant="ghost"
               size="xs"
               icon="i-tabler-external-link"
-              :aria-label="$t('مشاهده محصول')"
+              :aria-label="$t('مشاهده در فروشگاه')"
             />
           </div>
         </div>

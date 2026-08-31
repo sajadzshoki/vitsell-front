@@ -40,6 +40,15 @@
         >
           {{ newOrdersCount.toLocaleString('fa-IR') }}
         </UBadge>
+        <UBadge
+          v-else-if="item.id === 'questions' && unansweredQuestions > 0"
+          color="error"
+          variant="solid"
+          size="xs"
+          class="num"
+        >
+          {{ unansweredQuestions.toLocaleString('fa-IR') }}
+        </UBadge>
         <UIcon
           v-if="isActive(item.to)"
           name="i-tabler-chevron-left"
@@ -65,6 +74,9 @@ import { sellerNavItems } from '~/data/seller'
 const route = useRoute()
 const { requestLogout } = useAccountLogout()
 const { shop, shopInitial, newOrdersCount } = useSeller()
+const { unansweredCount: unansweredQuestions, ensureLoaded } = useSellerQuestions()
+
+ensureLoaded()
 
 function isActive(to: string) {
   if (to === '/seller') {

@@ -28,6 +28,9 @@
 import { sellerNavItems } from '~/data/seller'
 
 const { newOrdersCount, unansweredReviews } = useSeller()
+const { unansweredCount: unansweredQuestions, ensureLoaded } = useSellerQuestions()
+
+ensureLoaded()
 
 const menuItems = computed(() =>
   sellerNavItems
@@ -39,6 +42,9 @@ const menuItems = computed(() =>
       }
       if (item.id === 'reviews' && unansweredReviews.value > 0) {
         badge = unansweredReviews.value.toLocaleString('fa-IR')
+      }
+      if (item.id === 'questions' && unansweredQuestions.value > 0) {
+        badge = unansweredQuestions.value.toLocaleString('fa-IR')
       }
       return {
         label: item.label,

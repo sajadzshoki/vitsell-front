@@ -34,7 +34,7 @@
           <span class="text-dimmed">/</span>
           <span class="text-toned">{{ $t('جزئیات سفارش') }}</span>
         </template>
-        <template v-else-if="isProductCreate">
+        <template v-else-if="isProductCreate || isProductDetail">
           <span class="text-dimmed">/</span>
           <NuxtLink
             to="/seller/products"
@@ -43,7 +43,7 @@
             {{ $t('محصولات') }}
           </NuxtLink>
           <span class="text-dimmed">/</span>
-          <span class="text-toned">{{ $t('افزودن محصول') }}</span>
+          <span class="text-toned">{{ $t(pageTitle) }}</span>
         </template>
         <template v-else-if="isCategoryCreate || isCategoryEdit">
           <span class="text-dimmed">/</span>
@@ -66,6 +66,39 @@
           </NuxtLink>
           <span class="text-dimmed">/</span>
           <span class="text-toned">{{ $t(pageTitle || '') }}</span>
+        </template>
+        <template v-else-if="isDealCreate || isDealEdit">
+          <span class="text-dimmed">/</span>
+          <NuxtLink
+            to="/seller/deals"
+            class="hover:text-primary transition"
+          >
+            {{ $t('شگفت‌انگیزها') }}
+          </NuxtLink>
+          <span class="text-dimmed">/</span>
+          <span class="text-toned">{{ $t(pageTitle) }}</span>
+        </template>
+        <template v-else-if="isNotificationCreate">
+          <span class="text-dimmed">/</span>
+          <NuxtLink
+            to="/seller/notifications"
+            class="hover:text-primary transition"
+          >
+            {{ $t('اعلان‌ها') }}
+          </NuxtLink>
+          <span class="text-dimmed">/</span>
+          <span class="text-toned">{{ $t(pageTitle) }}</span>
+        </template>
+        <template v-else-if="isPromotionChild">
+          <span class="text-dimmed">/</span>
+          <NuxtLink
+            to="/seller/promotions"
+            class="hover:text-primary transition"
+          >
+            {{ $t('تخفیف و پروموشن') }}
+          </NuxtLink>
+          <span class="text-dimmed">/</span>
+          <span class="text-toned">{{ $t(pageTitle) }}</span>
         </template>
         <template v-else-if="!isDashboard">
           <span class="text-dimmed">/</span>
@@ -116,10 +149,15 @@ const {
   isDashboard,
   isOrderDetail,
   isProductCreate,
+  isProductDetail,
   isCategoryCreate,
   isCategoryEdit,
   isBannerCreate,
   isBannerEdit,
+  isDealCreate,
+  isDealEdit,
+  isNotificationCreate,
+  isPromotionChild,
   pageTitle,
   showDesktopSidebar,
 } = useSellerLayout()
