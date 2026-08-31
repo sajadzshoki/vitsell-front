@@ -25,7 +25,7 @@
             {{ shop.name }}
           </div>
           <div class="text-xs text-muted">
-            {{ $t(shop.city) }} · {{ $t('از') }} {{ shop.joinDate }}
+            {{ $t(shop.city || '') }} · {{ $t('از') }} {{ shop.joinDate }}
           </div>
         </div>
       </div>

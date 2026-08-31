@@ -54,7 +54,7 @@
             {{ $t('دسته‌بندی‌ها') }}
           </NuxtLink>
           <span class="text-dimmed">/</span>
-          <span class="text-toned">{{ $t(pageTitle) }}</span>
+          <span class="text-toned">{{ $t(pageTitle || '') }}</span>
         </template>
         <template v-else-if="isBannerCreate || isBannerEdit">
           <span class="text-dimmed">/</span>
@@ -65,15 +65,15 @@
             {{ $t('بنرها') }}
           </NuxtLink>
           <span class="text-dimmed">/</span>
-          <span class="text-toned">{{ $t(pageTitle) }}</span>
+          <span class="text-toned">{{ $t(pageTitle || '') }}</span>
         </template>
         <template v-else-if="!isDashboard">
           <span class="text-dimmed">/</span>
-          <span class="text-toned">{{ $t(pageTitle) }}</span>
+          <span class="text-toned">{{ $t(pageTitle || '') }}</span>
         </template>
         <template v-else-if="pageTitle">
           <span class="text-dimmed">/</span>
-          <span class="text-toned">{{ $t(pageTitle) }}</span>
+          <span class="text-toned">{{ $t(pageTitle || '') }}</span>
         </template>
       </nav>
 
@@ -123,7 +123,7 @@ const {
   pageTitle,
   showDesktopSidebar,
 } = useSellerLayout()
-const { fetchSeller } = useSeller()
+const { fetchSeller, loaded: sellerLoaded } = useSeller()
 
 // Prefetch for all seller subpages; dashboard does its own force refresh + loading UI.
 if (!sellerLoaded.value) {

@@ -14,6 +14,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (profile.value.role !== 'admin') {
-    return navigateTo('/')
+    const { storeUrl, isAdminApp } = useAppMode()
+    if (isAdminApp && storeUrl) {
+      if (import.meta.client) {
+        window.location.href = storeUrl
+        return abortNavigation()
+      }
+    }
+    return navigateTo('/login')
   }
 })

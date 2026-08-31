@@ -18,8 +18,7 @@ export function getApiBase() {
 
 export function getAuthCookieName() {
   try {
-    const config = useRuntimeConfig()
-    return config.public?.appMode === 'admin' ? 'admin_token' : 'token'
+    return useAppMode().authCookieName
   }
   catch {
     return 'token'

@@ -372,23 +372,25 @@
       </Transition>
     </div>
 
-    <div class="mt-8 flex justify-center">
+    <div class="mt-8 flex flex-col items-center gap-3">
       <a
         v-if="isAdminApp && storeUrl"
         :href="storeUrl"
-        class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition"
+        class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition cursor-pointer"
       >
         <UIcon name="i-tabler-arrow-right" class="size-4" />
         {{ $t('بازگشت به فروشگاه') }}
       </a>
-      <NuxtLink
-        v-else-if="!isAdminApp"
-        to="/"
-        class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition"
-      >
-        <UIcon name="i-tabler-arrow-right" class="size-4" />
-        {{ $t('بازگشت به فروشگاه') }}
-      </NuxtLink>
+      <template v-else-if="!isAdminApp">
+        <NuxtLink
+          to="/"
+          class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition cursor-pointer"
+        >
+          <UIcon name="i-tabler-arrow-right" class="size-4" />
+          {{ $t('بازگشت به فروشگاه') }}
+        </NuxtLink>
+   
+      </template>
     </div>
   </div>
 </template>
@@ -400,7 +402,7 @@ definePageMeta({
 
 const { t } = useI18n()
 const route = useRoute()
-const { isAdminApp, storeUrl } = useAppMode()
+const { isAdminApp, storeUrl, adminUrl } = useAppMode()
 const { isLoggedIn, login } = useShop()
 const { checkPhone, requestOtp, verifyOtp, loginWithPassword, resetPassword } = useAuth()
 const toast = useAppToast()
@@ -560,7 +562,9 @@ async function submitPhone() {
     }
 
     if (result?.isAdmin) {
-      phoneError.value = t('حساب مدیر از فروشگاه قابل ورود نیست')
+      phoneError.value = adminUrl
+        ? t('حساب مدیر است؛ از پنل ادمین وارد شوید')
+        : t('حساب مدیر از فروشگاه قابل ورود نیست')
       toast.error(phoneError.value)
       return
     }

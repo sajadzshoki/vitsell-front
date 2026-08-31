@@ -151,7 +151,7 @@
           </div>
 
           <p class="text-xs text-inverted/50 num text-center lg:text-end">
-            {{ $t(copyright) }}
+            {{ $t(copyright || '') }}
           </p>
         </div>
       </div>

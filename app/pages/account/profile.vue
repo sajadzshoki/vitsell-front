@@ -123,52 +123,6 @@
         />
       </div>
 
-<<<<<<< HEAD
-      <UFormField :label="$t('جنسیت')">
-        <div
-          class="inline-flex w-full sm:w-auto rounded-xl bg-muted p-1 gap-1"
-          role="group"
-          :aria-label="$t('جنسیت')"
-        >
-          <UButton
-            v-for="item in genderItems"
-            :key="item"
-            type="button"
-            size="md"
-            class="flex-1 sm:min-w-24 font-medium cursor-pointer"
-            :color="form.gender === item ? 'primary' : 'neutral'"
-            :variant="form.gender === item ? 'solid' : 'ghost'"
-            @click="form.gender = item"
-          >
-            {{ $t(item) }}
-          </UButton>
-        </div>
-      </UFormField>
-    </div>
-
-    <div class="mt-6 flex items-center gap-3 flex-wrap">
-      <UButton
-        type="button"
-        color="primary"
-        size="lg"
-        class="font-bold"
-        :loading="saving"
-        :disabled="loading"
-        @click="onSave"
-      >
-        {{ saved ? $t('ذخیره شد') : $t('ذخیره تغییرات') }}
-      </UButton>
-      <UButton
-        type="button"
-        color="neutral"
-        variant="outline"
-        size="lg"
-        :disabled="saving || loading"
-        @click="onCancel"
-      >
-        {{ $t('انصراف') }}
-      </UButton>
-=======
       <div class="mt-4 flex items-center gap-3 flex-wrap">
         <UButton
           type="button"
@@ -191,7 +145,6 @@
           {{ showNewPassword ? $t('مخفی کردن رمز') : $t('نمایش رمز') }}
         </UButton>
       </div>
->>>>>>> fc27ca8cdfd68e79616148f653a5463b6e9f0a6c
     </div>
   </div>
 </template>

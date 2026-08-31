@@ -11,7 +11,7 @@
           {{ shop.name }}
         </div>
         <div class="text-[11px] text-muted truncate">
-          {{ $t(shop.city) }} · {{ $t('امتیاز') }}
+          {{ $t(shop.city || '') }} · {{ $t('امتیاز') }}
           <span class="num">{{ shop.rating.toLocaleString('fa-IR') }}</span>
         </div>
       </div>

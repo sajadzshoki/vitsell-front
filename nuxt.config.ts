@@ -1,9 +1,13 @@
 // @ts-nocheck
+const isAdminApp = process.env.NUXT_PUBLIC_APP_MODE === 'admin'
+
 export default defineNuxtConfig({
     devtools: {enabled: false},
     ssr: false,
+    /** Separate dirs so `dev:store` + `dev:admin` don't clobber each other's prepared config */
+    buildDir: isAdminApp ? '.nuxt-admin' : '.nuxt',
     devServer: {
-        port: 4000,
+        port: isAdminApp ? 4001 : 4000,
       },
     modules: [
         '@nuxt/ui',
