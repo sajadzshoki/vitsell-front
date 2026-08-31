@@ -21,7 +21,7 @@
       </UButton>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
       <TheProductCard
         v-for="product in products"
         :key="product.id"
@@ -34,5 +34,5 @@
 <script setup lang="ts">
 import { bestSellers } from '~/data/products'
 
-const products = bestSellers.slice(0, 8)
+const products = bestSellers.slice(0, 10)
 </script>

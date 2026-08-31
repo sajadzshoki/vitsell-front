@@ -287,7 +287,7 @@ export const formatPrice = (n: number) => n.toLocaleString('fa-IR')
 
 export const dealsOfTheDay = products.filter(p => p.oldPrice).slice(0, 6)
 
-export const bestSellers = products.slice(0, 8)
+export const bestSellers = products.slice(0, 10)
 
 export const newArrivals = [...products].reverse().slice(0, 8)
 
