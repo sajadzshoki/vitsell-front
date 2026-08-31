@@ -1,5 +1,3 @@
-import { cartDiscountCodes } from '~/data/cart'
-import { homePromos, type HomePromo } from '~/data/home'
 import {
   fromDatetimeLocalValue,
   toDatetimeLocalValue,
@@ -7,6 +5,7 @@ import {
 
 export type SellerDiscountCode = {
   code: string
+  /** درصد ۱–۹۹ */
   percent: number
   active: boolean
   startsAt: string
@@ -27,7 +26,17 @@ export type SellerDiscountCodeForm = {
   oncePerUser: boolean
 }
 
-export type SellerPromoTone = HomePromo['tone']
+export type SellerDiscountCodeApiPayload = {
+  code?: string
+  percent: number
+  active: boolean
+  startsAt: string
+  endsAt: string
+  minAmount: number
+  oncePerUser: boolean
+}
+
+export type SellerPromoTone = 'primary' | 'warning'
 
 export type SellerContentPromo = {
   id: string
@@ -59,7 +68,22 @@ export type SellerContentPromoForm = {
   active: boolean
 }
 
+export type SellerContentPromoApiPayload = {
+  id?: string
+  eyebrow: string
+  title: string
+  subtitle: string
+  tone: SellerPromoTone
+  icon: string
+  primaryCtaLabel: string
+  primaryCtaTo: string
+  secondaryCtaLabel: string
+  secondaryCtaTo: string
+  active: boolean
+}
+
 export const discountCodePattern = /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/
+export const promoIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 export const sellerPromoToneMeta: Record<
   SellerPromoTone,
@@ -67,6 +91,10 @@ export const sellerPromoToneMeta: Record<
 > = {
   primary: { label: 'اصلی', color: 'primary' },
   warning: { label: 'هشدار / ویژه', color: 'warning' },
+}
+
+function clampPercent(value: number) {
+  return Math.min(99, Math.max(1, Math.round(value) || 1))
 }
 
 export function emptyDiscountCodeForm(): SellerDiscountCodeForm {
@@ -83,6 +111,22 @@ export function emptyDiscountCodeForm(): SellerDiscountCodeForm {
   }
 }
 
+export function toDiscountCode(
+  raw: Partial<SellerDiscountCode> & { code: string },
+): SellerDiscountCode {
+  return {
+    code: String(raw.code).toUpperCase(),
+    percent: clampPercent(Number(raw.percent ?? 1)),
+    active: Boolean(raw.active),
+    startsAt: raw.startsAt ?? new Date().toISOString(),
+    endsAt: raw.endsAt ?? new Date().toISOString(),
+    minAmount: Math.max(0, Math.round(Number(raw.minAmount ?? 0))),
+    oncePerUser: Boolean(raw.oncePerUser),
+    createdAt: raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
+  }
+}
+
 export function toDiscountCodeForm(item: SellerDiscountCode): SellerDiscountCodeForm {
   return {
     code: item.code,
@@ -95,23 +139,17 @@ export function toDiscountCodeForm(item: SellerDiscountCode): SellerDiscountCode
   }
 }
 
-export function formToDiscountCode(
+export function formToDiscountCodePayload(
   form: SellerDiscountCodeForm,
-  previous?: SellerDiscountCode | null,
-): SellerDiscountCode {
-  const now = new Date().toISOString()
-  const percent = Math.min(99, Math.max(1, Math.round(Number(form.percent) || 1)))
-  const minAmount = Math.max(0, Math.round(Number(form.minAmount) || 0))
+): SellerDiscountCodeApiPayload {
   return {
     code: form.code.trim().toUpperCase(),
-    percent,
+    percent: clampPercent(Number(form.percent)),
     active: form.active,
     startsAt: fromDatetimeLocalValue(form.startsAt),
     endsAt: fromDatetimeLocalValue(form.endsAt),
-    minAmount,
+    minAmount: Math.max(0, Math.round(Number(form.minAmount) || 0)),
     oncePerUser: form.oncePerUser,
-    createdAt: previous?.createdAt ?? now,
-    updatedAt: now,
   }
 }
 
@@ -131,6 +169,26 @@ export function emptyContentPromoForm(): SellerContentPromoForm {
   }
 }
 
+export function toContentPromo(
+  raw: Partial<SellerContentPromo> & { id: string },
+): SellerContentPromo {
+  return {
+    id: raw.id,
+    eyebrow: raw.eyebrow ?? '',
+    title: raw.title ?? '',
+    subtitle: raw.subtitle ?? '',
+    tone: raw.tone === 'warning' ? 'warning' : 'primary',
+    icon: raw.icon?.trim() || 'sparkles',
+    primaryCtaLabel: raw.primaryCtaLabel ?? '',
+    primaryCtaTo: raw.primaryCtaTo ?? '',
+    secondaryCtaLabel: raw.secondaryCtaLabel ?? '',
+    secondaryCtaTo: raw.secondaryCtaTo ?? '',
+    active: Boolean(raw.active),
+    createdAt: raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
+  }
+}
+
 export function toContentPromoForm(item: SellerContentPromo): SellerContentPromoForm {
   return {
     id: item.id,
@@ -147,11 +205,9 @@ export function toContentPromoForm(item: SellerContentPromo): SellerContentPromo
   }
 }
 
-export function formToContentPromo(
+export function formToContentPromoPayload(
   form: SellerContentPromoForm,
-  previous?: SellerContentPromo | null,
-): SellerContentPromo {
-  const now = new Date().toISOString()
+): SellerContentPromoApiPayload {
   return {
     id: form.id.trim(),
     eyebrow: form.eyebrow.trim(),
@@ -164,8 +220,6 @@ export function formToContentPromo(
     secondaryCtaLabel: form.secondaryCtaLabel.trim(),
     secondaryCtaTo: form.secondaryCtaTo.trim(),
     active: form.active,
-    createdAt: previous?.createdAt ?? now,
-    updatedAt: now,
   }
 }
 
@@ -195,43 +249,3 @@ export function isDiscountCodeLive(item: SellerDiscountCode, now = Date.now()) {
   if (Number.isNaN(start) || Number.isNaN(end)) return false
   return now >= start && now <= end
 }
-
-export function buildDefaultDiscountCodes(): SellerDiscountCode[] {
-  const now = Date.now()
-  const startsAt = new Date(now - 7 * 24 * 3600_000).toISOString()
-  const endsAt = new Date(now + 60 * 24 * 3600_000).toISOString()
-  const stamped = new Date().toISOString()
-
-  return Object.entries(cartDiscountCodes).map(([code, ratio], index) => ({
-    code,
-    percent: Math.round(ratio * 100),
-    active: true,
-    startsAt,
-    endsAt,
-    minAmount: index === 0 ? 0 : 500_000,
-    oncePerUser: code.startsWith('WELCOME'),
-    createdAt: stamped,
-    updatedAt: stamped,
-  }))
-}
-
-export function buildDefaultContentPromos(): SellerContentPromo[] {
-  const stamped = new Date().toISOString()
-  return homePromos.map(promo => ({
-    id: promo.id,
-    eyebrow: promo.eyebrow,
-    title: promo.title,
-    subtitle: promo.subtitle,
-    tone: promo.tone,
-    icon: promo.icon,
-    primaryCtaLabel: promo.primaryCta.label,
-    primaryCtaTo: promo.primaryCta.to ?? '',
-    secondaryCtaLabel: promo.secondaryCta?.label ?? '',
-    secondaryCtaTo: promo.secondaryCta?.to ?? '',
-    active: true,
-    createdAt: stamped,
-    updatedAt: stamped,
-  }))
-}
-
-export const promoIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/

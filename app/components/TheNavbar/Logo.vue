@@ -1,17 +1,23 @@
 <template>
-  <NuxtLink to="/" class="flex items-center gap-2 shrink-0 <md:flex-col">
+  <NuxtLink
+    to="/"
+    class="flex items-center gap-2 shrink-0 <md:flex-col"
+  >
     <div
       class="size-10 rounded-xl grid place-items-center shadow-lg shadow-primary/20"
       :class="inverted ? 'bg-default text-highlighted' : 'bg-primary text-inverted'"
     >
-      <UIcon name="i-tabler-shopping-bag" class="size-5" />
+      <UIcon
+        name="i-tabler-shopping-bag"
+        class="size-5"
+      />
     </div>
     <div class="hidden sm:flex flex-col leading-tight text-start">
       <span
         class="text-xl font-extrabold"
         :class="inverted ? 'text-inverted' : 'text-highlighted'"
       >
-        {{ $t('دیجی‌شاپ') }}
+        {{ siteName }}
       </span>
       <span
         class="text-[10px] -mt-0.5"
@@ -29,4 +35,11 @@ withDefaults(defineProps<{
 }>(), {
   inverted: false,
 })
+
+const { t } = useI18n()
+const { site, fetchSite } = useSiteSettings()
+
+await fetchSite()
+
+const siteName = computed(() => site.value.name?.trim() || t('دیجی‌شاپ'))
 </script>

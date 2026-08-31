@@ -1,7 +1,11 @@
 import {
+  defaultSellerShop,
   sellerLowStockThreshold,
   sellerOrderNextStatus,
   sellerOrderPrevStatus,
+  toSellerOrder,
+  toSellerPayout,
+  toSellerSalesPoint,
   type SellerListing,
   type SellerOrder,
   type SellerOrderStatus,
@@ -13,20 +17,11 @@ import {
 } from '~/data/seller'
 import type { Product } from '~/data/products'
 
-const emptyShop = (): SellerShop => ({
-  name: '',
-  slug: '',
-  phone: '',
-  email: '',
-  city: '',
-  about: '',
-  rating: 0,
-  reviewCount: 0,
-  joinDate: '',
-})
+const emptyShop = (): SellerShop => ({ ...defaultSellerShop })
 
 export function useSeller() {
   const { fetchProduct, getCachedProduct, remember } = useProducts()
+  const { applySite } = useSiteSettings()
 
   const shop = useState<SellerShop>('seller-shop', emptyShop)
   const listings = useState<SellerListing[]>('seller-listings', () => [])
@@ -173,12 +168,23 @@ export function useSeller() {
         ])
 
         const shopOk = Boolean(shopRes.result)
-        if (shopRes.result) shop.value = shopRes.result
+        if (shopRes.result) {
+          shop.value = { ...defaultSellerShop, ...shopRes.result }
+          applySite(shop.value)
+        }
         if (Array.isArray(listingsRes.result)) applyListings(listingsRes.result)
-        if (Array.isArray(ordersRes.result)) orders.value = ordersRes.result
+        if (Array.isArray(ordersRes.result)) {
+          orders.value = ordersRes.result.map(o => toSellerOrder(o))
+        }
         if (Array.isArray(reviewsRes.result)) reviews.value = reviewsRes.result
-        if (Array.isArray(payoutsRes.result)) payouts.value = payoutsRes.result
-        if (Array.isArray(salesRes.result)) sales.value = salesRes.result
+        if (Array.isArray(payoutsRes.result)) {
+          payouts.value = payoutsRes.result.map(p => toSellerPayout(p))
+        }
+        if (Array.isArray(salesRes.result)) {
+          sales.value = salesRes.result
+            .map(point => toSellerSalesPoint(point))
+            .filter((point): point is SellerSalesPoint => Boolean(point))
+        }
 
         // Only mark loaded when auth-critical shop call succeeds so empty/failed runs can retry.
         if (shopOk) {
@@ -209,16 +215,84 @@ export function useSeller() {
     return listings.value.find(item => item.productId === productId) ?? null
   }
 
+  function upsertListing(item: ListingApiItem) {
+    const listing: SellerListing = {
+      productId: item.productId,
+      stock: item.stock,
+      sold: item.sold,
+      views: item.views,
+      status: item.status,
+    }
+    if (item.product) remember([item.product])
+    const exists = listings.value.some(l => l.productId === listing.productId)
+    listings.value = exists
+      ? listings.value.map(l => (l.productId === listing.productId ? listing : l))
+      : [listing, ...listings.value]
+    return listing
+  }
+
+  /**
+   * Load one listing (+ product) for /seller/products/:id.
+   * Also refreshes orders/reviews when the panel has not been loaded yet.
+   */
+  async function fetchListing(productId: string, options?: { force?: boolean }) {
+    const id = productId.trim()
+    if (!id) return { ok: false as const, error: { message: 'missing-product-id' } }
+
+    if (!options?.force && getListing(id) && getCachedProduct(id)) {
+      return { ok: true as const, error: null as null }
+    }
+
+    const { result, error } = await useGet<ListingApiItem>(
+      `/seller/listings/${encodeURIComponent(id)}`,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.productId) {
+      // Fallback: list endpoint + public product (deep-link resilience)
+      await fetchListings({ force: options?.force })
+      if (!getCachedProduct(id)) await fetchProduct(id)
+      if (!getListing(id)) {
+        return { ok: false as const, error: error ?? { message: 'listing-not-found' } }
+      }
+      return { ok: true as const, error: null as null }
+    }
+
+    upsertListing(result)
+    if (!result.product) await fetchProduct(id)
+    return { ok: true as const, error: null as null }
+  }
+
+  async function fetchProductPanel(productId: string) {
+    const id = productId.trim()
+    const listingRes = await fetchListing(id, { force: true })
+
+    if (!loaded.value) {
+      const [ordersRes, reviewsRes] = await Promise.all([
+        useGet<SellerOrder[]>('/seller/orders', { headers: { 'no-error': true } }),
+        useGet<SellerReview[]>('/seller/reviews', { headers: { 'no-error': true } }),
+      ])
+      if (Array.isArray(ordersRes.result)) {
+        orders.value = ordersRes.result.map(o => toSellerOrder(o))
+      }
+      if (Array.isArray(reviewsRes.result)) reviews.value = reviewsRes.result
+    }
+
+    return listingRes
+  }
+
   async function setListingStatus(productId: string, status: SellerProductStatus) {
-    const { result, error } = await usePatch<SellerListing>(
+    const { result, error } = await usePatch<{ listing: SellerListing, product?: Product } | SellerListing>(
       `/seller/listings/${encodeURIComponent(productId)}`,
       { status },
       { headers: { 'no-error': true } },
     )
-    if (!error && result) {
-      listings.value = listings.value.map(item =>
-        item.productId === productId ? { ...item, ...result } : item,
-      )
+    const listing = result && 'listing' in result && result.listing
+      ? result.listing
+      : (result && 'productId' in result ? result as SellerListing : null)
+    const product = result && 'product' in result ? result.product : undefined
+
+    if (!error && listing) {
+      upsertListing({ ...listing, product })
       return true
     }
     // front-only fallback
@@ -254,20 +328,12 @@ export function useSeller() {
       { headers: { 'no-error': true } },
     )
 
-    const nextProduct = { ...product, id: productId }
-    remember([(!error && result?.product) ? result.product : nextProduct])
+    if (error || !result?.listing) {
+      return false
+    }
 
-    const nextListing: SellerListing = (!error && result?.listing)
-      ? result.listing
-      : {
-          ...listing,
-          stock,
-          status: nextStatus,
-        }
-
-    listings.value = listings.value.map(item =>
-      item.productId === productId ? nextListing : item,
-    )
+    remember([result.product ?? { ...product, id: productId }])
+    upsertListing({ ...result.listing, product: result.product })
     return true
   }
 
@@ -322,8 +388,72 @@ export function useSeller() {
     return listing.productId
   }
 
+  function upsertOrder(order: SellerOrder) {
+    const index = orders.value.findIndex(item => item.id === order.id)
+    if (index === -1) {
+      orders.value = [order, ...orders.value]
+      return
+    }
+    const copy = [...orders.value]
+    copy[index] = order
+    orders.value = copy
+  }
+
   function getOrderById(id: string) {
     return orders.value.find(order => order.id === id) ?? null
+  }
+
+  async function fetchOrders(options?: { force?: boolean, sort?: string }) {
+    if (orders.value.length && loaded.value && !options?.force) {
+      return { ok: true as const, error: null as null }
+    }
+
+    pending.value = true
+    try {
+      const query = options?.sort ? `?sort=${encodeURIComponent(options.sort)}` : ''
+      const { result, error } = await useGet<SellerOrder[]>(
+        `/seller/orders${query}`,
+        { headers: { 'no-error': true } },
+      )
+      if (error || !Array.isArray(result)) {
+        return { ok: false as const, error: error ?? { message: 'orders-fetch-failed' } }
+      }
+      orders.value = result.map(o => toSellerOrder(o))
+      await hydrateProducts(orders.value.flatMap(o => o.items.map(i => i.productId)))
+      return { ok: true as const, error: null as null }
+    }
+    finally {
+      pending.value = false
+    }
+  }
+
+  async function fetchOrder(id: string, options?: { force?: boolean }) {
+    const orderId = id.trim()
+    if (!orderId) {
+      return { ok: false as const, order: null as SellerOrder | null, error: { message: 'missing-order-id' } }
+    }
+
+    const cached = getOrderById(orderId)
+    if (cached && !options?.force) {
+      return { ok: true as const, order: cached, error: null as null }
+    }
+
+    const { result, error } = await useGet<SellerOrder>(
+      `/seller/orders/${encodeURIComponent(orderId)}`,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return {
+        ok: false as const,
+        order: null as SellerOrder | null,
+        error: error ?? { message: 'order-not-found' },
+      }
+    }
+
+    const order = toSellerOrder(result)
+    upsertOrder(order)
+    await hydrateProducts(order.items.map(i => i.productId))
+    return { ok: true as const, order, error: null as null }
   }
 
   async function setOrderStatus(id: string, status: SellerOrderStatus) {
@@ -333,13 +463,13 @@ export function useSeller() {
       { headers: { 'no-error': true } },
     )
     if (error) return false
-    if (result) {
-      orders.value = orders.value.map(order => (order.id === id ? result : order))
+    if (result?.id) {
+      upsertOrder(toSellerOrder(result))
       return true
     }
-    orders.value = orders.value.map(order =>
-      order.id === id ? { ...order, status } : order,
-    )
+    const current = getOrderById(id)
+    if (!current) return false
+    upsertOrder({ ...current, status })
     return true
   }
 
@@ -376,6 +506,28 @@ export function useSeller() {
     return true
   }
 
+  async function fetchShop(options?: { force?: boolean }) {
+    if (shop.value.name && loaded.value && !options?.force) {
+      return { ok: true as const, error: null as null }
+    }
+
+    pending.value = true
+    try {
+      const { result, error } = await useGet<SellerShop>('/seller/shop', {
+        headers: { 'no-error': true },
+      })
+      if (error || !result) {
+        return { ok: false as const, error: error ?? { message: 'shop-fetch-failed' } }
+      }
+      shop.value = { ...defaultSellerShop, ...result }
+      applySite(shop.value)
+      return { ok: true as const, error: null as null }
+    }
+    finally {
+      pending.value = false
+    }
+  }
+
   async function updateShop(payload: Partial<SellerShop>) {
     const body = {
       name: payload.name ?? shop.value.name,
@@ -388,20 +540,79 @@ export function useSeller() {
       headers: { 'no-error': true },
     })
     if (error || !result) return { result: null as SellerShop | null, error }
-    shop.value = result
-    return { result, error: null as null }
+    shop.value = { ...defaultSellerShop, ...result }
+    applySite(shop.value)
+    // Keep footer state aligned after site identity sync
+    try {
+      const { fetchFooter } = useFooter()
+      await fetchFooter({ force: true, admin: true })
+    }
+    catch {
+      /* footer may be unused in this context */
+    }
+    return { result: shop.value, error: null as null }
+  }
+
+  async function fetchFinance(options?: { force?: boolean }) {
+    if (
+      !options?.force
+      && loaded.value
+      && (payouts.value.length > 0 || sales.value.length > 0)
+    ) {
+      return { ok: true as const, error: null as null }
+    }
+
+    pending.value = true
+    try {
+      const [payoutsRes, salesRes] = await Promise.all([
+        useGet<SellerPayout[]>('/seller/payouts', { headers: { 'no-error': true } }),
+        useGet<SellerSalesPoint[]>('/seller/sales', { headers: { 'no-error': true } }),
+      ])
+
+      const payoutsOk = Array.isArray(payoutsRes.result)
+      const salesOk = Array.isArray(salesRes.result)
+
+      if (payoutsOk) {
+        payouts.value = payoutsRes.result!.map(p => toSellerPayout(p))
+      }
+      if (salesOk) {
+        sales.value = salesRes.result!
+          .map(point => toSellerSalesPoint(point))
+          .filter((point): point is SellerSalesPoint => Boolean(point))
+      }
+
+      if (!payoutsOk && !salesOk) {
+        return {
+          ok: false as const,
+          error: payoutsRes.error ?? salesRes.error ?? { message: 'finance-fetch-failed' },
+        }
+      }
+
+      return { ok: true as const, error: null as null }
+    }
+    finally {
+      pending.value = false
+    }
   }
 
   async function requestPayout() {
-    if (wallet.value.available <= 0) return false
+    if (wallet.value.available <= 0) {
+      return { ok: false as const, error: 'موجودی قابل برداشت ندارید' }
+    }
     const { result, error } = await usePost<SellerPayout>(
       '/seller/payouts',
       { amount: wallet.value.available },
       { headers: { 'no-error': true } },
     )
-    if (error || !result) return false
-    payouts.value = [result, ...payouts.value]
-    return true
+    if (error || !result?.id) {
+      const message
+        = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+          || error?.data?.message
+          || 'ثبت درخواست تسویه ناموفق بود'
+      return { ok: false as const, error: message }
+    }
+    payouts.value = [toSellerPayout(result), ...payouts.value.filter(p => p.id !== result.id)]
+    return { ok: true as const, payout: toSellerPayout(result) }
   }
 
   return {
@@ -423,17 +634,23 @@ export function useSeller() {
     listingProducts,
     resolveProduct,
     getListing,
+    fetchListing,
+    fetchProductPanel,
     setListingStatus,
     updateListingProduct,
     updateListingStock,
     addListingProduct,
     getOrderById,
+    fetchOrders,
+    fetchOrder,
     advanceOrder,
     revertOrder,
     setOrderStatus,
     replyToReview,
     updateShop,
+    fetchShop,
     requestPayout,
+    fetchFinance,
     fetchSeller,
     fetchListings,
   }

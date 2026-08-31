@@ -34,8 +34,10 @@ export type SellerProductFormValues = {
   attrs: Record<string, string>
 }
 
+export const SELLER_BADGE_NONE = '__none__'
+
 export const sellerProductBadges = [
-  '',
+  SELLER_BADGE_NONE,
   'پیشنهاد ویژه',
   'پرفروش',
   'جدید',
@@ -151,7 +153,7 @@ export function emptySellerProductForm(category = ''): SellerProductFormValues {
     image: '',
     imageDark: '',
     gallery: [],
-    badge: '',
+    badge: SELLER_BADGE_NONE,
     fastDelivery: false,
     colors: [],
     attrs: {},
@@ -198,7 +200,7 @@ export function productToSellerForm(
     image: product.image || '',
     imageDark: product.imageDark || '',
     gallery: product.gallery ? [...product.gallery] : [],
-    badge: product.badge || '',
+    badge: product.badge || SELLER_BADGE_NONE,
     fastDelivery: Boolean(product.fastDelivery),
     colors: product.colors ? [...product.colors] : [],
     attrs,
@@ -242,7 +244,7 @@ export function buildSellerProductFromForm(
     image: form.image.trim() || form.gallery[0] || '/images/noImage.png',
     ...(form.imageDark.trim() ? { imageDark: form.imageDark.trim() } : { imageDark: undefined }),
     ...(form.gallery.length ? { gallery: [...form.gallery] } : { gallery: undefined }),
-    badge: form.badge || undefined,
+    badge: form.badge && form.badge !== SELLER_BADGE_NONE ? form.badge : undefined,
     colors: form.colors.length ? form.colors : undefined,
     inStock: stock > 0,
     fastDelivery: form.fastDelivery,

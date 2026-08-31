@@ -108,21 +108,23 @@ export function emptyNotificationForm(): SellerNotificationFormValues {
   }
 }
 
+/** Resolve users for local preview (users mode). Prefer API preview for groups/all. */
 export function resolveAudienceUsers(
   audienceType: SellerNotificationAudienceType,
   audienceGroup: SellerNotificationAudienceGroup | null,
   userIds: number[],
+  pool: SellerMockUser[] = sellerMockUsers,
 ): SellerMockUser[] {
   if (audienceType === 'all') {
-    return [...sellerMockUsers]
+    return [...pool]
   }
   if (audienceType === 'users') {
     const set = new Set(userIds)
-    return sellerMockUsers.filter(u => set.has(u.id))
+    return pool.filter(u => set.has(u.id))
   }
   const group = audienceGroup ?? 'all_customers'
-  if (group === 'all_customers') return [...sellerMockUsers]
-  return sellerMockUsers.filter(u => u.groupHints.includes(group))
+  if (group === 'all_customers') return [...pool]
+  return pool.filter(u => u.groupHints.includes(group))
 }
 
 export function audienceSummary(campaign: SellerNotificationCampaign) {
@@ -138,55 +140,23 @@ export function audienceSummary(campaign: SellerNotificationCampaign) {
   return '—'
 }
 
-export function buildDefaultNotificationCampaigns(): SellerNotificationCampaign[] {
-  const now = new Date()
-  const iso = (hoursAgo: number) =>
-    new Date(now.getTime() - hoursAgo * 3600_000).toISOString()
-
-  return [
-    {
-      id: 'ntf-1001',
-      title: 'جشنواره شگفت‌انگیز شروع شد',
-      description: 'تا ۴۰٪ تخفیف روی منتخب کالاهای دیجیتال — فرصت محدود.',
-      link: '/search?q=تخفیف',
-      icon: 'i-tabler-discount-2',
-      audienceType: 'all',
-      audienceGroup: null,
-      userIds: [],
-      recipientCount: sellerMockUsers.length,
-      status: 'sent',
-      createdAt: iso(26),
-      sentAt: iso(26),
-    },
-    {
-      id: 'ntf-1002',
-      title: 'سفارش‌های شما منتظر بررسی است',
-      description: 'چند سفارش در وضعیت آماده‌سازی دارید؛ جزئیات را ببینید.',
-      link: '/account/orders',
-      icon: 'i-tabler-package',
-      audienceType: 'group',
-      audienceGroup: 'has_orders',
-      userIds: [],
-      recipientCount: resolveAudienceUsers('group', 'has_orders', []).length,
-      status: 'sent',
-      createdAt: iso(10),
-      sentAt: iso(10),
-    },
-    {
-      id: 'ntf-1003',
-      title: 'خوش آمدید به دیجی‌شاپ',
-      description: 'برای اولین خرید کد WELCOME را امتحان کنید.',
-      link: '/account',
-      icon: 'i-tabler-heart',
-      audienceType: 'group',
-      audienceGroup: 'new_users',
-      userIds: [],
-      recipientCount: resolveAudienceUsers('group', 'new_users', []).length,
-      status: 'sent',
-      createdAt: iso(4),
-      sentAt: iso(4),
-    },
-  ]
+export function toNotificationCampaign(
+  raw: Partial<SellerNotificationCampaign> & { id: string, title: string },
+): SellerNotificationCampaign {
+  return {
+    id: raw.id,
+    title: raw.title,
+    description: raw.description ?? '',
+    link: raw.link ?? null,
+    icon: raw.icon || 'i-tabler-bell',
+    audienceType: raw.audienceType ?? 'all',
+    audienceGroup: raw.audienceGroup ?? null,
+    userIds: Array.isArray(raw.userIds) ? raw.userIds.map(Number) : [],
+    recipientCount: Number(raw.recipientCount ?? 0),
+    status: raw.status === 'draft' ? 'draft' : 'sent',
+    createdAt: raw.createdAt || new Date().toISOString(),
+    sentAt: raw.sentAt ?? null,
+  }
 }
 
 export function createCampaignId() {

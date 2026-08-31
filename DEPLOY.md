@@ -179,18 +179,10 @@ docker compose up -d --build
 فقط این برای اتصال به API لازم است:
 
 ```env
-NUXT_PUBLIC_API_BASE=https://api.example.com/api/v1
+NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1
 ```
 
-در `nuxt.config.ts`:
-
-```ts
-runtimeConfig: {
-  public: {
-    apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3333/api/v1',
-  },
-}
-```
+در `nuxt.config.ts` و `.env.store` / `.env.admin` همین مقدار ست می‌شود (ادمین و فروشگاه هر دو به یک بک‌اند وصل‌اند).
 
 `app/composables/fetch.ts` از `getApiBase()` همین مقدار را می‌خواند.
 
@@ -201,13 +193,16 @@ runtimeConfig: {
 ```bash
 cd digishop
 npm ci
-NUXT_PUBLIC_API_BASE=https://api.example.com/api/v1 npm run build
+# store
+NUXT_PUBLIC_APP_MODE=store NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1 npm run build
+# admin
+NUXT_PUBLIC_APP_MODE=admin NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1 npm run build:admin
 ```
 
 پیش‌نمایش لوکال:
 
 ```bash
-NUXT_PUBLIC_API_BASE=https://api.example.com/api/v1 npm run preview
+NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1 npm run preview
 ```
 
 اجرای production با Node (Nitro):
@@ -273,7 +268,7 @@ server {
 - [ ] `ZARINPAL_SANDBOX=false` برای پرداخت واقعی
 - [ ] `ZARINPAL_CALLBACK_URL` عمومی و قابل دسترس از اینترنت
 - [ ] `APP_URL` / `FRONTEND_URL` دامنه‌های نهایی
-- [ ] `NUXT_PUBLIC_API_BASE` = `https://api…/api/v1`
+- [ ] `NUXT_PUBLIC_API_BASE` = `https://digishop-back.vistatest.top/api/v1` (ادمین و فروشگاه)
 - [ ] Migration روی DB production اجرا شده
 - [ ] Seed فقط در صورت نیاز (مراقب overwrite داده واقعی باشید)
 - [ ] OTP واقعی تست شده (بدون `devCode` در response)

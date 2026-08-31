@@ -76,7 +76,7 @@ const { requestLogout } = useAccountLogout()
 const { shop, shopInitial, newOrdersCount } = useSeller()
 const { unansweredCount: unansweredQuestions, ensureLoaded } = useSellerQuestions()
 
-ensureLoaded()
+void ensureLoaded()
 
 function isActive(to: string) {
   if (to === '/seller') {

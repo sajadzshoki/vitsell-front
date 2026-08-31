@@ -21,26 +21,25 @@ type SellerProductQuestion = {
 }
 ```
 
-منبع: `app/data/seller-questions.ts`  
-منطق: `app/composables/useSellerQuestions.ts`
+منبع نوع: `app/data/seller-questions.ts`  
+منطق: `app/composables/useSellerQuestions.ts` → `GET /seller/questions`
 
 الگوی UI نزدیک به نظرات فروشنده (`TheSellerReviews` / `TheSellerReviewCard`).
 
-## اکشن‌ها
+## اکشن‌ها (API)
 
-| اکشن | تابع |
-|---|---|
-| پاسخ | `replyToQuestion(id, text)` |
-| حذف پاسخ | `clearAnswer(id)` |
-| تأیید خریدار | `setVerified(id, boolean)` |
-| حذف پرسش | `deleteQuestion(id)` |
+| اکشن | تابع | Endpoint |
+|---|---|---|
+| لیست | `ensureLoaded()` | `GET /seller/questions` |
+| پاسخ | `replyToQuestion(id, text)` | `POST /seller/questions/:id/reply` |
+| حذف پاسخ | `clearAnswer(id)` | `DELETE /seller/questions/:id/answer` |
+| تأیید خریدار | `setVerified(id, boolean)` | `PATCH /seller/questions/:id/verified` |
+| حذف پرسش | `deleteQuestion(id)` | `DELETE /seller/questions/:id` |
+| پرسش‌های یک محصول | `fetchForProduct(productId)` | `GET /products/:id/questions` |
 
 ## UI
 
 - فیلتر: همه / بدون پاسخ / پاسخ‌داده‌شده + جستجو
 - کارت: تصویر محصول، پرسش، پاسخ یا فرم پاسخ، اکشن‌ها
-- badge تعداد بدون پاسخ در Sidebar و MobileMenu
-
-## بک‌اند
-
-فعلاً state فرانت. بعداً هم‌راستا با `GET/POST /products/:id/questions` و endpoint ادمین پاسخ.
+- badge تعداد بدون پاسخ در Sidebar و MobileMenu (`ensureLoaded` در layout)
+- loading: مثل سفارش‌ها وقتی `pending && !questions.length`

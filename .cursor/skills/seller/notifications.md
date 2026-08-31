@@ -48,4 +48,11 @@ type SellerNotificationCampaign = {
 
 ## بک‌اند
 
-فعلاً فقط state فرانت. بعداً: `POST /seller/notifications` با body مشابه فرم.
+| Method | Path |
+|--------|------|
+| `GET\|POST` | `/seller/notifications` |
+| `POST` | `/seller/notifications/preview` |
+| `GET` | `/seller/notification-users` |
+| `DELETE` | `/seller/notifications/:id` |
+
+ارسال = ساخت کمپین + fan-out به جدول `notifications` برای هر کاربر مخاطب.

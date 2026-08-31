@@ -163,8 +163,8 @@ const {
 } = useSellerLayout()
 const { fetchSeller, loaded: sellerLoaded } = useSeller()
 
-// Prefetch for all seller subpages; dashboard does its own force refresh + loading UI.
+// Client-only prefetch so auth cookie is available (SSR often gets 401 and caches empty).
 if (!sellerLoaded.value) {
-  await useAsyncData('seller-panel', () => fetchSeller())
+  await useAsyncData('seller-panel', () => fetchSeller(), { server: false })
 }
 </script>

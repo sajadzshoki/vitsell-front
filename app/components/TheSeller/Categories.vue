@@ -172,7 +172,7 @@
     <UModal
       v-model:open="deleteOpen"
       :title="$t('حذف دسته‌بندی')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود و قابل بازگشت نیست.')"
+      :description="$t('در صورت داشتن محصول وابسته، حذف انجام نمی‌شود.')"
     >
       <template #body>
         <div
@@ -204,6 +204,7 @@
           <UButton
             color="error"
             class="font-bold"
+            :loading="deleting"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -228,8 +229,9 @@ const { categories, pending, ensureLoaded, deleteCategory } = useSellerCategorie
 const query = ref('')
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerCategory | null>(null)
+const deleting = ref(false)
 
-await ensureLoaded()
+await ensureLoaded({ force: true })
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -246,15 +248,21 @@ function openDelete(category: SellerCategory) {
   deleteOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDelete.value) return
-  const result = deleteCategory(pendingDelete.value.id)
-  deleteOpen.value = false
-  pendingDelete.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  deleting.value = true
+  try {
+    const result = await deleteCategory(pendingDelete.value.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    if (!result.ok) {
+      toast.error(result.error)
+      return
+    }
+    toast.success(t('دسته‌بندی حذف شد'))
   }
-  toast.success(t('دسته‌بندی حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
 </script>

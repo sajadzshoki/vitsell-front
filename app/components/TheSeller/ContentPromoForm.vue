@@ -186,10 +186,13 @@ async function onSave() {
   saving.value = true
   try {
     const result = isEdit.value
-      ? updatePromo(props.initial!.id, form.value)
-      : createPromo(form.value)
+      ? await updatePromo(props.initial!.id, form.value)
+      : await createPromo(form.value)
     if (!result.ok) {
-      toast.error(t(result.error))
+      toast.error(result.error)
+      if (String(result.error).includes('تکراری')) {
+        errors.value = { ...errors.value, id: result.error }
+      }
       return
     }
     toast.success(isEdit.value ? t('پرومو به‌روز شد') : t('پرومو ثبت شد'))

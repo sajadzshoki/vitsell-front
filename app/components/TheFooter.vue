@@ -167,7 +167,10 @@ const trustItems = computed(() => footer.value.trustItems)
 const socials = computed(() => footer.value.socials)
 const columns = computed(() => footer.value.columns)
 const copyright = computed(() => footer.value.copyright)
-const contact = computed(() => footer.value.contact!)
+const contact = computed(() => footer.value.contact ?? {
+  phones: [],
+  email: { label: '', href: '' },
+})
 const appStores = computed(() => footer.value.appStores ?? [])
 const badges = computed(() => footer.value.badges ?? [])
 

@@ -52,7 +52,17 @@
     </div>
 
     <div
-      v-if="!filtered.length"
+      v-if="pending && !questions.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
+    <div
+      v-else-if="!filtered.length"
       class="text-center py-12"
     >
       <UIcon
@@ -81,7 +91,7 @@
     <UModal
       v-model:open="deleteOpen"
       :title="$t('حذف پرسش')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود.')"
+      :description="$t('این پرسش برای همیشه حذف می‌شود.')"
     >
       <template #body>
         <div
@@ -101,6 +111,7 @@
           <UButton
             color="neutral"
             variant="outline"
+            :disabled="deleting"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
@@ -108,6 +119,7 @@
           <UButton
             color="error"
             class="font-bold"
+            :loading="deleting"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -126,22 +138,19 @@ const toast = useAppToast()
 const {
   questions,
   unansweredCount,
+  pending,
   ensureLoaded,
   deleteQuestion,
 } = useSellerQuestions()
-const { resolveProduct, fetchSeller } = useSeller()
-const { fetchProducts } = useProducts()
+const { resolveProduct } = useSeller()
 
 const query = ref('')
 const statusFilter = ref<'all' | 'unanswered' | 'answered'>('all')
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerProductQuestion | null>(null)
+const deleting = ref(false)
 
-ensureLoaded()
-await Promise.all([
-  fetchSeller(),
-  fetchProducts({ pageSize: 50 }),
-])
+await ensureLoaded({ force: true })
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -164,15 +173,21 @@ function openDelete(question: SellerProductQuestion) {
   deleteOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDelete.value) return
-  const result = deleteQuestion(pendingDelete.value.id)
-  deleteOpen.value = false
-  pendingDelete.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  deleting.value = true
+  try {
+    const result = await deleteQuestion(pendingDelete.value.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('پرسش حذف شد'))
   }
-  toast.success(t('پرسش حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
 </script>

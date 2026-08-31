@@ -130,6 +130,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET` | `/locations` | — | موقعیت‌ها / شهرها |
 | `GET` | `/compare/templates/:category` | — | قالب مقایسه بر اساس دسته |
 | `GET` | `/footer` | — | لینک‌ها و داده فوتر |
+| `GET` | `/site` | — | هویت سایت (نام، تماس، درباره) |
 | `GET` | `/discount-codes` | — | کدهای تخفیف |
 | `GET` | `/blog` | — | فهرست بلاگ |
 | `GET` | `/blog/:id` | — | مطلب بلاگ |
@@ -193,6 +194,8 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 |--------|------|--------|
 | `GET` | `/seller/shop` | تنظیمات سایت |
 | `PUT` | `/seller/shop` | به‌روزرسانی تنظیمات سایت |
+| `GET` | `/seller/footer` | محتوای فوتر |
+| `PUT` | `/seller/footer` | به‌روزرسانی فوتر |
 | `GET` | `/seller/listings` | لیست محصولات پنل |
 | `POST` | `/seller/listings` | افزودن محصول |
 | `PATCH` | `/seller/listings/:productId` | تغییر وضعیت محصول |
@@ -201,8 +204,25 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `PATCH` | `/seller/orders/:id/status` | تغییر وضعیت سفارش |
 | `GET` | `/seller/reviews` | نظرات |
 | `POST` | `/seller/reviews/:id/reply` | پاسخ به نظر |
+| `GET` | `/seller/questions` | پرسش‌های محصولات |
+| `POST` | `/seller/questions/:id/reply` | پاسخ به پرسش |
+| `DELETE` | `/seller/questions/:id/answer` | حذف پاسخ |
+| `PATCH` | `/seller/questions/:id/verified` | تأیید خریدار |
+| `DELETE` | `/seller/questions/:id` | حذف پرسش |
 | `GET` | `/seller/payouts` | پرداخت‌ها / تسویه |
+| `POST` | `/seller/payouts` | درخواست تسویه |
 | `GET` | `/seller/sales` | فروش‌ها |
+| `GET\|POST` | `/seller/categories` | دسته‌بندی‌ها |
+| `GET\|PUT\|DELETE` | `/seller/categories/:id` | جزئیات / ویرایش / حذف دسته |
+| `GET\|POST` | `/seller/deals` | شگفت‌انگیزها |
+| `GET\|PUT\|DELETE` | `/seller/deals/:id` | جزئیات / ویرایش / حذف شگفت‌انگیز |
+| `PATCH` | `/seller/deals/:id/active` | فعال/غیرفعال شگفت‌انگیز |
+| `GET\|POST` | `/seller/discount-codes` | کدهای تخفیف |
+| `GET\|PUT\|DELETE` | `/seller/discount-codes/:code` | جزئیات / ویرایش / حذف کد |
+| `PATCH` | `/seller/discount-codes/:code/active` | فعال/غیرفعال کد |
+| `GET\|POST` | `/seller/content-promos` | پروموهای محتوایی |
+| `GET\|PUT\|DELETE` | `/seller/content-promos/:id` | جزئیات / ویرایش / حذف پرومو |
+| `PATCH` | `/seller/content-promos/:id/active` | فعال/غیرفعال پرومو |
 
 ادمین نمونه (سید): شماره `09121234567` با `role: admin`.
 

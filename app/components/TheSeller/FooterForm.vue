@@ -477,14 +477,14 @@ type FooterForm = {
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { footer, pending, fetchFooter, updateFooter } = useFooter()
+const { footer, pending, fetchFooter, saveFooter } = useFooter()
 
 const ready = ref(false)
 const saving = ref(false)
 const saved = ref(false)
 const form = ref<FooterForm>(emptyForm())
 
-await fetchFooter()
+await fetchFooter({ force: true, admin: true })
 hydrateFromFooter()
 ready.value = true
 
@@ -512,10 +512,12 @@ function hydrateFromFooter() {
     socials: source.socials,
     about: source.about,
     copyright: source.copyright,
-    contact: source.contact ?? {
-      phones: [{ label: '', href: '' }],
-      email: { label: '', href: '' },
-    },
+    contact: source.contact?.phones?.length
+      ? source.contact
+      : {
+          phones: [{ label: '', href: '' }],
+          email: source.contact?.email ?? { label: '', href: '' },
+        },
     appStores: source.appStores ?? [],
     badges: source.badges ?? [],
   }
@@ -633,7 +635,14 @@ function addBadge() {
 async function onSave() {
   saving.value = true
   try {
-    updateFooter(sanitizeForm())
+    const { ok, error } = await saveFooter(sanitizeForm())
+    if (!ok) {
+      const msg =
+        error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+        || t('ذخیره اطلاعات فوتر ناموفق بود')
+      toast.error(msg)
+      return
+    }
     hydrateFromFooter()
     saved.value = true
     toast.success(t('اطلاعات فوتر ذخیره شد'))
@@ -646,7 +655,8 @@ async function onSave() {
   }
 }
 
-function onReset() {
+async function onReset() {
+  await fetchFooter({ force: true, admin: true })
   hydrateFromFooter()
   toast.info(t('فرم به آخرین ذخیره بازگردانی شد'))
 }

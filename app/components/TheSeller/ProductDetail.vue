@@ -1,6 +1,15 @@
 <template>
   <div
-    v-if="!listing"
+    v-if="loading"
+    class="space-y-5"
+  >
+    <USkeleton class="h-36 rounded-2xl" />
+    <USkeleton class="h-12 rounded-2xl" />
+    <USkeleton class="h-64 rounded-2xl" />
+  </div>
+
+  <div
+    v-else-if="!listing"
     class="bg-default border border-muted rounded-2xl p-8 text-center"
   >
     <UIcon
@@ -8,7 +17,7 @@
       class="size-14 text-dimmed mx-auto mb-4"
     />
     <p class="text-sm text-muted mb-4">
-      {{ $t('محصول پیدا نشد') }}
+      {{ $t(loadError || 'محصول پیدا نشد') }}
     </p>
     <UButton
       to="/seller/products"
@@ -131,11 +140,12 @@
       <UButton
         v-for="tab in tabs"
         :key="tab.id"
+        type="button"
         :color="activeTab === tab.id ? 'primary' : 'neutral'"
         :variant="activeTab === tab.id ? 'soft' : 'ghost'"
         size="sm"
-        class="shrink-0"
-        @click="setTab(tab.id)"
+        class="shrink-0 cursor-pointer"
+        @click="onTabClick(tab.id)"
       >
         {{ $t(tab.label) }}
         <span
@@ -223,22 +233,24 @@
               {{ $t('دسترسی سریع') }}
             </h3>
             <UButton
+              type="button"
               color="neutral"
               variant="soft"
               block
-              class="justify-start"
+              class="justify-start cursor-pointer"
               icon="i-tabler-edit"
-              @click="setTab('edit')"
+              @click="onTabClick('edit')"
             >
               {{ $t('ویرایش کامل محصول') }}
             </UButton>
             <UButton
+              type="button"
               color="neutral"
               variant="soft"
               block
-              class="justify-start"
+              class="justify-start cursor-pointer"
               icon="i-tabler-currency-dollar"
-              @click="setTab('price')"
+              @click="onTabClick('price')"
             >
               {{ $t('قیمت و تخفیف') }}
             </UButton>
@@ -496,6 +508,7 @@ import type { SellerProductQuestion } from '~/data/seller-questions'
 import {
   parsePriceInput,
   sellerProductBadges,
+  SELLER_BADGE_NONE,
 } from '~/data/seller-product-form'
 
 const props = defineProps<{
@@ -505,7 +518,6 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useAppToast()
 const route = useRoute()
-const router = useRouter()
 
 const {
   getListing,
@@ -513,11 +525,12 @@ const {
   orders,
   reviews,
   updateListingProduct,
+  fetchProductPanel,
 } = useSeller()
 
 const {
   questions,
-  ensureLoaded: ensureQuestions,
+  fetchForProduct: fetchProductQuestions,
   deleteQuestion,
 } = useSellerQuestions()
 
@@ -526,8 +539,6 @@ const {
   ensureSeed,
   pushChange,
 } = useSellerProductPriceHistory()
-
-ensureQuestions()
 
 type TabId = 'summary' | 'edit' | 'price' | 'orders' | 'reviews' | 'questions'
 
@@ -543,9 +554,44 @@ const savingQuick = ref(false)
 const savingPrice = ref(false)
 const deleteQuestionOpen = ref(false)
 const pendingQuestionId = ref<string | null>(null)
+const loading = ref(true)
+const loadError = ref('')
 
 const listing = computed(() => getListing(props.productId))
 const product = computed(() => resolveProduct(props.productId))
+
+async function loadPanel() {
+  if (!props.productId) {
+    loading.value = false
+    loadError.value = 'محصول پیدا نشد'
+    return
+  }
+  loading.value = true
+  loadError.value = ''
+  try {
+    const [listingRes] = await Promise.all([
+      fetchProductPanel(props.productId),
+      fetchProductQuestions(props.productId),
+    ])
+    if (!listingRes.ok) {
+      loadError.value = 'محصول پیدا نشد'
+    }
+  }
+  catch {
+    loadError.value = 'بارگذاری محصول ناموفق بود'
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+watch(
+  () => props.productId,
+  () => {
+    void loadPanel()
+  },
+  { immediate: true },
+)
 
 const statusMeta = computed(() =>
   sellerProductStatusMeta[listing.value?.status ?? 'inactive'],
@@ -623,13 +669,13 @@ const statusItems = computed(() =>
 const badgeItems = computed(() =>
   sellerProductBadges.map(value => ({
     value,
-    label: value ? t(value) : t('بدون برچسب'),
+    label: value === SELLER_BADGE_NONE ? t('بدون برچسب') : t(value),
   })),
 )
 
 const stockInput = ref('')
 const statusInput = ref<SellerProductStatus>('inactive')
-const badgeInput = ref('')
+const badgeInput = ref(SELLER_BADGE_NONE)
 const fastDeliveryInput = ref(false)
 const priceInput = ref('')
 const oldPriceInput = ref('')
@@ -639,7 +685,7 @@ function hydrateQuickFields() {
   if (!listing.value) return
   stockInput.value = String(listing.value.stock)
   statusInput.value = listing.value.status
-  badgeInput.value = product.value.badge || ''
+  badgeInput.value = product.value.badge || SELLER_BADGE_NONE
   fastDeliveryInput.value = Boolean(product.value.fastDelivery)
 }
 
@@ -673,18 +719,36 @@ watch(
 watch(
   () => route.query.tab,
   (tab) => {
-    activeTab.value = tabFromQuery(tab)
+    const next = tabFromQuery(tab)
+    if (activeTab.value !== next) {
+      activeTab.value = next
+    }
   },
 )
 
+function onTabClick(tab: TabId) {
+  setTab(tab)
+}
+
 function setTab(tab: TabId) {
-  activeTab.value = tab
-  router.replace({
-    query: {
-      ...route.query,
-      tab: tab === 'summary' ? undefined : tab,
-    },
-  })
+  if (activeTab.value !== tab) {
+    activeTab.value = tab
+  }
+  const query: Record<string, string> = {}
+  for (const [key, value] of Object.entries(route.query)) {
+    if (key === 'tab') continue
+    if (typeof value === 'string' && value) query[key] = value
+  }
+  if (tab !== 'summary') {
+    query.tab = tab
+  }
+  const sameTabQuery = (route.query.tab ?? undefined) === (query.tab ?? undefined)
+  if (sameTabQuery) return
+
+  void navigateTo(
+    { path: route.path, query },
+    { replace: true },
+  )
 }
 
 function calcDiscountPercent(price: number, oldPrice?: number | null) {
@@ -725,7 +789,7 @@ async function saveQuick() {
   try {
     const stock = Number.parseInt(stockInput.value.replace(/[^\d]/g, '') || '0', 10)
     const nextProduct = withUpdatedProduct({
-      badge: badgeInput.value || undefined,
+      badge: badgeInput.value === SELLER_BADGE_NONE ? undefined : badgeInput.value,
       fastDelivery: fastDeliveryInput.value,
       inStock: stock > 0,
     })
@@ -799,9 +863,10 @@ function openDeleteQuestion(question: SellerProductQuestion) {
   deleteQuestionOpen.value = true
 }
 
-function confirmDeleteQuestion() {
+async function confirmDeleteQuestion() {
   if (!pendingQuestionId.value) return
-  const result = deleteQuestion(pendingQuestionId.value)
+  const id = pendingQuestionId.value
+  const result = await deleteQuestion(id)
   deleteQuestionOpen.value = false
   pendingQuestionId.value = null
   if (!result.ok) {

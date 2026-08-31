@@ -1,6 +1,17 @@
 <template>
   <div
-    v-if="order"
+    v-if="loading"
+    class="space-y-5"
+  >
+    <USkeleton class="h-48 rounded-2xl" />
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <USkeleton class="h-72 rounded-2xl lg:col-span-2" />
+      <USkeleton class="h-72 rounded-2xl" />
+    </div>
+  </div>
+
+  <div
+    v-else-if="order"
     class="space-y-5"
   >
     <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
@@ -343,6 +354,7 @@ import {
   sellerOrderTrackingSteps,
   sellerOrderUndoConfirm,
   sellerOrderUndoLabel,
+  type SellerOrder,
 } from '~/data/seller'
 import { formatPrice } from '~/data/products'
 
@@ -352,9 +364,29 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { getOrderById, advanceOrder, revertOrder, resolveProduct } = useSeller()
+const { fetchOrder, advanceOrder, revertOrder, resolveProduct } = useSeller()
 
-const order = computed(() => getOrderById(props.orderId))
+const order = ref<SellerOrder | null>(null)
+const loading = ref(true)
+
+async function loadOrder() {
+  loading.value = true
+  try {
+    const { ok, order: fetched } = await fetchOrder(props.orderId, { force: true })
+    order.value = ok ? fetched : null
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+watch(
+  () => props.orderId,
+  () => {
+    void loadOrder()
+  },
+  { immediate: true },
+)
 
 const statusMeta = computed(() =>
   order.value ? sellerOrderStatusMeta[order.value.status] : sellerOrderStatusMeta.new,
@@ -436,6 +468,9 @@ async function confirmStatusChange() {
     toast.error(t('تغییر وضعیت انجام نشد'))
     return
   }
+
+  const refreshed = await fetchOrder(id, { force: true })
+  if (refreshed.ok) order.value = refreshed.order
 
   toast.success(
     pendingMode.value === 'undo'

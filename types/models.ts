@@ -154,7 +154,17 @@ export class ContentBlockSchema extends BaseModel {
 }
 
 export class DiscountCodeSchema extends BaseModel {
-  static $columns = ['active', 'code', 'createdAt', 'percent', 'updatedAt'] as const
+  static $columns = [
+    'active',
+    'code',
+    'createdAt',
+    'endsAt',
+    'minAmount',
+    'oncePerUser',
+    'percent',
+    'startsAt',
+    'updatedAt',
+  ] as const
   $columns = DiscountCodeSchema.$columns
   @column()
   declare active: boolean
@@ -162,8 +172,16 @@ export class DiscountCodeSchema extends BaseModel {
   declare code: string
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+  @column.dateTime()
+  declare endsAt: DateTime | null
+  @column()
+  declare minAmount: number
+  @column()
+  declare oncePerUser: boolean
   @column()
   declare percent: number
+  @column.dateTime()
+  declare startsAt: DateTime | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }

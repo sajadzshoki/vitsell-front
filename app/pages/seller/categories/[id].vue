@@ -1,13 +1,12 @@
 <template>
   <div>
     <div
-      v-if="pending && !category"
-      class="py-16 grid place-items-center"
+      v-if="loading"
+      class="space-y-5"
     >
-      <UIcon
-        name="i-tabler-loader-2"
-        class="size-8 text-primary animate-spin"
-      />
+      <USkeleton class="h-40 rounded-2xl" />
+      <USkeleton class="h-64 rounded-2xl" />
+      <USkeleton class="h-48 rounded-2xl" />
     </div>
     <div
       v-else-if="!category"
@@ -36,19 +35,35 @@
 </template>
 
 <script setup lang="ts">
+import type { SellerCategory } from '~/data/seller-categories'
+
 const { t } = useI18n()
 const route = useRoute()
-const { ensureLoaded, getById, pending } = useSellerCategories()
+const { fetchCategory } = useSellerCategories()
 
 definePageMeta({
   layout: 'seller',
-  middleware: 'auth',
+  middleware: ['auth', 'admin'],
 })
 
-await ensureLoaded()
-
 const categoryId = computed(() => String(route.params.id ?? ''))
-const category = computed(() => getById(categoryId.value) ?? null)
+const category = ref<SellerCategory | null>(null)
+const loading = ref(true)
+
+async function load() {
+  loading.value = true
+  try {
+    const { ok, category: fetched } = await fetchCategory(categoryId.value, { force: true })
+    category.value = ok ? fetched : null
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+watch(categoryId, () => {
+  void load()
+}, { immediate: true })
 
 useSeoMeta({
   title: () => category.value

@@ -1,7 +1,14 @@
 <template>
   <div>
     <div
-      v-if="!item"
+      v-if="loading"
+      class="space-y-5"
+    >
+      <USkeleton class="h-40 rounded-2xl" />
+      <USkeleton class="h-64 rounded-2xl" />
+    </div>
+    <div
+      v-else-if="!item"
       class="bg-default border border-muted rounded-2xl p-8 text-center"
     >
       <UIcon
@@ -27,19 +34,35 @@
 </template>
 
 <script setup lang="ts">
+import type { SellerDiscountCode } from '~/data/seller-promotions'
+
 const { t } = useI18n()
 const route = useRoute()
-const { ensureLoaded, getCode } = useSellerPromotions()
+const { fetchCode } = useSellerPromotions()
 
 definePageMeta({
   layout: 'seller',
-  middleware: 'auth',
+  middleware: ['auth', 'admin'],
 })
 
-ensureLoaded()
+const codeKey = computed(() => String(route.params.id ?? ''))
+const item = ref<SellerDiscountCode | null>(null)
+const loading = ref(true)
 
-const code = computed(() => String(route.params.id ?? ''))
-const item = computed(() => getCode(code.value) ?? null)
+async function load() {
+  loading.value = true
+  try {
+    const { ok, item: fetched } = await fetchCode(codeKey.value, { force: true })
+    item.value = ok ? fetched : null
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+watch(codeKey, () => {
+  void load()
+}, { immediate: true })
 
 useSeoMeta({
   title: () => item.value

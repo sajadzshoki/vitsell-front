@@ -1,32 +1,10 @@
-import { categories as staticCategories, type Category } from '~/data/categories'
 import {
-  formToSellerCategory,
+  formToApiPayload,
   sellerCategoryToListItem,
   toSellerCategory,
   type SellerCategory,
   type SellerCategoryFormValues,
 } from '~/data/seller-categories'
-
-const categoryOrder = [
-  'mobile',
-  'laptop',
-  'audio',
-  'tv',
-  'camera',
-  'watch',
-  'gaming',
-  'home',
-  'fashion',
-  'beauty',
-] as const
-
-function sortSellerCategories(list: Category[]) {
-  return [...list].sort((a, b) => {
-    const ai = categoryOrder.indexOf(a.id as (typeof categoryOrder)[number])
-    const bi = categoryOrder.indexOf(b.id as (typeof categoryOrder)[number])
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
-  })
-}
 
 export function useSellerCategories() {
   const { list: storefrontList, fetchCategories, pending: fetchPending } = useCategories()
@@ -38,7 +16,20 @@ export function useSellerCategories() {
   const categories = computed(() => items.value)
 
   function syncStorefront() {
-    storefrontList.value = sortSellerCategories(items.value.map(sellerCategoryToListItem))
+    storefrontList.value = items.value.map(sellerCategoryToListItem)
+  }
+
+  function upsertLocal(category: SellerCategory) {
+    const index = items.value.findIndex(c => c.id === category.id)
+    if (index === -1) {
+      items.value = [...items.value, category]
+    }
+    else {
+      const copy = [...items.value]
+      copy[index] = category
+      items.value = copy
+    }
+    syncStorefront()
   }
 
   async function ensureLoaded(options?: { force?: boolean }) {
@@ -48,12 +39,20 @@ export function useSellerCategories() {
 
     pending.value = true
     try {
-      const { categories: fetched } = await fetchCategories({
-        withCounts: false,
-        force: options?.force,
+      const { result, error } = await useGet<SellerCategory[]>('/seller/categories', {
+        headers: { 'no-error': true },
       })
-      const source = fetched.length ? fetched : staticCategories
-      items.value = source.map(toSellerCategory)
+      if (error || !Array.isArray(result)) {
+        // Fallback to public list (no pageMeta) if admin endpoint unavailable
+        const { categories: fetched } = await fetchCategories({
+          withCounts: false,
+          force: true,
+        })
+        items.value = fetched.map(c => toSellerCategory(c))
+      }
+      else {
+        items.value = result.map(c => toSellerCategory(c))
+      }
       seeded.value = true
       syncStorefront()
       return items.value
@@ -63,44 +62,81 @@ export function useSellerCategories() {
     }
   }
 
+  async function fetchCategory(id: string, options?: { force?: boolean }) {
+    const cached = getById(id)
+    if (cached && !options?.force) return { ok: true as const, category: cached, error: null as null }
+
+    const { result, error } = await useGet<SellerCategory>(
+      `/seller/categories/${encodeURIComponent(id)}`,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return { ok: false as const, category: null as SellerCategory | null, error }
+    }
+    const category = toSellerCategory(result)
+    upsertLocal(category)
+    seeded.value = true
+    return { ok: true as const, category, error: null as null }
+  }
+
   function getById(id: string) {
     return items.value.find(c => c.id === id)
   }
 
-  function createCategory(form: SellerCategoryFormValues) {
-    const id = form.id.trim()
-    if (getById(id)) {
-      return { ok: false as const, error: 'شناسه دسته‌بندی تکراری است' }
+  async function createCategory(form: SellerCategoryFormValues) {
+    const payload = formToApiPayload(form)
+    const { result, error } = await usePost<SellerCategory>('/seller/categories', payload, {
+      headers: { 'no-error': true },
+    })
+    if (error || !result?.id) {
+      const message
+        = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+          || error?.data?.message
+          || 'ثبت دسته‌بندی ناموفق بود'
+      return { ok: false as const, error: message }
     }
-
-    const next = formToSellerCategory(form)
-    items.value = [...items.value, next]
-    syncStorefront()
-    return { ok: true as const, category: next }
+    const category = toSellerCategory(result)
+    upsertLocal(category)
+    seeded.value = true
+    await fetchCategories({ force: true })
+    return { ok: true as const, category }
   }
 
-  function updateCategory(id: string, form: SellerCategoryFormValues) {
-    const index = items.value.findIndex(c => c.id === id)
-    if (index === -1) {
-      return { ok: false as const, error: 'دسته‌بندی پیدا نشد' }
+  async function updateCategory(id: string, form: SellerCategoryFormValues) {
+    const payload = formToApiPayload({ ...form, id })
+    const { id: _omit, ...body } = payload
+    const { result, error } = await usePut<SellerCategory>(
+      `/seller/categories/${encodeURIComponent(id)}`,
+      body,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      const message
+        = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+          || error?.data?.message
+          || 'به‌روزرسانی دسته‌بندی ناموفق بود'
+      return { ok: false as const, error: message }
     }
-
-    const previous = items.value[index]!
-    const next = formToSellerCategory({ ...form, id: previous.id }, previous)
-    const copy = [...items.value]
-    copy[index] = next
-    items.value = copy
-    syncStorefront()
-    return { ok: true as const, category: next }
+    const category = toSellerCategory(result)
+    upsertLocal(category)
+    await fetchCategories({ force: true })
+    return { ok: true as const, category }
   }
 
-  function deleteCategory(id: string) {
-    const exists = items.value.some(c => c.id === id)
-    if (!exists) {
-      return { ok: false as const, error: 'دسته‌بندی پیدا نشد' }
+  async function deleteCategory(id: string) {
+    const { error } = await useDelete(`/seller/categories/${encodeURIComponent(id)}`, {
+      headers: { 'no-error': true },
+    })
+    if (error) {
+      const message
+        = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+          || error?.data?.message
+          || 'حذف دسته‌بندی ناموفق بود'
+      return { ok: false as const, error: message }
     }
     items.value = items.value.filter(c => c.id !== id)
     syncStorefront()
+    await fetchCategories({ force: true })
     return { ok: true as const }
   }
 
@@ -110,6 +146,7 @@ export function useSellerCategories() {
     pending: computed(() => pending.value || fetchPending.value),
     seeded,
     ensureLoaded,
+    fetchCategory,
     getById,
     createCategory,
     updateCategory,

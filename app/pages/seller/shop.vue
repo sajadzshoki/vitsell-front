@@ -11,6 +11,6 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: () => t('تنظیمات فروشگاه'),
+  title: () => t('تنظیمات سایت'),
 })
 </script>

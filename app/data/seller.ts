@@ -61,6 +61,66 @@ export type SellerOrder = {
   note?: string
 }
 
+const sellerOrderStatuses: SellerOrderStatus[] = [
+  'new',
+  'packing',
+  'shipped',
+  'delivered',
+  'returned',
+  'cancelled',
+]
+
+function parseJsonField<T>(value: unknown, fallback: T): T {
+  if (value == null) return fallback
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as T
+    }
+    catch {
+      return fallback
+    }
+  }
+  return value as T
+}
+
+export function toSellerOrder(raw: Partial<SellerOrder> & { id: string }): SellerOrder {
+  const status = sellerOrderStatuses.includes(raw.status as SellerOrderStatus)
+    ? (raw.status as SellerOrderStatus)
+    : 'new'
+  const address = parseJsonField<SellerOrderAddress>(raw.address, {
+    province: '',
+    city: raw.city ?? '',
+    address: '',
+    postalCode: '',
+  })
+  const items = parseJsonField<SellerOrderItem[]>(raw.items, []).map(item => ({
+    productId: String(item.productId ?? ''),
+    qty: Math.max(1, Math.round(Number(item.qty) || 1)),
+    price: Math.max(0, Math.round(Number(item.price) || 0)),
+  }))
+
+  return {
+    id: String(raw.id),
+    date: String(raw.date ?? ''),
+    dateKey: String(raw.dateKey ?? ''),
+    status,
+    customerName: String(raw.customerName ?? ''),
+    customerPhone: String(raw.customerPhone ?? ''),
+    city: String(raw.city ?? address.city ?? ''),
+    address: {
+      province: String(address.province ?? ''),
+      city: String(address.city ?? raw.city ?? ''),
+      address: String(address.address ?? ''),
+      postalCode: String(address.postalCode ?? ''),
+    },
+    items,
+    total: Math.max(0, Math.round(Number(raw.total) || 0)),
+    shippingMethod: String(raw.shippingMethod ?? ''),
+    paymentMethod: String(raw.paymentMethod ?? ''),
+    ...(raw.note ? { note: String(raw.note) } : {}),
+  }
+}
+
 export type SellerOrderSort = 'newest' | 'oldest' | 'amount_desc' | 'amount_asc'
 
 export const sellerOrderSortOptions: { id: SellerOrderSort, label: string }[] = [
@@ -108,17 +168,36 @@ export type SellerSalesPoint = {
   value: number
 }
 
+export function toSellerPayout(raw: Partial<SellerPayout> & { id: string }): SellerPayout {
+  const status: SellerPayoutStatus = raw.status === 'paid' ? 'paid' : 'pending'
+  return {
+    id: String(raw.id),
+    date: String(raw.date ?? ''),
+    amount: Math.max(0, Math.round(Number(raw.amount) || 0)),
+    status,
+  }
+}
+
+export function toSellerSalesPoint(raw: Partial<SellerSalesPoint>): SellerSalesPoint | null {
+  const label = String(raw.label ?? '').trim()
+  if (!label) return null
+  return {
+    label,
+    value: Math.max(0, Math.round(Number(raw.value) || 0)),
+  }
+}
+
 export const defaultSellerShop: SellerShop = {
-  name: 'فروشگاه آریا',
-  slug: 'arya-store',
+  name: 'دیجی‌شاپ',
+  slug: 'digishop',
   phone: '09121234567',
-  email: 'seller@digishop.ir',
+  email: 'info@digishop.ir',
   city: 'تهران',
   about:
-    'عرضه‌کننده محصولات دیجیتال اصل با گارانتی معتبر، ارسال سریع از انبار تهران و پشتیبانی اختصاصی فروشنده.',
-  rating: 4.7,
-  reviewCount: 1284,
-  joinDate: '۱۴۰۲/۰۳/۱۸',
+    'دیجی‌شاپ بزرگ‌ترین فروشگاه اینترنتی محصولات دیجیتال با گارانتی اصالت کالا و ارسال سریع به سراسر ایران.',
+  rating: 0,
+  reviewCount: 0,
+  joinDate: '',
 }
 
 export const sellerNavItems: {

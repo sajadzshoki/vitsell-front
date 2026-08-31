@@ -44,53 +44,58 @@
         class="rounded-2xl border border-muted bg-muted/30 p-4 space-y-4"
       >
         <div class="flex items-start gap-2">
-          <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 min-w-0">
-            <TheFormInput
-              :model-value="group.name"
-              :label="$t('نام گروه')"
-              :placeholder="$t('مثلاً برندهای موبایل')"
-              required
-              @update:model-value="updateGroup(groupIndex, { name: String($event) })"
-            />
-            <TheFormInput
-              :model-value="group.image ?? ''"
-              :label="$t('تصویر گروه')"
-              :placeholder="$t('آدرس تصویر (اختیاری)')"
-              dir="ltr"
-              icon="i-tabler-photo"
-              @update:model-value="updateGroup(groupIndex, { image: String($event) || null })"
-            />
-          </div>
-          <div class="flex items-center gap-1 pt-7 shrink-0">
-            <UButton
-              type="button"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              icon="i-tabler-arrow-up"
-              :disabled="groupIndex === 0"
-              :aria-label="$t('جابه‌جایی به بالا')"
-              @click="moveGroup(groupIndex, -1)"
-            />
-            <UButton
-              type="button"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              icon="i-tabler-arrow-down"
-              :disabled="groupIndex === model.length - 1"
-              :aria-label="$t('جابه‌جایی به پایین')"
-              @click="moveGroup(groupIndex, 1)"
-            />
-            <UButton
-              type="button"
-              color="error"
-              variant="ghost"
-              size="sm"
-              icon="i-tabler-trash"
-              :aria-label="$t('حذف گروه')"
-              @click="removeGroup(groupIndex)"
-            />
+          <div class="flex-1 min-w-0 space-y-3">
+            <div class="flex items-start gap-2">
+              <TheFormInput
+                class="flex-1"
+                :model-value="group.name"
+                :label="$t('نام گروه')"
+                :placeholder="$t('مثلاً برندهای موبایل')"
+                required
+                @update:model-value="updateGroup(groupIndex, { name: String($event) })"
+              />
+              <div class="flex items-center gap-1 pt-7 shrink-0">
+                <UButton
+                  type="button"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  icon="i-tabler-arrow-up"
+                  :disabled="groupIndex === 0"
+                  :aria-label="$t('جابه‌جایی به بالا')"
+                  @click="moveGroup(groupIndex, -1)"
+                />
+                <UButton
+                  type="button"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  icon="i-tabler-arrow-down"
+                  :disabled="groupIndex === model.length - 1"
+                  :aria-label="$t('جابه‌جایی به پایین')"
+                  @click="moveGroup(groupIndex, 1)"
+                />
+                <UButton
+                  type="button"
+                  color="error"
+                  variant="ghost"
+                  size="sm"
+                  icon="i-tabler-trash"
+                  :aria-label="$t('حذف گروه')"
+                  @click="removeGroup(groupIndex)"
+                />
+              </div>
+            </div>
+            <div class="max-w-sm">
+              <TheSellerImageUpload
+                :model-value="group.image ?? ''"
+                :label="$t('تصویر گروه')"
+                :alt="group.name || $t('پیش‌نمایش گروه')"
+                icon="i-tabler-photo"
+                :hint="$t('اختیاری — برای کارت زیردسته در جستجو')"
+                @update:model-value="updateGroup(groupIndex, { image: String($event).trim() || null })"
+              />
+            </div>
           </div>
         </div>
 

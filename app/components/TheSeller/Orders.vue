@@ -48,7 +48,17 @@
     </div>
 
     <div
-      v-if="filtered.length === 0"
+      v-if="pending && !orders.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
+    <div
+      v-else-if="filtered.length === 0"
       class="text-center py-12"
     >
       <UIcon
@@ -102,7 +112,8 @@ import {
 } from '~/data/seller'
 
 const { t } = useI18n()
-const { orders } = useSeller()
+const toast = useAppToast()
+const { orders, pending, fetchOrders } = useSeller()
 
 const query = ref('')
 const sort = ref<SellerOrderSort>('newest')
@@ -195,4 +206,14 @@ watch(filtered, () => {
     page.value = totalPages.value
   }
 })
+
+const { ok, error } = await fetchOrders({ force: true })
+if (!ok) {
+  toast.error(
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+      || error?.data?.message
+      || error?.message
+      || t('بارگذاری سفارش‌ها ناموفق بود'),
+  )
+}
 </script>
