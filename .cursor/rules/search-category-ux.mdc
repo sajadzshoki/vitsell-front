@@ -1,0 +1,35 @@
+---
+description: Clickable elements must use cursor pointer; MegaMenu main categories go to /search; search page shows subcategory chips when ?category= is set.
+alwaysApply: true
+---
+
+# Search & clickable UX rules
+
+## Cursor pointer (اجباری)
+
+هر عنصر کلیک‌پذیر باید `cursor: pointer` داشته باشد.
+
+- قانون سراسری در `app/assets/css/main.css` (لینک، `button`، `[role=button]`، `label[for]`، `summary`، کنترل‌های فرم تعاملی).
+- برای عناصر سفارشیِ کلیک‌پذیر که با `div`/`span` ساخته می‌شوند، کلاس `cursor-pointer` بگذار یا تگ معنایی (`button` / `a` / `NuxtLink`) استفاده کن.
+- کنترل‌های disabled → `cursor: not-allowed`.
+
+## MegaMenu → Search
+
+کلیک روی **دسته‌های اصلی** در `app/components/TheNavbar/MegaMenu.vue` باید به صفحه جستجو برود:
+
+```ts
+toSearchRoute({ category: id })  // → /search?category=<id>
+```
+
+- نه `/category/:catId` برای کلیک دسته اصلی / دکمه «صفحه دسته».
+- آیتم‌های برگ زیردسته همچنان `toSearchRoute({ q, category })`.
+- API: `GET /products?category=` و `GET /categories` — ببین `ROUTES.md` و `CategorySchema.subs` در `types/models.ts`.
+
+## Search subcategory section
+
+وقتی کاربر با **دسته اصلی** وارد `/search` شده (`query.category` ست باشد و دسته `subs` داشته باشد)، زیردسته‌ها را **داخل همان سکشن هدر** (`TheSearchHeader`) نشان بده — نه سکشن جدا:
+
+- داده: `category.subs` + عکس از `category.image` (یا `sub.image` اگر بود) — `types/models.ts` → `CategorySchema`
+- هر کارت → `toSearchRoute({ q: sub.name, category })`
+- بیش از ۷ زیردسته → کارت «مشاهده N دسته‌بندی دیگر»
+- استایل: کارت `bg-muted` داخل باکس هدر، گوشه گرد، **عکس** بالا (نه آیکون مگر fallback)، لیبل پایین، `cursor: pointer`
