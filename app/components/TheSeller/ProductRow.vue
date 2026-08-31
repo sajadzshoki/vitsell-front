@@ -3,7 +3,7 @@
     <div class="flex items-start gap-3">
       <NuxtLink
         :to="`/product/${listing.productId}`"
-        class="shrink-0"
+        class="shrink-0 cursor-pointer"
       >
         <img
           v-if="product.image"
@@ -27,7 +27,7 @@
         <div class="flex items-start justify-between gap-2">
           <NuxtLink
             :to="`/product/${listing.productId}`"
-            class="text-sm font-medium text-highlighted line-clamp-2 hover:text-primary transition"
+            class="text-sm font-medium text-highlighted line-clamp-2 hover:text-primary transition cursor-pointer"
           >
             {{ product.title }}
           </NuxtLink>

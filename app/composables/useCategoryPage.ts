@@ -148,11 +148,13 @@ export function useCategoryPage() {
       }))
   }
 
-  void load()
-
   watch(catId, () => {
     load()
-  })
+    if (catId.value) {
+      const { track } = useUserActivity()
+      void track({ type: 'category_view', category: catId.value })
+    }
+  }, { immediate: true })
 
   return {
     catId,

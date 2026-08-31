@@ -5,7 +5,10 @@
         {{ $t('محصولات فروشگاه') }}
       </h2>
       <div class="flex items-center gap-3">
-        <div class="text-xs text-muted num">
+        <div
+          v-if="!loading"
+          class="text-xs text-muted num"
+        >
           {{ filtered.length.toLocaleString('fa-IR') }} {{ $t('کالا') }}
         </div>
         <UButton
@@ -55,7 +58,18 @@
     </div>
 
     <div
-      v-if="filtered.length === 0"
+      v-if="loading"
+      class="space-y-3"
+    >
+      <USkeleton
+        v-for="n in 5"
+        :key="n"
+        class="h-28 rounded-2xl"
+      />
+    </div>
+
+    <div
+      v-else-if="filtered.length === 0"
       class="text-center py-12"
     >
       <UIcon
@@ -63,7 +77,7 @@
         class="size-16 text-dimmed mx-auto mb-4"
       />
       <p class="text-sm text-muted mb-4">
-        {{ $t('محصولی با این فیلتر پیدا نشد') }}
+        {{ listings.length === 0 ? $t('هنوز محصولی ثبت نشده') : $t('محصولی با این فیلتر پیدا نشد') }}
       </p>
       <UButton
         to="/seller/products/new"
@@ -90,8 +104,11 @@
 <script setup lang="ts">
 import type { SellerProductStatus } from '~/data/seller'
 
-const { listings, resolveProduct } = useSeller()
+const { t } = useI18n()
+const toast = useAppToast()
+const { listings, resolveProduct, fetchListings } = useSeller()
 
+const loading = ref(true)
 const query = ref('')
 const statusFilter = ref<'all' | SellerProductStatus>('all')
 
@@ -110,7 +127,30 @@ const filtered = computed(() => {
       return false
     }
     if (!q) return true
-    return resolveProduct(listing.productId).title.includes(q)
+    const product = resolveProduct(listing.productId)
+    return product.title.includes(q) || product.brand.includes(q) || listing.productId.includes(q)
   })
+})
+
+function apiErrorMessage(error: any, fallback: string) {
+  const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+  return fromFields || error?.data?.message || error?.message || fallback
+}
+
+async function loadProducts() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchListings({ force: true })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری محصولات ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadProducts()
 })
 </script>

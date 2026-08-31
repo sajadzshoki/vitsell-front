@@ -90,7 +90,10 @@
 
 <script setup lang="ts">
 const { isMobile, isDashboard, isOrderDetail, isProductCreate, pageTitle, showDesktopSidebar } = useSellerLayout()
-const { fetchSeller } = useSeller()
+const { fetchSeller, loaded: sellerLoaded } = useSeller()
 
-await useAsyncData('seller-panel', () => fetchSeller())
+// Prefetch for all seller subpages; dashboard does its own force refresh + loading UI.
+if (!sellerLoaded.value) {
+  await useAsyncData('seller-panel', () => fetchSeller())
+}
 </script>

@@ -204,6 +204,19 @@ export function useSearchCatalog() {
     [q, categoryId],
     () => {
       resetAndLoad()
+      const { track } = useUserActivity()
+      const cat = categoryId.value
+      const query = q.value?.trim()
+      if (cat && !query) {
+        void track({ type: 'category_view', category: cat })
+      }
+      else if (query) {
+        void track({
+          type: 'search',
+          query,
+          category: cat || undefined,
+        })
+      }
     },
     { immediate: true },
   )

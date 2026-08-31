@@ -91,6 +91,14 @@ async function loadProduct() {
   }
   product.value = result
   await fetchDetail({ force: true })
+  if (result) {
+    const { track } = useUserActivity()
+    void track({
+      type: 'product_view',
+      productId: result.id,
+      category: result.category,
+    })
+  }
 }
 
 await loadProduct()
