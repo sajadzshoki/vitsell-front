@@ -1,67 +1,77 @@
 <template>
   <div class="flex flex-col gap-2">
-    <div class="relative w-full rounded-2xl overflow-hidden bg-muted">
-      <UCarousel
-        ref="carousel"
-        v-slot="{ item, index }"
-        :items="gallery"
-        :start-index="active"
-        wheel-gestures
-        class="w-full"
-        :ui="{
-          item: 'basis-full min-w-full ps-0',
-          container: 'ms-0',
-          viewport: 'overflow-hidden',
-        }"
-        @select="onSelect"
-      >
-        <div
-          class="relative w-full aspect-square cursor-zoom-in select-none"
-          role="button"
-          tabindex="0"
-          :aria-label="$t('بزرگ‌نمایی تصویر')"
-          @pointerdown="onPointerDown"
-          @pointermove="onPointerMove"
-          @mousemove="onMove"
-          @mouseenter="onEnter"
-          @mouseleave="onLeave"
-          @click="openFullscreen"
-          @keydown.enter.prevent="openFullscreen"
+    <div class="flex items-start gap-2">
+      <div class="relative flex-1 min-w-0 rounded-2xl overflow-hidden bg-muted">
+        <UCarousel
+          ref="carousel"
+          v-slot="{ item, index }"
+          :items="gallery"
+          :start-index="active"
+          wheel-gestures
+          class="w-full"
+          :ui="{
+            item: 'basis-full min-w-full ps-0',
+            container: 'ms-0',
+            viewport: 'overflow-hidden',
+          }"
+          @select="onSelect"
         >
-          <img
-            :src="imageSrc(item)"
-            :alt="product.title"
-            class="size-full object-cover will-change-transform transition-[scale] duration-150 ease-out pointer-events-none"
-            :style="active === index ? zoomStyle : undefined"
-            draggable="false"
-            loading="eager"
-            decoding="async"
+          <div
+            class="relative w-full aspect-square cursor-zoom-in select-none"
+            role="button"
+            tabindex="0"
+            :aria-label="$t('بزرگ‌نمایی تصویر')"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @mousemove="onMove"
+            @mouseenter="onEnter"
+            @mouseleave="onLeave"
+            @click="openFullscreen"
+            @keydown.enter.prevent="openFullscreen"
           >
+            <img
+              :src="imageSrc(item)"
+              :alt="product.title"
+              class="size-full object-cover will-change-transform transition-[scale] duration-150 ease-out pointer-events-none"
+              :style="active === index ? zoomStyle : undefined"
+              draggable="false"
+              loading="eager"
+              decoding="async"
+            >
+          </div>
+        </UCarousel>
+
+        <UBadge
+          v-if="discount > 0"
+          color="error"
+          size="lg"
+          class="absolute top-3 inset-e-3 font-bold num shadow-lg shadow-error/30 pointer-events-none z-10"
+        >
+          {{ discount.toLocaleString('fa-IR') }}٪ {{ $t('تخفیف') }}
+        </UBadge>
+
+        <div
+          v-if="gallery.length > 1"
+          class="absolute bottom-3 inset-x-0 z-10 flex justify-center gap-1.5 pointer-events-none"
+        >
+          <span
+            v-for="(_, index) in gallery"
+            :key="`dot-${index}`"
+            class="size-1.5 rounded-full transition-all"
+            :class="active === index ? 'bg-primary w-4' : 'bg-inverted/25'"
+          />
         </div>
-      </UCarousel>
+      </div>
 
-      <UBadge
-        v-if="discount > 0"
-        color="error"
-        size="lg"
-        class="absolute top-3 inset-e-3 font-bold num shadow-lg shadow-error/30 pointer-events-none z-10"
-      >
-        {{ discount.toLocaleString('fa-IR') }}٪ {{ $t('تخفیف') }}
-      </UBadge>
-
-      <div
-        class="absolute bottom-3 inset-s-3 flex items-center gap-2 z-10"
-        @click.stop
-      >
+      <div class="flex flex-col gap-2 shrink-0 pt-0.5">
         <UButton
           type="button"
           :icon="liked ? 'i-tabler-heart-filled' : 'i-tabler-heart'"
           :color="liked ? 'error' : 'neutral'"
-          variant="solid"
+          variant="outline"
           size="md"
           square
-          class="rounded-full shadow-md backdrop-blur"
-          :class="liked ? '' : 'bg-default/95 text-toned'"
+          class="rounded-xl"
           :aria-label="$t('علاقه‌مندی')"
           @click="toggleWishlist(product.id)"
         />
@@ -69,34 +79,33 @@
           type="button"
           icon="i-tabler-share"
           color="neutral"
-          variant="solid"
+          variant="outline"
           size="md"
           square
-          class="rounded-full shadow-md backdrop-blur bg-default/95 text-toned"
+          class="rounded-xl"
           :aria-label="$t('اشتراک‌گذاری')"
           @click="onShare"
         />
-      </div>
-
-      <div
-        v-if="gallery.length > 1"
-        class="absolute bottom-14 inset-x-0 z-10 flex justify-center gap-1.5 pointer-events-none"
-      >
-        <span
-          v-for="(_, index) in gallery"
-          :key="`dot-${index}`"
-          class="size-1.5 rounded-full transition-all"
-          :class="active === index ? 'bg-primary w-4' : 'bg-inverted/25'"
+        <UButton
+          type="button"
+          icon="i-tabler-chart-line"
+          color="neutral"
+          variant="outline"
+          size="md"
+          square
+          class="rounded-xl"
+          :aria-label="$t('نمودار قیمت')"
+          @click="priceChartOpen = true"
         />
       </div>
     </div>
 
-    <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+    <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pe-12">
       <button
         v-for="(image, index) in gallery"
         :key="`${image}-${index}`"
         type="button"
-        class="size-16 md:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition"
+        class="size-16 md:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition cursor-pointer"
         :class="active === index ? 'border-primary' : 'border-muted hover:border-accented'"
         :aria-label="$t('تصویر محصول')"
         @click="select(index)"
@@ -108,6 +117,11 @@
         />
       </button>
     </div>
+
+    <TheProductPriceChartModal
+      v-model:open="priceChartOpen"
+      :product="product"
+    />
 
     <UModal
       v-model:open="fullscreen"
@@ -153,7 +167,7 @@
               v-for="(image, index) in gallery"
               :key="`fs-${image}-${index}`"
               type="button"
-              class="size-14 sm:size-16 shrink-0 rounded-xl overflow-hidden border-2 transition"
+              class="size-14 sm:size-16 shrink-0 rounded-xl overflow-hidden border-2 transition cursor-pointer"
               :class="active === index ? 'border-primary' : 'border-inverted/20 hover:border-inverted/50'"
               :aria-label="$t('تصویر محصول')"
               @click="select(index)"
@@ -184,6 +198,7 @@ const { isInWishlist, toggleWishlist } = useShop()
 
 const active = ref(0)
 const fullscreen = ref(false)
+const priceChartOpen = ref(false)
 const zooming = ref(false)
 const origin = ref({ x: 50, y: 50 })
 const stageRef = ref<HTMLElement | null>(null)
@@ -217,6 +232,7 @@ const zoomStyle = computed(() => {
 watch(() => props.product.id, () => {
   active.value = 0
   fullscreen.value = false
+  priceChartOpen.value = false
   zooming.value = false
 })
 

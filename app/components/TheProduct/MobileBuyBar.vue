@@ -3,7 +3,20 @@
     class="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-muted bg-default/95 backdrop-blur-md px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_24px_-8px] shadow-inverted/10"
   >
     <div class="flex items-center justify-between gap-3 max-w-8xl mx-auto">
-      <template v-if="qty > 0">
+      <template v-if="outOfStock">
+        <UButton
+          type="button"
+          :color="subscribed ? 'neutral' : 'primary'"
+          :variant="subscribed ? 'soft' : 'solid'"
+          size="xl"
+          class="flex-1 font-bold h-12 rounded-xl"
+          :icon="subscribed ? 'i-tabler-bell-check' : 'i-tabler-bell'"
+          @click="emit('notify')"
+        >
+          {{ subscribed ? $t('اطلاع‌رسانی فعال شد') : $t('موجود شد بهم اطلاع بده') }}
+        </UButton>
+      </template>
+      <template v-else-if="qty > 0">
         <div class="flex items-center gap-0.5 bg-default rounded-xl border border-muted p-1 shrink-0">
           <UButton
             type="button"
@@ -44,7 +57,7 @@
         color="primary"
         size="xl"
         class="w-[62%] font-bold shadow-lg shadow-primary/25 h-12 rounded-xl"
-        @click="onAdd"
+        @click="emit('add')"
       >
         {{ $t('افزودن به سبد خرید') }}
       </UButton>
@@ -79,25 +92,26 @@
 <script setup lang="ts">
 import { formatPrice, type Product } from '~/data/products'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   product: Product
-}>()
+  subscribed?: boolean
+}>(), {
+  subscribed: false,
+})
 
 const emit = defineEmits<{
   add: []
+  notify: []
 }>()
 
 const { getCartQty, updateQty } = useShop()
 
 const qty = computed(() => getCartQty(props.product.id))
+const outOfStock = computed(() => props.product.inStock === false)
 
 const discount = computed(() => {
   const { oldPrice, price } = props.product
   if (!oldPrice) return 0
   return Math.round(((oldPrice - price) / oldPrice) * 100)
 })
-
-function onAdd() {
-  emit('add')
-}
 </script>

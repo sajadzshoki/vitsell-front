@@ -23,8 +23,8 @@
       </div>
     </div>
 
-    <!-- Main dark footer -->
-    <div class="bg-primary-800 text-inverted m-4 rounded-4xl">
+    <!-- Main dark footer — pin inverted text to white (token flips in .dark) -->
+    <div class="bg-linear-to-tl from-primary-900 to-primary-600 text-inverted m-4 rounded-4xl [--ui-text-inverted:white]">
       <div class="mx-auto max-w-8xl px-3 sm:px-4 lg:px-6">
         <!-- Logo + back to top -->
         <div class="flex items-center justify-between gap-4 py-6 border-b border-default/15">

@@ -20,6 +20,10 @@ export type Product = {
   reviews: number
   image: string
   gallery?: string[]
+  /** تصاویر اختصاصی سکشن معرفی (در غیر این صورت از gallery استفاده می‌شود) */
+  descImages?: string[]
+  /** آدرس ویدیو معرفی محصول */
+  video?: string
   badge?: string
   colors?: ProductColor[]
   inStock?: boolean
@@ -77,6 +81,15 @@ const featuredProducts: Product[] = [
     fastDelivery: true,
     shortDesc:
       'آیفون ۱۶ پرو مکس با تراشه قدرتمند A18 Pro، بدنه تیتانیومی سبک و دوربین ۴۸ مگاپیکسلی پیشرفته، تجربه‌ای بی‌نظیر از فناوری روز دنیا را به شما هدیه می‌دهد.',
+    description:
+      'طراحی تیتانیومی نسل دوم، سبک‌تر و مقاوم‌تر از همیشه است و حس لوکس بودن را در دستان شما قرار می‌دهد.\nدوربین‌های پیشرفته با قابلیت کنترل دوربین و زوم اپتیکال، ثبت لحظات را به سطحی تازه می‌رسانند.\nباتری بهینه‌شده همراه با تراشه A18 Pro، عملکرد پایدار در بازی، فیلم‌برداری و کارهای روزمره را تضمین می‌کند.',
+    video: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+    descImages: [
+      '/images/mock/iphone16pro-desert.jpg',
+      '/images/mock/galaxy-s25-ultra.jpg',
+      '/images/mock/ipad-pro-m4.jpg',
+      '/images/mock/apple-watch-ultra.jpg',
+    ],
     specs: [
       { key: 'صفحه‌نمایش', value: '۶.۹ اینچ Super Retina XDR OLED' },
       { key: 'پردازنده', value: 'Apple A18 Pro' },
@@ -102,7 +115,7 @@ const featuredProducts: Product[] = [
     reviews: 645,
     image: '/images/mock/galaxy-s25-ultra.jpg',
     badge: 'پرفروش',
-    inStock: true,
+    inStock: false,
     shortDesc: 'گلکسی S25 اولترا با قلم S Pen و دوربین قدرتمند ۲۰۰ مگاپیکسلی.',
   },
   {

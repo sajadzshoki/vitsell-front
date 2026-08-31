@@ -9,41 +9,47 @@
         class="hidden md:flex py-4 text-xs"
       />
 
-      <section class="md:bg-default md:rounded-3xl md:border md:border-muted md:p-4 lg:p-8">
-        <TheProductHeader
-          :product="product"
-          class="hidden md:block mb-6 pb-5 border-b border-muted"
-          size="lg"
-        />
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-5 items-start">
+        <section class="order-1 lg:col-span-9 md:bg-default md:rounded-3xl md:border md:border-muted md:p-4 lg:p-8 min-w-0">
+          <TheProductHeader
+            :product="product"
+            class="hidden md:block mb-6 pb-5 border-b border-muted"
+            size="lg"
+          />
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-5">
-          <div class="lg:col-span-4 lg:self-start flex flex-col gap-2">
-            <TheProductGallery :product="product" />
-            <TheProductHeader
-              :product="product"
-              class="md:hidden"
-              size="sm"
-            />
-          </div>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 lg:gap-5">
+            <div class="md:col-span-5 flex flex-col gap-2">
+              <TheProductGallery :product="product" />
+              <TheProductHeader
+                :product="product"
+                class="md:hidden"
+                size="sm"
+              />
+            </div>
 
-          <div class="lg:col-span-5 lg:self-start">
-            <TheProductInfo
-              v-model:color-index="colorIndex"
-              :product="product"
-              @open-reviews="activeTab = 'reviews'"
-            />
+            <div class="md:col-span-7">
+              <TheProductInfo
+                v-model:color-index="colorIndex"
+                :product="product"
+                @open-reviews="activeTab = 'reviews'"
+                @open-specs="activeTab = 'specs'"
+                @open-questions="activeTab = 'questions'"
+              />
+            </div>
           </div>
+        </section>
 
-          <div class="lg:col-span-3">
-            <TheProductBuyBox :product="product" />
-          </div>
+        <aside class="order-2 lg:col-span-3 lg:row-span-2 lg:sticky lg:top-36 lg:z-20 self-start w-full">
+          <TheProductBuyBox :product="product" />
+        </aside>
+
+        <div class="order-3 lg:col-span-9 min-w-0">
+          <TheProductTabs
+            v-model="activeTab"
+            :product="product"
+          />
         </div>
-      </section>
-
-      <TheProductTabs
-        v-model="activeTab"
-        :product="product"
-      />
+      </div>
 
       <TheProductRelated
         :product="product"
@@ -89,11 +95,11 @@ watch(productId, () => {
 useMobileBackwardTitle(() => product.value?.title ?? '')
 
 const colorIndex = ref(0)
-const activeTab = ref('specs')
+const activeTab = ref('desc')
 
 watch(productId, () => {
   colorIndex.value = 0
-  activeTab.value = 'specs'
+  activeTab.value = 'desc'
 })
 
 const breadcrumbItems = computed(() => {

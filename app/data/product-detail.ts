@@ -306,6 +306,36 @@ export function getProductSpecGroups(product: Product): ProductSpecGroup[] {
   ]
 }
 
+/** مشخصات کلیدی برای گرید خلاصه کنار گالری (مثل ویژگی‌های دیجی‌کالا) */
+export function getProductHighlightSpecs(product: Product, limit = 6): ProductSpec[] {
+  if (product.specs?.length) {
+    return product.specs.slice(0, limit)
+  }
+  return getProductSpecGroups(product)
+    .flatMap(group => group.items)
+    .slice(0, limit)
+}
+
+/** نکته مرجوعی کوتاه کنار مشخصات (الهام از صفحه محصول دیجی‌کالا) */
+export function getProductReturnNote(product: Product): string {
+  const byCategory: Record<string, string> = {
+    mobile:
+      'کالای دیجیتال با پلمب، در صورت باز شدن پلمب یا استفاده، فقط در صورت وجود مشکل فنی مشمول مرجوعی است.',
+    laptop:
+      'لپ‌تاپ تنها در صورت پلمب بودن و عدم استفاده، طبق شرایط مرجوعی فروشگاه قابل بازگشت است.',
+    audio:
+      'به دلایل بهداشتی، هدفون و هندزفری بازشده معمولاً قابل مرجوعی نیستند مگر نقص فنی تأییدشده.',
+    watch:
+      'ساعت هوشمند در صورت باز شدن بسته‌بندی یا نصب، فقط با تأیید نقص فنی قابل مرجوعی است.',
+    gaming:
+      'کنسول و بازی در صورت باز شدن پلمب نرم‌افزاری/بسته‌بندی، مشمول شرایط خاص مرجوعی است.',
+  }
+  return (
+    byCategory[product.category]
+    ?? 'امکان مرجوعی کالا طبق قوانین فروشگاه و تا ۷ روز پس از تحویل، در صورت سلامت کالا و بسته‌بندی، وجود دارد.'
+  )
+}
+
 export function getProductReviewSummary(product: Product): ProductReviewSummary {
   const total = product.reviews || productMockReviews.length
   if (total >= 500) {

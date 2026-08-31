@@ -1,11 +1,14 @@
 <template>
   <div>
-    <div class="hidden lg:block bg-muted rounded-2xl p-5 lg:sticky lg:top-36 lg:z-10">
+    <div class="hidden lg:block bg-default rounded-2xl border border-muted p-5 shadow-sm">
       <div class="flex items-start justify-between">
         <div class="space-y-2.5 mb-4 pb-4">
           <div class="flex items-center gap-2 text-xs text-toned">
-            <span class="size-2 rounded-full bg-success shrink-0" />
-            {{ product.inStock === false ? $t('ناموجود') : $t('موجود در انبار') }}
+            <span
+              class="size-2 rounded-full shrink-0"
+              :class="outOfStock ? 'bg-error' : 'bg-success'"
+            />
+            {{ outOfStock ? $t('ناموجود') : $t('موجود در انبار') }}
           </div>
         </div>
         <div class="flex flex-col gap-1">
@@ -34,51 +37,67 @@
         </div>
       </div>
 
-      <div
-        v-if="qty > 0"
-        class="flex items-center justify-between bg-default rounded-xl p-2 mb-3 border border-primary shadow-md shadow-primary/10"
-      >
+      <template v-if="outOfStock">
         <UButton
           type="button"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          square
-          :icon="qty === 1 ? 'i-tabler-trash' : undefined"
-          :aria-label="qty === 1 ? $t('حذف از سبد') : $t('کاهش تعداد')"
-          @click="updateQty(product.id, qty - 1)"
+          :color="subscribed ? 'neutral' : 'primary'"
+          :variant="subscribed ? 'soft' : 'solid'"
+          size="xl"
+          block
+          class="mb-1 font-bold"
+          :icon="subscribed ? 'i-tabler-bell-check' : 'i-tabler-bell'"
+          @click="onNotify"
         >
-          <span v-if="qty > 1">−</span>
+          {{ subscribed ? $t('اطلاع‌رسانی فعال شد') : $t('موجود شد بهم اطلاع بده') }}
         </UButton>
-        <div class="flex flex-col items-center">
-          <span class="text-sm font-bold text-primary num">
-            {{ qty.toLocaleString('fa-IR') }}
-          </span>
-          <span class="text-[10px] text-dimmed">{{ $t('در سبد شما') }}</span>
+      </template>
+      <template v-else>
+        <div
+          v-if="qty > 0"
+          class="flex items-center justify-between bg-default rounded-xl p-2 mb-3 border border-primary shadow-md shadow-primary/10"
+        >
+          <UButton
+            type="button"
+            color="neutral"
+            variant="soft"
+            size="sm"
+            square
+            :icon="qty === 1 ? 'i-tabler-trash' : undefined"
+            :aria-label="qty === 1 ? $t('حذف از سبد') : $t('کاهش تعداد')"
+            @click="updateQty(product.id, qty - 1)"
+          >
+            <span v-if="qty > 1">−</span>
+          </UButton>
+          <div class="flex flex-col items-center">
+            <span class="text-sm font-bold text-primary num">
+              {{ qty.toLocaleString('fa-IR') }}
+            </span>
+            <span class="text-[10px] text-dimmed">{{ $t('در سبد شما') }}</span>
+          </div>
+          <UButton
+            type="button"
+            color="primary"
+            size="sm"
+            square
+            :aria-label="$t('افزایش تعداد')"
+            @click="updateQty(product.id, qty + 1)"
+          >
+            +
+          </UButton>
         </div>
+
         <UButton
+          v-else
           type="button"
           color="primary"
-          size="sm"
-          square
-          :aria-label="$t('افزایش تعداد')"
-          @click="updateQty(product.id, qty + 1)"
+          size="xl"
+          block
+          class="mb-1 font-bold shadow-lg shadow-primary/25"
+          @click="onAdd"
         >
-          +
+          {{ $t('افزودن به سبد خرید') }}
         </UButton>
-      </div>
-
-      <UButton
-        v-else
-        type="button"
-        color="primary"
-        size="xl"
-        block
-        class="mb-1 font-bold shadow-lg shadow-primary/25"
-        @click="onAdd"
-      >
-        {{ $t('افزودن به سبد خرید') }}
-      </UButton>
+      </template>
 
       <UButton
         type="button"
@@ -147,7 +166,9 @@
 
     <TheProductMobileBuyBar
       :product="product"
+      :subscribed="subscribed"
       @add="onAdd"
+      @notify="onNotify"
     />
   </div>
 </template>
@@ -164,8 +185,13 @@ const toast = useToast()
 const { addToCart, getCartQty, updateQty } = useShop()
 const compareStore = useCompareStore()
 const { toggleCompare } = useCompareActions()
+const { requireAuth } = useProductDetail(() => props.product)
+
+const stockNotifyById = useState<Record<string, boolean>>('product-stock-notify', () => ({}))
 
 const buyNotes = computed(() => props.product.buyNotes ?? [])
+const outOfStock = computed(() => props.product.inStock === false)
+const subscribed = computed(() => !!stockNotifyById.value[props.product.id])
 
 const qty = computed(() => getCartQty(props.product.id))
 const inCompare = computed(() => compareStore.isInCompare(props.product.id))
@@ -201,8 +227,31 @@ function notifyAdded() {
 }
 
 function onAdd() {
+  if (outOfStock.value) return
   addToCart(props.product.id, 1)
   notifyAdded()
+}
+
+function onNotify() {
+  if (!outOfStock.value) return
+  if (!requireAuth()) return
+  if (subscribed.value) {
+    toast.add({
+      title: t('اطلاع‌رسانی از قبل فعال است'),
+      color: 'info',
+      icon: 'i-tabler-bell-check',
+    })
+    return
+  }
+  stockNotifyById.value = {
+    ...stockNotifyById.value,
+    [props.product.id]: true,
+  }
+  toast.add({
+    title: t('به محض موجود شدن خبرتان می‌کنیم'),
+    color: 'success',
+    icon: 'i-tabler-bell-ringing',
+  })
 }
 
 function onToggleCompare() {
