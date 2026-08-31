@@ -189,6 +189,12 @@ const categoryImages: Record<string, string> = {
   beauty: '/images/mock/sony-xm5-midnight.jpg',
 }
 
+export function getCategoryImage(id: string, fallback?: string | null) {
+  return fallback
+    || categoryImages[id]
+    || '/images/mock/hero-tech-ecosystem.jpg'
+}
+
 export function getCategoryPageMeta(id: string): CategoryPageMeta {
   return categoryPageMeta[id] ?? {
     hero: {

@@ -1,15 +1,14 @@
 ---
-description: After every UI task, parity-check digishop against digi-clone (layout, RTL, align, spacing) before finishing.
+description: After every UI task, run this digishop layout/RTL/align QA checklist before finishing.
 alwaysApply: true
 ---
 
-# UI parity QA (digishop ↔ digi-clone)
+# UI parity QA (digishop)
 
 بعد از هر تسک UI، قبل از اعلام اتمام، این چک را خودت انجام بده. منتظر گزارش کاربر نمان.
 
 ## مرجع
 
-- digi-clone: `C:\Users\Sajad-Vista\WebstormProjects\digi-clone`
 - Skill: `.cursor/skills/nuxt-ui/SKILL.md`
 - **Nuxt UI v4 فقط** (`@nuxt/ui` در package.json؛ docs = https://ui.nuxt.com) — نه v3 / `ui3.nuxt.com`
 - رنگ‌ها فقط semantic Nuxt UI؛ برند digishop = `primary` → `brand` (`#2563EB`، ثابت در لایت/دارک)؛ سطوح = `neutral: gray` (نه slate آبی)
@@ -20,11 +19,11 @@ alwaysApply: true
 2. **آیکون داخل اینپوت**: با `flex items-center` تراز عمودی؛ فاصله افقی واضح؛ بوردر روی wrapper (نه فقط input) چون `input { border: none }` سراسری ممکن است بوردر را بکشد.
 3. **تراز**: `items-center` برای ردیف آیکون+متن؛ ارتفاع یکسان دکمه‌های اکشن (`h-11` / `size-11`).
 4. **منوهای بازشونده**: `text-start`، رنگ یکدست آیکون و لیبل (`text-toned`)، hover یکسان (`hover:bg-primary/10 hover:text-primary`).
-5. **هم‌خوانی با digi-clone**: قبل از کدنویسی فایل مرجع را باز کن؛ چیدمان/سلسله‌مراتب را کپی کن، کلاس‌های `slate/rose/white` را به semantic نگاشت کن.
-6. **RTL**: `start`/`end` نه `left`/`right` مگر معادل digi-clone فیزیکی مشخص باشد و منطقی تست شده باشد. برای فلش کاروسل جهت آیکون را با موقعیت فیزیکی دکمه چک کن.
-7. **اکشن نوبار (فعلی)**: موبایل = سرچ + اعلان‌ها + bottom nav؛ دسکتاپ = سبد + اعلانات؛ تم در منو حساب؛ wishlist در منو حساب نه در نوار.
-8. **Transform / rotate**: UnoCSS + Tailwind v4 با هم زاویه را دو برابر می‌کنند. `rotate-*` / `scale-*` / `translate-*` / `skew-*` را Uno تولید نکند (`uno.config.ts` → `blocklist`). فقط Tailwind (Nuxt UI) مالک transform است.
-9. **UnoCSS variant group**: وقتی چند یوتیلیتی یک breakpoint/variant مشترک دارند، تکرار نکن. به‌جای `lg:px-6 lg:py-4 lg:gap-4` بنویس `lg:(px-6 py-4 gap-4)` (transformer-variant-group در `uno.config.ts`). همین برای `sm:` / `md:` / `hover:` / `dark:` و غیره.
-10. **Nuxt UI docs**: فقط v4 از https://ui.nuxt.com — نه `ui3.nuxt.com`.
+5. **RTL**: `start`/`end` نه `left`/`right` مگر نیاز فیزیکی مشخص و تست‌شده باشد. برای فلش کاروسل جهت آیکون را با موقعیت فیزیکی دکمه چک کن.
+6. **اکشن نوبار (فعلی)**: موبایل = سرچ + اعلان‌ها + bottom nav؛ دسکتاپ = سبد + اعلانات؛ تم در منو حساب؛ wishlist در منو حساب نه در نوار.
+7. **Transform / rotate**: UnoCSS + Tailwind v4 با هم زاویه را دو برابر می‌کنند. `rotate-*` / `scale-*` / `translate-*` / `skew-*` را Uno تولید نکند (`uno.config.ts` → `blocklist`). فقط Tailwind (Nuxt UI) مالک transform است.
+8. **UnoCSS variant group**: وقتی چند یوتیلیتی یک breakpoint/variant مشترک دارند، تکرار نکن. به‌جای `lg:px-6 lg:py-4 lg:gap-4` بنویس `lg:(px-6 py-4 gap-4)` (transformer-variant-group در `uno.config.ts`). همین برای `sm:` / `md:` / `hover:` / `dark:` و غیره.
+9. **Nuxt UI docs**: فقط v4 از https://ui.nuxt.com — نه `ui3.nuxt.com`.
+10. **Cursor pointer**: هر چیز کلیک‌پذیر `cursor: pointer` (قانون سراسری در `main.css` + کلاس روی المان‌های سفارشی). جزئیات: `.cursor/rules/search-category-ux.mdc`.
 
 اگر یکی رد شد، همان دور درستش کن؛ تسک را نیمه‌کاره تمام نکن.

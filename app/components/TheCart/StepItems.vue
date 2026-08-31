@@ -7,12 +7,12 @@
       :qty="line.qty"
     />
 
-    <NuxtLink
+    <!-- <NuxtLink
       to="/"
       class="flex items-center justify-center w-full h-12 rounded-2xl border-2 border-dashed border-muted text-sm text-muted font-medium transition hover:(border-primary text-primary)"
     >
       {{ $t('+ ادامه خرید') }}
-    </NuxtLink>
+    </NuxtLink> -->
   </div>
 </template>
 

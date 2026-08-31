@@ -5,6 +5,9 @@
       :total="total"
       class="<md:hidden"
       :is-search-query="isSearchQuery"
+      :category-id="categoryId"
+      :category-image="categoryImage"
+      :subs="showSubcategories ? categorySubs : []"
     />
 
     <TheSearchMobileBar
@@ -51,14 +54,25 @@
         />
       </div>
     </div>
+
+    <TheCategorySeoBlock
+      v-if="categorySeo?.paragraphs?.length"
+      :seo="categorySeo"
+      class="mt-6 md:mt-8"
+    />
   </main>
 </template>
 
 <script setup lang="ts">
+import { getCategoryImage } from '~/data/category-pages'
+
 const { t } = useI18n()
 
 const {
   q,
+  categoryId,
+  category,
+  categorySeo,
   heading,
   isSearchQuery,
   brands,
@@ -80,6 +94,19 @@ const {
   goToPage,
 } = useSearchCatalog()
 
+/** Entered via main category (`?category=`) → subcategory chips inside header */
+const showSubcategories = computed(() =>
+  Boolean(categoryId.value && category.value?.subs?.length),
+)
+
+const categorySubs = computed(() => category.value?.subs ?? [])
+
+const categoryImage = computed(() =>
+  categoryId.value
+    ? getCategoryImage(categoryId.value, category.value?.image)
+    : null,
+)
+
 const emptyTitle = computed(() => {
   if (q.value) {
     return `${t('هیچ نتیجه‌ای برای')} «${q.value}» ${t('یافت نشد')}`
@@ -89,5 +116,6 @@ const emptyTitle = computed(() => {
 
 useSeoMeta({
   title: () => heading.value,
+  description: () => categorySeo.value?.paragraphs?.[0],
 })
 </script>

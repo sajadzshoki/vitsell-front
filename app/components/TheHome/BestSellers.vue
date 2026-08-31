@@ -1,5 +1,5 @@
 <template>
-  <section>
+  <section v-if="products.length">
     <div class="flex items-center justify-between mb-5 gap-3">
       <div>
         <h2 class="text-lg md:text-xl font-bold text-highlighted">
@@ -10,7 +10,7 @@
         </p>
       </div>
       <UButton
-        to="/category/mobile"
+        to="/search?category=mobile"
         color="primary"
         variant="link"
         size="sm"
@@ -32,7 +32,10 @@
 </template>
 
 <script setup lang="ts">
-import { bestSellers } from '~/data/products'
+const { bestSellers, catalogProducts } = useHome()
 
-const products = bestSellers.slice(0, 10)
+const products = computed(() => {
+  const list = bestSellers.value.length ? bestSellers.value : catalogProducts.value
+  return list.slice(0, 10)
+})
 </script>

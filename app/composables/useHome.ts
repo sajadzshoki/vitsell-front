@@ -1,6 +1,22 @@
 import type { HeroFeature, HeroSlide } from '~/data/hero'
-import type { HomeCircleItem, HomePromo } from '~/data/home'
-import type { Product } from '~/data/products'
+import type {
+  HomeBannerRow,
+  HomeCategoryShelf,
+  HomeCircleItem,
+  HomePromo,
+  HomeSeoBlock,
+  HomeTopBrand,
+  HomeAppStore,
+} from '~/data/home'
+import {
+  homeBannerRows,
+  homeCategoryShelves,
+  homeSeoBlocks,
+  homeTopMobileBrands,
+  homeAppStores,
+} from '~/data/home'
+import { products as localProducts, type Product } from '~/data/products'
+import { blogPosts, type StaticBlogPost } from '~/data/static-pages'
 
 export type HomePayload = {
   heroSlides: HeroSlide[]
@@ -26,6 +42,15 @@ function emptyHome(): HomePayload {
   }
 }
 
+function uniqueProducts(list: Product[]) {
+  const seen = new Set<string>()
+  return list.filter((p) => {
+    if (seen.has(p.id)) return false
+    seen.add(p.id)
+    return true
+  })
+}
+
 export function useHome() {
   const home = useState<HomePayload>('home-payload', emptyHome)
   const loaded = useState('home-loaded', () => false)
@@ -41,6 +66,31 @@ export function useHome() {
   const promos = computed(() => home.value.promos)
   const dealsOfTheDay = computed(() => home.value.dealsOfTheDay)
   const bestSellers = computed(() => home.value.bestSellers)
+  const newArrivals = computed(() => home.value.newArrivals)
+
+  const catalogProducts = computed(() => {
+    const fromApi = uniqueProducts([
+      ...home.value.dealsOfTheDay,
+      ...home.value.bestSellers,
+      ...home.value.newArrivals,
+    ])
+    return fromApi.length ? fromApi : localProducts
+  })
+
+  const bannerRows = computed<HomeBannerRow[]>(() => homeBannerRows)
+  const topMobileBrands = computed<HomeTopBrand[]>(() => homeTopMobileBrands)
+  const categoryShelves = computed<HomeCategoryShelf[]>(() => homeCategoryShelves)
+  const seoBlocks = computed<HomeSeoBlock[]>(() => homeSeoBlocks)
+  const appStores = computed<HomeAppStore[]>(() => homeAppStores)
+  const homeBlogPosts = computed<StaticBlogPost[]>(() => blogPosts.slice(0, 8))
+
+  function productsForCategory(category: string, limit = 10): Product[] {
+    const fromCatalog = catalogProducts.value
+      .filter(p => p.category === category)
+      .slice(0, limit)
+    if (fromCatalog.length >= 4) return fromCatalog
+    return localProducts.filter(p => p.category === category).slice(0, limit)
+  }
 
   async function fetchHome(options?: { force?: boolean }) {
     if (loaded.value && !options?.force) {
@@ -101,6 +151,15 @@ export function useHome() {
     promos,
     dealsOfTheDay,
     bestSellers,
+    newArrivals,
+    catalogProducts,
+    bannerRows,
+    topMobileBrands,
+    categoryShelves,
+    seoBlocks,
+    appStores,
+    homeBlogPosts,
+    productsForCategory,
     fetchHome,
   }
 }
