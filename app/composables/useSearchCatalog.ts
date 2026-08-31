@@ -9,6 +9,14 @@ import {
   type SearchLayout,
   type SearchSort,
 } from '~/data/search'
+import {
+  getCategoryPageMeta,
+  type CategoryPageMeta,
+} from '~/data/category-pages'
+
+type CategoryPagePayload = {
+  meta: CategoryPageMeta | null
+}
 
 export type SearchCatalogQuery = {
   q: string
@@ -62,6 +70,7 @@ export function useSearchCatalog() {
   const pending = ref(false)
   const loadingMore = ref(false)
   const brands = ref<string[]>([])
+  const categorySeo = ref<CategoryPageMeta['seo'] | null>(null)
 
   const q = computed(() => String(route.query.q ?? '').trim())
   const categoryId = computed(() => String(route.query.category ?? '').trim())
@@ -108,6 +117,28 @@ export function useSearchCatalog() {
     })
     brands.value = Array.from(new Set(result.items.map(p => p.brand)))
       .sort((a, b) => a.localeCompare(b, 'fa'))
+  }
+
+  async function refreshCategorySeo() {
+    const id = categoryId.value
+    if (!id) {
+      categorySeo.value = null
+      return
+    }
+
+    const { result: pageMeta } = await useGet<CategoryPagePayload>(
+      `/category-pages/${encodeURIComponent(id)}`,
+      { headers: { 'no-error': true } },
+    )
+
+    const fallback = getCategoryPageMeta(id)
+    const resolved = category.value
+    const seo = pageMeta?.meta?.seo ?? fallback.seo
+
+    categorySeo.value = {
+      heading: seo.heading || resolved?.name || id,
+      paragraphs: seo.paragraphs?.length ? seo.paragraphs : fallback.seo.paragraphs,
+    }
   }
 
   async function loadPage(targetPage: number, append: boolean) {
@@ -162,6 +193,14 @@ export function useSearchCatalog() {
   })
 
   watch(
+    categoryId,
+    () => {
+      refreshCategorySeo()
+    },
+    { immediate: true },
+  )
+
+  watch(
     [q, categoryId],
     () => {
       resetAndLoad()
@@ -181,6 +220,7 @@ export function useSearchCatalog() {
     q,
     categoryId,
     category,
+    categorySeo,
     heading,
     isSearchQuery,
     brands,

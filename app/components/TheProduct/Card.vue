@@ -51,7 +51,7 @@
           @click.prevent.stop="onToggleWishlist"
         />
         <UButton
-          v-if="showCompareButton"
+
           type="button"
           :icon="inCompare ? 'i-tabler-check' : 'i-tabler-arrows-diff'"
           color="neutral"
@@ -65,7 +65,7 @@
           :aria-label="inCompare ? $t('حذف از مقایسه') : $t('افزودن به مقایسه')"
           @click.prevent.stop="onToggleCompare"
         />
-        <UButton
+        <!-- <UButton
           type="button"
           icon="i-tabler-shopping-cart"
           color="neutral"
@@ -75,7 +75,7 @@
           class="rounded-full shadow-md backdrop-blur bg-default/95 text-toned hover:bg-primary hover:text-inverted"
           :aria-label="$t('افزودن به سبد خرید')"
           @click.prevent.stop="onAddToCart"
-        />
+        /> -->
       </div>
     </div>
 

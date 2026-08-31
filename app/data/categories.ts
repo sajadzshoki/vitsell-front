@@ -1,12 +1,14 @@
 export type CategorySub = {
   name: string
   items: string[]
+  image?: string | null
 }
 
 export type Category = {
   id: string
   name: string
   icon: string
+  image?: string | null
   subs: CategorySub[]
 }
 

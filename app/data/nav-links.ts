@@ -40,12 +40,12 @@ export const navQuickLinks: NavQuickLink[] = [
     icon: 'wallet',
     to: '/category/mobile',
   },
-  {
-    id: 'gold',
-    label: 'خرید طلای دیجیتال',
-    icon: 'coins',
-    to: '/category/watch',
-  },
+  // {
+  //   id: 'gold',
+  //   label: 'خرید طلای دیجیتال',
+  //   icon: 'coins',
+  //   to: '/category/watch',
+  // },
 ]
 
 export const navSellerLink: NavQuickLink = {

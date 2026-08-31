@@ -1,25 +1,51 @@
 <template>
   <section>
-    <div class="bg-default rounded-3xl p-4 md:p-6">
+    <div class="bg-default border border-muted rounded-3xl p-4 md:p-6">
       <div class="flex items-center justify-between mb-5 gap-3">
-        <h2 class="text-base md:text-lg font-bold text-highlighted">
-          {{ $t('دسته‌بندی‌های محبوب') }}
-        </h2>
+        <div>
+          <h2 class="text-base md:text-lg font-bold text-highlighted">
+            {{ $t('دسته‌بندی‌های محبوب') }}
+          </h2>
+          <p class="text-xs text-muted mt-1">
+            {{ $t('از میان دسته‌های پرمخاطب انتخاب کنید') }}
+          </p>
+        </div>
+        <UButton
+          to="/category"
+          color="primary"
+          variant="link"
+          size="sm"
+          trailing-icon="i-tabler-arrow-left"
+          class="font-medium shrink-0"
+        >
+          {{ $t('مشاهده همه') }}
+        </UButton>
       </div>
 
-      <div class="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-10 gap-3">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3 md:gap-4">
         <NuxtLink
           v-for="category in categories"
           :key="category.id"
-          :to="toCategoryRoute(category.id)"
-          class="flex flex-col items-center gap-2 p-3 pt-1 rounded-2xl transition group hover:bg-primary/5"
+          :to="toSearchRoute({ category: category.id })"
+          class="group flex flex-col items-center gap-2.5 cursor-pointer"
         >
           <div
-            class="!size-14 rounded-2xl bg-muted group-hover:bg-transparent grid place-items-center text-muted group-hover:text-primary transition"
+            class="relative w-full aspect-square rounded-3xl bg-muted overflow-hidden border border-muted transition duration-300 group-hover:(border-primary/30 shadow-md bg-primary/5)"
           >
-            <UIcon :name="getCategoryIcon(category.id)" class="size-6" />
+            <img
+              :src="imageFor(category)"
+              :alt="$t(category.name)"
+              class="absolute inset-0 size-full object-contain p-4 md:p-5 transition duration-500 group-hover:scale-110"
+              loading="lazy"
+              decoding="async"
+            >
+            <div
+              class="pointer-events-none absolute inset-0 bg-gradient-to-t from-default/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"
+            />
           </div>
-          <span class="text-[11px] text-toned text-center leading-tight group-hover:text-primary transition">
+          <span
+            class="text-xs sm:text-sm font-medium text-toned text-center leading-snug group-hover:text-primary transition"
+          >
             {{ $t(category.name) }}
           </span>
         </NuxtLink>
@@ -29,7 +55,13 @@
 </template>
 
 <script setup lang="ts">
-import { getCategoryIcon, toCategoryRoute } from '~/data/categories'
+import type { Category } from '~/data/categories'
+import { toSearchRoute } from '~/data/categories'
+import { getCategoryImage } from '~/data/category-pages'
 
 const { categories } = useHome()
+
+function imageFor(category: Category) {
+  return getCategoryImage(category.id, category.image)
+}
 </script>

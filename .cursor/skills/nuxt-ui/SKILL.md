@@ -1,6 +1,6 @@
 ---
 name: nuxt-ui
-description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, i18n, RTL, and app.config.ts defaults. Use when creating or editing pages, layouts, Vue components, styles, or any UI in this project. Also covers digi-clone as the UX/feature reference for digishop.
+description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, i18n, RTL, and app.config.ts defaults. Use when creating or editing pages, layouts, Vue components, styles, or any UI in this project.
 ---
 
 # Nuxt UI — digishop
@@ -15,40 +15,13 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 - قبل از کپی نمونه از وب، نسخهٔ صفحه را چک کن؛ اگر v3 بود، معادل v4 را در ui.nuxt.com پیدا کن.
 - در RTL برای `UCarousel`: آیکون prev/next را صریح بگذار تا با موقعیت فیزیکی دکمه هم‌جهت باشد (`prev` در `start` → chevron رو به start؛ `next` در `end` → chevron رو به end). به auto-swap پیش‌فرض v4 تکیه نکن اگر `Html dir="rtl"` با `useLocale().dir` هم‌خوان نیست.
 
-## نقش digi-clone
-
-مسیر مرجع: `C:\Users\Sajad-Vista\WebstormProjects\digi-clone`
-
-- digi-clone رفرنس دقیق **صفحات، فیچرها، جریان UX، چیدمان و سلسله‌مراتب بصری** است.
-- digishop همان محصول را می‌سازد، ولی باید **تمیزتر، مرتب‌تر، بهینه‌تر، کامپوننت‌بندی‌شده‌تر و کاملاً داینامیک** باشد تا به پروژه واقعی تبدیل شود.
-- کپی کور Tailwind کلاس‌های digi-clone (مثل `bg-white`, `text-slate-*`, `bg-rose-*`) ممنوع است؛ معادل semantic Nuxt UI را بزن.
-- برند digi-clone قرمز/rose است؛ برند digishop **`primary` → `brand` (`#2563EB`)** است. هر جایی که در digi-clone accent قرمز دیده می‌شود، در digishop از `primary` استفاده کن. تخفیف/خطا همچنان `error` بماند.
-
-### نقشه صفحات و فیچر (از digi-clone)
-
-| صفحه / فیچر | مرجع digi-clone | هدف digishop |
-|---|---|---|
-| خانه | `src/pages/Home.tsx` | هیرو، دسته‌ها، پیشنهاد روز، پرفروش، جدید — همه از داده داینامیک |
-| جزئیات محصول | `src/pages/ProductDetail.tsx` | گالری، رنگ، مشخصات، قیمت، افزودن به سبد |
-| دسته‌بندی | `src/pages/Category.tsx` + `FilterSidebar` | فیلتر + گرید محصول؛ موبایل drawer |
-| جستجو | `src/pages/Search.tsx` | نتیجه بر اساس query |
-| سبد | `src/pages/Cart.tsx` | آیتم، تعداد، جمع |
-| تسویه | `src/pages/Checkout.tsx` | آدرس، پرداخت، خلاصه |
-| حساب | `src/pages/Account.tsx` | پروفایل / سفارش‌ها |
-| علاقه‌مندی | `src/pages/Wishlist.tsx` | لیست علاقه‌مندی |
-| جزئیات سفارش | `src/pages/OrderDetail.tsx` | وضعیت و اقلام سفارش |
-| هدر / فوتر | `Header.tsx` / `Footer.tsx` | ناوبری، جستجو، سبد، تم |
-
-کامپوننت‌های دامنه مرجع: `ProductCard`, `ProductGrid`, `HeroCarousel`, `FilterSidebar`.
-
 ## کیفیت digishop (اجباری)
 
-- داده و منطق را از UI جدا کن (`data/`, composable، store). کارت/صفحه mock سخت‌کد نگیرد مگر برای placeholder موقت.
+- داده و منطق را از UI جدا کن (`data/`، composable، store). کارت/صفحه mock سخت‌کد نگیرد مگر برای placeholder موقت.
 - کامپوننت‌های دامنه زیر `The*`؛ کنترل‌های عمومی = Nuxt UI.
 - Props تایپ‌شده؛ بدون hardcoded id/قیمت/عنوان در template وقتی `product` (یا معادل) موجود است.
 - تکرار استایل در `app.config.ts` یا utility CSS تم؛ نه کپی class در چند فایل.
 - عملکرد: lazy image، لیست‌های سبک، بدون JS اضافی برای استایل ساده.
-- قبل از پیاده‌سازی هر صفحه جدید، فایل متناظر digi-clone را بخوان و ساختار را با استاندارد این skill بازطراحی کن.
 
 ## قوانین اصلی
 
@@ -94,20 +67,6 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 
 روی کامپوننت‌های Nuxt UI از propهای `color` و `variant` استفاده کن (`primary`, `neutral`, `error`, …) نه کلاس رنگ خام.
 
-معادل‌های رایج digi-clone → digishop:
-
-| digi-clone | digishop |
-|---|---|
-| `bg-white` / `text-slate-900` | `bg-default` / `text-highlighted` |
-| `text-slate-800` / `700` | `text-default` / `text-toned` |
-| `text-slate-400` / `500` | `text-muted` / `text-dimmed` |
-| `border-slate-100` | `border-default` / `border-muted` |
-| `bg-slate-50` / `from-slate-50` | `bg-muted` / `bg-elevated` |
-| `text-rose-600` / `bg-rose-500` (برند) | `text-primary` / `bg-primary` |
-| `bg-rose-500` (تخفیف) | `bg-error` |
-| `bg-amber-50 text-amber-600` | `bg-warning/10 text-warning` |
-| `bg-slate-900 text-white` (badge) | `bg-inverted text-inverted` |
-
 ## کامپوننت‌ها
 
 1. اول کامپوننت آماده Nuxt UI را بزن (`UButton`, `UCard`, `UInput`, `USelect`, `UCheckbox`, `UBadge`, `USeparator`, `UIcon`, `UModal`, …).
@@ -115,7 +74,7 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 3. آیکون‌ها: `UIcon` / `TheIcon` با مجموعه `i-tabler-*` (طبق `nuxt.config.ts`).
 4. ظاهر تکراری یک کامپوننت را با `:ui` روی همان اینستنس override نکن اگر قرار است همه‌جا باشد؛ در `app/app.config.ts` زیر `ui.<component>` بگذار.
 5. کامپوننت‌های `The*` فقط برای منطق دامنه (مثل کارت محصول). کنترل‌های عمومی را دوباره نساز.
-6. `TheProductCard` باید propsداینامیک بگیرد (`product`, `compact`, …) و شبیه ساختار digi-clone باشد: تصویر مربعی، badge، تخفیف، اکشن علاقه‌مندی/سبد، برند، عنوان، امتیاز، قیمت.
+6. `TheProductCard` باید propsداینامیک بگیرد (`product`, `compact`, …): تصویر مربعی، badge، تخفیف، اکشن علاقه‌مندی/سبد، برند، عنوان، امتیاز، قیمت.
 
 ## چندزبانه (i18n)
 
@@ -162,7 +121,7 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 
 - سایز کامپوننت‌های Nuxt UI را از prop `size` بگیر (`xs` تا `xl`)، نه padding/font ثابت پراکنده.
 - گوشه را با `rounded-*` بی‌حساب نزن؛ از `--ui-radius` تم و کلاس‌های semantic گردی استفاده کن. اگر radius سراسری است، در `app.config.ts` یا `main.css` (`--ui-radius`) تنظیم شود.
-- برای کارت محصول الگوی digi-clone (`rounded-2xl` تصویر `rounded-xl`) قابل قبول است اگر یکدست در همان کامپوننت بماند.
+- برای کارت محصول الگوی یکدست (`rounded-2xl` تصویر `rounded-xl`) قابل قبول است اگر در همان کامپوننت ثابت بماند.
 
 ## تصویر خالی
 
@@ -173,7 +132,7 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 
 همچنین rule همیشه فعال: `.cursor/rules/ui-parity-qa.mdc` (موقعیت پنل، فاصله آیکون اینپوت، تراز، منوی RTL، اکشن نوبار).
 
-- [ ] معادل Nuxt UI استفاده شده، نه HTML خام برای دکمه/اینپوت/کارت/مودال — مگر الگوی digi-clone (مثل سرچ/مگامنو) که کنترل دقیق layout لازم دارد
+- [ ] معادل Nuxt UI استفاده شده، نه HTML خام برای دکمه/اینپوت/کارت/مودال — مگر کنترل دقیق layout لازم باشد
 - [ ] `The*` فقط برای دامنه؛ کنترل عمومی دوباره ساخته نشده
 - [ ] استایل سراسری در `app.config.ts` است، نه کپی‌شده در چند فایل
 - [ ] هیچ رنگ استاتیک / gray-* / white / black / slate-* خام در UI جدید نیست
@@ -186,5 +145,4 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 - [ ] سایز از prop Nuxt UI و radius از تم
 - [ ] تصویر خالی با `TheIcon` و `noImage.png`
 - [ ] داده داینامیک است؛ صفحه/کارت mock سخت‌کد ندارد
-- [ ] رفتار/چیدمان با digi-clone هم‌خوان است ولی تمیزتر و کامپوننتی
 - [ ] آیکون اینپوت روی متن نرفته؛ دکمه‌های هدر هم‌ارتفاع و `items-center` هستند

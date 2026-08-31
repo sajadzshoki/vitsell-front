@@ -101,12 +101,12 @@
         type="button"
         color="primary"
         size="xl"
-        block
-        class="font-bold shadow-lg shadow-primary/25"
+        
+        class="font-bold shadow-lg shadow-primary/25 w-full"
         trailing-icon="i-tabler-arrow-left"
         @click="store.nextStep()"
       >
-        {{ $t('ادامه فرآیند خرید') }}
+        {{ $t('ثبت سفارش') }}
       </UButton>
     </div>
 

@@ -22,7 +22,7 @@
     <!-- digi-clone: absolute top-full right-0 → in RTL use start-0 so panel grows toward end -->
     <div
       v-if="megaOpen"
-      class="absolute top-full start-0 mt-1 w-[min(800px,90vw)] bg-default border border-muted rounded-3xl shadow-2xl overflow-hidden flex z-50 min-h-[25rem]"
+      class="absolute top-full start-0  w-[min(800px,90vw)] bg-default border border-muted rounded-3xl shadow-2xl overflow-hidden flex z-50 min-h-[25rem]"
     >
       <div class="w-1/3 bg-muted py-3 border-e border-muted">
         <button
@@ -46,9 +46,9 @@
           <h3 class="font-bold text-highlighted text-lg">
             {{ $t(activeCategory?.name || '') }}
           </h3>
-          <span class="text-xs text-muted">
+          <!-- <span class="text-xs text-muted">
             {{ $t('یک زیردسته را انتخاب کنید') }}
-          </span>
+          </span> -->
           <UButton
             color="primary"
             variant="link"
@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { getCategoryIcon, toCategoryRoute, toSearchRoute } from '~/data/categories'
+import { getCategoryIcon, toSearchRoute } from '~/data/categories'
 
 const { categories, fetchCategories } = useCategories()
 await fetchCategories({ withCounts: false })
@@ -121,7 +121,7 @@ function close() {
 }
 
 function goCategory(id: string) {
-  navigateTo(toCategoryRoute(id))
+  navigateTo(toSearchRoute({ category: id }))
   close()
 }
 
