@@ -60,21 +60,59 @@ import { navQuickLinks, navSellerLink } from '~/data/nav-links'
 const links = navQuickLinks.filter(l => l.id !== 'categories')
 const seller = navSellerLink
 
+/** Ignore tiny trackpad/jitter; sticky height changes also nudge scrollY. */
+const DELTA = 12
+const TOP_REVEAL = 64
+/** Cover max-height transition so layout/scroll anchoring cannot flip-flop. */
+const LOCK_MS = 350
+
 const { y } = useWindowScroll()
 const lastY = ref(0)
 const collapsed = ref(false)
+let unlockTimer: ReturnType<typeof setTimeout> | null = null
+const locked = ref(false)
+
+function lockToggle() {
+  locked.value = true
+  if (unlockTimer) clearTimeout(unlockTimer)
+  unlockTimer = setTimeout(() => {
+    locked.value = false
+    lastY.value = y.value
+    unlockTimer = null
+  }, LOCK_MS)
+}
 
 watch(y, (newY) => {
-  const prev = lastY.value
-  if (newY < 48) {
-    collapsed.value = false
+  if (locked.value) {
+    lastY.value = newY
+    return
   }
-  else if (newY > prev + 2) {
-    collapsed.value = true
+
+  const delta = newY - lastY.value
+
+  if (newY < TOP_REVEAL) {
+    if (collapsed.value) {
+      collapsed.value = false
+      lockToggle()
+    }
   }
-  else if (newY < prev - 2) {
-    collapsed.value = false
+  else if (delta > DELTA) {
+    if (!collapsed.value) {
+      collapsed.value = true
+      lockToggle()
+    }
   }
+  else if (delta < -DELTA) {
+    if (collapsed.value) {
+      collapsed.value = false
+      lockToggle()
+    }
+  }
+
   lastY.value = newY
+})
+
+onBeforeUnmount(() => {
+  if (unlockTimer) clearTimeout(unlockTimer)
 })
 </script>
