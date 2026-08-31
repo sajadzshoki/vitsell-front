@@ -26,6 +26,14 @@
     >
       {{ product.title }}
     </component>
+    <p
+      v-if="product.shortName"
+      class="text-muted mt-1"
+      :class="size === 'sm' ? 'text-xs' : 'text-sm md:text-base'"
+      dir="ltr"
+    >
+      {{ product.shortName }}
+    </p>
   </div>
 </template>
 

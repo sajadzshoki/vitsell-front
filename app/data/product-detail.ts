@@ -20,7 +20,6 @@ export type ProductReview = {
   cons?: string[]
   hasImage?: boolean
   helpfulCount: number
-  recommend?: boolean
 }
 
 export type StarDistribution = {
@@ -307,37 +306,34 @@ export function getProductSpecGroups(product: Product): ProductSpecGroup[] {
   ]
 }
 
-export function buildReviewSummary(reviews: ProductReview[]): ProductReviewSummary {
-  const emptyDistribution: StarDistribution[] = [
-    { stars: 5, percent: 0, count: 0 },
-    { stars: 4, percent: 0, count: 0 },
-    { stars: 3, percent: 0, count: 0 },
-    { stars: 2, percent: 0, count: 0 },
-    { stars: 1, percent: 0, count: 0 },
-  ]
-
-  if (!reviews.length) {
-    return { recommendPercent: 0, distribution: emptyDistribution }
+/** مشخصات کلیدی برای گرید خلاصه کنار گالری (مثل ویژگی‌های دیجی‌کالا) */
+export function getProductHighlightSpecs(product: Product, limit = 6): ProductSpec[] {
+  if (product.specs?.length) {
+    return product.specs.slice(0, limit)
   }
+  return getProductSpecGroups(product)
+    .flatMap(group => group.items)
+    .slice(0, limit)
+}
 
-  const total = reviews.length
-  const distribution = emptyDistribution.map((row) => {
-    const count = reviews.filter(r => r.rating === row.stars).length
-    return {
-      stars: row.stars,
-      count,
-      percent: Math.round((count / total) * 100),
-    }
-  })
-
-  const recommendCount = reviews.filter(r =>
-    typeof r.recommend === 'boolean' ? r.recommend : r.rating >= 4,
-  ).length
-
-  return {
-    recommendPercent: Math.round((recommendCount / total) * 100),
-    distribution,
+/** نکته مرجوعی کوتاه کنار مشخصات (الهام از صفحه محصول دیجی‌کالا) */
+export function getProductReturnNote(product: Product): string {
+  const byCategory: Record<string, string> = {
+    mobile:
+      'کالای دیجیتال با پلمب، در صورت باز شدن پلمب یا استفاده، فقط در صورت وجود مشکل فنی مشمول مرجوعی است.',
+    laptop:
+      'لپ‌تاپ تنها در صورت پلمب بودن و عدم استفاده، طبق شرایط مرجوعی فروشگاه قابل بازگشت است.',
+    audio:
+      'به دلایل بهداشتی، هدفون و هندزفری بازشده معمولاً قابل مرجوعی نیستند مگر نقص فنی تأییدشده.',
+    watch:
+      'ساعت هوشمند در صورت باز شدن بسته‌بندی یا نصب، فقط با تأیید نقص فنی قابل مرجوعی است.',
+    gaming:
+      'کنسول و بازی در صورت باز شدن پلمب نرم‌افزاری/بسته‌بندی، مشمول شرایط خاص مرجوعی است.',
   }
+  return (
+    byCategory[product.category]
+    ?? 'امکان مرجوعی کالا طبق قوانین فروشگاه و تا ۷ روز پس از تحویل، در صورت سلامت کالا و بسته‌بندی، وجود دارد.'
+  )
 }
 
 export function getProductReviewSummary(product: Product): ProductReviewSummary {
