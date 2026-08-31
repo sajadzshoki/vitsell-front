@@ -45,6 +45,28 @@
           <span class="text-dimmed">/</span>
           <span class="text-toned">{{ $t('افزودن محصول') }}</span>
         </template>
+        <template v-else-if="isCategoryCreate || isCategoryEdit">
+          <span class="text-dimmed">/</span>
+          <NuxtLink
+            to="/seller/categories"
+            class="hover:text-primary transition"
+          >
+            {{ $t('دسته‌بندی‌ها') }}
+          </NuxtLink>
+          <span class="text-dimmed">/</span>
+          <span class="text-toned">{{ $t(pageTitle) }}</span>
+        </template>
+        <template v-else-if="isBannerCreate || isBannerEdit">
+          <span class="text-dimmed">/</span>
+          <NuxtLink
+            to="/seller/banners"
+            class="hover:text-primary transition"
+          >
+            {{ $t('بنرها') }}
+          </NuxtLink>
+          <span class="text-dimmed">/</span>
+          <span class="text-toned">{{ $t(pageTitle) }}</span>
+        </template>
         <template v-else-if="!isDashboard">
           <span class="text-dimmed">/</span>
           <span class="text-toned">{{ $t(pageTitle) }}</span>
@@ -89,7 +111,18 @@
 </template>
 
 <script setup lang="ts">
-const { isMobile, isDashboard, isOrderDetail, isProductCreate, pageTitle, showDesktopSidebar } = useSellerLayout()
+const {
+  isMobile,
+  isDashboard,
+  isOrderDetail,
+  isProductCreate,
+  isCategoryCreate,
+  isCategoryEdit,
+  isBannerCreate,
+  isBannerEdit,
+  pageTitle,
+  showDesktopSidebar,
+} = useSellerLayout()
 const { fetchSeller } = useSeller()
 
 await useAsyncData('seller-panel', () => fetchSeller())

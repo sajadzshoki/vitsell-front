@@ -38,11 +38,24 @@
       </div>
 
       <UFormField :label="$t('جنسیت')">
-        <USelect
-          v-model="form.gender"
-          :items="genderItems"
-          class="w-full"
-        />
+        <div
+          class="inline-flex w-full sm:w-auto rounded-xl bg-muted p-1 gap-1"
+          role="group"
+          :aria-label="$t('جنسیت')"
+        >
+          <UButton
+            v-for="item in genderItems"
+            :key="item"
+            type="button"
+            size="md"
+            class="flex-1 sm:min-w-24 font-medium cursor-pointer"
+            :color="form.gender === item ? 'primary' : 'neutral'"
+            :variant="form.gender === item ? 'solid' : 'ghost'"
+            @click="form.gender = item"
+          >
+            {{ $t(item) }}
+          </UButton>
+        </div>
       </UFormField>
     </div>
 

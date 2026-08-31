@@ -17,6 +17,22 @@ export function useSellerLayout() {
     route.path === '/seller/products/new' || route.path === '/seller/products/new/',
   )
 
+  const isCategoryCreate = computed(() =>
+    route.path === '/seller/categories/new' || route.path === '/seller/categories/new/',
+  )
+
+  const isCategoryEdit = computed(() =>
+    /^\/seller\/categories\/[^/]+/.test(route.path) && !isCategoryCreate.value,
+  )
+
+  const isBannerCreate = computed(() =>
+    route.path === '/seller/banners/new' || route.path === '/seller/banners/new/',
+  )
+
+  const isBannerEdit = computed(() =>
+    /^\/seller\/banners\/[^/]+/.test(route.path) && !isBannerCreate.value,
+  )
+
   const pageTitle = computed(() => {
     if (isDashboard.value) {
       return 'پیشخوان فروشنده'
@@ -26,6 +42,18 @@ export function useSellerLayout() {
     }
     if (isProductCreate.value) {
       return 'افزودن محصول'
+    }
+    if (isCategoryCreate.value) {
+      return 'افزودن دسته‌بندی'
+    }
+    if (isCategoryEdit.value) {
+      return 'ویرایش دسته‌بندی'
+    }
+    if (isBannerCreate.value) {
+      return 'افزودن بنر'
+    }
+    if (isBannerEdit.value) {
+      return 'ویرایش بنر'
     }
     const item = sellerNavItems.find(
       i => i.to !== '/seller' && (route.path === i.to || route.path.startsWith(`${i.to}/`)),
@@ -40,6 +68,10 @@ export function useSellerLayout() {
     isDashboard,
     isOrderDetail,
     isProductCreate,
+    isCategoryCreate,
+    isCategoryEdit,
+    isBannerCreate,
+    isBannerEdit,
     pageTitle,
     showDesktopSidebar,
   }
