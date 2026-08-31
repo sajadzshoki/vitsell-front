@@ -124,6 +124,8 @@ export function useShop() {
         fetchDiscountCodes(),
         fetchOrders(),
       ])
+      const { syncToServer } = useUserActivity()
+      void syncToServer()
     }
     finally {
       shopPending.value = false
@@ -162,6 +164,12 @@ export function useShop() {
     if (result) {
       wishlistProducts.value = [...wishlistProducts.value, result]
       remember([result])
+      const { track } = useUserActivity()
+      void track({
+        type: 'wishlist',
+        productId: result.id,
+        category: result.category,
+      })
     }
     else {
       await fetchWishlist()
@@ -178,6 +186,12 @@ export function useShop() {
       cartLines.value = [...others, result]
       remember([result.product])
       bumpCart()
+      const { track } = useUserActivity()
+      void track({
+        type: 'add_to_cart',
+        productId: result.product.id,
+        category: result.product.category,
+      })
     }
     else {
       await fetchCart()

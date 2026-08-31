@@ -124,6 +124,9 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 |--------|------|------|--------|
 | `GET` | `/uploads/:file` | — | سرو فایل آپلودشده (خارج از `/api/v1`) |
 | `GET` | `/home` | — | داده صفحه خانه |
+| `GET` | `/recommendations` | اختیاری | پیشنهاد شخصی — query: `categories`, `exclude`, `limit`؛ با auth از فعالیت+سبد+علاقه‌مندی |
+| `POST` | `/activity` | ✅ | ثبت رویدادها — body: `{ events: [{ type, productId?, category?, query?, at? }] }` |
+| `POST` | `/activity/sync` | ✅ | همگام‌سازی رویدادهای لوکال بعد از لاگین |
 | `GET` | `/locations` | — | موقعیت‌ها / شهرها |
 | `GET` | `/compare/templates/:category` | — | قالب مقایسه بر اساس دسته |
 | `GET` | `/footer` | — | لینک‌ها و داده فوتر |

@@ -7,6 +7,7 @@
 
     <TheHomeCircleStrip v-if="circles.length" />
     <TheHomeDeals v-if="dealsOfTheDay.length" />
+    <TheHomeForYou />
     <TheHomeCategories v-if="categories.length" />
 
 

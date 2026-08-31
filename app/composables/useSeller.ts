@@ -102,16 +102,58 @@ export function useSeller() {
     })),
   )
 
+  type ListingApiItem = SellerListing & { product?: Product }
+
+  function applyListings(items: ListingApiItem[]) {
+    const products: Product[] = []
+    listings.value = items.map((item) => {
+      if (item.product) products.push(item.product)
+      return {
+        productId: item.productId,
+        stock: item.stock,
+        sold: item.sold,
+        views: item.views,
+        status: item.status,
+      }
+    })
+    if (products.length) remember(products)
+  }
+
   async function hydrateProducts(ids: string[]) {
     const unique = [...new Set(ids.filter(Boolean))]
-    await Promise.all(unique.map(id => fetchProduct(id)))
+    const missing = unique.filter(id => !getCachedProduct(id))
+    await Promise.all(missing.map(id => fetchProduct(id)))
+  }
+
+  async function fetchListings(options?: { force?: boolean }) {
+    if (listings.value.length && loaded.value && !options?.force) {
+      return { ok: true as const, error: null as null }
+    }
+
+    const { result, error } = await useGet<ListingApiItem[]>('/seller/listings', {
+      headers: { 'no-error': true },
+    })
+    if (error || !Array.isArray(result)) {
+      return { ok: false as const, error: error ?? { message: 'listings-fetch-failed' } }
+    }
+
+    applyListings(result)
+    await hydrateProducts(listings.value.map(l => l.productId))
+    return { ok: true as const, error: null as null }
   }
 
   async function fetchSeller(options?: { force?: boolean }) {
-    if (loaded.value && !options?.force) return
-    if (inFlight.value) return inFlight.value
+    if (loaded.value && !options?.force) {
+      return { ok: true as const, error: null as null }
+    }
+    if (inFlight.value) {
+      await inFlight.value
+      return { ok: loaded.value, error: loaded.value ? null : ({ message: 'seller-fetch-failed' } as const) }
+    }
 
     pending.value = true
+    let fetchError: unknown = null
+
     const run = (async () => {
       try {
         const [
@@ -123,27 +165,34 @@ export function useSeller() {
           salesRes,
         ] = await Promise.all([
           useGet<SellerShop>('/seller/shop', { headers: { 'no-error': true } }),
-          useGet<SellerListing[]>('/seller/listings', { headers: { 'no-error': true } }),
+          useGet<ListingApiItem[]>('/seller/listings', { headers: { 'no-error': true } }),
           useGet<SellerOrder[]>('/seller/orders', { headers: { 'no-error': true } }),
           useGet<SellerReview[]>('/seller/reviews', { headers: { 'no-error': true } }),
           useGet<SellerPayout[]>('/seller/payouts', { headers: { 'no-error': true } }),
           useGet<SellerSalesPoint[]>('/seller/sales', { headers: { 'no-error': true } }),
         ])
 
+        const shopOk = Boolean(shopRes.result)
         if (shopRes.result) shop.value = shopRes.result
-        listings.value = Array.isArray(listingsRes.result) ? listingsRes.result : []
-        orders.value = Array.isArray(ordersRes.result) ? ordersRes.result : []
-        reviews.value = Array.isArray(reviewsRes.result) ? reviewsRes.result : []
-        payouts.value = Array.isArray(payoutsRes.result) ? payoutsRes.result : []
-        sales.value = Array.isArray(salesRes.result) ? salesRes.result : []
-        loaded.value = true
+        if (Array.isArray(listingsRes.result)) applyListings(listingsRes.result)
+        if (Array.isArray(ordersRes.result)) orders.value = ordersRes.result
+        if (Array.isArray(reviewsRes.result)) reviews.value = reviewsRes.result
+        if (Array.isArray(payoutsRes.result)) payouts.value = payoutsRes.result
+        if (Array.isArray(salesRes.result)) sales.value = salesRes.result
 
-        const productIds = [
-          ...listings.value.map(l => l.productId),
-          ...reviews.value.map(r => r.productId),
-          ...orders.value.flatMap(o => o.items.map(i => i.productId)),
-        ]
-        await hydrateProducts(productIds)
+        // Only mark loaded when auth-critical shop call succeeds so empty/failed runs can retry.
+        if (shopOk) {
+          loaded.value = true
+          const productIds = [
+            ...listings.value.map(l => l.productId),
+            ...reviews.value.map(r => r.productId),
+            ...orders.value.flatMap(o => o.items.map(i => i.productId)),
+          ]
+          await hydrateProducts(productIds)
+        }
+        else {
+          fetchError = shopRes.error ?? listingsRes.error ?? ordersRes.error ?? { message: 'seller-fetch-failed' }
+        }
       }
       finally {
         pending.value = false
@@ -152,7 +201,8 @@ export function useSeller() {
     })()
 
     inFlight.value = run
-    return run
+    await run
+    return { ok: loaded.value, error: fetchError }
   }
 
   function getListing(productId: string) {
@@ -385,5 +435,6 @@ export function useSeller() {
     updateShop,
     requestPayout,
     fetchSeller,
+    fetchListings,
   }
 }
