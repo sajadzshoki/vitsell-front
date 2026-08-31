@@ -48,6 +48,12 @@ description: >-
 |---|---|---|---|
 | 1 | دسته‌بندی‌ها | `/seller/categories` | مشخص‌شده پایین + [categories.md](categories.md) |
 | 2 | بنرها | `/seller/banners` | مشخص‌شده پایین + [banners.md](banners.md) |
+| 3 | فوتر | `/seller/footer` | مشخص‌شده پایین + [footer.md](footer.md) |
+| 4 | شگفت‌انگیزها | `/seller/deals` | مشخص‌شده پایین + [deals.md](deals.md) |
+| 5 | اعلان‌ها | `/seller/notifications` | مشخص‌شده پایین + [notifications.md](notifications.md) |
+| 6 | پرسش و پاسخ | `/seller/questions` | مشخص‌شده پایین + [questions.md](questions.md) |
+| 7 | تخفیف و پروموشن | `/seller/promotions` | مشخص‌شده پایین + [promotions.md](promotions.md) |
+| — | جزئیات محصول | `/seller/products/:id` | تب‌ها: خلاصه / ویرایش / قیمت / سفارش / نظرات / پرسش |
 | — | محصولات / سفارش / نظرات / مالی / فروشگاه | موجود | الگو برای بخش‌های بعدی |
 
 بخش‌های بعدی را فقط وقتی کاربر خواست، به همین اسکیل اضافه کن (همین قالب جدول + فایل reference).
@@ -179,3 +185,189 @@ CRUD بنرهای سایت در پنل ادمین. فعلاً فرانت‌only 
 - [ ] فیلتر نوع و وضعیت در لیست؛ toggle فعال از لیست
 - [ ] حذف با تأیید؛ seed اولیه از hero/home برای دمو
 - [ ] i18n / RTL / Nuxt UI
+
+---
+
+## بخش ۳ — فوتر
+
+### هدف
+
+ویرایش یکپارچهٔ محتوای فوتر سایت (نه لیست جدا). فرانت‌only با sync به `useFooter` تا همان نشست در `TheFooter` دیده شود.
+
+### فیلدها (از `FooterPayload` / `app/data/footer.ts`)
+
+| بخش | محتوا |
+|---|---|
+| متن | `about`, `copyright` |
+| تماس | `contact.phones[]`, `contact.email` |
+| اعتماد | `trustItems[]` — id, icon, title, subtitle |
+| ستون‌ها | `columns[]` — id, title, links[{label,to}] |
+| سوشال | `socials[]` — id, label, icon, href |
+| اپ‌استورها | `appStores[]` — id, label, icon, href |
+| نشان‌ها | `badges[]` — id, label, icon |
+
+جزئیات: [footer.md](footer.md)
+
+### مسیرها
+
+| قطعه | مسیر |
+|---|---|
+| صفحه | `/seller/footer` → `TheSellerFooterForm` |
+| nav | `{ id: 'footer', label: 'فوتر', icon: 'i-tabler-layout-bottombar', to: '/seller/footer' }` |
+
+### چک قبل از اتمام (فوتر)
+
+- [ ] همه بخش‌های `FooterPayload` در فرم قابل ویرایش
+- [ ] ذخیره → `updateFooter` روی state سایت
+- [ ] i18n / RTL / Nuxt UI
+
+---
+
+## بخش ۴ — شگفت‌انگیزها
+
+### هدف
+
+انتخاب محصول، تعیین درصد تخفیف، بازه زمانی شروع/پایان، و فعال/غیرفعال کردن برای سکشن پیشنهاد شگفت‌انگیز. فرانت‌only.
+
+### فیلدها
+
+| فیلد | نوع | توضیح |
+|---|---|---|
+| `id` | string | شناسه یکتا |
+| `productId` | string | محصول انتخاب‌شده |
+| `discountPercent` | number ۱–۹۹ | درصد تخفیف |
+| `startsAt` | ISO datetime | شروع |
+| `endsAt` | ISO datetime | پایان (بعد از شروع) |
+| `active` | boolean | فعال بودن |
+
+جزئیات: [deals.md](deals.md)
+
+### مسیرها
+
+| قطعه | مسیر |
+|---|---|
+| لیست | `/seller/deals` → `TheSellerDeals` |
+| ایجاد | `/seller/deals/new` → `TheSellerDealForm` |
+| ویرایش | `/seller/deals/:id` |
+| nav | `{ id: 'deals', label: 'شگفت‌انگیزها', icon: 'i-tabler-bolt', to: '/seller/deals' }` |
+
+### چک قبل از اتمام (شگفت‌انگیز)
+
+- [ ] انتخاب محصول + تخفیف + بازه زمانی + active
+- [ ] فیلتر فعال/اجرا/غیرفعال؛ toggle از لیست
+- [ ] جلوگیری از دو شگفت‌انگیز فعال روی یک محصول
+- [ ] i18n / RTL / Nuxt UI
+
+---
+
+## بخش ۵ — اعلان‌ها
+
+### هدف
+
+ارسال اعلان به همه کاربران، گروه کاربران، یا کاربران انتخابی. فرانت‌only.
+
+### فیلدهای ارسال
+
+| فیلد | الزام | توضیح |
+|---|---|---|
+| `title` | ✅ | عنوان |
+| `description` | ✅ | متن |
+| `link` | اختیاری | مسیر/URL کلیک (`to`) |
+| `icon` | اختیاری | آیکون Tabler |
+| مخاطب | ✅ | `all` \| `group` \| `users` |
+
+جزئیات: [notifications.md](notifications.md)
+
+### مسیرها
+
+| قطعه | مسیر |
+|---|---|
+| لیست کمپین‌ها | `/seller/notifications` → `TheSellerNotifications` |
+| ارسال | `/seller/notifications/new` → `TheSellerNotificationForm` |
+| nav | `{ id: 'notifications', label: 'اعلان‌ها', icon: 'i-tabler-bell', to: '/seller/notifications' }` |
+
+### چک قبل از اتمام (اعلان)
+
+- [ ] title / description / link + انتخاب مخاطب
+- [ ] پیش‌نمایش تعداد گیرندگان
+- [ ] لیست اعلان‌های ارسال‌شده
+- [ ] i18n / RTL / Nuxt UI
+
+---
+
+## بخش ۶ — پرسش و پاسخ محصول
+
+### هدف
+
+مدیریت پرسش‌های کاربران درباره محصولات: پاسخ دادن، تأیید خریدار، حذف. فرانت‌only.
+
+هم‌راستا با `ProductQuestionSchema` / `ProductQuestion`: `productId`, `name`, `question`, `answer`, `verified`, `date`.
+
+جزئیات: [questions.md](questions.md)
+
+### مسیرها
+
+| قطعه | مسیر |
+|---|---|
+| لیست | `/seller/questions` → `TheSellerQuestions` + `TheSellerQuestionCard` |
+| nav | `{ id: 'questions', label: 'پرسش و پاسخ', icon: 'i-tabler-message-question', to: '/seller/questions' }` |
+
+### چک قبل از اتمام (پرسش)
+
+- [ ] فیلتر همه / بدون پاسخ / پاسخ‌داده‌شده
+- [ ] پاسخ inline؛ حذف پاسخ؛ تأیید خریدار؛ حذف پرسش
+- [ ] badge بدون‌پاسخ در سایدبار/منوی موبایل
+- [ ] i18n / RTL / Nuxt UI
+
+---
+
+## بخش ۷ — تخفیف و پروموشن
+
+### هدف
+
+دو تب در یک بخش: **کدهای تخفیف** + **پروموهای محتوایی**. فرانت‌only.
+
+### کد تخفیف
+
+| فیلد | توضیح |
+|---|---|
+| `code` | کد یکتا (PK منطقی) |
+| `percent` | درصد ۱–۹۹ |
+| `startsAt` / `endsAt` | بازه زمانی |
+| `minAmount` | حداقل مبلغ سبد (تومان؛ ۰ = بدون حداقل) |
+| `oncePerUser` | یک‌بار برای هر کاربر |
+| `active` | فعال/غیرفعال |
+
+پایه مدل: `DiscountCodeSchema` + فیلدهای اضافهٔ ادمین.
+
+### پرومو
+
+فیلدهای `HomePromo`: eyebrow, title, subtitle, tone, icon, CTAها + `active`.
+
+جزئیات: [promotions.md](promotions.md)
+
+### مسیرها
+
+| قطعه | مسیر |
+|---|---|
+| لیست (تب‌ها) | `/seller/promotions` |
+| کد جدید/ویرایش | `/seller/promotions/codes/new`, `.../codes/:id` |
+| پرومو جدید/ویرایش | `/seller/promotions/promos/new`, `.../promos/:id` |
+| nav | `{ id: 'promotions', label: 'تخفیف و پروموشن', icon: 'i-tabler-discount-2' }` |
+
+---
+
+## جزئیات محصول (`/seller/products/:id`)
+
+کامپوننت: `TheSellerProductDetail` · صفحه: `pages/seller/products/[id].vue` · middleware: `auth` + `admin`
+
+تب‌ها (`?tab=`): `summary` | `edit` | `price` | `orders` | `reviews` | `questions`
+
+| تب | محتوا |
+|---|---|
+| خلاصه | آمار (فروش/موجودی/بازدید/امتیاز/نظرات/پرسش/سفارش) + stock/status/badge/fastDelivery |
+| ویرایش | `TheSellerProductForm` با `mode="edit"` |
+| قیمت و تخفیف | قیمت / oldPrice / درصد · لینک شگفت‌انگیز و کد تخفیف · تاریخچه `useSellerProductPriceHistory` |
+| سفارش‌ها / نظرات / پرسش‌ها | فیلتر روی همان `productId` |
+
+لیست محصولات از `TheSellerProductRow` به جزئیات لینک می‌شود (نه فقط استورفرانت).

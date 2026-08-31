@@ -5,10 +5,12 @@
       <div class="flex items-start justify-between gap-3 mb-4 flex-wrap">
         <div>
           <h2 class="font-bold text-highlighted">
-            {{ $t('افزودن محصول') }}
+            {{ isEdit ? $t('ویرایش محصول') : $t('افزودن محصول') }}
           </h2>
           <p class="text-xs text-muted mt-1 leading-6">
-            {{ $t('ابتدا دسته‌بندی را انتخاب کنید؛ فیلدهای مشخصات فنی بر اساس همان دسته نمایش داده می‌شوند.') }}
+            {{ isEdit
+              ? $t('اطلاعات محصول را ویرایش کنید و ذخیره نمایید.')
+              : $t('ابتدا دسته‌بندی را انتخاب کنید؛ فیلدهای مشخصات فنی بر اساس همان دسته نمایش داده می‌شوند.') }}
           </p>
         </div>
         <UBadge
@@ -292,6 +294,16 @@
       <!-- Actions -->
       <div class="flex items-center justify-between gap-3 flex-wrap pb-2">
         <UButton
+          v-if="isEdit"
+          color="neutral"
+          variant="outline"
+          size="lg"
+          @click="emit('cancel')"
+        >
+          {{ $t('انصراف') }}
+        </UButton>
+        <UButton
+          v-else
           to="/seller/products"
           color="neutral"
           variant="outline"
@@ -300,24 +312,37 @@
           {{ $t('انصراف') }}
         </UButton>
         <div class="flex items-center gap-2 flex-wrap">
-          <UButton
-            color="neutral"
-            variant="soft"
-            size="lg"
-            :loading="submitting"
-            @click="onSubmit(false)"
-          >
-            {{ $t('ذخیره پیش‌نویس') }}
-          </UButton>
-          <UButton
-            color="primary"
-            size="lg"
-            class="font-bold"
-            :loading="submitting"
-            @click="onSubmit(true)"
-          >
-            {{ $t('ثبت و ارسال برای تأیید') }}
-          </UButton>
+          <template v-if="isEdit">
+            <UButton
+              color="primary"
+              size="lg"
+              class="font-bold"
+              :loading="submitting"
+              @click="onSubmit(true)"
+            >
+              {{ $t('ذخیره تغییرات') }}
+            </UButton>
+          </template>
+          <template v-else>
+            <UButton
+              color="neutral"
+              variant="soft"
+              size="lg"
+              :loading="submitting"
+              @click="onSubmit(false)"
+            >
+              {{ $t('ذخیره پیش‌نویس') }}
+            </UButton>
+            <UButton
+              color="primary"
+              size="lg"
+              class="font-bold"
+              :loading="submitting"
+              @click="onSubmit(true)"
+            >
+              {{ $t('ثبت و ارسال برای تأیید') }}
+            </UButton>
+          </template>
         </div>
       </div>
     </template>
@@ -345,6 +370,7 @@ import {
   getCategoryAttributeFields,
   getSellerCategoryOptions,
   parsePriceInput,
+  productToSellerForm,
   sellerProductBadges,
   sellerProductColorPresets,
   validateSellerProductForm,
@@ -353,15 +379,52 @@ import {
 } from '~/data/seller-product-form'
 import type { ProductColor } from '~/data/products'
 
+const props = withDefaults(defineProps<{
+  mode?: 'create' | 'edit'
+  productId?: string
+}>(), {
+  mode: 'create',
+})
+
+const emit = defineEmits<{
+  saved: []
+  cancel: []
+}>()
+
 const { t } = useI18n()
 const toast = useAppToast()
 const router = useRouter()
-const { addListingProduct } = useSeller()
+const {
+  addListingProduct,
+  updateListingProduct,
+  getListing,
+  resolveProduct,
+} = useSeller()
+const { pushChange } = useSellerProductPriceHistory()
 
+const isEdit = computed(() => props.mode === 'edit' && Boolean(props.productId))
 const categoryOptions = getSellerCategoryOptions()
 const form = ref<SellerProductFormValues>(emptySellerProductForm())
 const errors = ref<Record<string, string>>({})
 const submitting = ref(false)
+
+if (isEdit.value && props.productId) {
+  const listing = getListing(props.productId)
+  const product = resolveProduct(props.productId)
+  form.value = productToSellerForm(product, listing?.stock ?? 0)
+}
+
+watch(
+  () => [props.mode, props.productId] as const,
+  () => {
+    if (props.mode === 'edit' && props.productId) {
+      const listing = getListing(props.productId)
+      const product = resolveProduct(props.productId)
+      form.value = productToSellerForm(product, listing?.stock ?? 0)
+      errors.value = {}
+    }
+  },
+)
 
 const selectedCategory = computed(() =>
   categoryOptions.find(item => item.id === form.value.category),
@@ -433,15 +496,50 @@ async function onSubmit(sendForReview: boolean) {
     return
   }
 
-  const product = buildSellerProductFromForm(form.value)
-  if (!product) {
-    toast.error(t('اطلاعات محصول معتبر نیست'))
-    return
-  }
-
   submitting.value = true
   try {
     const stock = Number.parseInt(form.value.stock.replace(/[^\d]/g, '') || '0', 10)
+
+    if (isEdit.value && props.productId) {
+      const previous = resolveProduct(props.productId)
+      const product = buildSellerProductFromForm(form.value, {
+        id: props.productId,
+        base: previous,
+      })
+      if (!product) {
+        toast.error(t('اطلاعات محصول معتبر نیست'))
+        return
+      }
+      const listing = getListing(props.productId)
+      const ok = await updateListingProduct(
+        props.productId,
+        product,
+        stock,
+        listing?.status,
+      )
+      if (!ok) {
+        toast.error(t('ذخیره محصول ناموفق بود'))
+        return
+      }
+      if (previous.price !== product.price || (previous.oldPrice ?? null) !== (product.oldPrice ?? null)) {
+        pushChange(
+          props.productId,
+          product.price,
+          product.oldPrice ?? null,
+          t('ویرایش اطلاعات محصول'),
+        )
+      }
+      toast.success(t('تغییرات محصول ذخیره شد'))
+      emit('saved')
+      return
+    }
+
+    const product = buildSellerProductFromForm(form.value)
+    if (!product) {
+      toast.error(t('اطلاعات محصول معتبر نیست'))
+      return
+    }
+
     const status = sendForReview
       ? 'pending' as const
       : (stock > 0 ? 'inactive' as const : 'out_of_stock' as const)

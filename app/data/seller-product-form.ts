@@ -173,7 +173,42 @@ function slugifyTitle(title: string) {
   return base || 'product'
 }
 
-export function buildSellerProductFromForm(form: SellerProductFormValues): Product | null {
+export function productToSellerForm(
+  product: Product,
+  stock = 0,
+): SellerProductFormValues {
+  const attrs: Record<string, string> = {}
+  for (const field of getCategoryAttributeFields(product.category)) {
+    attrs[field.key] = product.specs?.find(s => s.key === field.key)?.value ?? ''
+  }
+  for (const spec of product.specs ?? []) {
+    if (attrs[spec.key] === undefined) attrs[spec.key] = spec.value
+  }
+
+  return {
+    category: product.category,
+    title: product.title,
+    shortName: product.shortName ?? '',
+    brand: product.brand,
+    shortDesc: product.shortDesc ?? '',
+    description: product.description ?? '',
+    price: String(product.price || ''),
+    oldPrice: product.oldPrice ? String(product.oldPrice) : '',
+    stock: String(stock),
+    image: product.image || '',
+    imageDark: product.imageDark || '',
+    gallery: product.gallery ? [...product.gallery] : [],
+    badge: product.badge || '',
+    fastDelivery: Boolean(product.fastDelivery),
+    colors: product.colors ? [...product.colors] : [],
+    attrs,
+  }
+}
+
+export function buildSellerProductFromForm(
+  form: SellerProductFormValues,
+  options?: { id?: string, base?: Product },
+): Product | null {
   const title = form.title.trim()
   const brand = form.brand.trim()
   const category = form.category
@@ -187,9 +222,13 @@ export function buildSellerProductFromForm(form: SellerProductFormValues): Produ
     .filter(([, value]) => value.trim())
     .map(([key, value]) => ({ key, value: value.trim() }))
 
-  const id = `seller-${slugifyTitle(form.shortName || title)}-${Date.now().toString().slice(-5)}`
+  const id = options?.id
+    || `seller-${slugifyTitle(form.shortName || title)}-${Date.now().toString().slice(-5)}`
+
+  const base = options?.base
 
   return {
+    ...base,
     id,
     title,
     shortName: form.shortName.trim() || undefined,
@@ -198,16 +237,17 @@ export function buildSellerProductFromForm(form: SellerProductFormValues): Produ
     categoryLabel: categoryLabels[category] ?? getCategoryById(category)?.name ?? category,
     price,
     oldPrice: oldPrice > 0 && oldPrice > price ? oldPrice : undefined,
-    rating: 0,
-    reviews: 0,
+    rating: base?.rating ?? 0,
+    reviews: base?.reviews ?? 0,
     image: form.image.trim() || form.gallery[0] || '/images/noImage.png',
-    ...(form.imageDark.trim() ? { imageDark: form.imageDark.trim() } : {}),
-    ...(form.gallery.length ? { gallery: [...form.gallery] } : {}),
+    ...(form.imageDark.trim() ? { imageDark: form.imageDark.trim() } : { imageDark: undefined }),
+    ...(form.gallery.length ? { gallery: [...form.gallery] } : { gallery: undefined }),
     badge: form.badge || undefined,
     colors: form.colors.length ? form.colors : undefined,
     inStock: stock > 0,
     fastDelivery: form.fastDelivery,
     shortDesc: form.shortDesc.trim() || undefined,
+    description: form.description.trim() || undefined,
     specs: specs.length ? specs : undefined,
   }
 }

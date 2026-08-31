@@ -41,13 +41,17 @@ function emptyFooter(): FooterPayload {
   }
 }
 
+export function cloneFooter(payload: FooterPayload): FooterPayload {
+  return JSON.parse(JSON.stringify(payload)) as FooterPayload
+}
+
 export function useFooter() {
   const footer = useState<FooterPayload>('site-footer', emptyFooter)
   const loaded = useState('site-footer-loaded', () => false)
   const pending = useState('site-footer-pending', () => false)
 
-  async function fetchFooter() {
-    if (loaded.value || pending.value) return footer.value
+  async function fetchFooter(options?: { force?: boolean }) {
+    if ((loaded.value || pending.value) && !options?.force) return footer.value
     pending.value = true
     try {
       const { result } = await useGet<FooterPayload>('/footer', {
@@ -85,10 +89,17 @@ export function useFooter() {
     }
   }
 
+  function updateFooter(payload: FooterPayload) {
+    footer.value = cloneFooter(payload)
+    loaded.value = true
+    return footer.value
+  }
+
   return {
     footer,
     loaded,
     pending,
     fetchFooter,
+    updateFooter,
   }
 }
