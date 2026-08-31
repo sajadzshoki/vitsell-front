@@ -10,10 +10,10 @@
       />
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-5 items-start">
-        <section class="order-1 lg:col-span-9 md:bg-default md:rounded-3xl md:border md:border-muted md:p-4 lg:p-8 min-w-0">
+        <section class="order-1 lg:col-span-9 md:bg-default md:rounded-3xl md:border md:border-muted md:p-4 lg:p-6 min-w-0">
           <TheProductHeader
             :product="product"
-            class="hidden md:block mb-6 pb-5 border-b border-muted"
+            class="hidden md:block mb-4 pb-2  border-b border-muted"
             size="lg"
           />
 

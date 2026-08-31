@@ -1,6 +1,8 @@
 export type SellerTabId =
   | 'dashboard'
   | 'products'
+  | 'categories'
+  | 'banners'
   | 'orders'
   | 'reviews'
   | 'finance'
@@ -122,7 +124,13 @@ export const sellerNavItems: {
 }[] = [
   { id: 'dashboard', label: 'پیشخوان مدیریت', icon: 'i-tabler-layout-dashboard', to: '/seller' },
   { id: 'products', label: 'محصولات', icon: 'i-tabler-package', to: '/seller/products' },
+<<<<<<< HEAD
+  { id: 'categories', label: 'دسته‌بندی‌ها', icon: 'i-tabler-category', to: '/seller/categories' },
+  { id: 'banners', label: 'بنرها', icon: 'i-tabler-photo', to: '/seller/banners' },
+  { id: 'orders', label: 'سفارش‌های فروشگاه', icon: 'i-tabler-shopping-bag', to: '/seller/orders' },
+=======
   { id: 'orders', label: 'سفارش‌ها', icon: 'i-tabler-shopping-bag', to: '/seller/orders' },
+>>>>>>> fc27ca8cdfd68e79616148f653a5463b6e9f0a6c
   { id: 'reviews', label: 'نظرات مشتریان', icon: 'i-tabler-message-2', to: '/seller/reviews' },
   { id: 'finance', label: 'مالی و تسویه', icon: 'i-tabler-wallet', to: '/seller/finance' },
   { id: 'shop', label: 'تنظیمات سایت', icon: 'i-tabler-settings', to: '/seller/shop' },

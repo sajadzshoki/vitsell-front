@@ -1,8 +1,8 @@
 <template>
-  <div>
+  <div >
     <div
       class="flex items-center gap-1 flex-wrap"
-      :class="size === 'sm' ? 'mb-1' : 'mb-3'"
+      :class="size === 'sm' ? 'mb-1' : 'mb-1'"
     >
       <!-- <UBadge color="neutral" variant="subtle" size="sm">
         {{ product.brand }}
@@ -17,6 +17,7 @@
         {{ $t(product.badge) }}
       </UBadge>
     </div>
+    <div class="flex items-center justify-between <md:(flexCol )">
     <component
       :is="asHeading ? 'h1' : 'p'"
       class="text-highlighted"
@@ -28,13 +29,14 @@
     </component>
     <p
       v-if="product.shortName"
-      class="text-muted mt-1"
+      class="text-muted mt-1 <md:self-end"
       :class="size === 'sm' ? 'text-xs' : 'text-sm md:text-base'"
-      dir="ltr"
+
     >
       {{ product.shortName }}
     </p>
   </div>
+</div>
 </template>
 
 <script setup lang="ts">
