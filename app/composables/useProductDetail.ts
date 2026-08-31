@@ -1,7 +1,7 @@
 import type { Product } from '~/data/products'
 import {
+  buildReviewSummary,
   getProductCriteriaScores,
-  getProductReviewSummary,
   getProductSpecGroups,
   type ProductQuestion,
   type ProductReview,
@@ -20,11 +20,15 @@ export type NewProductQuestionInput = {
   question: string
 }
 
+type ReviewCreateResult = ProductReview & {
+  productStats?: { rating: number, reviews: number }
+}
+
 export function useProductDetail(product: MaybeRefOrGetter<Product | null | undefined>) {
   const p = computed(() => toValue(product))
   const productId = computed(() => p.value?.id ?? '')
   const { isLoggedIn } = useShop()
-  const { fetchProducts } = useProducts()
+  const { fetchProducts, remember } = useProducts()
 
   const apiReviewsByProduct = useState<Record<string, ProductReview[]>>(
     'product-api-reviews',
@@ -47,17 +51,25 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
   const specGroups = computed(() =>
     p.value ? getProductSpecGroups(p.value) : [],
   )
-  const reviewSummary = computed(() =>
-    p.value
-      ? getProductReviewSummary(p.value)
-      : { recommendPercent: 0, distribution: [] },
-  )
+  const allReviews = computed(() => apiReviewsByProduct.value[productId.value] ?? [])
+  const reviewSummary = computed(() => buildReviewSummary(allReviews.value))
   const criteriaScores = computed(() =>
     p.value ? getProductCriteriaScores(p.value) : [],
   )
 
+  const displayRating = computed(() => {
+    if (allReviews.value.length) {
+      const sum = allReviews.value.reduce((acc, r) => acc + r.rating, 0)
+      return Math.round((sum / allReviews.value.length) * 10) / 10
+    }
+    return p.value?.rating ?? 0
+  })
+
+  const displayReviewCount = computed(() =>
+    allReviews.value.length || p.value?.reviews || 0,
+  )
+
   const related = computed(() => relatedByProduct.value[productId.value] ?? [])
-  const allReviews = computed(() => apiReviewsByProduct.value[productId.value] ?? [])
   const questions = computed(() => apiQuestionsByProduct.value[productId.value] ?? [])
 
   const reviewSort = ref<ProductReviewSort>('newest')
@@ -109,6 +121,16 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
     return false
   }
 
+  function applyProductStats(stats?: { rating: number, reviews: number }) {
+    const current = p.value
+    if (!current || !stats) return
+    const next = { ...current, rating: stats.rating, reviews: stats.reviews }
+    remember([next])
+    if (isRef(product)) {
+      ;(product as Ref<Product | null | undefined>).value = next
+    }
+  }
+
   async function fetchDetail(options?: { force?: boolean }) {
     const id = productId.value
     if (!id) return
@@ -158,11 +180,12 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
     const pid = productId.value
     if (!pid) return false
 
-    const { result, error } = await usePost<ProductReview>(
+    const { result, error } = await usePost<ReviewCreateResult>(
       `/products/${encodeURIComponent(pid)}/reviews`,
       {
         rating: input.rating,
         text: input.text.trim(),
+        recommend: input.recommend ?? true,
         ...(input.pros?.length ? { pros: input.pros } : {}),
         ...(input.cons?.length ? { cons: input.cons } : {}),
       },
@@ -171,10 +194,12 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
 
     if (error || !result) return false
 
+    const { productStats, ...review } = result
     apiReviewsByProduct.value = {
       ...apiReviewsByProduct.value,
-      [pid]: [result, ...(apiReviewsByProduct.value[pid] ?? [])],
+      [pid]: [review, ...(apiReviewsByProduct.value[pid] ?? [])],
     }
+    applyProductStats(productStats)
     return true
   }
 
@@ -202,6 +227,8 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
     specGroups,
     reviewSummary,
     criteriaScores,
+    displayRating,
+    displayReviewCount,
     related,
     allReviews,
     questions,

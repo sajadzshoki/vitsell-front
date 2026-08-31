@@ -9,6 +9,7 @@ export type Category = {
   name: string
   icon: string
   image?: string | null
+  text?: string | null
   subs: CategorySub[]
 }
 
@@ -31,6 +32,8 @@ export const categories: Category[] = [
     id: 'mobile',
     name: 'موبایل',
     icon: 'mobile',
+    image: '/images/mock/iphone16pro-desert.jpg',
+    text: 'در دیجی‌شاپ می‌توانید انواع گوشی موبایل از برندهای اپل، سامسونگ، شیائومی، هوآوی و سایر سازندگان معتبر را با بهترین قیمت و ارسال سریع تهیه کنید. از پرچمدارهای پرقدرت تا گوشی‌های اقتصادی، همه در یکجا.',
     subs: [
       { name: 'برندهای موبایل', items: ['اپل', 'سامسونگ', 'شیائومی', 'هوآوی', 'آنر', 'نوکیا'] },
       { name: 'لوازم جانبی', items: ['قاب و کاور', 'گلس', 'شارژر و کابل', 'پاوربانک'] },
@@ -40,6 +43,8 @@ export const categories: Category[] = [
     id: 'laptop',
     name: 'لپ‌تاپ',
     icon: 'laptop',
+    image: '/images/mock/macbook-m4-spaceblack.jpg',
+    text: 'مجموعه‌ای گسترده از لپ‌تاپ‌های اپل، ایسوس، لنوو، اچ‌پی و سایر برندها برای برنامه‌نویسی، طراحی، گیمینگ و استفاده روزمره.',
     subs: [
       { name: 'برندها', items: ['اپل', 'ایسوس', 'لنوو', 'اچ‌پی', 'ایسر', 'مایکروسافت'] },
       { name: 'کاربری', items: ['گیمینگ', 'دانشجویی', 'برنامه‌نویسی', 'طراحی'] },
@@ -49,18 +54,69 @@ export const categories: Category[] = [
     id: 'audio',
     name: 'صوتی و هدفون',
     icon: 'audio',
+    image: '/images/mock/sony-xm5-midnight.jpg',
+    text: 'از هدفون‌های بی‌سیم نویزکنسلینگ تا اسپیکرهای قابل حمل و ساندبار خانگی — همه در دسته صوتی دیجی‌شاپ.',
     subs: [
       { name: 'انواع', items: ['هدفون بلوتوثی', 'ایرپاد', 'اسپیکر قابل حمل', 'ساندبار'] },
       { name: 'برندها', items: ['اپل', 'سونی', 'جی‌بی‌ال', 'انکر', 'سنهایزر'] },
     ],
   },
-  { id: 'tv', name: 'تلویزیون', icon: 'tv', subs: [] },
-  { id: 'camera', name: 'دوربین', icon: 'camera', subs: [] },
-  { id: 'watch', name: 'ساعت هوشمند', icon: 'watch', subs: [] },
-  { id: 'gaming', name: 'کنسول بازی', icon: 'gaming', subs: [] },
-  { id: 'home', name: 'لوازم خانگی', icon: 'home', subs: [] },
-  { id: 'fashion', name: 'مد و پوشاک', icon: 'fashion', subs: [] },
-  { id: 'beauty', name: 'زیبایی و سلامت', icon: 'beauty', subs: [] },
+  {
+    id: 'tv',
+    name: 'تلویزیون',
+    icon: 'tv',
+    image: '/images/mock/ipad-pro-m4.jpg',
+    text: 'تلویزیون‌های سامسونگ، ال‌جی و سونی با پنل QLED، OLED و Mini LED برای تجربه تصویری بی‌نظیر.',
+    subs: [],
+  },
+  {
+    id: 'camera',
+    name: 'دوربین',
+    icon: 'camera',
+    image: '/images/mock/apple-watch-ultra.jpg',
+    text: 'دوربین‌های بدون آینه، کامپکت و اکشن‌کم از برندهای کانن، سونی، گوپرو و DJI.',
+    subs: [],
+  },
+  {
+    id: 'watch',
+    name: 'ساعت هوشمند',
+    icon: 'watch',
+    image: '/images/mock/apple-watch-ultra.jpg',
+    text: 'ساعت‌های هوشمند با قابلیت ردیابی سلامت، GPS، پرداخت و اتصال بلوتوث.',
+    subs: [],
+  },
+  {
+    id: 'gaming',
+    name: 'کنسول بازی',
+    icon: 'gaming',
+    image: '/images/mock/ps5-pro.jpg',
+    text: 'کنسول‌های نسل جدید، دسته بازی، هدست گیمینگ و اکسسوری‌های مرتبط.',
+    subs: [],
+  },
+  {
+    id: 'home',
+    name: 'لوازم خانگی',
+    icon: 'home',
+    image: '/images/mock/hero-tech-ecosystem.jpg',
+    text: 'لوازم خانگی برندهای دایسون، ال‌جی، سامسونگ و شیائومی با ارسال سریع.',
+    subs: [],
+  },
+  {
+    id: 'fashion',
+    name: 'مد و پوشاک',
+    icon: 'fashion',
+    image: '/images/mock/galaxy-s25-ultra.jpg',
+    text: 'کالکشن‌های فصل جدید از برندهای معتبر داخلی و بین‌المللی.',
+    subs: [],
+  },
+  {
+    id: 'beauty',
+    name: 'زیبایی و سلامت',
+    icon: 'beauty',
+    image: '/images/mock/sony-xm5-midnight.jpg',
+    text: 'محصولات اصل برندهای معتبر آرایشی و بهداشتی.',
+    subs: [],
+  },
 ]
 
 export const popularSearches = [

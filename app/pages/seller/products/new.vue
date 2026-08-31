@@ -21,7 +21,7 @@ const { t } = useI18n()
 
 definePageMeta({
   layout: 'seller',
-  middleware: 'auth',
+  middleware: ['auth', 'admin'],
 })
 
 useSeoMeta({

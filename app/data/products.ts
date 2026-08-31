@@ -19,6 +19,8 @@ export type Product = {
   rating: number
   reviews: number
   image: string
+  /** Optional product image for dark color mode */
+  imageDark?: string
   gallery?: string[]
   /** تصاویر اختصاصی سکشن معرفی (در غیر این صورت از gallery استفاده می‌شود) */
   descImages?: string[]

@@ -64,12 +64,19 @@ import type { Product } from '~/data/products'
 
 const { t } = useI18n()
 const route = useRoute()
-const { fetchProduct } = useProducts()
+const { fetchProduct, cache } = useProducts()
 
 const productId = computed(() => String(route.params.id ?? ''))
 const product = ref<Product | null>(null)
 
 const { related, fetchDetail } = useProductDetail(product)
+
+watch(
+  () => (productId.value ? cache.value[productId.value] : null),
+  (cached) => {
+    if (cached) product.value = cached
+  },
+)
 
 async function loadProduct() {
   const id = productId.value

@@ -1,6 +1,4 @@
 import {
-  defaultWalletSummary,
-  defaultWalletTransactions,
   walletMaxTopUp,
   walletMinTopUp,
   walletMinWithdraw,
@@ -11,35 +9,36 @@ import {
 
 export type WalletTxFilter = 'all' | WalletTxType
 
-function todayJalaliParts() {
-  // نمایشی برای mock — تاریخ ثابت فارسی
-  return { date: '۱۴۰۳/۰۹/۲۴', time: '۱۲:۰۰' }
-}
-
-function makeId(prefix: string) {
-  return `${prefix}-${Date.now().toString(36).slice(-6)}`
-}
+const emptySummary = (): WalletSummary => ({
+  balance: 0,
+  pendingWithdraw: 0,
+  monthTopup: 0,
+  monthSpent: 0,
+})
 
 export function useAccountWallet() {
-  const summary = useState<WalletSummary>(
-    'account-wallet-summary',
-    () => ({ ...defaultWalletSummary }),
-  )
-  const transactions = useState<WalletTransaction[]>(
-    'account-wallet-tx',
-    () => [...defaultWalletTransactions],
-  )
+  const summary = useState<WalletSummary>('account-wallet-summary', emptySummary)
+  const transactions = useState<WalletTransaction[]>('account-wallet-tx', () => [])
   const loaded = useState('account-wallet-loaded', () => false)
 
-  /** تا آماده‌شدن بک‌اند / زرین‌پال از mock استفاده می‌شود. */
-  async function fetchWallet() {
-    await new Promise(resolve => setTimeout(resolve, 260))
-    if (!loaded.value) {
-      summary.value = { ...defaultWalletSummary }
-      transactions.value = [...defaultWalletTransactions]
-      loaded.value = true
+  async function fetchWallet(options?: { force?: boolean }) {
+    if (loaded.value && !options?.force) {
+      return { summary: summary.value, transactions: transactions.value, error: null as null }
     }
-    return { summary: summary.value, transactions: transactions.value }
+
+    const { result, error } = await useGet<{
+      summary: WalletSummary
+      transactions: WalletTransaction[]
+    }>('/account/wallet', { headers: { 'no-error': true } })
+
+    if (error || !result) {
+      return { summary: summary.value, transactions: transactions.value, error }
+    }
+
+    summary.value = result.summary
+    transactions.value = Array.isArray(result.transactions) ? result.transactions : []
+    loaded.value = true
+    return { summary: summary.value, transactions: transactions.value, error: null as null }
   }
 
   function filterTransactions(filter: WalletTxFilter) {
@@ -49,70 +48,62 @@ export function useAccountWallet() {
 
   async function requestTopUp(amount: number) {
     if (amount < walletMinTopUp || amount > walletMaxTopUp) {
-      return { ok: false as const, error: 'invalid_amount' }
+      return { ok: false as const, error: 'invalid_amount' as const }
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const { result, error } = await usePost<{ paymentUrl: string, transactionId: string }>(
+      '/account/wallet/topup',
+      { amount },
+      { headers: { 'no-error': true } },
+    )
 
-    // شبیه‌سازی پرداخت موفق تا اتصال زرین‌پال
-    const { date, time } = todayJalaliParts()
-    const tx: WalletTransaction = {
-      id: makeId('wt'),
-      type: 'topup',
-      amount,
-      signedAmount: amount,
-      status: 'success',
-      title: 'شارژ کیف پول',
-      description: 'پرداخت آزمایشی (زرین‌پال به‌زودی)',
-      date,
-      time,
-      refId: makeId('ZP').toUpperCase(),
+    if (error || !result?.paymentUrl) {
+      return { ok: false as const, error: 'payment_failed' as const }
     }
 
-    transactions.value = [tx, ...transactions.value]
-    summary.value = {
-      ...summary.value,
-      balance: summary.value.balance + amount,
-      monthTopup: summary.value.monthTopup + amount,
+    return {
+      ok: true as const,
+      paymentUrl: result.paymentUrl,
+      transactionId: result.transactionId,
     }
-
-    return { ok: true as const, transaction: tx }
   }
 
-  async function requestWithdraw(amount: number, cardHint?: string) {
+  async function requestWithdraw(amount: number, cardNumber: string) {
     if (amount < walletMinWithdraw) {
-      return { ok: false as const, error: 'min_amount' }
+      return { ok: false as const, error: 'min_amount' as const }
     }
     if (amount > summary.value.balance) {
-      return { ok: false as const, error: 'insufficient' }
+      return { ok: false as const, error: 'insufficient' as const }
     }
 
-    await new Promise(resolve => setTimeout(resolve, 450))
-
-    const { date, time } = todayJalaliParts()
-    const tx: WalletTransaction = {
-      id: makeId('wt'),
-      type: 'withdraw',
-      amount,
-      signedAmount: -amount,
-      status: 'pending',
-      title: 'درخواست برداشت',
-      description: cardHint
-        ? `واریز به کارت ${cardHint}`
-        : 'در انتظار بررسی و واریز',
-      date,
-      time,
-      refId: makeId('WD').toUpperCase(),
+    const card = String(cardNumber ?? '').replace(/\D/g, '')
+    if (card.length !== 16) {
+      return { ok: false as const, error: 'invalid_card' as const }
     }
 
-    transactions.value = [tx, ...transactions.value]
-    summary.value = {
-      ...summary.value,
-      balance: summary.value.balance - amount,
-      pendingWithdraw: summary.value.pendingWithdraw + amount,
+    const { result, error } = await usePost<{
+      transaction: WalletTransaction
+      summary: WalletSummary
+    }>(
+      '/account/wallet/withdraw',
+      { amount, cardNumber: card },
+      { headers: { 'no-error': true } },
+    )
+
+    if (error || !result) {
+      const field = error?.data?.errors?.[0]?.field
+      if (field === 'amount') {
+        return { ok: false as const, error: 'insufficient' as const }
+      }
+      if (field === 'cardNumber') {
+        return { ok: false as const, error: 'invalid_card' as const }
+      }
+      return { ok: false as const, error: 'failed' as const }
     }
 
-    return { ok: true as const, transaction: tx }
+    summary.value = result.summary
+    transactions.value = [result.transaction, ...transactions.value.filter(t => t.id !== result.transaction.id)]
+    return { ok: true as const, transaction: result.transaction }
   }
 
   return {

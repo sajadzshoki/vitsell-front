@@ -80,7 +80,11 @@ export default defineNuxtConfig({
 
     runtimeConfig: {
         public: {
-            apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://digishop-back.vistatest.top/api/v1',
+            apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://localhost:3333/api/v1",
+            /** store = فروشگاه | admin = پنل مدیریت روی دامنه جدا */
+            appMode: process.env.NUXT_PUBLIC_APP_MODE || "store",
+            storeUrl: process.env.NUXT_PUBLIC_STORE_URL || "http://localhost:4000",
+            adminUrl: process.env.NUXT_PUBLIC_ADMIN_URL || "http://localhost:4001",
         },
     },
 

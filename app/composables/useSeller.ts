@@ -192,6 +192,7 @@ export function useSeller() {
           price: product.price,
           oldPrice: product.oldPrice,
           image: product.image,
+          imageDark: product.imageDark,
           gallery: product.gallery,
           colors: product.colors,
           shortDesc: product.shortDesc,
