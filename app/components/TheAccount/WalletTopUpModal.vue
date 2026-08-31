@@ -28,10 +28,10 @@
         <TheFormInput
           v-model="customAmount"
           :label="$t('مبلغ دلخواه')"
-          :placeholder="$t('مثلاً ۷۵۰۰۰۰')"
+          :placeholder="$t('مثلاً 750,000')"
           icon="i-tabler-coin"
           inputmode="numeric"
-          digits-only
+          thousand-sep
           dir="ltr"
           size="lg"
           :error="error || undefined"
@@ -48,7 +48,7 @@
 
         <p class="text-[11px] text-dimmed leading-6 flex items-start gap-1.5">
           <UIcon name="i-tabler-info-circle" class="size-3.5 shrink-0 mt-0.5" />
-          {{ $t('پس از اتصال زرین‌پال، به درگاه امن هدایت می‌شوید. فعلاً پرداخت به‌صورت آزمایشی ثبت می‌شود.') }}
+          {{ $t('پس از تأیید، به درگاه امن sandbox زرین‌پال هدایت می‌شوید و موجودی پس از پرداخت موفق به‌روز می‌شود.') }}
         </p>
       </div>
     </template>
@@ -134,12 +134,13 @@ async function onSubmit() {
   submitting.value = true
   try {
     const result = await requestTopUp(amount.value)
-    if (!result.ok) {
+    if (!result.ok || !('paymentUrl' in result) || !result.paymentUrl) {
       toast.error(t('شارژ کیف پول ناموفق بود'))
       return
     }
-    toast.success(t('موجودی با موفقیت افزایش یافت'))
     open.value = false
+    toast.success(t('در حال انتقال به درگاه پرداخت...'))
+    await navigateTo(result.paymentUrl, { external: true })
   }
   finally {
     submitting.value = false

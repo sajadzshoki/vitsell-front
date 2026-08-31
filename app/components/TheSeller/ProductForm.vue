@@ -231,43 +231,56 @@
 
       <!-- Media & extras -->
       <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-        <h3 class="font-bold text-highlighted mb-4">
+        <h3 class="font-bold text-highlighted mb-1">
           {{ $t('تصویر و تنظیمات نمایش') }}
         </h3>
+        <p class="text-xs text-muted mb-4 leading-6">
+          {{ $t('تصاویر تم روشن/تاریک برای تصویر اصلی هستند؛ گالری محصول را بدون محدودیت تعداد اضافه کنید.') }}
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <TheSellerImageUpload
+            v-model="form.image"
+            :label="$t('تصویر تم روشن')"
+            :badge="$t('لایت')"
+            badge-color="warning"
+            icon="i-tabler-sun"
+            theme-preview="light"
+            :alt="form.title || $t('پیش‌نمایش لایت')"
+            :error="errors.image"
+            :hint="$t('در حالت تم روشن نمایش داده می‌شود')"
+            @error="form.image = ''"
+          />
+          <TheSellerImageUpload
+            v-model="form.imageDark"
+            :label="$t('تصویر تم تاریک')"
+            :badge="$t('دارک')"
+            badge-color="neutral"
+            icon="i-tabler-moon"
+            theme-preview="dark"
+            :alt="form.title || $t('پیش‌نمایش دارک')"
+            :error="errors.imageDark"
+            :hint="$t('در حالت تم تاریک نمایش داده می‌شود؛ اگر خالی باشد همان تصویر لایت استفاده می‌شود')"
+            @error="form.imageDark = ''"
+          />
+        </div>
+
+        <TheSellerGalleryUpload
+          v-model="form.gallery"
+          :label="$t('گالری تصاویر')"
+          class="mb-4"
+          :hint="$t('می‌توانید هر تعداد تصویر اضافه کنید. اولین تصویر در صورت نبود تصویر اصلی استفاده می‌شود.')"
+        />
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <TheFormInput
-              v-model="form.image"
-              :label="$t('آدرس تصویر اصلی')"
-              :placeholder="$t('https://... یا مسیر /images/...')"
-              dir="ltr"
-              icon="i-tabler-photo"
+          <UFormField :label="$t('برچسب ویژه')">
+            <USelect
+              v-model="form.badge"
+              :items="badgeItems"
+              value-key="value"
+              class="w-full"
             />
-            <div class="mt-3 size-28 rounded-2xl border border-muted bg-muted overflow-hidden grid place-items-center">
-              <img
-                v-if="form.image.trim()"
-                :src="form.image"
-                :alt="form.title || $t('پیش‌نمایش')"
-                class="size-full object-cover"
-                @error="onImageError"
-              >
-              <TheIcon
-                v-else
-                icon-type="img"
-                name="noImage.png"
-                class="size-10 opacity-60"
-              />
-            </div>
-          </div>
-          <div class="space-y-4">
-            <UFormField :label="$t('برچسب ویژه')">
-              <USelect
-                v-model="form.badge"
-                :items="badgeItems"
-                value-key="value"
-                class="w-full"
-              />
-            </UFormField>
+          </UFormField>
+          <div class="flex items-end">
             <UCheckbox
               v-model="form.fastDelivery"
               :label="$t('ارسال سریع')"
@@ -411,10 +424,6 @@ function toggleColor(color: ProductColor) {
     return
   }
   form.value.colors = [...form.value.colors, color]
-}
-
-function onImageError() {
-  form.value.image = ''
 }
 
 async function onSubmit(sendForReview: boolean) {

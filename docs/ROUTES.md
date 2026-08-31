@@ -95,7 +95,9 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 |--------|------|------|--------|
 | `POST` | `/auth/otp/request` | — | درخواست OTP — body: `{ phone }` |
 | `POST` | `/auth/otp/verify` | — | تأیید OTP — body: `{ phone, code }` → `{ token, profile }` |
+| `POST` | `/auth/check` | — | بررسی شماره — body: `{ phone }` → `{ hasPassword }` |
 | `POST` | `/auth/login` | — | ورود با رمز — body: `{ phone, password }` → `{ token, profile }` |
+| `POST` | `/auth/password/reset` | — | بازیابی رمز — body: `{ phone, code, password, passwordConfirmation }` |
 | `GET` | `/auth/me` | ✅ | کاربر جاری |
 | `POST` | `/auth/logout` | ✅ | خروج |
 
@@ -103,18 +105,22 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 
 | Method | Path | Auth | توضیح |
 |--------|------|------|--------|
-| `GET` | `/categories` | — | لیست دسته‌ها |
+| `GET` | `/categories` | — | لیست دسته‌ها (`id`, `name`, `icon`, `image`, `text`, `subs`) |
 | `GET` | `/categories/:id` | — | جزئیات دسته |
 | `GET` | `/category-pages/:id` | — | متای صفحه دسته |
 | `GET` | `/products` | — | لیست/جستجو/فیلتر محصولات |
 | `GET` | `/products/:id` | — | جزئیات محصول |
 | `GET` | `/products/:id/reviews` | — | نظرات محصول |
+| `POST` | `/products/:id/reviews` | ✅ | ثبت نظر — body: `{ rating, text, pros?, cons?, recommend? }` |
 | `GET` | `/products/:id/questions` | — | پرسش‌ها |
+| `POST` | `/products/:id/questions` | ✅ | ثبت پرسش — body: `{ question }` |
+| `POST` | `/upload` | ✅ | آپلود تصویر — multipart `file` → `{ url }` |
 
 ### محتوا (Content)
 
 | Method | Path | Auth | توضیح |
 |--------|------|------|--------|
+| `GET` | `/uploads/:file` | — | سرو فایل آپلودشده (خارج از `/api/v1`) |
 | `GET` | `/home` | — | داده صفحه خانه |
 | `GET` | `/locations` | — | موقعیت‌ها / شهرها |
 | `GET` | `/compare/templates/:category` | — | قالب مقایسه بر اساس دسته |
@@ -155,13 +161,18 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `DELETE` | `/account/addresses/:id` | حذف آدرس |
 | `GET` | `/account/orders` | سفارش‌ها |
 | `GET` | `/account/orders/:id` | جزئیات سفارش |
+| `GET` | `/account/reviews` | نظرات و پرسش‌های کاربر |
+| `GET` | `/account/wallet` | کیف پول |
+| `POST` | `/account/wallet/topup` | شارژ کیف پول → `{ paymentUrl }` |
+| `POST` | `/account/wallet/withdraw` | درخواست برداشت |
 
 ### تسویه و پرداخت
 
 | Method | Path | Auth | توضیح |
 |--------|------|------|--------|
 | `POST` | `/checkout/place` | ✅ | ثبت سفارش؛ برای `online` → `{ orderId, paymentUrl }` |
-| `GET` | `/payments/zarinpal/callback` | — | کال‌بک زرین‌پال |
+| `GET` | `/payments/zarinpal/callback` | — | کال‌بک زرین‌پال سفارش |
+| `GET` | `/payments/zarinpal/wallet-callback` | — | کال‌بک شارژ کیف پول |
 
 ### اعلان‌ها — `/api/v1/notifications` (همه Auth)
 

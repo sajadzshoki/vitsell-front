@@ -184,7 +184,11 @@ const categoryLabel = computed(() =>
   || '',
 )
 
+const colorMode = useColorMode()
+
 const imageSrc = computed(() => {
+  const dark = props.product.imageDark?.trim()
+  if (colorMode.value === 'dark' && dark) return dark
   const src = props.product.image?.trim()
   return src || ''
 })

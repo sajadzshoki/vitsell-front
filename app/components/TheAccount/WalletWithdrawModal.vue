@@ -23,10 +23,10 @@
         <TheFormInput
           v-model="amountText"
           :label="$t('مبلغ برداشت')"
-          :placeholder="$t('مثلاً ۵۰۰۰۰۰')"
+          :placeholder="$t('مثلاً 500,000')"
           icon="i-tabler-cash"
           inputmode="numeric"
-          digits-only
+          thousand-sep
           dir="ltr"
           size="lg"
           :error="error || undefined"
@@ -34,17 +34,18 @@
         />
 
         <TheFormInput
-          v-model="cardLast4"
-          :label="$t('چهار رقم آخر کارت')"
-          :placeholder="$t('مثلاً ۴۵۱۲')"
+          v-model="cardNumber"
+          :label="$t('شماره کارت')"
+          :placeholder="$t('6037-9974-1234-5678')"
           icon="i-tabler-credit-card"
           inputmode="numeric"
-          digits-only
+          card-number
           dir="ltr"
           size="lg"
-          maxlength="4"
+          autocomplete="cc-number"
+          required
           :error="cardError || undefined"
-          :help="$t('فعلاً فقط برای نمایش در تراکنش؛ اتصال بانکی بعداً اضافه می‌شود.')"
+          :help="$t('شماره ۱۶ رقمی کارت بانکی خود را وارد کنید')"
         />
 
         <p class="text-[11px] text-dimmed leading-6 flex items-start gap-1.5">
@@ -88,7 +89,7 @@ const toast = useAppToast()
 const { summary, requestWithdraw } = useAccountWallet()
 
 const amountText = ref('')
-const cardLast4 = ref('')
+const cardNumber = ref('')
 const error = ref('')
 const cardError = ref('')
 const submitting = ref(false)
@@ -96,17 +97,21 @@ const submitting = ref(false)
 watch(open, (v) => {
   if (v) {
     amountText.value = ''
-    cardLast4.value = ''
+    cardNumber.value = ''
     error.value = ''
     cardError.value = ''
   }
 })
 
+function digitsOnly(value: string) {
+  return String(value ?? '').replace(/\D/g, '')
+}
+
 function validate() {
   error.value = ''
   cardError.value = ''
 
-  const amount = Number(String(amountText.value).replace(/\D/g, '') || 0)
+  const amount = Number(digitsOnly(amountText.value) || 0)
   if (!amount || amount < walletMinWithdraw) {
     error.value = t('مبلغ کمتر از حداقل مجاز است')
     return null
@@ -116,14 +121,13 @@ function validate() {
     return null
   }
 
-  const digits = String(cardLast4.value).replace(/\D/g, '')
-  if (digits && digits.length !== 4) {
-    cardError.value = t('چهار رقم آخر کارت را درست وارد کنید')
+  const card = digitsOnly(cardNumber.value)
+  if (card.length !== 16) {
+    cardError.value = t('شماره کارت باید ۱۶ رقم باشد')
     return null
   }
 
-  const hint = digits ? `‎****-****-****-${digits}` : undefined
-  return { amount, hint }
+  return { amount, cardNumber: card }
 }
 
 async function onSubmit() {
@@ -132,11 +136,14 @@ async function onSubmit() {
 
   submitting.value = true
   try {
-    const result = await requestWithdraw(payload.amount, payload.hint)
+    const result = await requestWithdraw(payload.amount, payload.cardNumber)
     if (!result.ok) {
-      const msg = result.error === 'insufficient'
-        ? t('موجودی کافی نیست')
-        : t('ثبت درخواست برداشت ناموفق بود')
+      const msg =
+        result.error === 'insufficient'
+          ? t('موجودی کافی نیست')
+          : result.error === 'invalid_card'
+            ? t('شماره کارت باید ۱۶ رقم باشد')
+            : t('ثبت درخواست برداشت ناموفق بود')
       toast.error(msg)
       return
     }

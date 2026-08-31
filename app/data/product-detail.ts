@@ -20,6 +20,7 @@ export type ProductReview = {
   cons?: string[]
   hasImage?: boolean
   helpfulCount: number
+  recommend?: boolean
 }
 
 export type StarDistribution = {
@@ -304,6 +305,39 @@ export function getProductSpecGroups(product: Product): ProductSpecGroup[] {
       ],
     },
   ]
+}
+
+export function buildReviewSummary(reviews: ProductReview[]): ProductReviewSummary {
+  const emptyDistribution: StarDistribution[] = [
+    { stars: 5, percent: 0, count: 0 },
+    { stars: 4, percent: 0, count: 0 },
+    { stars: 3, percent: 0, count: 0 },
+    { stars: 2, percent: 0, count: 0 },
+    { stars: 1, percent: 0, count: 0 },
+  ]
+
+  if (!reviews.length) {
+    return { recommendPercent: 0, distribution: emptyDistribution }
+  }
+
+  const total = reviews.length
+  const distribution = emptyDistribution.map((row) => {
+    const count = reviews.filter(r => r.rating === row.stars).length
+    return {
+      stars: row.stars,
+      count,
+      percent: Math.round((count / total) * 100),
+    }
+  })
+
+  const recommendCount = reviews.filter(r =>
+    typeof r.recommend === 'boolean' ? r.recommend : r.rating >= 4,
+  ).length
+
+  return {
+    recommendPercent: Math.round((recommendCount / total) * 100),
+    distribution,
+  }
 }
 
 export function getProductReviewSummary(product: Product): ProductReviewSummary {

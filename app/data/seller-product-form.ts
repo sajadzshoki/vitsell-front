@@ -26,6 +26,8 @@ export type SellerProductFormValues = {
   oldPrice: string
   stock: string
   image: string
+  imageDark: string
+  gallery: string[]
   badge: string
   fastDelivery: boolean
   colors: ProductColor[]
@@ -147,6 +149,8 @@ export function emptySellerProductForm(category = ''): SellerProductFormValues {
     oldPrice: '',
     stock: '',
     image: '',
+    imageDark: '',
+    gallery: [],
     badge: '',
     fastDelivery: false,
     colors: [],
@@ -196,7 +200,9 @@ export function buildSellerProductFromForm(form: SellerProductFormValues): Produ
     oldPrice: oldPrice > 0 && oldPrice > price ? oldPrice : undefined,
     rating: 0,
     reviews: 0,
-    image: form.image.trim() || '/images/noImage.png',
+    image: form.image.trim() || form.gallery[0] || '/images/noImage.png',
+    ...(form.imageDark.trim() ? { imageDark: form.imageDark.trim() } : {}),
+    ...(form.gallery.length ? { gallery: [...form.gallery] } : {}),
     badge: form.badge || undefined,
     colors: form.colors.length ? form.colors : undefined,
     inStock: stock > 0,

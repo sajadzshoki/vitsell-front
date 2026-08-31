@@ -124,7 +124,7 @@ const tabItems = computed(() => [
 onMounted(async () => {
   loading.value = true
   try {
-    await fetchMyReviews()
+    await fetchMyReviews({ force: true })
   }
   finally {
     loading.value = false

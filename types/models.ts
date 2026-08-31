@@ -110,7 +110,7 @@ export class CartItemSchema extends BaseModel {
 }
 
 export class CategorySchema extends BaseModel {
-  static $columns = ['createdAt', 'icon', 'image', 'id', 'name', 'pageMeta', 'subs', 'suggested', 'updatedAt'] as const
+  static $columns = ['createdAt', 'icon', 'image', 'id', 'name', 'pageMeta', 'subs', 'suggested', 'text', 'updatedAt'] as const
   $columns = CategorySchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -133,6 +133,9 @@ export class CategorySchema extends BaseModel {
   declare subs: any
   @column()
   declare suggested: any | null
+  /** Short category description shown in search / category surfaces */
+  @column()
+  declare text: string | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }
@@ -266,7 +269,7 @@ export class PaymentSchema extends BaseModel {
 }
 
 export class ProductQuestionSchema extends BaseModel {
-  static $columns = ['answer', 'createdAt', 'date', 'id', 'name', 'productId', 'question', 'updatedAt', 'verified'] as const
+  static $columns = ['answer', 'createdAt', 'date', 'id', 'name', 'productId', 'question', 'updatedAt', 'userId', 'verified'] as const
   $columns = ProductQuestionSchema.$columns
   @column()
   declare answer: any | null
@@ -285,11 +288,13 @@ export class ProductQuestionSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
+  declare userId: number | null
+  @column()
   declare verified: boolean
 }
 
 export class ProductReviewSchema extends BaseModel {
-  static $columns = ['cons', 'createdAt', 'date', 'hasImage', 'helpfulCount', 'id', 'name', 'productId', 'pros', 'rating', 'text', 'updatedAt', 'verified'] as const
+  static $columns = ['cons', 'createdAt', 'date', 'hasImage', 'helpfulCount', 'id', 'name', 'productId', 'pros', 'rating', 'recommend', 'text', 'updatedAt', 'userId', 'verified'] as const
   $columns = ProductReviewSchema.$columns
   @column()
   declare cons: any | null
@@ -312,15 +317,19 @@ export class ProductReviewSchema extends BaseModel {
   @column()
   declare rating: number
   @column()
+  declare recommend: boolean
+  @column()
   declare text: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+  @column()
+  declare userId: number | null
   @column()
   declare verified: boolean
 }
 
 export class ProductSchema extends BaseModel {
-  static $columns = ['badge', 'brand', 'category', 'categoryLabel', 'colors', 'createdAt', 'fastDelivery', 'gallery', 'id', 'image', 'inStock', 'oldPrice', 'price', 'rating', 'reviews', 'scores', 'shortDesc', 'shortName', 'soldCount', 'specs', 'title', 'updatedAt', 'viewCount'] as const
+  static $columns = ['badge', 'brand', 'category', 'categoryLabel', 'colors', 'createdAt', 'fastDelivery', 'gallery', 'id', 'image', 'imageDark', 'inStock', 'oldPrice', 'price', 'rating', 'reviews', 'scores', 'shortDesc', 'shortName', 'soldCount', 'specs', 'title', 'updatedAt', 'viewCount'] as const
   $columns = ProductSchema.$columns
   @column()
   declare badge: string | null
@@ -342,6 +351,8 @@ export class ProductSchema extends BaseModel {
   declare id: string
   @column()
   declare image: string
+  @column()
+  declare imageDark: string | null
   @column()
   declare inStock: boolean
   @column()

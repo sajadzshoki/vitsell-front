@@ -19,6 +19,8 @@ export type Product = {
   rating: number
   reviews: number
   image: string
+  /** Optional product image for dark color mode */
+  imageDark?: string
   gallery?: string[]
   badge?: string
   colors?: ProductColor[]

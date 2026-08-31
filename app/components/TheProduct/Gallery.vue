@@ -193,10 +193,14 @@ const dragMoved = ref(false)
 
 const liked = computed(() => isInWishlist(props.product.id))
 
+const colorMode = useColorMode()
+
 const gallery = computed(() => {
   const images = props.product.gallery?.filter(Boolean) ?? []
   if (images.length) return images
-  const fallback = props.product.image || 'noImage.png'
+  const dark = props.product.imageDark?.trim()
+  const light = props.product.image?.trim()
+  const fallback = (colorMode.value === 'dark' && dark ? dark : light) || 'noImage.png'
   return [fallback, fallback, fallback, fallback]
 })
 

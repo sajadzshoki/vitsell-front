@@ -11,6 +11,14 @@ export function useAuth() {
     maxAge: 60 * 60 * 24 * 30,
   })
 
+  async function checkPhone(phone: string) {
+    return usePost<{ hasPassword: boolean }>(
+      '/auth/check',
+      { phone },
+      { headers: { 'no-error': true } },
+    )
+  }
+
   async function requestOtp(phone: string) {
     return usePost<{ message: string, expiresIn: number, devCode?: string }>(
       '/auth/otp/request',
@@ -31,6 +39,19 @@ export function useAuth() {
     return usePost<AuthVerifyResult>(
       '/auth/login',
       { phone, password },
+      { headers: { 'no-error': true } },
+    )
+  }
+
+  async function resetPassword(payload: {
+    phone: string
+    code: string
+    password: string
+    passwordConfirmation: string
+  }) {
+    return usePost<AuthVerifyResult & { message?: string }>(
+      '/auth/password/reset',
+      payload,
       { headers: { 'no-error': true } },
     )
   }
@@ -56,9 +77,11 @@ export function useAuth() {
 
   return {
     token,
+    checkPhone,
     requestOtp,
     verifyOtp,
     loginWithPassword,
+    resetPassword,
     fetchMe,
     logoutRemote,
     setToken,

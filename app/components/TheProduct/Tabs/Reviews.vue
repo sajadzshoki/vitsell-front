@@ -4,7 +4,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
       <div class="flex flex-col items-center justify-center text-center lg:items-start lg:text-start">
         <div class="text-4xl md:text-5xl font-black text-highlighted num">
-          {{ product.rating.toLocaleString('fa-IR') }}
+          {{ displayRating.toLocaleString('fa-IR') }}
         </div>
         <div class="flex gap-0.5 my-2">
           <UIcon
@@ -12,11 +12,11 @@
             :key="star"
             name="i-tabler-star-filled"
             class="size-5"
-            :class="star <= Math.round(product.rating) ? 'text-warning' : 'text-accented'"
+            :class="star <= Math.round(displayRating) ? 'text-warning' : 'text-accented'"
           />
         </div>
         <div class="text-xs text-muted num">
-          {{ product.reviews.toLocaleString('fa-IR') }} {{ $t('دیدگاه') }}
+          {{ displayReviewCount.toLocaleString('fa-IR') }} {{ $t('دیدگاه') }}
         </div>
       </div>
 
@@ -181,7 +181,13 @@
         class="text-center py-10"
       >
         <UIcon name="i-tabler-message-2" class="size-12 text-dimmed mx-auto mb-3" />
-        <p class="text-sm text-muted">{{ $t('دیدگاهی با این فیلتر یافت نشد') }}</p>
+        <p class="text-sm text-muted">
+          {{
+            allReviews.length === 0
+              ? $t('هنوز دیدگاهی برای این محصول ثبت نشده است')
+              : $t('دیدگاهی با این فیلتر یافت نشد')
+          }}
+        </p>
       </div>
     </div>
   </div>
@@ -198,6 +204,9 @@ const props = defineProps<{
 const {
   reviewSummary,
   criteriaScores,
+  displayRating,
+  displayReviewCount,
+  allReviews,
   reviewSort,
   filterVerified,
   filterWithImage,

@@ -159,6 +159,9 @@ import { walletMinWithdraw } from '~/data/account-wallet'
 import type { WalletTxFilter } from '~/composables/useAccountWallet'
 
 const { summary, fetchWallet, filterTransactions } = useAccountWallet()
+const route = useRoute()
+const toast = useAppToast()
+const { t } = useI18n()
 
 const loading = ref(true)
 const topUpOpen = ref(false)
@@ -200,10 +203,26 @@ const filterChips: { label: string; value: WalletTxFilter }[] = [
 onMounted(async () => {
   loading.value = true
   try {
-    await fetchWallet()
+    await fetchWallet({ force: true })
   }
   finally {
     loading.value = false
+  }
+
+  const topup = route.query.topup
+  if (topup === 'ok') {
+    toast.success(t('موجودی با موفقیت افزایش یافت'))
+  }
+  else if (topup === 'cancelled') {
+    toast.error(t('پرداخت لغو شد'))
+  }
+  else if (topup === 'failed') {
+    toast.error(t('پرداخت ناموفق بود'))
+  }
+  if (typeof topup === 'string') {
+    const q = { ...route.query }
+    delete q.topup
+    navigateTo({ path: route.path, query: q }, { replace: true })
   }
 })
 </script>
