@@ -37,6 +37,14 @@ export function useSellerLayout() {
     /^\/seller\/banners\/[^/]+/.test(route.path) && !isBannerCreate.value,
   )
 
+  const isBlogCreate = computed(() =>
+    route.path === '/seller/blog/new' || route.path === '/seller/blog/new/',
+  )
+
+  const isBlogEdit = computed(() =>
+    /^\/seller\/blog\/[^/]+/.test(route.path) && !isBlogCreate.value,
+  )
+
   const isDealCreate = computed(() =>
     route.path === '/seller/deals/new' || route.path === '/seller/deals/new/',
   )
@@ -101,6 +109,12 @@ export function useSellerLayout() {
     if (isBannerEdit.value) {
       return 'ویرایش بنر'
     }
+    if (isBlogCreate.value) {
+      return 'افزودن مطلب'
+    }
+    if (isBlogEdit.value) {
+      return 'ویرایش مطلب'
+    }
     if (isDealCreate.value) {
       return 'افزودن شگفت‌انگیز'
     }
@@ -140,6 +154,8 @@ export function useSellerLayout() {
     isCategoryEdit,
     isBannerCreate,
     isBannerEdit,
+    isBlogCreate,
+    isBlogEdit,
     isDealCreate,
     isDealEdit,
     isNotificationCreate,

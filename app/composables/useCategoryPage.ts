@@ -11,16 +11,6 @@ type CategoryPagePayload = {
   suggested: CategorySuggestedItem[]
 }
 
-type BlogPostSummary = {
-  id: string
-  title: string
-  excerpt: string
-  image: string
-  category: string
-  readTime: string
-  relatedCategories?: string[]
-}
-
 const emptyMeta = (): CategoryPageMeta => ({
   hero: {
     image: '',
@@ -79,14 +69,16 @@ export function useCategoryPage() {
       throw createError({ statusCode: 404, statusMessage: t('دسته‌بندی یافت نشد') })
     }
 
-    const [{ result: cat }, { result: page }, popular, deals, { result: blog }] = await Promise.all([
+    const { relatedForCategory, ensureLoaded: ensureBlog } = useBlog()
+    await ensureBlog()
+
+    const [{ result: cat }, { result: page }, popular, deals] = await Promise.all([
       useGet<Category>(`/categories/${encodeURIComponent(id)}`, { headers: { 'no-error': true } }),
       useGet<CategoryPagePayload>(`/category-pages/${encodeURIComponent(id)}`, {
         headers: { 'no-error': true },
       }),
       fetchProducts({ category: id, sort: 'bestselling', pageSize: 12 }),
       fetchProducts({ category: id, onlyDiscount: true, sort: 'bestselling', pageSize: 8 }),
-      useGet<BlogPostSummary[]>('/blog', { headers: { 'no-error': true } }),
     ])
 
     const resolved = cat ?? getCategoryById(id)
@@ -130,22 +122,16 @@ export function useCategoryPage() {
         || fallbackImage,
     }))
 
-    const posts = Array.isArray(blog) ? blog : []
-    articles.value = posts
-      .filter(post =>
-        !post.relatedCategories?.length
-        || post.relatedCategories.includes(id),
-      )
-      .slice(0, 4)
-      .map(post => ({
-        id: post.id,
-        title: post.title,
-        excerpt: post.excerpt,
-        image: post.image,
-        category: post.category,
-        readTime: post.readTime,
-        to: `/blog/${post.id}`,
-      }))
+    const posts = relatedForCategory(id, 4)
+    articles.value = posts.map(post => ({
+      id: post.id,
+      title: post.title,
+      excerpt: post.excerpt,
+      image: post.image,
+      category: post.category,
+      readTime: post.readTime,
+      to: `/blog/${post.id}`,
+    }))
   }
 
   watch(catId, () => {

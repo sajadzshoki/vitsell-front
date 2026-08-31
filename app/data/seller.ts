@@ -3,6 +3,8 @@ export type SellerTabId =
   | 'products'
   | 'categories'
   | 'banners'
+  | 'blog'
+  | 'about'
   | 'deals'
   | 'promotions'
   | 'notifications'
@@ -131,6 +133,8 @@ export const sellerNavItems: {
   { id: 'products', label: 'محصولات', icon: 'i-tabler-package', to: '/seller/products' },
   { id: 'categories', label: 'دسته‌بندی‌ها', icon: 'i-tabler-category', to: '/seller/categories' },
   { id: 'banners', label: 'بنرها', icon: 'i-tabler-photo', to: '/seller/banners' },
+  { id: 'blog', label: 'وبلاگ', icon: 'i-tabler-news', to: '/seller/blog' },
+  { id: 'about', label: 'درباره ما', icon: 'i-tabler-building-store', to: '/seller/about' },
   { id: 'deals', label: 'شگفت‌انگیزها', icon: 'i-tabler-bolt', to: '/seller/deals' },
   { id: 'promotions', label: 'تخفیف و پروموشن', icon: 'i-tabler-discount-2', to: '/seller/promotions' },
   { id: 'notifications', label: 'اعلان‌ها', icon: 'i-tabler-bell', to: '/seller/notifications' },

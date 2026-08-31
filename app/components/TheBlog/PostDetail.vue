@@ -1,11 +1,17 @@
 <template>
   <article class="flex flex-col gap-6 md:gap-8">
     <nav class="text-xs text-muted flex items-center gap-2 flex-wrap">
-      <NuxtLink to="/" class="hover:text-primary transition">
+      <NuxtLink
+        to="/"
+        class="hover:text-primary transition cursor-pointer"
+      >
         {{ $t('خانه') }}
       </NuxtLink>
       <span class="text-dimmed">/</span>
-      <NuxtLink :to="blogIndexPath" class="hover:text-primary transition">
+      <NuxtLink
+        :to="blogIndexPath"
+        class="hover:text-primary transition cursor-pointer"
+      >
         {{ $t('بلاگ') }}
       </NuxtLink>
       <span class="text-dimmed">/</span>
@@ -15,24 +21,59 @@
     </nav>
 
     <div class="bg-default border border-muted rounded-2xl overflow-hidden">
-      <div class="aspect-[21/9] md:aspect-[2.4/1] bg-muted overflow-hidden">
+      <div class="relative aspect-[21/9] md:aspect-[2.4/1] bg-muted overflow-hidden">
         <img
+          v-if="post.image"
           :src="post.image"
           :alt="post.title"
           class="size-full object-cover"
         >
+        <div
+          v-else
+          class="size-full grid place-items-center"
+        >
+          <TheIcon
+            icon-type="img"
+            name="noImage.png"
+            class="size-16 opacity-60"
+          />
+        </div>
+        <div
+          v-if="post.popular"
+          class="absolute top-4 start-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-error text-inverted text-[11px] font-medium px-3 py-1"
+        >
+          <UIcon
+            name="i-tabler-heart-filled"
+            class="size-3.5"
+          />
+          {{ $t('مورد علاقه کاربران') }}
+        </div>
       </div>
 
       <div class="p-5 md:p-8">
         <div class="flex items-center gap-2 flex-wrap mb-3">
-          <span class="text-[11px] font-medium text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+          <NuxtLink
+            :to="{ path: blogIndexPath, query: { category: post.category } }"
+            class="text-[11px] font-medium text-primary bg-primary/10 px-2.5 py-0.5 rounded-full cursor-pointer hover:bg-primary/15 transition"
+          >
             {{ $t(post.category) }}
-          </span>
+          </NuxtLink>
           <span class="text-[11px] text-dimmed num">
             {{ $t(post.date) }}
           </span>
           <span class="text-[11px] text-dimmed">
             · {{ $t(post.readTime) }}
+          </span>
+          <span
+            v-if="(post.engagement ?? 0) > 0"
+            class="inline-flex items-center gap-1 text-[11px] text-dimmed num"
+          >
+            ·
+            <UIcon
+              name="i-tabler-flame"
+              class="size-3.5 text-warning"
+            />
+            {{ (post.engagement ?? 0).toLocaleString('fa-IR') }}
           </span>
         </div>
 
@@ -42,6 +83,13 @@
 
         <p class="text-sm text-muted mb-6">
           {{ $t('نویسنده') }}: {{ $t(post.author) }}
+        </p>
+
+        <p
+          v-if="post.excerpt"
+          class="text-sm md:text-base text-toned leading-8 mb-6 p-4 rounded-xl bg-muted/50 border border-muted"
+        >
+          {{ $t(post.excerpt) }}
         </p>
 
         <div class="flex flex-col gap-4 text-sm md:text-base text-toned leading-8">
@@ -58,7 +106,10 @@
           class="mt-8 p-4 md:p-5 rounded-xl bg-muted/40 border border-muted"
         >
           <h2 class="text-sm font-bold text-highlighted mb-3 flex items-center gap-2">
-            <UIcon name="i-tabler-list-check" class="size-4 text-primary" />
+            <UIcon
+              name="i-tabler-list-check"
+              class="size-4 text-primary"
+            />
             {{ $t('نکات کلیدی') }}
           </h2>
           <ul class="flex flex-col gap-2.5">
@@ -67,7 +118,10 @@
               :key="index"
               class="flex items-start gap-2.5 text-sm text-toned leading-7"
             >
-              <UIcon name="i-tabler-circle-check" class="size-4 text-primary shrink-0 mt-1" />
+              <UIcon
+                name="i-tabler-circle-check"
+                class="size-4 text-primary shrink-0 mt-1"
+              />
               <span>{{ $t(item) }}</span>
             </li>
           </ul>
@@ -83,7 +137,7 @@
           <UButton
             v-for="cat in categoryLinks"
             :key="cat.id"
-            :to="toCategoryRoute(cat.id)"
+            :to="toSearchRoute({ category: cat.id })"
             color="primary"
             variant="soft"
             size="xs"
@@ -112,39 +166,19 @@
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <NuxtLink
+        <TheBlogPostCard
           v-for="item in morePosts"
           :key="item.id"
-          :to="getBlogPostPath(item.id)"
-          class="group bg-default border border-muted rounded-2xl overflow-hidden transition hover:(border-primary/40 shadow-sm)"
-        >
-          <div class="aspect-[16/10] bg-muted overflow-hidden">
-            <img
-              :src="item.image"
-              :alt="item.title"
-              class="size-full object-cover transition duration-500 group-hover:scale-105"
-              loading="lazy"
-            >
-          </div>
-          <div class="p-4">
-            <span class="text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-              {{ $t(item.category) }}
-            </span>
-            <h3 class="text-sm font-bold text-default line-clamp-2 mt-2 group-hover:text-primary transition">
-              {{ $t(item.title) }}
-            </h3>
-          </div>
-        </NuxtLink>
+          :post="item"
+        />
       </div>
     </section>
   </article>
 </template>
 
 <script setup lang="ts">
-import { getCategoryById, toCategoryRoute } from '~/data/categories'
+import { getCategoryById, toSearchRoute } from '~/data/categories'
 import {
-  getBlogPostPath,
-  getMoreBlogPosts,
   staticPagePaths,
   type StaticBlogPost,
 } from '~/data/static-pages'
@@ -156,14 +190,10 @@ const props = defineProps<{
 
 const blogIndexPath = staticPagePaths.blog
 
-const morePosts = computed(() =>
-  props.morePosts?.length
-    ? props.morePosts
-    : getMoreBlogPosts(props.post.id),
-)
+const morePosts = computed(() => props.morePosts ?? [])
 
 const categoryLinks = computed(() =>
-  props.post.relatedCategories
+  (props.post.relatedCategories ?? [])
     .map(id => getCategoryById(id))
     .filter((cat): cat is NonNullable<typeof cat> => Boolean(cat)),
 )

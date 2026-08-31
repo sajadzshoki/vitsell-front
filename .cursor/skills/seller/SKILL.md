@@ -53,6 +53,8 @@ description: >-
 | 5 | اعلان‌ها | `/seller/notifications` | مشخص‌شده پایین + [notifications.md](notifications.md) |
 | 6 | پرسش و پاسخ | `/seller/questions` | مشخص‌شده پایین + [questions.md](questions.md) |
 | 7 | تخفیف و پروموشن | `/seller/promotions` | مشخص‌شده پایین + [promotions.md](promotions.md) |
+| 8 | وبلاگ | `/seller/blog` | مشخص‌شده پایین + [blog.md](blog.md) |
+| 9 | درباره ما | `/seller/about` | مشخص‌شده پایین + [about.md](about.md) |
 | — | جزئیات محصول | `/seller/products/:id` | تب‌ها: خلاصه / ویرایش / قیمت / سفارش / نظرات / پرسش |
 | — | محصولات / سفارش / نظرات / مالی / فروشگاه | موجود | الگو برای بخش‌های بعدی |
 
@@ -354,6 +356,56 @@ CRUD بنرهای سایت در پنل ادمین. فعلاً فرانت‌only 
 | کد جدید/ویرایش | `/seller/promotions/codes/new`, `.../codes/:id` |
 | پرومو جدید/ویرایش | `/seller/promotions/promos/new`, `.../promos/:id` |
 | nav | `{ id: 'promotions', label: 'تخفیف و پروموشن', icon: 'i-tabler-discount-2' }` |
+
+---
+
+## بخش ۸ — وبلاگ
+
+### هدف
+
+CRUD مطالب بلاگ سایت. فرانت‌only با state مشترک استورفرانت (`useBlog`).
+
+جزئیات: [blog.md](blog.md)
+
+### مسیرها
+
+| قطعه | مسیر |
+|---|---|
+| لیست | `/seller/blog` → `TheSellerBlogPosts` |
+| ایجاد | `/seller/blog/new` → `TheSellerBlogForm` |
+| ویرایش | `/seller/blog/:id` |
+| nav | `{ id: 'blog', label: 'وبلاگ', icon: 'i-tabler-news', to: '/seller/blog' }` |
+
+### چک قبل از اتمام (وبلاگ)
+
+- [ ] nav + صفحات + فرم با آپلود فایل تصویر
+- [ ] فیلتر دسته/وضعیت؛ toggle انتشار؛ حذف با تأیید
+- [ ] استورفرانت `/blog` و `/blog/:id` از همان state
+- [ ] i18n / RTL / Nuxt UI
+
+---
+
+## بخش ۹ — درباره ما
+
+### هدف
+
+ویرایش یکپارچهٔ صفحه `/about`. فرانت‌only با sync به `useAbout`.
+
+جزئیات: [about.md](about.md)
+
+### مسیرها
+
+| قطعه | مسیر |
+|---|---|
+| صفحه | `/seller/about` → `TheSellerAboutForm` |
+| nav | `{ id: 'about', label: 'درباره ما', icon: 'i-tabler-building-store', to: '/seller/about' }` |
+
+### چک قبل از اتمام (درباره ما)
+
+- [ ] هیرو + داستان + آمار + ارزش‌ها + مسیر رشد + تیم + CTA قابل ویرایش
+- [ ] آپلود تصویر هیرو و اعضای تیم
+- [ ] ذخیره → استورفرانت `/about` به‌روز می‌شود
+- [ ] i18n / RTL / Nuxt UI
 
 ---
 

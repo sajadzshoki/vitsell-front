@@ -52,6 +52,10 @@ Layout: `seller` — middleware `auth` + `admin` (فقط `role === 'admin'`)
 | `/seller/orders/:id` | `seller/orders/[id].vue` | جزئیات سفارش |
 | `/seller/reviews` | `seller/reviews.vue` | نظرات |
 | `/seller/finance` | `seller/finance.vue` | مالی / تسویه |
+| `/seller/blog` | `seller/blog/index.vue` | مدیریت وبلاگ |
+| `/seller/blog/new` | `seller/blog/new.vue` | افزودن مطلب |
+| `/seller/blog/:id` | `seller/blog/[id].vue` | ویرایش مطلب |
+| `/seller/about` | `seller/about.vue` | صفحه درباره ما |
 
 ### محتوا و صفحات ثابت
 
