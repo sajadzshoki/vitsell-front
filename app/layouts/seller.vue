@@ -163,8 +163,9 @@ const {
 } = useSellerLayout()
 const { fetchSeller } = useSeller()
 
-// Prefetch for all seller subpages; dashboard does its own force refresh + loading UI.
-if (!sellerLoaded.value) {
-  await useAsyncData('seller-panel', () => fetchSeller())
-}
+// Always register useAsyncData (never behind a branch). fetchSeller short-circuits when loaded.
+await useAsyncData('seller-panel', async () => {
+  const { ok } = await fetchSeller()
+  return ok
+})
 </script>

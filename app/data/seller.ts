@@ -131,6 +131,10 @@ export const sellerNavItems: {
 }[] = [
   { id: 'dashboard', label: 'پیشخوان مدیریت', icon: 'i-tabler-layout-dashboard', to: '/seller' },
   { id: 'products', label: 'محصولات', icon: 'i-tabler-package', to: '/seller/products' },
+  { id: 'orders', label: 'سفارش‌ها', icon: 'i-tabler-shopping-bag', to: '/seller/orders' },
+  { id: 'questions', label: 'پرسش و پاسخ', icon: 'i-tabler-message-question', to: '/seller/questions' },
+  { id: 'reviews', label: 'نظرات مشتریان', icon: 'i-tabler-message-2', to: '/seller/reviews' },
+  { id: 'finance', label: 'مالی و تسویه', icon: 'i-tabler-wallet', to: '/seller/finance' },
   { id: 'categories', label: 'دسته‌بندی‌ها', icon: 'i-tabler-category', to: '/seller/categories' },
   { id: 'banners', label: 'بنرها', icon: 'i-tabler-photo', to: '/seller/banners' },
   { id: 'blog', label: 'وبلاگ', icon: 'i-tabler-news', to: '/seller/blog' },
@@ -139,10 +143,6 @@ export const sellerNavItems: {
   { id: 'promotions', label: 'تخفیف و پروموشن', icon: 'i-tabler-discount-2', to: '/seller/promotions' },
   { id: 'notifications', label: 'اعلان‌ها', icon: 'i-tabler-bell', to: '/seller/notifications' },
   { id: 'footer', label: 'فوتر', icon: 'i-tabler-layout-bottombar', to: '/seller/footer' },
-  { id: 'orders', label: 'سفارش‌ها', icon: 'i-tabler-shopping-bag', to: '/seller/orders' },
-  { id: 'reviews', label: 'نظرات مشتریان', icon: 'i-tabler-message-2', to: '/seller/reviews' },
-  { id: 'questions', label: 'پرسش و پاسخ', icon: 'i-tabler-message-question', to: '/seller/questions' },
-  { id: 'finance', label: 'مالی و تسویه', icon: 'i-tabler-wallet', to: '/seller/finance' },
   { id: 'shop', label: 'تنظیمات سایت', icon: 'i-tabler-settings', to: '/seller/shop' },
 ]
 

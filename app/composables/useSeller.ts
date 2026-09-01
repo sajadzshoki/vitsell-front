@@ -104,6 +104,45 @@ export function useSeller() {
 
   type ListingApiItem = SellerListing & { product?: Product }
 
+  function normalizeShop(raw: Partial<SellerShop> | null | undefined): SellerShop {
+    return {
+      name: raw?.name ?? '',
+      slug: raw?.slug ?? '',
+      phone: raw?.phone ?? '',
+      email: raw?.email ?? '',
+      city: raw?.city ?? '',
+      about: raw?.about ?? '',
+      rating: Number(raw?.rating) || 0,
+      reviewCount: Number(raw?.reviewCount) || 0,
+      joinDate: raw?.joinDate ?? '',
+    }
+  }
+
+  function normalizeSales(items: SellerSalesPoint[]): SellerSalesPoint[] {
+    return items.map(point => ({
+      label: point?.label ?? '',
+      value: Number(point?.value) || 0,
+    }))
+  }
+
+  function normalizeOrders(items: SellerOrder[]): SellerOrder[] {
+    return items.map(order => ({
+      ...order,
+      city: order.city ?? '',
+      shippingMethod: order.shippingMethod ?? '',
+      paymentMethod: order.paymentMethod ?? '',
+      customerName: order.customerName ?? '',
+      status: order.status,
+      address: {
+        province: order.address?.province ?? '',
+        city: order.address?.city ?? '',
+        address: order.address?.address ?? '',
+        postalCode: order.address?.postalCode ?? '',
+      },
+      items: Array.isArray(order.items) ? order.items : [],
+    }))
+  }
+
   function applyListings(items: ListingApiItem[]) {
     const products: Product[] = []
     listings.value = items.map((item) => {
@@ -173,12 +212,12 @@ export function useSeller() {
         ])
 
         const shopOk = Boolean(shopRes.result)
-        if (shopRes.result) shop.value = shopRes.result
+        if (shopRes.result) shop.value = normalizeShop(shopRes.result)
         if (Array.isArray(listingsRes.result)) applyListings(listingsRes.result)
-        if (Array.isArray(ordersRes.result)) orders.value = ordersRes.result
+        if (Array.isArray(ordersRes.result)) orders.value = normalizeOrders(ordersRes.result)
         if (Array.isArray(reviewsRes.result)) reviews.value = reviewsRes.result
         if (Array.isArray(payoutsRes.result)) payouts.value = payoutsRes.result
-        if (Array.isArray(salesRes.result)) sales.value = salesRes.result
+        if (Array.isArray(salesRes.result)) sales.value = normalizeSales(salesRes.result)
 
         // Only mark loaded when auth-critical shop call succeeds so empty/failed runs can retry.
         if (shopOk) {
@@ -388,8 +427,8 @@ export function useSeller() {
       headers: { 'no-error': true },
     })
     if (error || !result) return { result: null as SellerShop | null, error }
-    shop.value = result
-    return { result, error: null as null }
+    shop.value = normalizeShop(result)
+    return { result: shop.value, error: null as null }
   }
 
   async function requestPayout() {

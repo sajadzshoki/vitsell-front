@@ -34,7 +34,7 @@
             v-if="!compact"
             class="text-xs text-muted hidden sm:block"
           >
-            {{ order.customerName }} · {{ $t(order.city) }}
+            {{ order.customerName }}<template v-if="order.city"> · {{ $t(order.city) }}</template>
           </div>
           <span class="text-xs text-primary font-medium inline-flex items-center gap-0.5">
             {{ $t('جزئیات') }}
@@ -85,7 +85,9 @@
             v-if="!compact"
             class="truncate mt-0.5"
           >
-            {{ $t(order.shippingMethod) }} · {{ $t(order.paymentMethod) }}
+            <template v-if="order.shippingMethod">{{ $t(order.shippingMethod) }}</template>
+            <template v-if="order.shippingMethod && order.paymentMethod"> · </template>
+            <template v-if="order.paymentMethod">{{ $t(order.paymentMethod) }}</template>
           </div>
         </div>
 
@@ -118,8 +120,10 @@ const { resolveProduct } = useSeller()
 
 const orderLink = computed(() => `/seller/orders/${encodeURIComponent(props.order.id)}`)
 
-const statusMeta = computed(() => sellerOrderStatusMeta[props.order.status])
-
+const statusMeta = computed(() =>
+  sellerOrderStatusMeta[props.order.status]
+  ?? sellerOrderStatusMeta.new,
+)
 const visibleItems = computed(() =>
   props.order.items.slice(0, 3).map(item => ({
     ...item,

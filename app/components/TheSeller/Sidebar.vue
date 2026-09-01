@@ -11,7 +11,7 @@
           {{ shop.name }}
         </div>
         <div class="text-[11px] text-muted truncate">
-          {{ $t(shop.city) }} · {{ $t('امتیاز') }}
+          <template v-if="shop.city">{{ $t(shop.city) }} · </template>{{ $t('امتیاز') }}
           <span class="num">{{ shop.rating.toLocaleString('fa-IR') }}</span>
         </div>
       </div>

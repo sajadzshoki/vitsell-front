@@ -25,7 +25,7 @@
           />
         </div>
         <span class="text-[10px] text-muted truncate w-full text-center">
-          {{ $t(point.label) }}
+          {{ point.label ? $t(point.label) : '' }}
         </span>
       </div>
     </div>
