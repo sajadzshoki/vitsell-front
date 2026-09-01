@@ -47,6 +47,8 @@ export function useCategoryPage() {
     to: string
   }[]>([])
   const productCount = ref(0)
+  const pending = ref(false)
+  const loaded = ref(false)
 
   const blogRoute = '/blog'
 
@@ -63,75 +65,86 @@ export function useCategoryPage() {
   }
 
   async function load() {
-    await fetchCategories({ withCounts: false })
     const id = catId.value
-    if (!id) {
-      throw createError({ statusCode: 404, statusMessage: t('دسته‌بندی یافت نشد') })
+    pending.value = true
+    if (category.value?.id !== id) {
+      category.value = undefined
+      loaded.value = false
     }
-
-    const { relatedForCategory, ensureLoaded: ensureBlog } = useBlog()
-    await ensureBlog()
-
-    const [{ result: cat }, { result: page }, popular, deals] = await Promise.all([
-      useGet<Category>(`/categories/${encodeURIComponent(id)}`, { headers: { 'no-error': true } }),
-      useGet<CategoryPagePayload>(`/category-pages/${encodeURIComponent(id)}`, {
-        headers: { 'no-error': true },
-      }),
-      fetchProducts({ category: id, sort: 'bestselling', pageSize: 12 }),
-      fetchProducts({ category: id, onlyDiscount: true, sort: 'bestselling', pageSize: 8 }),
-    ])
-
-    const resolved = cat ?? getCategoryById(id)
-    if (!resolved) {
-      throw createError({ statusCode: 404, statusMessage: t('دسته‌بندی یافت نشد') })
-    }
-
-    category.value = resolved
-    meta.value = page?.meta ?? emptyMeta()
-    if (!meta.value.hero.title) {
-      meta.value = {
-        ...meta.value,
-        hero: {
-          ...meta.value.hero,
-          title: resolved.name,
-          subtitle: meta.value.hero.subtitle || resolved.name,
-        },
-        seo: {
-          heading: meta.value.seo.heading || resolved.name,
-          paragraphs: meta.value.seo.paragraphs,
-        },
+    try {
+      await fetchCategories({ withCounts: false })
+      if (!id) {
+        throw createError({ statusCode: 404, statusMessage: t('دسته‌بندی یافت نشد') })
       }
+
+      const { relatedForCategory, ensureLoaded: ensureBlog } = useBlog()
+      await ensureBlog()
+
+      const [{ result: cat }, { result: page }, popular, deals] = await Promise.all([
+        useGet<Category>(`/categories/${encodeURIComponent(id)}`, { headers: { 'no-error': true } }),
+        useGet<CategoryPagePayload>(`/category-pages/${encodeURIComponent(id)}`, {
+          headers: { 'no-error': true },
+        }),
+        fetchProducts({ category: id, sort: 'bestselling', pageSize: 12 }),
+        fetchProducts({ category: id, onlyDiscount: true, sort: 'bestselling', pageSize: 8 }),
+      ])
+
+      const resolved = cat ?? getCategoryById(id)
+      if (!resolved) {
+        throw createError({ statusCode: 404, statusMessage: t('دسته‌بندی یافت نشد') })
+      }
+
+      category.value = resolved
+      meta.value = page?.meta ?? emptyMeta()
+      if (!meta.value.hero.title) {
+        meta.value = {
+          ...meta.value,
+          hero: {
+            ...meta.value.hero,
+            title: resolved.name,
+            subtitle: meta.value.hero.subtitle || resolved.name,
+          },
+          seo: {
+            heading: meta.value.seo.heading || resolved.name,
+            paragraphs: meta.value.seo.paragraphs,
+          },
+        }
+      }
+
+      popularProducts.value = popular.result.items
+      dealProducts.value = deals.result.items
+      productCount.value = popular.result.total
+      brands.value = Array.from(new Set(popular.result.items.map(p => p.brand)))
+        .sort((a, b) => a.localeCompare(b, 'fa'))
+
+      const fallbackImage = meta.value.hero.image || popular.result.items[0]?.image || ''
+      const apiSuggested = page?.suggested ?? []
+      suggestedItems.value = apiSuggested.map((item, index) => ({
+        ...item,
+        image:
+          item.image
+          || popular.result.items.find(p =>
+            p.title.includes(item.query) || p.brand.includes(item.query),
+          )?.image
+          || popular.result.items[index % Math.max(popular.result.items.length, 1)]?.image
+          || fallbackImage,
+      }))
+
+      const posts = relatedForCategory(id, 4)
+      articles.value = posts.map(post => ({
+        id: post.id,
+        title: post.title,
+        excerpt: post.excerpt,
+        image: post.image,
+        category: post.category,
+        readTime: post.readTime,
+        to: `/blog/${post.id}`,
+      }))
+      loaded.value = true
     }
-
-    popularProducts.value = popular.result.items
-    dealProducts.value = deals.result.items
-    productCount.value = popular.result.total
-    brands.value = Array.from(new Set(popular.result.items.map(p => p.brand)))
-      .sort((a, b) => a.localeCompare(b, 'fa'))
-
-    const fallbackImage = meta.value.hero.image || popular.result.items[0]?.image || ''
-    const apiSuggested = page?.suggested ?? []
-    suggestedItems.value = apiSuggested.map((item, index) => ({
-      ...item,
-      image:
-        item.image
-        || popular.result.items.find(p =>
-          p.title.includes(item.query) || p.brand.includes(item.query),
-        )?.image
-        || popular.result.items[index % Math.max(popular.result.items.length, 1)]?.image
-        || fallbackImage,
-    }))
-
-    const posts = relatedForCategory(id, 4)
-    articles.value = posts.map(post => ({
-      id: post.id,
-      title: post.title,
-      excerpt: post.excerpt,
-      image: post.image,
-      category: post.category,
-      readTime: post.readTime,
-      to: `/blog/${post.id}`,
-    }))
+    finally {
+      pending.value = false
+    }
   }
 
   watch(catId, () => {
@@ -157,5 +170,7 @@ export function useCategoryPage() {
     searchAllRoute,
     searchRoute,
     brandRoute,
+    pending: computed(() => pending.value),
+    loaded: computed(() => loaded.value),
   }
 }

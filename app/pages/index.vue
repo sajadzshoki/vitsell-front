@@ -1,15 +1,11 @@
 <template>
   <main class="flex flex-col gap-6 md:gap-10">
-    <TheHeroCarousel
-      v-if="heroSlides.length"
-      class="<md:hidden"
-    />
+    <TheHeroCarousel class="<md:hidden" />
 
-    <TheHomeCircleStrip v-if="circles.length" />
-    <TheHomeDeals v-if="dealsOfTheDay.length" />
+    <TheHomeCircleStrip />
+    <TheHomeDeals />
     <TheHomeForYou />
-    <TheHomeCategories v-if="categories.length" />
-
+    <TheHomeCategories />
 
     <TheHomeBanners
       v-if="bannerRows[0]"
@@ -35,7 +31,7 @@
       :shelf="categoryShelves[1]"
     />
 
-    <TheHomeBrands v-if="brands.length" />
+    <TheHomeBrands />
 
     <TheHomeBanners
       v-if="bannerRows[2]"
@@ -48,11 +44,8 @@
     />
 
     <TheHomeBlog />
-    <TheHomeFeatures
-      v-if="heroFeatures.length"
-      class="<md:hidden"
-    />
-    <TheHomePromos v-if="promos.length" />
+    <TheHomeFeatures class="<md:hidden" />
+    <TheHomePromos />
 
     <TheHomeAppDownload />
 
@@ -63,16 +56,9 @@
 <script lang="ts" setup>
 const {
   fetchHome,
-  heroSlides,
-  heroFeatures,
-  circles,
-  categories,
-  brands,
-  promos,
-  dealsOfTheDay,
   bannerRows,
   categoryShelves,
 } = useHome()
 
-await useAsyncData('home-page', () => fetchHome({ force: true }))
+useAsyncData('home-page', () => fetchHome({ force: true }))
 </script>

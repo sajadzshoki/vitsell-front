@@ -20,14 +20,10 @@
       </UButton>
     </div>
 
-    <div
-      v-if="loading"
-      class="grid grid-cols-1 md:grid-cols-2 gap-3"
-    >
-      <USkeleton
-        v-for="n in 2"
-        :key="n"
-        class="h-36 rounded-2xl"
+    <div v-if="loading">
+      <TheSkeleton
+        variant="address-card"
+        :count="2"
       />
     </div>
 

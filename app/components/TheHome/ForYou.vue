@@ -1,5 +1,9 @@
 <template>
-  <section v-if="products.length">
+  <section v-if="showSkeleton">
+    <TheSkeleton variant="product-carousel" />
+  </section>
+
+  <section v-else-if="products.length">
     <div class="flex items-center justify-between mb-4 gap-3">
       <div class="min-w-0">
         <div class="flex items-center gap-2">
@@ -64,13 +68,19 @@ const {
   recCategories,
   fetchRecommendations,
   hydrateLocal,
+  pending,
 } = useUserActivity()
 
 hydrateLocal()
 
-await fetchRecommendations({ limit: 12 })
+const ready = ref(false)
+fetchRecommendations({ limit: 12 }).finally(() => {
+  ready.value = true
+})
 
 const products = computed(() => recommendations.value)
+const showSkeleton = computed(() => (!ready.value || pending.value) && !products.value.length)
+
 const viewAllTo = computed(() => {
   const cat = recCategories.value[0]
   return cat ? `/search?category=${encodeURIComponent(cat)}` : '/search'

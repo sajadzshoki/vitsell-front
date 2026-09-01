@@ -1,6 +1,12 @@
 <template>
   <main class="w-full  md:py-4">
+    <TheSkeleton
+      v-if="pending && !items.length"
+      variant="search-header"
+      class="<md:hidden"
+    />
     <TheSearchHeader
+      v-else
       :heading="heading"
       :total="total"
       class="<md:hidden"
@@ -22,7 +28,12 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
       <aside class="hidden lg:block lg:col-span-3">
         <div class="sticky top-32 max-h-[calc(100dvh-9rem)] overflow-y-auto scrollbar-none">
+          <TheSkeleton
+            v-if="pending && !brands.length"
+            variant="search-filters"
+          />
           <TheSearchFilters
+            v-else
             v-model="filters"
             :brands="brands"
           />

@@ -1,5 +1,9 @@
 <template>
-  <section v-if="promo">
+  <section v-if="(pending || !loaded) && !promo">
+    <TheSkeleton variant="promo" />
+  </section>
+
+  <section v-else-if="promo">
     <div
       class="relative overflow-hidden rounded-3xl border border-primary/20 bg-default"
     >
@@ -63,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-const { promos } = useHome()
+const { promos, pending, loaded } = useHome()
 
 const promo = computed(() => {
   const list = promos.value

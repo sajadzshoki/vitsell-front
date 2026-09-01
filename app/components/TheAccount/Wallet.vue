@@ -4,19 +4,8 @@
       <h2 class="font-bold text-highlighted">{{ $t('کیف پول') }}</h2>
     </div>
 
-    <div
-      v-if="loading"
-      class="space-y-4"
-    >
-      <USkeleton class="h-44 rounded-3xl" />
-      <div class="grid grid-cols-3 gap-3">
-        <USkeleton
-          v-for="n in 3"
-          :key="n"
-          class="h-24 rounded-2xl"
-        />
-      </div>
-      <USkeleton class="h-64 rounded-2xl" />
+    <div v-if="loading">
+      <TheSkeleton variant="wallet" />
     </div>
 
     <template v-else>

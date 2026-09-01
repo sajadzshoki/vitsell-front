@@ -10,14 +10,10 @@
       </div>
     </div>
 
-    <div
-      v-if="loading"
-      class="space-y-3"
-    >
-      <USkeleton
-        v-for="n in 3"
-        :key="n"
-        class="h-28 rounded-2xl"
+    <div v-if="loading">
+      <TheSkeleton
+        variant="list-card"
+        :count="3"
       />
     </div>
 

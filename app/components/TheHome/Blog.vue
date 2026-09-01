@@ -1,5 +1,9 @@
 <template>
-  <section v-if="posts.length">
+  <section v-if="(pending || !loaded) && !posts.length">
+    <TheSkeleton variant="blog" />
+  </section>
+
+  <section v-else-if="posts.length">
     <div class="bg-default border border-muted rounded-2xl p-4 md:p-6">
       <div class="flex items-center justify-between mb-4 gap-3">
         <h2 class="text-base md:text-lg font-bold text-highlighted">
@@ -58,6 +62,6 @@
 <script setup lang="ts">
 import { getBlogPostPath, staticPagePaths } from '~/data/static-pages'
 
-const { homeBlogPosts: posts } = useHome()
+const { homeBlogPosts: posts, pending, loaded } = useHome()
 const blogPath = staticPagePaths.blog
 </script>

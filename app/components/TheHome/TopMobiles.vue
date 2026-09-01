@@ -12,12 +12,12 @@
         class="group flex flex-col items-center gap-3 cursor-pointer"
       >
         <div
-          class="relative w-full aspect-square rounded-3xl bg-primary/10 overflow-hidden grid place-items-center transition group-hover:(bg-primary/15 shadow-sm)"
+          class="relative w-full aspect-square rounded-3xl bg-primary/10 overflow-hidden grid place-items-center transition-all group-hover:(bg-primary/15 shadow-sm)"
         >
           <img
             :src="brand.images[0]"
             :alt="$t(brand.name)"
-            class="absolute w-[46%] start-[12%] top-[18%] drop-shadow-lg transition duration-300 object-contain origin-bottom"
+            class="absolute w-[46%] start-[12%] top-[18%] drop-shadow-lg transition-all duration-300 object-contain origin-bottom"
             style="transform: rotate(-12deg)"
             loading="lazy"
             decoding="async"
@@ -25,7 +25,7 @@
           <img
             :src="brand.images[1]"
             :alt="$t(brand.name)"
-            class="absolute w-[48%] end-[10%] top-[22%] drop-shadow-xl transition duration-300 object-contain origin-bottom z-10"
+            class="absolute w-[48%] end-[10%] top-[22%] drop-shadow-xl transition-all duration-300 object-contain origin-bottom z-10"
             style="transform: rotate(12deg)"
             loading="lazy"
             decoding="async"

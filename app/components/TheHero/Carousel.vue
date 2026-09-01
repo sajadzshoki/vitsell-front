@@ -1,5 +1,13 @@
 <template>
-  <section 
+  <section
+    v-if="(pending || !loaded) && !slides.length"
+    class="relative w-screen max-w-[100vw] ms-[calc(50%-50vw)] -mt-4"
+  >
+    <TheSkeleton variant="hero" />
+  </section>
+
+  <section
+    v-else-if="slides.length"
     class="select-none relative w-screen max-w-[100vw] ms-[calc(50%-50vw)] -mt-4 [--ui-bg-inverted:var(--ui-color-neutral-950)] [--ui-text-inverted:var(--ui-color-neutral-50)] [--ui-bg:var(--ui-color-neutral-50)] [--ui-bg-elevated:var(--ui-color-neutral-100)] [--ui-text-highlighted:var(--ui-color-neutral-900)] [--ui-text:var(--ui-color-neutral-800)]"
   >
     <UCarousel
@@ -108,7 +116,7 @@
 <script setup lang="ts">
 import type { HeroSlideTone } from '~/data/hero'
 
-const { heroSlides: slides } = useHome()
+const { heroSlides: slides, pending, loaded } = useHome()
 
 const toneClass = (tone: HeroSlideTone) => {
   if (tone === 'inverted') return ''

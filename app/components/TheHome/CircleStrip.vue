@@ -1,5 +1,15 @@
 <template>
-  <section class="relative">
+  <section
+    v-if="(pending || !loaded) && !items.length"
+    class="relative"
+  >
+    <TheSkeleton variant="circle" />
+  </section>
+
+  <section
+    v-else-if="items.length"
+    class="relative"
+  >
     <UCarousel
       v-slot="{ item }"
       :items="items"
@@ -48,5 +58,5 @@
 </template>
 
 <script setup lang="ts">
-const { circles: items } = useHome()
+const { circles: items, pending, loaded } = useHome()
 </script>

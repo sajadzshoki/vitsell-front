@@ -1,5 +1,12 @@
 <template>
-  <div class="space-y-5">
+  <div v-if="!ordersLoaded">
+    <TheSkeleton variant="dashboard" />
+  </div>
+
+  <div
+    v-else
+    class="space-y-5"
+  >
     <div
       v-if="isMobile"
       class="flex items-center gap-3 pb-1"

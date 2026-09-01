@@ -1,5 +1,50 @@
 <template>
-  <main class="w-full py-2 md:py-4 flex flex-col gap-6 md:gap-8">
+  <main
+    v-if="showSkeleton"
+    class="w-full py-2 md:py-4 flex flex-col gap-6 md:gap-8"
+  >
+    <TheSkeleton variant="chip-row" />
+    <TheSkeleton variant="category-hero" />
+    <TheSkeleton variant="deals" />
+    <TheSkeleton
+      variant="circle"
+      :count="8"
+    />
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="space-y-2">
+          <USkeleton class="h-5 w-40 rounded-lg" />
+          <USkeleton class="h-3 w-52 rounded-lg" />
+        </div>
+        <USkeleton class="h-4 w-20 rounded-lg" />
+      </div>
+      <TheSkeleton
+        variant="product-grid"
+        :count="6"
+        class="!xl:grid-cols-6"
+      />
+    </div>
+    <TheSkeleton variant="brand" />
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="space-y-2">
+          <USkeleton class="h-5 w-36 rounded-lg" />
+          <USkeleton class="h-3 w-56 rounded-lg" />
+        </div>
+        <USkeleton class="h-4 w-20 rounded-lg" />
+      </div>
+      <TheSkeleton
+        variant="article-grid"
+        :count="4"
+      />
+    </div>
+    <TheSkeleton variant="seo-text" />
+  </main>
+
+  <main
+    v-else
+    class="w-full py-2 md:py-4 flex flex-col gap-6 md:gap-8"
+  >
     <TheCategoryQuickNav :active-id="catId" />
 
     <TheCategoryHero
@@ -54,7 +99,13 @@ const {
   searchAllRoute,
   searchRoute,
   brandRoute,
+  pending,
+  loaded,
 } = useCategoryPage()
+
+const showSkeleton = computed(() =>
+  (pending.value || !loaded.value) && !category.value,
+)
 
 useSeoMeta({
   title: () => category.value?.name ?? meta.value.hero.title,

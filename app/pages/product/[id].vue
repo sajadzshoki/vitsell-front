@@ -1,6 +1,13 @@
 <template>
   <main
-    v-if="product"
+    v-if="pending && !product"
+    class="w-screen max-w-[100vw] ms-[calc(50%-50vw)] max-lg:pb-28"
+  >
+    <TheSkeleton variant="product-detail" />
+  </main>
+
+  <main
+    v-else-if="product"
     class="w-screen max-w-[100vw] ms-[calc(50%-50vw)] px-3 sm:px-4 lg:px-6 max-lg:pb-28"
   >
     <div class="mx-auto max-w-9xl w-full">
@@ -51,7 +58,14 @@
         </div>
       </div>
 
+      <TheSkeleton
+        v-if="detailPending && !related.length"
+        variant="product-grid"
+        :count="6"
+        class="mt-6 md:mt-10"
+      />
       <TheProductRelated
+        v-else
         :product="product"
         :related="related"
       />
@@ -68,8 +82,9 @@ const { fetchProduct, cache } = useProducts()
 
 const productId = computed(() => String(route.params.id ?? ''))
 const product = ref<Product | null>(null)
+const pending = ref(true)
 
-const { related, fetchDetail } = useProductDetail(product)
+const { related, fetchDetail, detailPending } = useProductDetail(product)
 
 watch(
   () => (productId.value ? cache.value[productId.value] : null),
@@ -80,28 +95,34 @@ watch(
 
 async function loadProduct() {
   const id = productId.value
-  if (!id) {
-    product.value = null
-    throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
+  pending.value = true
+  try {
+    if (!id) {
+      product.value = null
+      throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
+    }
+    const { result, error } = await fetchProduct(id)
+    if (!result || error) {
+      product.value = null
+      throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
+    }
+    product.value = result
+    await fetchDetail({ force: true })
+    if (result) {
+      const { track } = useUserActivity()
+      void track({
+        type: 'product_view',
+        productId: result.id,
+        category: result.category,
+      })
+    }
   }
-  const { result, error } = await fetchProduct(id)
-  if (!result || error) {
-    product.value = null
-    throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
-  }
-  product.value = result
-  await fetchDetail({ force: true })
-  if (result) {
-    const { track } = useUserActivity()
-    void track({
-      type: 'product_view',
-      productId: result.id,
-      category: result.category,
-    })
+  finally {
+    pending.value = false
   }
 }
 
-await loadProduct()
+loadProduct()
 
 watch(productId, () => {
   loadProduct()

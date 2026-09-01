@@ -1,5 +1,9 @@
 <template>
-  <section>
+  <section v-if="(pending || !loaded) && !categories.length">
+    <TheSkeleton variant="category" />
+  </section>
+
+  <section v-else-if="categories.length">
     <div class="bg-default border border-muted rounded-3xl p-4 md:p-6">
       <div class="flex items-center justify-between mb-5 gap-3">
         <div>
@@ -59,7 +63,7 @@ import type { Category } from '~/data/categories'
 import { toSearchRoute } from '~/data/categories'
 import { getCategoryImage } from '~/data/category-pages'
 
-const { categories } = useHome()
+const { categories, pending, loaded } = useHome()
 
 function imageFor(category: Category) {
   return getCategoryImage(category.id, category.image)

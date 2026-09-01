@@ -1,5 +1,9 @@
 <template>
-  <section>
+  <section v-if="(pending || !loaded) && !deals.length">
+    <TheSkeleton variant="deals" />
+  </section>
+
+  <section v-else-if="deals.length">
     <div class=" rounded-3xl overflow-hidden border-primary/50 border ">
       <div class="px-5 py-4 flex items-center justify-between gap-3 text-inverted bg-primary border-primary border ">
         <div class="flex items-center gap-3 min-w-0">
@@ -54,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-const { dealsOfTheDay } = useHome()
+const { dealsOfTheDay, pending, loaded } = useHome()
 const deals = computed(() => dealsOfTheDay.value)
 
 const remaining = ref(5 * 3600 + 42 * 60 + 18)

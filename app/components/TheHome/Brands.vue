@@ -1,5 +1,9 @@
 <template>
-  <section>
+  <section v-if="(pending || !loaded) && !brands.length">
+    <TheSkeleton variant="brand" />
+  </section>
+
+  <section v-else-if="brands.length">
     <div class="bg-default rounded-3xl p-6 flex items-center flex-wrap justify-around gap-6">
       <button
         v-for="brand in brands"
@@ -14,5 +18,5 @@
 </template>
 
 <script setup lang="ts">
-const { brands } = useHome()
+const { brands, pending, loaded } = useHome()
 </script>

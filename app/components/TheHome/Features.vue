@@ -1,5 +1,9 @@
 <template>
-  <section>
+  <section v-if="(pending || !loaded) && !features.length">
+    <TheSkeleton variant="feature" />
+  </section>
+
+  <section v-else-if="features.length">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div
         v-for="feature in features"
@@ -23,5 +27,5 @@
 </template>
 
 <script setup lang="ts">
-const { heroFeatures: features } = useHome()
+const { heroFeatures: features, pending, loaded } = useHome()
 </script>

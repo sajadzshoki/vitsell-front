@@ -1,14 +1,9 @@
 <template>
   <div>
-    <div
-      v-if="pending && !items.length"
-      :class="gridClass"
-    >
-      <USkeleton
-        v-for="n in 8"
-        :key="n"
-        class="w-full rounded-2xl"
-        :class="layout === 'list' ? 'h-36' : 'h-72'"
+    <div v-if="pending && !items.length">
+      <TheSkeleton
+        :variant="layout === 'list' ? 'product-list' : 'product-grid'"
+        :count="8"
       />
     </div>
 
@@ -62,12 +57,11 @@
 
       <div
         v-if="loadingMore"
-        class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3"
+        class="mt-4"
       >
-        <USkeleton
-          v-for="n in 4"
-          :key="`more-${n}`"
-          class="h-64 w-full rounded-2xl"
+        <TheSkeleton
+          :variant="layout === 'list' ? 'product-list' : 'product-grid'"
+          :count="4"
         />
       </div>
 

@@ -1,5 +1,9 @@
 <template>
-  <section v-if="columns.length">
+  <section v-if="(pending || !loaded) && !bestSellers.length">
+    <TheSkeleton variant="ranked" />
+  </section>
+
+  <section v-else-if="columns.length">
     <div class="bg-default border border-muted rounded-2xl p-4 md:p-5">
       <div class="flex items-center gap-2 mb-4">
         <UIcon name="i-tabler-flame" class="size-5 text-warning shrink-0" />
@@ -65,7 +69,7 @@
 <script setup lang="ts">
 import type { Product } from '~/data/products'
 
-const { bestSellers, catalogProducts } = useHome()
+const { bestSellers, catalogProducts, pending, loaded } = useHome()
 
 const ranked = computed(() => {
   const list = (bestSellers.value.length ? bestSellers.value : catalogProducts.value).slice(0, 12)
