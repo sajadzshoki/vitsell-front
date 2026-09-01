@@ -40,4 +40,10 @@ CRUD فرانت: `app/composables/useSellerDeals.ts`
 
 ## بک‌اند
 
-فعلاً mutate فقط state فرانت است. وقتی API آمد همان فیلدها را وصل کن.
+| Method | Path |
+|--------|------|
+| `GET\|POST` | `/seller/deals` |
+| `GET\|PUT\|DELETE` | `/seller/deals/:id` |
+| `PATCH` | `/seller/deals/:id/active` |
+
+خانه (`GET /home` → `dealsOfTheDay`) از شگفت‌انگیزهای **فعال و در بازه زمانی** پر می‌شود؛ اگر خالی بود به محصولات دارای `oldPrice` برمی‌گردد.

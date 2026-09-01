@@ -1,7 +1,7 @@
 import type { NitroFetchOptions, NitroFetchRequest } from 'nitropack'
 
 /** Fallback when runtimeConfig is unavailable (e.g. early module load). Prefer getApiBase(). */
-export const BASE_URL = 'http://localhost:3333/api/v1'
+export const BASE_URL = 'https://digishop-back.vistatest.top/api/v1'
 export const APP_CODE = 'test'
 
 export function getApiBase() {
@@ -18,8 +18,7 @@ export function getApiBase() {
 
 export function getAuthCookieName() {
   try {
-    const config = useRuntimeConfig()
-    return config.public?.appMode === 'admin' ? 'admin_token' : 'token'
+    return useAppMode().authCookieName
   }
   catch {
     return 'token'

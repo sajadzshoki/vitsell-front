@@ -1,5 +1,3 @@
-import { products } from '~/data/products'
-
 export type SellerAmazingDeal = {
   id: string
   productId: string
@@ -21,6 +19,15 @@ export type SellerAmazingDealFormValues = {
   active: boolean
 }
 
+export type SellerAmazingDealApiPayload = {
+  id?: string
+  productId: string
+  discountPercent: number
+  startsAt: string
+  endsAt: string
+  active: boolean
+}
+
 export const amazingDealIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 export function emptyAmazingDealForm(): SellerAmazingDealFormValues {
@@ -36,6 +43,19 @@ export function emptyAmazingDealForm(): SellerAmazingDealFormValues {
   }
 }
 
+export function toAmazingDeal(raw: Partial<SellerAmazingDeal> & { id: string, productId: string }): SellerAmazingDeal {
+  return {
+    id: raw.id,
+    productId: raw.productId,
+    discountPercent: clampPercent(Number(raw.discountPercent ?? 1)),
+    startsAt: raw.startsAt || new Date().toISOString(),
+    endsAt: raw.endsAt || new Date().toISOString(),
+    active: Boolean(raw.active),
+    createdAt: raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
+  }
+}
+
 export function toAmazingDealForm(deal: SellerAmazingDeal): SellerAmazingDealFormValues {
   return {
     id: deal.id,
@@ -47,11 +67,7 @@ export function toAmazingDealForm(deal: SellerAmazingDeal): SellerAmazingDealFor
   }
 }
 
-export function formToAmazingDeal(
-  form: SellerAmazingDealFormValues,
-  previous?: SellerAmazingDeal | null,
-): SellerAmazingDeal {
-  const now = new Date().toISOString()
+export function formToAmazingDealPayload(form: SellerAmazingDealFormValues): SellerAmazingDealApiPayload {
   return {
     id: form.id.trim(),
     productId: form.productId.trim(),
@@ -59,6 +75,23 @@ export function formToAmazingDeal(
     startsAt: fromDatetimeLocalValue(form.startsAt),
     endsAt: fromDatetimeLocalValue(form.endsAt),
     active: form.active,
+  }
+}
+
+/** @deprecated Prefer formToAmazingDealPayload + API */
+export function formToAmazingDeal(
+  form: SellerAmazingDealFormValues,
+  previous?: SellerAmazingDeal | null,
+): SellerAmazingDeal {
+  const now = new Date().toISOString()
+  const payload = formToAmazingDealPayload(form)
+  return {
+    id: payload.id!,
+    productId: payload.productId,
+    discountPercent: payload.discountPercent,
+    startsAt: payload.startsAt,
+    endsAt: payload.endsAt,
+    active: payload.active,
     createdAt: previous?.createdAt ?? now,
     updatedAt: now,
   }
@@ -110,32 +143,4 @@ export function isDealLive(deal: SellerAmazingDeal, now = Date.now()) {
   const end = new Date(deal.endsAt).getTime()
   if (Number.isNaN(start) || Number.isNaN(end)) return false
   return now >= start && now <= end
-}
-
-/** Seed از محصولاتی که قیمت قبلی دارند */
-export function buildDefaultAmazingDeals(): SellerAmazingDeal[] {
-  const now = Date.now()
-  const startsAt = new Date(now - 3600_000).toISOString()
-  const endsAt = new Date(now + 6 * 3600_000).toISOString()
-  const stamped = new Date().toISOString()
-
-  return products
-    .filter(p => p.oldPrice && p.oldPrice > p.price)
-    .slice(0, 6)
-    .map((p, index) => {
-      const discountPercent = Math.min(
-        99,
-        Math.max(1, Math.round((1 - p.price / p.oldPrice!) * 100)),
-      )
-      return {
-        id: `deal-${p.id}`,
-        productId: p.id,
-        discountPercent,
-        startsAt,
-        endsAt,
-        active: index < 4,
-        createdAt: stamped,
-        updatedAt: stamped,
-      }
-    })
 }

@@ -11,7 +11,7 @@
           {{ shop.name }}
         </div>
         <div class="text-[11px] text-muted truncate">
-          <template v-if="shop.city">{{ $t(shop.city) }} · </template>{{ $t('امتیاز') }}
+          {{ $t(shop.city || '') }} · {{ $t('امتیاز') }}
           <span class="num">{{ shop.rating.toLocaleString('fa-IR') }}</span>
         </div>
       </div>
@@ -76,7 +76,7 @@ const { requestLogout } = useAccountLogout()
 const { shop, shopInitial, newOrdersCount } = useSeller()
 const { unansweredCount: unansweredQuestions, ensureLoaded } = useSellerQuestions()
 
-ensureLoaded()
+void ensureLoaded()
 
 function isActive(to: string) {
   if (to === '/seller') {

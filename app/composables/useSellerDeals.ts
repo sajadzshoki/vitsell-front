@@ -1,94 +1,146 @@
 import {
-  buildDefaultAmazingDeals,
-  formToAmazingDeal,
+  formToAmazingDealPayload,
+  toAmazingDeal,
   type SellerAmazingDeal,
   type SellerAmazingDealFormValues,
 } from '~/data/seller-deals'
 
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || fallback
+  )
+}
+
 export function useSellerDeals() {
   const items = useState<SellerAmazingDeal[]>('seller-amazing-deals', () => [])
   const seeded = useState('seller-amazing-deals-seeded', () => false)
+  const pending = useState('seller-amazing-deals-pending', () => false)
 
   const deals = computed(() => items.value)
 
-  function ensureLoaded() {
-    if (!seeded.value) {
-      items.value = buildDefaultAmazingDeals()
-      seeded.value = true
+  function upsertLocal(deal: SellerAmazingDeal) {
+    const index = items.value.findIndex(d => d.id === deal.id)
+    if (index === -1) {
+      items.value = [deal, ...items.value]
     }
-    return items.value
+    else {
+      const copy = [...items.value]
+      copy[index] = deal
+      items.value = copy
+    }
+  }
+
+  async function ensureLoaded(options?: { force?: boolean }) {
+    if (seeded.value && items.value.length && !options?.force) {
+      return items.value
+    }
+
+    pending.value = true
+    try {
+      const { result, error } = await useGet<SellerAmazingDeal[]>('/seller/deals', {
+        headers: { 'no-error': true },
+      })
+      if (error || !Array.isArray(result)) {
+        items.value = []
+        seeded.value = true
+        return items.value
+      }
+      items.value = result.map(d => toAmazingDeal(d))
+      seeded.value = true
+      return items.value
+    }
+    finally {
+      pending.value = false
+    }
+  }
+
+  async function fetchDeal(id: string, options?: { force?: boolean }) {
+    const cached = getById(id)
+    if (cached && !options?.force) {
+      return { ok: true as const, deal: cached, error: null as null }
+    }
+
+    const { result, error } = await useGet<SellerAmazingDeal>(
+      `/seller/deals/${encodeURIComponent(id)}`,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return { ok: false as const, deal: null as SellerAmazingDeal | null, error }
+    }
+    const deal = toAmazingDeal(result)
+    upsertLocal(deal)
+    seeded.value = true
+    return { ok: true as const, deal, error: null as null }
   }
 
   function getById(id: string) {
     return items.value.find(d => d.id === id)
   }
 
-  function createDeal(form: SellerAmazingDealFormValues) {
-    const id = form.id.trim()
-    if (getById(id)) {
-      return { ok: false as const, error: 'شناسه شگفت‌انگیز تکراری است' }
+  async function createDeal(form: SellerAmazingDealFormValues) {
+    const payload = formToAmazingDealPayload(form)
+    const { result, error } = await usePost<SellerAmazingDeal>('/seller/deals', payload, {
+      headers: { 'no-error': true },
+    })
+    if (error || !result?.id) {
+      return { ok: false as const, error: apiErrorMessage(error, 'ثبت شگفت‌انگیز ناموفق بود') }
     }
-    if (items.value.some(d => d.productId === form.productId.trim() && d.active)) {
-      return { ok: false as const, error: 'برای این محصول قبلاً شگفت‌انگیز فعال ثبت شده است' }
-    }
-    const next = formToAmazingDeal(form)
-    items.value = [next, ...items.value]
-    return { ok: true as const, deal: next }
+    const deal = toAmazingDeal(result)
+    upsertLocal(deal)
+    seeded.value = true
+    return { ok: true as const, deal }
   }
 
-  function updateDeal(id: string, form: SellerAmazingDealFormValues) {
-    const index = items.value.findIndex(d => d.id === id)
-    if (index === -1) {
-      return { ok: false as const, error: 'شگفت‌انگیز پیدا نشد' }
+  async function updateDeal(id: string, form: SellerAmazingDealFormValues) {
+    const payload = formToAmazingDealPayload({ ...form, id })
+    const { id: _omit, ...body } = payload
+    const { result, error } = await usePut<SellerAmazingDeal>(
+      `/seller/deals/${encodeURIComponent(id)}`,
+      body,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return { ok: false as const, error: apiErrorMessage(error, 'به‌روزرسانی شگفت‌انگیز ناموفق بود') }
     }
-    const productId = form.productId.trim()
-    if (
-      items.value.some(
-        (d, i) => i !== index && d.productId === productId && d.active && form.active,
-      )
-    ) {
-      return { ok: false as const, error: 'برای این محصول قبلاً شگفت‌انگیز فعال ثبت شده است' }
-    }
-    const previous = items.value[index]!
-    const next = formToAmazingDeal({ ...form, id: previous.id }, previous)
-    const copy = [...items.value]
-    copy[index] = next
-    items.value = copy
-    return { ok: true as const, deal: next }
+    const deal = toAmazingDeal(result)
+    upsertLocal(deal)
+    return { ok: true as const, deal }
   }
 
-  function deleteDeal(id: string) {
-    if (!items.value.some(d => d.id === id)) {
-      return { ok: false as const, error: 'شگفت‌انگیز پیدا نشد' }
+  async function deleteDeal(id: string) {
+    const { error } = await useDelete(`/seller/deals/${encodeURIComponent(id)}`, {
+      headers: { 'no-error': true },
+    })
+    if (error) {
+      return { ok: false as const, error: apiErrorMessage(error, 'حذف شگفت‌انگیز ناموفق بود') }
     }
     items.value = items.value.filter(d => d.id !== id)
     return { ok: true as const }
   }
 
-  function setActive(id: string, active: boolean) {
-    const index = items.value.findIndex(d => d.id === id)
-    if (index === -1) {
-      return { ok: false as const, error: 'شگفت‌انگیز پیدا نشد' }
+  async function setActive(id: string, active: boolean) {
+    const { result, error } = await usePatch<SellerAmazingDeal>(
+      `/seller/deals/${encodeURIComponent(id)}/active`,
+      { active },
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return { ok: false as const, error: apiErrorMessage(error, 'تغییر وضعیت ناموفق بود') }
     }
-    const current = items.value[index]!
-    if (active && items.value.some((d, i) => i !== index && d.productId === current.productId && d.active)) {
-      return { ok: false as const, error: 'برای این محصول قبلاً شگفت‌انگیز فعال ثبت شده است' }
-    }
-    const copy = [...items.value]
-    copy[index] = {
-      ...current,
-      active,
-      updatedAt: new Date().toISOString(),
-    }
-    items.value = copy
-    return { ok: true as const, deal: copy[index]! }
+    const deal = toAmazingDeal(result)
+    upsertLocal(deal)
+    return { ok: true as const, deal }
   }
 
   return {
     deals,
     items,
+    pending: computed(() => pending.value),
     seeded,
     ensureLoaded,
+    fetchDeal,
     getById,
     createDeal,
     updateDeal,

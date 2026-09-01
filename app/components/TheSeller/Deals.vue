@@ -55,7 +55,17 @@
     </div>
 
     <div
-      v-if="!filtered.length"
+      v-if="pending && !deals.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
+    <div
+      v-else-if="!filtered.length"
       class="text-center py-12"
     >
       <UIcon
@@ -181,6 +191,7 @@
                 :color="deal.active ? 'neutral' : 'success'"
                 variant="ghost"
                 size="xs"
+                :loading="togglingId === deal.id"
                 :icon="deal.active ? 'i-tabler-player-pause' : 'i-tabler-player-play'"
                 @click="toggleActive(deal)"
               >
@@ -205,7 +216,7 @@
     <UModal
       v-model:open="deleteOpen"
       :title="$t('حذف شگفت‌انگیز')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود و قابل بازگشت نیست.')"
+      :description="$t('در صورت تأیید، این شگفت‌انگیز از سرور حذف می‌شود.')"
     >
       <template #body>
         <div
@@ -239,6 +250,7 @@
           <UButton
             color="error"
             class="font-bold"
+            :loading="deleting"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -259,7 +271,7 @@ import {
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { deals, ensureLoaded, deleteDeal, setActive } = useSellerDeals()
+const { deals, pending, ensureLoaded, deleteDeal, setActive } = useSellerDeals()
 const { resolveProduct, fetchSeller } = useSeller()
 const { fetchProducts, getCachedProduct } = useProducts()
 
@@ -267,6 +279,8 @@ const query = ref('')
 const statusFilter = ref<'all' | 'active' | 'inactive' | 'live'>('all')
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerAmazingDeal | null>(null)
+const deleting = ref(false)
+const togglingId = ref<string | null>(null)
 
 const statusTabs = [
   { id: 'all' as const, label: 'همه' },
@@ -275,8 +289,8 @@ const statusTabs = [
   { id: 'inactive' as const, label: 'غیرفعال' },
 ]
 
-ensureLoaded()
 await Promise.all([
+  ensureLoaded({ force: true }),
   fetchSeller(),
   fetchProducts({ pageSize: 100 }),
 ])
@@ -301,13 +315,19 @@ function productOf(deal: SellerAmazingDeal) {
   return getCachedProduct(deal.productId) || resolveProduct(deal.productId)
 }
 
-function toggleActive(deal: SellerAmazingDeal) {
-  const result = setActive(deal.id, !deal.active)
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+async function toggleActive(deal: SellerAmazingDeal) {
+  togglingId.value = deal.id
+  try {
+    const result = await setActive(deal.id, !deal.active)
+    if (!result.ok) {
+      toast.error(result.error)
+      return
+    }
+    toast.success(deal.active ? t('شگفت‌انگیز غیرفعال شد') : t('شگفت‌انگیز فعال شد'))
   }
-  toast.success(deal.active ? t('شگفت‌انگیز غیرفعال شد') : t('شگفت‌انگیز فعال شد'))
+  finally {
+    togglingId.value = null
+  }
 }
 
 function openDelete(deal: SellerAmazingDeal) {
@@ -315,15 +335,21 @@ function openDelete(deal: SellerAmazingDeal) {
   deleteOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDelete.value) return
-  const result = deleteDeal(pendingDelete.value.id)
-  deleteOpen.value = false
-  pendingDelete.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  deleting.value = true
+  try {
+    const result = await deleteDeal(pendingDelete.value.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    if (!result.ok) {
+      toast.error(result.error)
+      return
+    }
+    toast.success(t('شگفت‌انگیز حذف شد'))
   }
-  toast.success(t('شگفت‌انگیز حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
 </script>

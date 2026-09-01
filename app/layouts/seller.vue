@@ -54,7 +54,7 @@
             {{ $t('دسته‌بندی‌ها') }}
           </NuxtLink>
           <span class="text-dimmed">/</span>
-          <span class="text-toned">{{ $t(pageTitle) }}</span>
+          <span class="text-toned">{{ $t(pageTitle || '') }}</span>
         </template>
         <template v-else-if="isBannerCreate || isBannerEdit">
           <span class="text-dimmed">/</span>
@@ -65,7 +65,7 @@
             {{ $t('بنرها') }}
           </NuxtLink>
           <span class="text-dimmed">/</span>
-          <span class="text-toned">{{ $t(pageTitle) }}</span>
+          <span class="text-toned">{{ $t(pageTitle || '') }}</span>
         </template>
         <template v-else-if="isDealCreate || isDealEdit">
           <span class="text-dimmed">/</span>
@@ -102,11 +102,11 @@
         </template>
         <template v-else-if="!isDashboard">
           <span class="text-dimmed">/</span>
-          <span class="text-toned">{{ $t(pageTitle) }}</span>
+          <span class="text-toned">{{ $t(pageTitle || '') }}</span>
         </template>
         <template v-else-if="pageTitle">
           <span class="text-dimmed">/</span>
-          <span class="text-toned">{{ $t(pageTitle) }}</span>
+          <span class="text-toned">{{ $t(pageTitle || '') }}</span>
         </template>
       </nav>
 
@@ -161,7 +161,7 @@ const {
   pageTitle,
   showDesktopSidebar,
 } = useSellerLayout()
-const { fetchSeller } = useSeller()
+const { fetchSeller, loaded: sellerLoaded } = useSeller()
 
 // Always register useAsyncData (never behind a branch). fetchSeller short-circuits when loaded.
 await useAsyncData('seller-panel', async () => {

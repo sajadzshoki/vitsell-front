@@ -1,9 +1,13 @@
 // @ts-nocheck
+const isAdminApp = process.env.NUXT_PUBLIC_APP_MODE === 'admin'
+
 export default defineNuxtConfig({
     devtools: {enabled: false},
     ssr: false,
+    /** Separate dirs so `dev:store` + `dev:admin` don't clobber each other's prepared config */
+    buildDir: isAdminApp ? '.nuxt-admin' : '.nuxt',
     devServer: {
-        port: 4000,
+        port: isAdminApp ? 4001 : 4000,
       },
     modules: [
         '@nuxt/ui',
@@ -83,8 +87,36 @@ export default defineNuxtConfig({
             apiBase: process.env.NUXT_PUBLIC_API_BASE || "https://digishop-back.vistatest.top/api/v1",
             /** store = فروشگاه | admin = پنل مدیریت روی دامنه جدا */
             appMode: process.env.NUXT_PUBLIC_APP_MODE || "store",
-            storeUrl: process.env.NUXT_PUBLIC_STORE_URL || "http://localhost:4000",
-            adminUrl: process.env.NUXT_PUBLIC_ADMIN_URL || "http://localhost:4001",
+            storeUrl: process.env.NUXT_PUBLIC_STORE_URL || "https://digishop.vistatest.top",
+            adminUrl: process.env.NUXT_PUBLIC_ADMIN_URL || "https://digishop-admin.vistatest.top",
+        },
+    },
+
+    hooks: {
+        async 'nitro:build:public-assets'(nitro) {
+            const { fixSpaHtmlInDir } = await import('./scripts/fix-spa-html.mjs')
+            const publicDir = nitro.options.output.publicDir
+            const result = await fixSpaHtmlInDir(publicDir)
+            if (result.fixed) {
+                console.log(`[fix-spa-html] fixed ${result.fixed}/${result.files} HTML files in ${publicDir}`)
+            }
+        },
+        async close() {
+            // Prerender HTML is written after public-assets; run again on generate close.
+            try {
+                const { existsSync } = await import('node:fs')
+                const { join } = await import('node:path')
+                const publicDir = join(process.cwd(), '.output', 'public')
+                if (!existsSync(publicDir)) return
+                const { fixSpaHtmlInDir } = await import('./scripts/fix-spa-html.mjs')
+                const result = await fixSpaHtmlInDir(publicDir)
+                if (result.fixed) {
+                    console.log(`[fix-spa-html] close: fixed ${result.fixed}/${result.files} HTML files`)
+                }
+            }
+            catch (err) {
+                console.warn('[fix-spa-html] close hook skipped:', err?.message || err)
+            }
         },
     },
 

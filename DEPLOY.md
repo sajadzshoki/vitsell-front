@@ -62,6 +62,8 @@ LOG_LEVEL=info
 APP_KEY=<generated-secret>
 APP_URL=https://api.example.com
 FRONTEND_URL=https://shop.example.com
+# پنل ادمین — Origin لاگین مدیر باید با این یکی باشد (اجباری در production)
+ADMIN_URL=https://admin.example.com
 
 SESSION_DRIVER=cookie
 
@@ -160,15 +162,22 @@ docker compose up -d --build
 | Prod start | `cd build && npm ci --omit=dev && node bin/server.js` |
 | Verify fail-closed | `node --import=@poppinss/ts-exec bin/verify_prod_fail_closed.ts` (با env production) |
 
-### ۱.۵ Seller seed (بعد از seed)
+### ۱.۵ ادمین اول (دستی)
 
-فروشنده نمونه:
+سید دیگر کاربر admin با شماره ثابت نمی‌سازد. برای اولین ادمین:
 
-- Phone: `09121234567`
-- Role: `seller`
-- Shop: فروشگاه آریا
+```sql
+-- password = bcrypt hash of your chosen password (via Adonis/User model in tinker or a one-off script)
+INSERT INTO users (phone, role, password, created_at, updated_at)
+VALUES ('09XXXXXXXXX', 'admin', '<bcrypt-hash>', NOW(), NOW());
+```
 
-در production با OTP واقعی لاگین می‌شود (بدون `devCode`).
+یا از پنل/اسکریپت داخلی پروژه بعد از راه‌اندازی DB.
+
+- ورود فقط از `ADMIN_URL` با `/auth/admin/login`
+- شماره تماس سایت در `/seller/shop` همان شماره ورود ادمین است
+
+در production با OTP واقعی برای مشتری لاگین می‌شود (بدون `devCode`).
 
 ---
 
@@ -179,18 +188,10 @@ docker compose up -d --build
 فقط این برای اتصال به API لازم است:
 
 ```env
-NUXT_PUBLIC_API_BASE=https://api.example.com/api/v1
+NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1
 ```
 
-در `nuxt.config.ts`:
-
-```ts
-runtimeConfig: {
-  public: {
-    apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3333/api/v1',
-  },
-}
-```
+در `nuxt.config.ts` و `.env.store` / `.env.admin` همین مقدار ست می‌شود (ادمین و فروشگاه هر دو به یک بک‌اند وصل‌اند).
 
 `app/composables/fetch.ts` از `getApiBase()` همین مقدار را می‌خواند.
 
@@ -201,13 +202,16 @@ runtimeConfig: {
 ```bash
 cd digishop
 npm ci
-NUXT_PUBLIC_API_BASE=https://api.example.com/api/v1 npm run build
+# store
+NUXT_PUBLIC_APP_MODE=store NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1 npm run build
+# admin
+NUXT_PUBLIC_APP_MODE=admin NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1 npm run build:admin
 ```
 
 پیش‌نمایش لوکال:
 
 ```bash
-NUXT_PUBLIC_API_BASE=https://api.example.com/api/v1 npm run preview
+NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1 npm run preview
 ```
 
 اجرای production با Node (Nitro):
@@ -273,7 +277,7 @@ server {
 - [ ] `ZARINPAL_SANDBOX=false` برای پرداخت واقعی
 - [ ] `ZARINPAL_CALLBACK_URL` عمومی و قابل دسترس از اینترنت
 - [ ] `APP_URL` / `FRONTEND_URL` دامنه‌های نهایی
-- [ ] `NUXT_PUBLIC_API_BASE` = `https://api…/api/v1`
+- [ ] `NUXT_PUBLIC_API_BASE` = `https://digishop-back.vistatest.top/api/v1` (ادمین و فروشگاه)
 - [ ] Migration روی DB production اجرا شده
 - [ ] Seed فقط در صورت نیاز (مراقب overwrite داده واقعی باشید)
 - [ ] OTP واقعی تست شده (بدون `devCode` در response)

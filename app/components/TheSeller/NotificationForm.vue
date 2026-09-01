@@ -175,7 +175,12 @@
 
       <div class="rounded-2xl border border-muted bg-muted/40 px-4 py-3 text-sm flex items-center justify-between gap-3 flex-wrap">
         <span class="text-muted">{{ $t('تعداد گیرندگان') }}</span>
-        <span class="font-bold num text-highlighted">
+        <span class="font-bold num text-highlighted inline-flex items-center gap-2">
+          <UIcon
+            v-if="previewPending"
+            name="i-tabler-loader-2"
+            class="size-4 animate-spin text-primary"
+          />
           {{ recipientPreview.toLocaleString('fa-IR') }}
           {{ $t('نفر') }}
         </span>
@@ -239,8 +244,8 @@
 
 <script setup lang="ts">
 import {
+  emptyNotificationForm,
   resolveAudienceUsers,
-  sellerMockUsers,
   sellerNotificationAudienceMeta,
   sellerNotificationGroupMeta,
   sellerNotificationIcons,
@@ -250,13 +255,19 @@ import {
 
 const { t } = useI18n()
 const toast = useAppToast()
-const router = useRouter()
-const { sendNotification, emptyForm } = useSellerNotifications()
+const {
+  sendNotification,
+  ensureUsersLoaded,
+  previewAudienceCount,
+  users,
+} = useSellerNotifications()
 
-const form = ref<SellerNotificationFormValues>(emptyForm())
+const form = ref<SellerNotificationFormValues>(emptyNotificationForm())
 const sending = ref(false)
 const userQuery = ref('')
 const errors = ref<Partial<Record<'title' | 'description' | 'userIds', string>>>({})
+const previewCount = ref(0)
+const previewPending = ref(false)
 
 const audienceTypeItems = (
   Object.keys(sellerNotificationAudienceMeta) as SellerNotificationAudienceType[]
@@ -267,19 +278,42 @@ const audienceTypeItems = (
 
 const filteredUsers = computed(() => {
   const q = userQuery.value.trim().toLowerCase()
-  if (!q) return sellerMockUsers
-  return sellerMockUsers.filter(
+  if (!q) return users.value
+  return users.value.filter(
     u => u.name.includes(userQuery.value.trim()) || u.phone.includes(q),
   )
 })
 
-const recipientPreview = computed(() =>
-  resolveAudienceUsers(
-    form.value.audienceType,
-    form.value.audienceType === 'group' ? form.value.audienceGroup : null,
-    form.value.userIds,
-  ).length,
+const recipientPreview = computed(() => {
+  if (form.value.audienceType === 'users') {
+    return resolveAudienceUsers('users', null, form.value.userIds, users.value).length
+  }
+  return previewCount.value
+})
+
+await ensureUsersLoaded()
+await refreshPreviewCount()
+
+watch(
+  () => [form.value.audienceType, form.value.audienceGroup, form.value.userIds.join(',')] as const,
+  () => {
+    void refreshPreviewCount()
+  },
 )
+
+async function refreshPreviewCount() {
+  if (form.value.audienceType === 'users') {
+    previewCount.value = form.value.userIds.length
+    return
+  }
+  previewPending.value = true
+  try {
+    previewCount.value = await previewAudienceCount(form.value)
+  }
+  finally {
+    previewPending.value = false
+  }
+}
 
 function toggleUser(id: number, checked: boolean | 'indeterminate') {
   const on = checked === true
@@ -311,16 +345,16 @@ async function onSend() {
 
   sending.value = true
   try {
-    const result = sendNotification(form.value)
+    const result = await sendNotification(form.value)
     if (!result.ok) {
-      toast.error(t(result.error))
+      toast.error(result.error)
       return
     }
     toast.success(
       t('اعلان ارسال شد'),
       `${result.recipients.length.toLocaleString('fa-IR')} ${t('گیرنده')}`,
     )
-    await router.push('/seller/notifications')
+    await navigateTo('/seller/notifications')
   }
   finally {
     sending.value = false

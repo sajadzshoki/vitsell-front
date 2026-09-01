@@ -3,17 +3,13 @@ import type {
   CategoryPageMeta,
   CategorySuggestedItem,
 } from '~/data/category-pages'
-import {
-  buildSuggestedItems,
-  getCategoryImage,
-  getCategoryPageMeta,
-} from '~/data/category-pages'
 
 export type SellerCategory = {
   id: string
   name: string
   icon: string
   image: string | null
+  text: string | null
   subs: CategorySub[]
   pageMeta: CategoryPageMeta | null
   suggested: CategorySuggestedItem[] | null
@@ -26,9 +22,22 @@ export type SellerCategoryFormValues = {
   name: string
   icon: string
   image: string
+  text: string
   subs: CategorySub[]
   pageMeta: CategoryPageMeta
   suggested: CategorySuggestedItem[]
+}
+
+/** Payload sent to POST/PUT /seller/categories */
+export type SellerCategoryApiPayload = {
+  id?: string
+  name: string
+  icon: string
+  image: string | null
+  text: string | null
+  subs: CategorySub[]
+  pageMeta: CategoryPageMeta | null
+  suggested: CategorySuggestedItem[] | null
 }
 
 export const categoryIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -71,32 +80,29 @@ export function emptyCategoryForm(): SellerCategoryFormValues {
     name: '',
     icon: 'category',
     image: '',
+    text: '',
     subs: [],
     pageMeta: emptyPageMeta(),
     suggested: [],
   }
 }
 
-export function toSellerCategory(category: Category): SellerCategory {
-  const image = category.image ?? null
-  const fallbackImage = getCategoryImage(category.id, image)
-  const pageMeta = getCategoryPageMeta(category.id)
-  const suggested = buildSuggestedItems(category, fallbackImage)
-
+export function toSellerCategory(raw: Partial<SellerCategory> & { id: string, name: string }): SellerCategory {
   return {
-    id: category.id,
-    name: category.name,
-    icon: category.icon,
-    image,
-    subs: (category.subs ?? []).map(sub => ({
+    id: raw.id,
+    name: raw.name,
+    icon: raw.icon || 'category',
+    image: raw.image ?? null,
+    text: raw.text ?? null,
+    subs: (raw.subs ?? []).map(sub => ({
       name: sub.name,
       items: [...(sub.items ?? [])],
       image: sub.image ?? null,
     })),
-    pageMeta,
-    suggested,
-    createdAt: null,
-    updatedAt: null,
+    pageMeta: raw.pageMeta ?? null,
+    suggested: raw.suggested ?? null,
+    createdAt: raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
   }
 }
 
@@ -106,6 +112,7 @@ export function toCategoryForm(category: SellerCategory): SellerCategoryFormValu
     name: category.name,
     icon: category.icon || 'category',
     image: category.image ?? '',
+    text: category.text ?? '',
     subs: category.subs.map(sub => ({
       name: sub.name,
       items: [...sub.items],
@@ -116,7 +123,9 @@ export function toCategoryForm(category: SellerCategory): SellerCategoryFormValu
           hero: { ...category.pageMeta.hero },
           seo: {
             heading: category.pageMeta.seo.heading,
-            paragraphs: [...category.pageMeta.seo.paragraphs],
+            paragraphs: category.pageMeta.seo.paragraphs.length
+              ? [...category.pageMeta.seo.paragraphs]
+              : [''],
           },
         }
       : emptyPageMeta(),
@@ -124,25 +133,19 @@ export function toCategoryForm(category: SellerCategory): SellerCategoryFormValu
   }
 }
 
-export function formToSellerCategory(
-  form: SellerCategoryFormValues,
-  previous?: SellerCategory | null,
-): SellerCategory {
-  const now = new Date().toISOString()
-  const image = form.image.trim() || null
-  const pageMeta = sanitizePageMeta(form.pageMeta)
-  const suggested = sanitizeSuggested(form.suggested)
-
+export function formToApiPayload(form: SellerCategoryFormValues): SellerCategoryApiPayload {
   return {
     id: form.id.trim(),
     name: form.name.trim(),
     icon: form.icon.trim() || 'category',
-    image,
+    image: form.image.trim() || null,
+    text: form.text.trim() || null,
     subs: sanitizeSubs(form.subs),
-    pageMeta,
-    suggested: suggested.length ? suggested : null,
-    createdAt: previous?.createdAt ?? now,
-    updatedAt: now,
+    pageMeta: sanitizePageMeta(form.pageMeta),
+    suggested: (() => {
+      const items = sanitizeSuggested(form.suggested)
+      return items.length ? items : null
+    })(),
   }
 }
 
@@ -152,6 +155,7 @@ export function sellerCategoryToListItem(category: SellerCategory): Category {
     name: category.name,
     icon: category.icon,
     image: category.image,
+    text: category.text,
     subs: category.subs.map(sub => ({
       name: sub.name,
       items: [...sub.items],

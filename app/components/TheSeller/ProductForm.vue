@@ -372,6 +372,7 @@ import {
   parsePriceInput,
   productToSellerForm,
   sellerProductBadges,
+  SELLER_BADGE_NONE,
   sellerProductColorPresets,
   validateSellerProductForm,
   type SellerProductField,
@@ -415,7 +416,7 @@ if (isEdit.value && props.productId) {
 }
 
 watch(
-  () => [props.mode, props.productId] as const,
+  () => [props.mode, props.productId, getListing(props.productId || '')?.stock, resolveProduct(props.productId || '').title] as const,
   () => {
     if (props.mode === 'edit' && props.productId) {
       const listing = getListing(props.productId)
@@ -448,7 +449,7 @@ const attributeGroups = computed(() => {
 
 const badgeItems = computed(() =>
   sellerProductBadges.map(badge => ({
-    label: badge ? t(badge) : t('بدون برچسب'),
+    label: badge === SELLER_BADGE_NONE ? t('بدون برچسب') : t(badge),
     value: badge,
   })),
 )

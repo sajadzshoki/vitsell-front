@@ -194,7 +194,6 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const toast = useAppToast()
-const router = useRouter()
 const { createDeal, updateDeal } = useSellerDeals()
 const { fetchProducts, getCachedProduct, remember } = useProducts()
 const { resolveProduct, fetchSeller } = useSeller()
@@ -289,16 +288,19 @@ async function onSave() {
   saving.value = true
   try {
     const result = isEdit.value
-      ? updateDeal(props.initial!.id, form.value)
-      : createDeal(form.value)
+      ? await updateDeal(props.initial!.id, form.value)
+      : await createDeal(form.value)
 
     if (!result.ok) {
-      toast.error(t(result.error))
+      toast.error(result.error)
+      if (String(result.error).includes('تکراری')) {
+        errors.value = { ...errors.value, id: result.error }
+      }
       return
     }
 
     toast.success(isEdit.value ? t('شگفت‌انگیز به‌روز شد') : t('شگفت‌انگیز اضافه شد'))
-    await router.push('/seller/deals')
+    await navigateTo('/seller/deals')
   }
   finally {
     saving.value = false

@@ -9,15 +9,15 @@ description: Discount codes and content promos admin UI for digishop seller pane
 
 ## تب‌ها
 
-1. **کدهای تخفیف** — seed از `cartDiscountCodes`
-2. **پروموها** — seed از `homePromos`
+1. **کدهای تخفیف** — API: `/seller/discount-codes`
+2. **پروموها** — API: `/seller/content-promos`
 
 ## مدل کد
 
 ```ts
 type SellerDiscountCode = {
   code: string
-  percent: number
+  percent: number // ۱–۹۹ در ادمین؛ در DB به‌صورت ratio ذخیره می‌شود
   active: boolean
   startsAt: string
   endsAt: string
@@ -45,7 +45,8 @@ type SellerContentPromo = {
   secondaryCtaLabel: string
   secondaryCtaTo: string
   active: boolean
-  ...
+  createdAt: string | null
+  updatedAt: string | null
 }
 ```
 
@@ -54,5 +55,17 @@ type SellerContentPromo = {
 - `app/data/seller-promotions.ts`
 - `app/composables/useSellerPromotions.ts`
 - `TheSellerPromotions` / `DiscountCodeForm` / `ContentPromoForm`
+- بک‌اند: `discount_codes_controller` + `content_promos_controller`
 
-بک‌اند write فعلاً نیست.
+## API (admin)
+
+| Method | Path |
+|---|---|
+| `GET\|POST` | `/seller/discount-codes` |
+| `GET\|PUT\|DELETE` | `/seller/discount-codes/:code` |
+| `PATCH` | `/seller/discount-codes/:code/active` |
+| `GET\|POST` | `/seller/content-promos` |
+| `GET\|PUT\|DELETE` | `/seller/content-promos/:id` |
+| `PATCH` | `/seller/content-promos/:id/active` |
+
+استورفرانت: `GET /discount-codes` (ratio، فقط فعال و در بازه) · `GET /home` → `promos` از جدول `content_promos`.

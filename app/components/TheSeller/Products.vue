@@ -46,13 +46,20 @@
         <UButton
           v-for="tab in statusTabs"
           :key="tab.id"
+          type="button"
           :color="statusFilter === tab.id ? 'primary' : 'neutral'"
           :variant="statusFilter === tab.id ? 'soft' : 'ghost'"
           size="sm"
-          class="shrink-0"
-          @click="statusFilter = tab.id"
+          class="shrink-0 cursor-pointer"
+          @click="onStatusChange(tab.id)"
         >
           {{ $t(tab.label) }}
+          <span
+            v-if="tab.id !== 'all'"
+            class="num ms-1"
+          >
+            {{ countBy(tab.id).toLocaleString('fa-IR') }}
+          </span>
         </UButton>
       </div>
     </div>
@@ -119,6 +126,14 @@ const statusTabs = [
   { id: 'inactive' as const, label: 'غیرفعال' },
   { id: 'out_of_stock' as const, label: 'ناموجود' },
 ]
+
+function onStatusChange(id: typeof statusFilter.value) {
+  statusFilter.value = id
+}
+
+function countBy(id: SellerProductStatus) {
+  return listings.value.filter(item => item.status === id).length
+}
 
 const filtered = computed(() => {
   const q = query.value.trim()

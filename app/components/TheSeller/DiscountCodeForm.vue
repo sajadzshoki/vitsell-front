@@ -178,10 +178,13 @@ async function onSave() {
   saving.value = true
   try {
     const result = isEdit.value
-      ? updateCode(props.initial!.code, form.value)
-      : createCode(form.value)
+      ? await updateCode(props.initial!.code, form.value)
+      : await createCode(form.value)
     if (!result.ok) {
-      toast.error(t(result.error))
+      toast.error(result.error)
+      if (String(result.error).includes('وجود دارد')) {
+        errors.value = { ...errors.value, code: result.error }
+      }
       return
     }
     toast.success(isEdit.value ? t('کد به‌روز شد') : t('کد ثبت شد'))

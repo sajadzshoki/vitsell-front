@@ -27,9 +27,9 @@ type FooterPayload = {
 ## رفتار
 
 - صفحه تک‌فرم مثل تنظیمات سایت (`/seller/shop`)، نه CRUD لیستی
-- لود: `fetchFooter()` (GET `/footer` یا fallback استاتیک)
-- ذخیره فرانت: `updateFooter(payload)` → همان `site-footer` state که `TheFooter` مصرف می‌کند
-- بک‌اند write فعلاً نیست
+- لود: `fetchFooter({ force: true, admin: true })` → `GET /seller/footer` (عمومی: `GET /footer`)
+- ذخیره: `saveFooter(payload)` → `PUT /seller/footer` + sync به `site-footer` state برای `TheFooter`
+- بدون fallback فیک؛ فیلد خالی از API همان‌طور خالی می‌ماند
 
 ## UI
 

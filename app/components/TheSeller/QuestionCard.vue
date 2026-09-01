@@ -167,7 +167,7 @@ async function onReply() {
   if (!text) return
   sending.value = true
   try {
-    const result = replyToQuestion(props.question.id, text)
+    const result = await replyToQuestion(props.question.id, text)
     if (!result.ok) {
       toast.error(t(result.error))
       return
@@ -180,9 +180,9 @@ async function onReply() {
   }
 }
 
-function onToggleVerified() {
+async function onToggleVerified() {
   const next = !props.question.verified
-  const result = setVerified(props.question.id, next)
+  const result = await setVerified(props.question.id, next)
   if (!result.ok) {
     toast.error(t(result.error))
     return
@@ -190,8 +190,8 @@ function onToggleVerified() {
   toast.success(next ? t('خریدار تأیید شد') : t('تأیید خریدار برداشته شد'))
 }
 
-function onClearAnswer() {
-  const result = clearAnswer(props.question.id)
+async function onClearAnswer() {
+  const result = await clearAnswer(props.question.id)
   if (!result.ok) {
     toast.error(t(result.error))
     return

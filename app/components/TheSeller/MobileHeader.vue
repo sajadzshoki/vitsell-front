@@ -11,7 +11,7 @@
       @click="navigateTo('/seller')"
     />
     <h1 class="text-base font-bold text-highlighted truncate">
-      {{ $t(title) }}
+      {{ $t(title || '') }}
     </h1>
   </header>
 </template>

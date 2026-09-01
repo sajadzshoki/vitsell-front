@@ -66,7 +66,7 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-2">
               <p class="text-sm font-bold text-highlighted leading-6">
-                {{ $t(item.title) }}
+                {{ $t(item.title || '') }}
               </p>
               <span
                 v-if="!item.read"
@@ -75,10 +75,10 @@
               />
             </div>
             <p class="text-xs text-toned leading-5 mt-0.5 line-clamp-2">
-              {{ $t(item.description) }}
+              {{ $t(item.description || '') }}
             </p>
             <p class="text-[11px] text-dimmed mt-1.5">
-              {{ $t(item.time) }}
+              {{ item.time || '' }}
             </p>
           </div>
         </button>

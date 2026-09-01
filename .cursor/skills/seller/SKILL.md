@@ -194,7 +194,7 @@ CRUD بنرهای سایت در پنل ادمین. فعلاً فرانت‌only 
 
 ### هدف
 
-ویرایش یکپارچهٔ محتوای فوتر سایت (نه لیست جدا). فرانت‌only با sync به `useFooter` تا همان نشست در `TheFooter` دیده شود.
+ویرایش یکپارچهٔ محتوای فوتر سایت (نه لیست جدا). داده از API؛ ذخیره روی بک‌اند با sync به `useFooter` / `TheFooter`.
 
 ### فیلدها (از `FooterPayload` / `app/data/footer.ts`)
 
@@ -216,11 +216,12 @@ CRUD بنرهای سایت در پنل ادمین. فعلاً فرانت‌only 
 |---|---|
 | صفحه | `/seller/footer` → `TheSellerFooterForm` |
 | nav | `{ id: 'footer', label: 'فوتر', icon: 'i-tabler-layout-bottombar', to: '/seller/footer' }` |
+| API | `GET/PUT /seller/footer` · عمومی `GET /footer` |
 
 ### چک قبل از اتمام (فوتر)
 
 - [ ] همه بخش‌های `FooterPayload` در فرم قابل ویرایش
-- [ ] ذخیره → `updateFooter` روی state سایت
+- [ ] لود از API؛ ذخیره → `PUT /seller/footer` + state سایت
 - [ ] i18n / RTL / Nuxt UI
 
 ---
@@ -327,7 +328,7 @@ CRUD بنرهای سایت در پنل ادمین. فعلاً فرانت‌only 
 
 ### هدف
 
-دو تب در یک بخش: **کدهای تخفیف** + **پروموهای محتوایی**. فرانت‌only.
+دو تب در یک بخش: **کدهای تخفیف** + **پروموهای محتوایی**. داده از API.
 
 ### کد تخفیف
 
@@ -340,13 +341,13 @@ CRUD بنرهای سایت در پنل ادمین. فعلاً فرانت‌only 
 | `oncePerUser` | یک‌بار برای هر کاربر |
 | `active` | فعال/غیرفعال |
 
-پایه مدل: `DiscountCodeSchema` + فیلدهای اضافهٔ ادمین.
+API: `/seller/discount-codes` — پایه مدل: `DiscountCode` (+ فیلدهای ادمین).
 
 ### پرومو
 
 فیلدهای `HomePromo`: eyebrow, title, subtitle, tone, icon, CTAها + `active`.
 
-جزئیات: [promotions.md](promotions.md)
+API: `/seller/content-promos` · جزئیات: [promotions.md](promotions.md)
 
 ### مسیرها
 

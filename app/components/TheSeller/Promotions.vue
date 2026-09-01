@@ -64,7 +64,17 @@
         class="space-y-3"
       >
         <div
-          v-if="!filteredCodes.length"
+          v-if="pending && !codes.length"
+          class="py-16 grid place-items-center"
+        >
+          <UIcon
+            name="i-tabler-loader-2"
+            class="size-8 text-primary animate-spin"
+          />
+        </div>
+
+        <div
+          v-else-if="!filteredCodes.length"
           class="text-center py-12"
         >
           <UIcon
@@ -171,7 +181,17 @@
         class="space-y-3"
       >
         <div
-          v-if="!filteredPromos.length"
+          v-if="pending && !promos.length"
+          class="py-16 grid place-items-center"
+        >
+          <UIcon
+            name="i-tabler-loader-2"
+            class="size-8 text-primary animate-spin"
+          />
+        </div>
+
+        <div
+          v-else-if="!filteredPromos.length"
           class="text-center py-12"
         >
           <UIcon
@@ -301,6 +321,7 @@ const router = useRouter()
 const {
   codes,
   promos,
+  pending,
   ensureLoaded,
   deleteCode,
   setCodeActive,
@@ -316,8 +337,9 @@ const deleteOpen = ref(false)
 const deleteMode = ref<'code' | 'promo'>('code')
 const pendingCode = ref<SellerDiscountCode | null>(null)
 const pendingPromo = ref<SellerContentPromo | null>(null)
+const actionBusy = ref(false)
 
-ensureLoaded()
+await ensureLoaded({ force: true })
 
 const filteredCodes = computed(() => {
   const q = query.value.trim().toUpperCase()
@@ -348,22 +370,36 @@ function setTab(tab: TabId) {
   router.replace({ query: { ...route.query, tab } })
 }
 
-function toggleCode(item: SellerDiscountCode) {
-  const result = setCodeActive(item.code, !item.active)
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+async function toggleCode(item: SellerDiscountCode) {
+  if (actionBusy.value) return
+  actionBusy.value = true
+  try {
+    const result = await setCodeActive(item.code, !item.active)
+    if (!result.ok) {
+      toast.error(result.error)
+      return
+    }
+    toast.success(item.active ? t('کد غیرفعال شد') : t('کد فعال شد'))
   }
-  toast.success(item.active ? t('کد غیرفعال شد') : t('کد فعال شد'))
+  finally {
+    actionBusy.value = false
+  }
 }
 
-function togglePromo(item: SellerContentPromo) {
-  const result = setPromoActive(item.id, !item.active)
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+async function togglePromo(item: SellerContentPromo) {
+  if (actionBusy.value) return
+  actionBusy.value = true
+  try {
+    const result = await setPromoActive(item.id, !item.active)
+    if (!result.ok) {
+      toast.error(result.error)
+      return
+    }
+    toast.success(item.active ? t('پرومو غیرفعال شد') : t('پرومو فعال شد'))
   }
-  toast.success(item.active ? t('پرومو غیرفعال شد') : t('پرومو فعال شد'))
+  finally {
+    actionBusy.value = false
+  }
 }
 
 function openDeleteCode(item: SellerDiscountCode) {
@@ -380,27 +416,34 @@ function openDeletePromo(item: SellerContentPromo) {
   deleteOpen.value = true
 }
 
-function confirmDelete() {
-  if (deleteMode.value === 'code' && pendingCode.value) {
-    const result = deleteCode(pendingCode.value.code)
-    deleteOpen.value = false
-    pendingCode.value = null
-    if (!result.ok) {
-      toast.error(t(result.error))
+async function confirmDelete() {
+  if (actionBusy.value) return
+  actionBusy.value = true
+  try {
+    if (deleteMode.value === 'code' && pendingCode.value) {
+      const result = await deleteCode(pendingCode.value.code)
+      deleteOpen.value = false
+      pendingCode.value = null
+      if (!result.ok) {
+        toast.error(result.error)
+        return
+      }
+      toast.success(t('کد تخفیف حذف شد'))
       return
     }
-    toast.success(t('کد تخفیف حذف شد'))
-    return
+    if (pendingPromo.value) {
+      const result = await deletePromo(pendingPromo.value.id)
+      deleteOpen.value = false
+      pendingPromo.value = null
+      if (!result.ok) {
+        toast.error(result.error)
+        return
+      }
+      toast.success(t('پرومو حذف شد'))
+    }
   }
-  if (pendingPromo.value) {
-    const result = deletePromo(pendingPromo.value.id)
-    deleteOpen.value = false
-    pendingPromo.value = null
-    if (!result.ok) {
-      toast.error(t(result.error))
-      return
-    }
-    toast.success(t('پرومو حذف شد'))
+  finally {
+    actionBusy.value = false
   }
 }
 </script>

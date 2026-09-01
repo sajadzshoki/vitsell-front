@@ -63,42 +63,30 @@
           icon="i-tabler-icons"
           :help="$t('نام آیکون Tabler بدون پیشوند i-tabler-')"
         />
-        <TheFormInput
-          v-model="form.image"
-          :label="$t('تصویر دسته')"
-          :placeholder="$t('آدرس تصویر')"
-          dir="ltr"
-          icon="i-tabler-photo"
-        />
       </div>
 
-      <div class="mt-4 flex items-center gap-3">
-        <img
-          v-if="form.image"
-          :src="form.image"
+      <UFormField
+        class="mt-4"
+        :label="$t('توضیح کوتاه دسته')"
+        :help="$t('متن کوتاه برای صفحه جستجو و دسته')"
+      >
+        <UTextarea
+          v-model="form.text"
+          :rows="3"
+          autoresize
+          class="w-full"
+          :placeholder="$t('توضیح کوتاه دسته را بنویسید')"
+        />
+      </UFormField>
+
+      <div class="mt-4 max-w-sm">
+        <TheSellerImageUpload
+          v-model="form.image"
+          :label="$t('تصویر دسته')"
           :alt="form.name || $t('پیش‌نمایش')"
-          class="size-20 rounded-xl object-cover bg-muted border border-muted"
-        >
-        <div
-          v-else
-          class="size-20 rounded-xl bg-muted border border-muted grid place-items-center"
-        >
-          <TheIcon
-            icon-type="img"
-            name="noImage.png"
-            class="size-8 opacity-60"
-          />
-        </div>
-        <UButton
-          v-if="form.image"
-          type="button"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          @click="form.image = ''"
-        >
-          {{ $t('حذف تصویر') }}
-        </UButton>
+          icon="i-tabler-photo"
+          :hint="$t('تصویر کارت دسته در مگامنو و جستجو')"
+        />
       </div>
 
       <div
@@ -143,13 +131,15 @@
           {{ $t('هیرو') }}
         </h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TheFormInput
-            v-model="form.pageMeta.hero.image"
-            class="md:col-span-2"
-            :label="$t('تصویر هیرو')"
-            dir="ltr"
-            icon="i-tabler-photo"
-          />
+          <div class="md:col-span-2 max-w-md">
+            <TheSellerImageUpload
+              v-model="form.pageMeta.hero.image"
+              :label="$t('تصویر هیرو')"
+              :alt="form.pageMeta.hero.title || form.name || $t('پیش‌نمایش هیرو')"
+              icon="i-tabler-photo"
+              :hint="$t('تصویر اصلی صفحه دسته')"
+            />
+          </div>
           <TheFormInput
             v-model="form.pageMeta.hero.eyebrow"
             :label="$t('عنوان فرعی')"
@@ -278,10 +268,10 @@
               v-model="item.query"
               :label="$t('عبارت جستجو')"
             />
-            <TheFormInput
+            <TheSellerImageUpload
               v-model="item.image"
               :label="$t('تصویر')"
-              dir="ltr"
+              :alt="item.title || $t('پیش‌نمایش')"
               icon="i-tabler-photo"
             />
           </div>
@@ -342,7 +332,6 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const toast = useAppToast()
-const router = useRouter()
 const { createCategory, updateCategory } = useSellerCategories()
 
 const isEdit = computed(() => Boolean(props.initial?.id))
@@ -398,19 +387,19 @@ async function onSave() {
   try {
     const payload = form.value
     const result = isEdit.value
-      ? updateCategory(props.initial!.id, payload)
-      : createCategory(payload)
+      ? await updateCategory(props.initial!.id, payload)
+      : await createCategory(payload)
 
     if (!result.ok) {
-      toast.error(t(result.error))
-      if (result.error.includes('تکراری')) {
-        errors.value = { ...errors.value, id: t(result.error) }
+      toast.error(result.error)
+      if (String(result.error).includes('تکراری')) {
+        errors.value = { ...errors.value, id: result.error }
       }
       return
     }
 
     toast.success(isEdit.value ? t('دسته‌بندی به‌روز شد') : t('دسته‌بندی اضافه شد'))
-    await router.push('/seller/categories')
+    await navigateTo('/seller/categories')
   }
   finally {
     saving.value = false

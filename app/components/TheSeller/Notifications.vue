@@ -40,7 +40,17 @@
     />
 
     <div
-      v-if="!filtered.length"
+      v-if="pending && !campaigns.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
+    <div
+      v-else-if="!filtered.length"
       class="text-center py-12"
     >
       <UIcon
@@ -159,7 +169,7 @@
     <UModal
       v-model:open="deleteOpen"
       :title="$t('حذف اعلان')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود.')"
+      :description="$t('با حذف کمپین، اعلان‌های مربوط در صندوق کاربران هم حذف می‌شود.')"
     >
       <template #body>
         <div
@@ -186,6 +196,7 @@
           <UButton
             color="error"
             class="font-bold"
+            :loading="deleting"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -204,13 +215,14 @@ import {
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { campaigns, ensureLoaded, deleteCampaign } = useSellerNotifications()
+const { campaigns, pending, ensureLoaded, deleteCampaign } = useSellerNotifications()
 
 const query = ref('')
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerNotificationCampaign | null>(null)
+const deleting = ref(false)
 
-ensureLoaded()
+await ensureLoaded({ force: true })
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -240,15 +252,21 @@ function openDelete(campaign: SellerNotificationCampaign) {
   deleteOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDelete.value) return
-  const result = deleteCampaign(pendingDelete.value.id)
-  deleteOpen.value = false
-  pendingDelete.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  deleting.value = true
+  try {
+    const result = await deleteCampaign(pendingDelete.value.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    if (!result.ok) {
+      toast.error(result.error)
+      return
+    }
+    toast.success(t('اعلان حذف شد'))
   }
-  toast.success(t('اعلان حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
 </script>

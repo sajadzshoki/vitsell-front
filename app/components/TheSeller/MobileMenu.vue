@@ -30,7 +30,7 @@ import { sellerNavItems } from '~/data/seller'
 const { newOrdersCount, unansweredReviews } = useSeller()
 const { unansweredCount: unansweredQuestions, ensureLoaded } = useSellerQuestions()
 
-ensureLoaded()
+void ensureLoaded()
 
 const menuItems = computed(() =>
   sellerNavItems
