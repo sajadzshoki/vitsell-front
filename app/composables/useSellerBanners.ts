@@ -69,6 +69,15 @@ export function useSellerBanners() {
     return { ok: true as const, banner: copy[index]! }
   }
 
+  function setActiveMany(ids: string[], active: boolean) {
+    const set = new Set(ids)
+    const now = new Date().toISOString()
+    items.value = items.value.map(b =>
+      set.has(b.id) ? { ...b, active, updatedAt: now } : b,
+    )
+    return { ok: true as const, count: set.size }
+  }
+
   return {
     banners,
     items,
@@ -79,5 +88,6 @@ export function useSellerBanners() {
     updateBanner,
     deleteBanner,
     setActive,
+    setActiveMany,
   }
 }

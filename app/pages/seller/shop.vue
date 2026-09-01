@@ -1,5 +1,5 @@
 <template>
-  <TheSellerShopForm />
+  <div />
 </template>
 
 <script setup lang="ts">
@@ -13,4 +13,6 @@ definePageMeta({
 useSeoMeta({
   title: () => t('تنظیمات سایت'),
 })
+
+await navigateTo('/seller/settings', { replace: true })
 </script>

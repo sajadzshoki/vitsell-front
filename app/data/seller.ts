@@ -2,18 +2,67 @@ export type SellerTabId =
   | 'dashboard'
   | 'products'
   | 'categories'
+  | 'brands'
+  | 'attributes'
+  | 'inventory'
+  | 'warehouses'
   | 'banners'
   | 'blog'
+  | 'pages'
   | 'about'
+  | 'media'
   | 'deals'
   | 'promotions'
   | 'notifications'
+  | 'marketing'
+  | 'discounts'
+  | 'campaigns'
   | 'footer'
   | 'orders'
+  | 'returns'
+  | 'refunds'
+  | 'shipping'
+  | 'customers'
   | 'reviews'
   | 'questions'
   | 'finance'
+  | 'finance_transactions'
+  | 'finance_payments'
+  | 'finance_settlements'
+  | 'finance_reconciliation'
+  | 'finance_adjustments'
+  | 'finance_reports'
+  | 'finance_gateways'
+  | 'analytics'
+  | 'admins'
+  | 'roles'
+  | 'permissions'
+  | 'audit'
+  | 'activity'
+  | 'seo'
+  | 'account'
   | 'shop'
+  | 'settings'
+  | 'system'
+  | 'navigation'
+  | 'imports'
+  | 'exports'
+
+export type SellerNavItem = {
+  id: SellerTabId
+  label: string
+  icon: string
+  /** Route for live modules; omit or empty for coming-soon */
+  to?: string
+  comingSoon?: boolean
+  disabled?: boolean
+}
+
+export type SellerNavGroup = {
+  id: string
+  label: string
+  items: SellerNavItem[]
+}
 
 export type SellerProductStatus = 'active' | 'pending' | 'inactive' | 'out_of_stock'
 
@@ -202,28 +251,116 @@ export const defaultSellerShop: SellerShop = {
   joinDate: '',
 }
 
-export const sellerNavItems: {
-  id: SellerTabId
-  label: string
-  icon: string
-  to: string
-}[] = [
-  { id: 'dashboard', label: 'پیشخوان مدیریت', icon: 'i-tabler-layout-dashboard', to: '/seller' },
-  { id: 'products', label: 'محصولات', icon: 'i-tabler-package', to: '/seller/products' },
-  { id: 'orders', label: 'سفارش‌ها', icon: 'i-tabler-shopping-bag', to: '/seller/orders' },
-  { id: 'questions', label: 'پرسش و پاسخ', icon: 'i-tabler-message-question', to: '/seller/questions' },
-  { id: 'reviews', label: 'نظرات مشتریان', icon: 'i-tabler-message-2', to: '/seller/reviews' },
-  { id: 'finance', label: 'مالی و تسویه', icon: 'i-tabler-wallet', to: '/seller/finance' },
-  { id: 'categories', label: 'دسته‌بندی‌ها', icon: 'i-tabler-category', to: '/seller/categories' },
-  { id: 'banners', label: 'بنرها', icon: 'i-tabler-photo', to: '/seller/banners' },
-  { id: 'blog', label: 'وبلاگ', icon: 'i-tabler-news', to: '/seller/blog' },
-  { id: 'about', label: 'درباره ما', icon: 'i-tabler-building-store', to: '/seller/about' },
-  { id: 'deals', label: 'شگفت‌انگیزها', icon: 'i-tabler-bolt', to: '/seller/deals' },
-  { id: 'promotions', label: 'تخفیف و پروموشن', icon: 'i-tabler-discount-2', to: '/seller/promotions' },
-  { id: 'notifications', label: 'اعلان‌ها', icon: 'i-tabler-bell', to: '/seller/notifications' },
-  { id: 'footer', label: 'فوتر', icon: 'i-tabler-layout-bottombar', to: '/seller/footer' },
-  { id: 'shop', label: 'تنظیمات سایت', icon: 'i-tabler-settings', to: '/seller/shop' },
+export const sellerNavGroups: SellerNavGroup[] = [
+  {
+    id: 'overview',
+    label: 'نمای کلی',
+    items: [
+      { id: 'dashboard', label: 'پیشخوان مدیریت', icon: 'i-tabler-layout-dashboard', to: '/seller' },
+    ],
+  },
+  {
+    id: 'commerce',
+    label: 'کاتالوگ',
+    items: [
+      { id: 'products', label: 'محصولات', icon: 'i-tabler-package', to: '/seller/products' },
+      { id: 'categories', label: 'دسته‌بندی‌ها', icon: 'i-tabler-category', to: '/seller/categories' },
+      { id: 'brands', label: 'برندها', icon: 'i-tabler-trademark', to: '/seller/brands' },
+      { id: 'attributes', label: 'ویژگی‌ها', icon: 'i-tabler-list-details', to: '/seller/attributes' },
+      { id: 'inventory', label: 'موجودی', icon: 'i-tabler-packages', to: '/seller/inventory' },
+      { id: 'warehouses', label: 'انبارها', icon: 'i-tabler-building-warehouse', to: '/seller/warehouses' },
+    ],
+  },
+  {
+    id: 'orders',
+    label: 'سفارش‌ها',
+    items: [
+      { id: 'orders', label: 'سفارش‌ها', icon: 'i-tabler-shopping-bag', to: '/seller/orders' },
+      { id: 'returns', label: 'مرجوعی‌ها', icon: 'i-tabler-arrow-back-up', to: '/seller/returns' },
+      { id: 'refunds', label: 'بازپرداخت‌ها', icon: 'i-tabler-receipt-refund', to: '/seller/refunds' },
+      { id: 'shipping', label: 'ارسال', icon: 'i-tabler-truck-delivery', to: '/seller/shipping' },
+    ],
+  },
+  {
+    id: 'customers',
+    label: 'مشتریان',
+    items: [
+      { id: 'customers', label: 'مشتریان', icon: 'i-tabler-users', to: '/seller/customers' },
+      { id: 'reviews', label: 'نظرات مشتریان', icon: 'i-tabler-message-2', to: '/seller/reviews' },
+      { id: 'questions', label: 'پرسش و پاسخ', icon: 'i-tabler-message-question', to: '/seller/questions' },
+    ],
+  },
+  {
+    id: 'marketing',
+    label: 'بازاریابی',
+    items: [
+      { id: 'marketing', label: 'داشبورد بازاریابی', icon: 'i-tabler-chart-arrows', to: '/seller/marketing' },
+      { id: 'campaigns', label: 'کمپین‌ها', icon: 'i-tabler-speakerphone', to: '/seller/campaigns' },
+      { id: 'discounts', label: 'تخفیف‌ها', icon: 'i-tabler-discount', to: '/seller/discounts' },
+      { id: 'banners', label: 'بنرها', icon: 'i-tabler-photo', to: '/seller/banners' },
+      { id: 'deals', label: 'شگفت‌انگیزها', icon: 'i-tabler-bolt', to: '/seller/deals' },
+      { id: 'promotions', label: 'کوپن و پرومو', icon: 'i-tabler-discount-2', to: '/seller/promotions' },
+      { id: 'notifications', label: 'اعلان‌ها', icon: 'i-tabler-bell', to: '/seller/notifications' },
+    ],
+  },
+  {
+    id: 'content',
+    label: 'محتوا',
+    items: [
+      { id: 'blog', label: 'وبلاگ', icon: 'i-tabler-news', to: '/seller/blog' },
+      { id: 'pages', label: 'صفحات ثابت', icon: 'i-tabler-file-text', to: '/seller/pages' },
+      { id: 'about', label: 'درباره ما', icon: 'i-tabler-building-store', to: '/seller/about' },
+      { id: 'media', label: 'کتابخانه رسانه', icon: 'i-tabler-photo-cog', to: '/seller/media' },
+      { id: 'footer', label: 'فوتر', icon: 'i-tabler-layout-bottombar', to: '/seller/footer' },
+    ],
+  },
+  {
+    id: 'finance',
+    label: 'مالی',
+    items: [
+      { id: 'finance', label: 'داشبورد مالی', icon: 'i-tabler-report-money', to: '/seller/finance' },
+      { id: 'finance_transactions', label: 'تراکنش‌ها', icon: 'i-tabler-arrows-exchange', to: '/seller/finance/transactions' },
+      { id: 'finance_payments', label: 'پرداخت‌ها', icon: 'i-tabler-credit-card', to: '/seller/finance/payments' },
+      { id: 'finance_settlements', label: 'تسویه‌های درگاه', icon: 'i-tabler-building-bank', to: '/seller/finance/settlements' },
+      { id: 'finance_reconciliation', label: 'مغایرت‌گیری', icon: 'i-tabler-scale', to: '/seller/finance/reconciliation' },
+      { id: 'finance_adjustments', label: 'تعدیلات', icon: 'i-tabler-adjustments', to: '/seller/finance/adjustments' },
+      { id: 'finance_reports', label: 'گزارش‌های مالی', icon: 'i-tabler-chart-area-line', to: '/seller/finance/reports' },
+      { id: 'finance_gateways', label: 'درگاه‌ها', icon: 'i-tabler-server', to: '/seller/finance/gateways' },
+    ],
+  },
+  {
+    id: 'administration',
+    label: 'مدیریت دسترسی',
+    items: [
+      { id: 'system', label: 'نمای سیستم', icon: 'i-tabler-server-cog', to: '/seller/system' },
+      { id: 'admins', label: 'کاربران ادمین', icon: 'i-tabler-user-shield', to: '/seller/admins' },
+      { id: 'roles', label: 'نقش‌ها و دسترسی‌ها', icon: 'i-tabler-lock-access', to: '/seller/roles' },
+      { id: 'permissions', label: 'کاتالوگ دسترسی‌ها', icon: 'i-tabler-key', to: '/seller/roles/permissions' },
+      { id: 'audit', label: 'لاگ حسابرسی', icon: 'i-tabler-clipboard-list', to: '/seller/audit' },
+      { id: 'activity', label: 'لاگ فعالیت', icon: 'i-tabler-history', to: '/seller/activity' },
+      { id: 'imports', label: 'مرکز ورود داده', icon: 'i-tabler-file-import', to: '/seller/imports' },
+      { id: 'exports', label: 'مرکز خروجی', icon: 'i-tabler-file-export', to: '/seller/exports' },
+    ],
+  },
+  {
+    id: 'system',
+    label: 'سیستم',
+    items: [
+      { id: 'settings', label: 'تنظیمات پلتفرم', icon: 'i-tabler-settings', to: '/seller/settings' },
+      { id: 'navigation', label: 'منوی سایت', icon: 'i-tabler-menu-2', to: '/seller/navigation' },
+      { id: 'account', label: 'حساب ادمین', icon: 'i-tabler-user-circle', to: '/seller/account' },
+      { id: 'seo', label: 'تنظیمات سئو', icon: 'i-tabler-world-search', to: '/seller/seo' },
+    ],
+  },
 ]
+
+/** Flat live+placeholder items (backward compatible lookup) */
+export const sellerNavItems: SellerNavItem[] = sellerNavGroups.flatMap(group => group.items)
+
+/** Only navigable (live) items */
+export const sellerLiveNavItems: SellerNavItem[] = sellerNavItems.filter(
+  item => item.to && !item.comingSoon && !item.disabled,
+)
 
 export const sellerProductStatusMeta: Record<
   SellerProductStatus,

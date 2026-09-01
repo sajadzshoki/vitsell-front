@@ -38,24 +38,53 @@ Layout: `account` — همه با middleware `auth`
 | `/account/addresses` | `account/addresses.vue` | آدرس‌ها |
 | `/account/settings` | `account/settings.vue` | تنظیمات |
 
-### پنل فروشنده
+### پنل مدیریت (ادمین سایت)
 
-Layout: `seller` — middleware `auth` + `admin` (فقط `role === 'admin'`)
+Layout: `seller` — middleware `auth` + `admin` (فقط `role === 'admin'`)  
+Shell اختصاصی بدون Navbar/Footer فروشگاه.
 
 | Route | فایل | توضیح |
 |-------|------|--------|
 | `/seller` | `seller/index.vue` | داشبورد مدیریت |
-| `/seller/shop` | `seller/shop.vue` | تنظیمات سایت |
 | `/seller/products` | `seller/products/index.vue` | لیست محصولات |
 | `/seller/products/new` | `seller/products/new.vue` | افزودن محصول |
+| `/seller/products/:id` | `seller/products/[id].vue` | جزئیات / ویرایش محصول |
 | `/seller/orders` | `seller/orders/index.vue` | سفارش‌ها |
 | `/seller/orders/:id` | `seller/orders/[id].vue` | جزئیات سفارش |
+| `/seller/questions` | `seller/questions/index.vue` | پرسش و پاسخ |
 | `/seller/reviews` | `seller/reviews.vue` | نظرات |
 | `/seller/finance` | `seller/finance.vue` | مالی / تسویه |
+| `/seller/categories` | `seller/categories/index.vue` | دسته‌بندی‌ها |
+| `/seller/categories/new` | `seller/categories/new.vue` | افزودن دسته |
+| `/seller/categories/:id` | `seller/categories/[id].vue` | ویرایش دسته |
+| `/seller/banners` | `seller/banners/index.vue` | بنرها |
+| `/seller/banners/new` | `seller/banners/new.vue` | افزودن بنر |
+| `/seller/banners/:id` | `seller/banners/[id].vue` | ویرایش بنر |
 | `/seller/blog` | `seller/blog/index.vue` | مدیریت وبلاگ |
 | `/seller/blog/new` | `seller/blog/new.vue` | افزودن مطلب |
 | `/seller/blog/:id` | `seller/blog/[id].vue` | ویرایش مطلب |
 | `/seller/about` | `seller/about.vue` | صفحه درباره ما |
+| `/seller/deals` | `seller/deals/index.vue` | شگفت‌انگیزها |
+| `/seller/deals/new` | `seller/deals/new.vue` | افزودن شگفت‌انگیز |
+| `/seller/deals/:id` | `seller/deals/[id].vue` | ویرایش شگفت‌انگیز |
+| `/seller/promotions` | `seller/promotions/index.vue` | تخفیف و پروموشن |
+| `/seller/promotions/codes/new` | `seller/promotions/codes/new.vue` | کد تخفیف جدید |
+| `/seller/promotions/codes/:id` | `seller/promotions/codes/[id].vue` | ویرایش کد |
+| `/seller/promotions/promos/new` | `seller/promotions/promos/new.vue` | پرومو جدید |
+| `/seller/promotions/promos/:id` | `seller/promotions/promos/[id].vue` | ویرایش پرومو |
+| `/seller/notifications` | `seller/notifications/index.vue` | اعلان‌ها |
+| `/seller/notifications/new` | `seller/notifications/new.vue` | ارسال اعلان |
+| `/seller/footer` | `seller/footer.vue` | فوتر |
+| `/seller/shop` | `seller/shop.vue` | تنظیمات سایت |
+| `/seller/admins` | `seller/admins/index.vue` | کاربران ادمین |
+| `/seller/admins/new` | `seller/admins/new.vue` | افزودن ادمین |
+| `/seller/admins/:id` | `seller/admins/[id].vue` | جزئیات / ویرایش ادمین |
+| `/seller/roles` | `seller/roles/index.vue` | نقش‌ها |
+| `/seller/roles/new` | `seller/roles/new.vue` | نقش جدید |
+| `/seller/roles/:id` | `seller/roles/[id].vue` | ویرایش نقش |
+| `/seller/audit` | `seller/audit.vue` | لاگ حسابرسی |
+| `/seller/account` | `seller/account.vue` | حساب ادمین جاری |
+| `/seller/forbidden` | `seller/forbidden.vue` | عدم دسترسی (403) |
 
 ### محتوا و صفحات ثابت
 

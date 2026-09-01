@@ -19,15 +19,21 @@ export function useAbout() {
         headers: { 'no-error': true },
       })
       if (result && result.title) {
+        const defaults = buildDefaultAboutPage()
         about.value = {
-          ...buildDefaultAboutPage(),
+          ...defaults,
           ...result,
-          story: result.story?.length ? result.story : buildDefaultAboutPage().story,
-          stats: result.stats?.length ? result.stats : buildDefaultAboutPage().stats,
-          values: result.values?.length ? result.values : buildDefaultAboutPage().values,
-          milestones: result.milestones?.length ? result.milestones : buildDefaultAboutPage().milestones,
-          team: result.team?.length ? result.team : buildDefaultAboutPage().team,
-          cta: result.cta ?? buildDefaultAboutPage().cta,
+          story: result.story?.length ? result.story : defaults.story,
+          stats: result.stats?.length ? result.stats : defaults.stats,
+          values: result.values?.length ? result.values : defaults.values,
+          milestones: result.milestones?.length ? result.milestones : defaults.milestones,
+          team: result.team?.length ? result.team : defaults.team,
+          cta: result.cta ?? defaults.cta,
+          seo: { ...defaults.seo, ...(result.seo || {}) },
+          sectionVisibility: {
+            ...defaults.sectionVisibility,
+            ...(result.sectionVisibility || {}),
+          },
         }
       }
       else {

@@ -13,7 +13,7 @@
           color="primary"
           size="sm"
           icon="i-tabler-send"
-          class="font-medium"
+          class="font-medium cursor-pointer"
         >
           {{ $t('ارسال اعلان') }}
         </UButton>
@@ -26,18 +26,32 @@
         color="primary"
         block
         icon="i-tabler-send"
-        class="font-medium"
+        class="font-medium cursor-pointer"
       >
         {{ $t('ارسال اعلان') }}
       </UButton>
     </div>
 
-    <TheFormInput
-      v-model="query"
-      icon="i-tabler-search"
-      :placeholder="$t('جستجوی عنوان یا توضیحات')"
-      class="mb-4"
-    />
+    <div class="flex flex-col sm:(flex-row items-center) gap-3 mb-4">
+      <TheFormInput
+        v-model="query"
+        icon="i-tabler-search"
+        :placeholder="$t('جستجوی عنوان یا توضیحات')"
+        class="flex-1 w-full"
+      />
+      <USelect
+        v-model="typeFilter"
+        :items="typeFilterItems"
+        value-key="value"
+        class="w-full sm:w-44"
+      />
+      <USelect
+        v-model="statusFilter"
+        :items="statusFilterItems"
+        value-key="value"
+        class="w-full sm:w-44"
+      />
+    </div>
 
     <div
       v-if="pending && !campaigns.length"
@@ -49,29 +63,28 @@
       />
     </div>
 
-    <div
+    <TheSellerEmptyState
       v-else-if="!filtered.length"
-      class="text-center py-12"
+      icon="i-tabler-bell"
+      :message="query.trim() || typeFilter !== 'all' || statusFilter !== 'all'
+        ? $t('اعلانی با این فیلتر پیدا نشد')
+        : $t('هنوز اعلانی ارسال نشده است')"
     >
-      <UIcon
-        name="i-tabler-bell"
-        class="size-16 text-dimmed mx-auto mb-4"
-      />
-      <p class="text-sm text-muted mb-4">
-        {{ query.trim()
-          ? $t('اعلانی با این جستجو پیدا نشد')
-          : $t('هنوز اعلانی ارسال نشده است') }}
-      </p>
-      <UButton
-        v-if="!query.trim()"
-        to="/seller/notifications/new"
-        color="primary"
-        variant="soft"
-        icon="i-tabler-send"
+      <template
+        v-if="!query.trim() && typeFilter === 'all' && statusFilter === 'all'"
+        #actions
       >
-        {{ $t('ارسال اولین اعلان') }}
-      </UButton>
-    </div>
+        <UButton
+          to="/seller/notifications/new"
+          color="primary"
+          variant="soft"
+          icon="i-tabler-send"
+          class="cursor-pointer"
+        >
+          {{ $t('ارسال اولین اعلان') }}
+        </UButton>
+      </template>
+    </TheSellerEmptyState>
 
     <div
       v-else
@@ -83,8 +96,15 @@
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
         <div class="flex items-start gap-3">
-          <div class="size-11 rounded-xl bg-default border border-muted text-primary grid place-items-center shrink-0">
+          <div class="size-11 rounded-xl bg-default border border-muted text-primary grid place-items-center shrink-0 overflow-hidden">
+            <img
+              v-if="campaign.image"
+              :src="campaign.image"
+              :alt="campaign.title"
+              class="size-full object-cover"
+            >
             <UIcon
+              v-else
               :name="campaign.icon"
               class="size-5"
             />
@@ -100,14 +120,24 @@
                   {{ campaign.description }}
                 </div>
               </div>
-              <UBadge
-                color="success"
-                variant="subtle"
-                size="sm"
-                class="font-medium shrink-0"
-              >
-                {{ $t('ارسال‌شده') }}
-              </UBadge>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <UBadge
+                  color="info"
+                  variant="subtle"
+                  size="sm"
+                  class="font-medium shrink-0"
+                >
+                  {{ $t(sellerNotificationTypeMeta[campaign.type]?.label || campaign.type) }}
+                </UBadge>
+                <UBadge
+                  :color="sellerNotificationStatusMeta[campaign.status].color"
+                  variant="subtle"
+                  size="sm"
+                  class="font-medium shrink-0"
+                >
+                  {{ $t(sellerNotificationStatusMeta[campaign.status].label) }}
+                </UBadge>
+              </div>
             </div>
 
             <div class="mt-2 flex flex-wrap gap-3 text-[11px] text-muted">
@@ -124,7 +154,13 @@
                 </span>
               </span>
               <span
-                v-if="campaign.sentAt"
+                v-if="campaign.scheduledAt && campaign.status === 'scheduled'"
+                class="num"
+              >
+                {{ $t('زمان‌بندی') }}: {{ formatTime(campaign.scheduledAt) }}
+              </span>
+              <span
+                v-else-if="campaign.sentAt"
                 class="num"
               >
                 {{ formatTime(campaign.sentAt) }}
@@ -147,8 +183,22 @@
                 variant="soft"
                 size="xs"
                 icon="i-tabler-external-link"
+                class="cursor-pointer"
               >
                 {{ $t('مشاهده لینک') }}
+              </UButton>
+              <UButton
+                v-if="campaign.status === 'scheduled'"
+                type="button"
+                color="warning"
+                variant="ghost"
+                size="xs"
+                icon="i-tabler-calendar-off"
+                class="cursor-pointer"
+                :loading="cancellingId === campaign.id"
+                @click="onCancel(campaign)"
+              >
+                {{ $t('لغو زمان‌بندی') }}
               </UButton>
               <UButton
                 type="button"
@@ -156,6 +206,7 @@
                 variant="ghost"
                 size="xs"
                 icon="i-tabler-trash"
+                class="cursor-pointer"
                 @click="openDelete(campaign)"
               >
                 {{ $t('حذف') }}
@@ -189,13 +240,14 @@
           <UButton
             color="neutral"
             variant="outline"
+            class="cursor-pointer"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
           </UButton>
           <UButton
             color="error"
-            class="font-bold"
+            class="font-bold cursor-pointer"
             :loading="deleting"
             @click="confirmDelete"
           >
@@ -210,29 +262,55 @@
 <script setup lang="ts">
 import {
   audienceSummary,
+  sellerNotificationStatusMeta,
+  sellerNotificationTypeMeta,
   type SellerNotificationCampaign,
+  type SellerNotificationStatus,
+  type SellerNotificationType,
 } from '~/data/seller-notifications'
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { campaigns, pending, ensureLoaded, deleteCampaign } = useSellerNotifications()
+const { campaigns, pending, ensureLoaded, deleteCampaign, cancelScheduled } = useSellerNotifications()
 
 const query = ref('')
+const typeFilter = ref<'all' | SellerNotificationType>('all')
+const statusFilter = ref<'all' | SellerNotificationStatus>('all')
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerNotificationCampaign | null>(null)
 const deleting = ref(false)
+const cancellingId = ref<string | null>(null)
+
+const typeFilterItems = computed(() => [
+  { label: t('همه انواع'), value: 'all' },
+  ...(Object.keys(sellerNotificationTypeMeta) as SellerNotificationType[]).map(value => ({
+    label: t(sellerNotificationTypeMeta[value].label),
+    value,
+  })),
+])
+
+const statusFilterItems = computed(() => [
+  { label: t('همه وضعیت‌ها'), value: 'all' },
+  ...(Object.keys(sellerNotificationStatusMeta) as SellerNotificationStatus[]).map(value => ({
+    label: t(sellerNotificationStatusMeta[value].label),
+    value,
+  })),
+])
 
 await ensureLoaded({ force: true })
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
-  if (!q) return campaigns.value
-  return campaigns.value.filter(
-    c =>
+  return campaigns.value.filter((c) => {
+    if (typeFilter.value !== 'all' && c.type !== typeFilter.value) return false
+    if (statusFilter.value !== 'all' && c.status !== statusFilter.value) return false
+    if (!q) return true
+    return (
       c.title.includes(query.value.trim())
       || c.description.includes(query.value.trim())
-      || (c.link ?? '').toLowerCase().includes(q),
-  )
+      || (c.link ?? '').toLowerCase().includes(q)
+    )
+  })
 })
 
 function formatTime(iso: string) {
@@ -245,6 +323,21 @@ function formatTime(iso: string) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+async function onCancel(campaign: SellerNotificationCampaign) {
+  cancellingId.value = campaign.id
+  try {
+    const result = await cancelScheduled(campaign.id)
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('زمان‌بندی لغو شد'))
+  }
+  finally {
+    cancellingId.value = null
+  }
 }
 
 function openDelete(campaign: SellerNotificationCampaign) {

@@ -6,6 +6,26 @@ export type SellerNotificationAudienceGroup =
   | 'new_users'
   | 'inactive'
 
+export type SellerNotificationStatus =
+  | 'draft'
+  | 'scheduled'
+  | 'sent'
+  | 'failed'
+  | 'cancelled'
+
+export type SellerNotificationType =
+  | 'promotional'
+  | 'order'
+  | 'system'
+  | 'inventory'
+  | 'marketing'
+  | 'announcement'
+
+export type SellerNotificationRelatedEntity = {
+  type: string
+  id: string
+}
+
 export type SellerMockUser = {
   id: number
   name: string
@@ -19,11 +39,15 @@ export type SellerNotificationCampaign = {
   description: string
   link: string | null
   icon: string
+  type: SellerNotificationType
   audienceType: SellerNotificationAudienceType
   audienceGroup: SellerNotificationAudienceGroup | null
   userIds: number[]
   recipientCount: number
-  status: 'sent' | 'draft'
+  status: SellerNotificationStatus
+  scheduledAt: string | null
+  image: string | null
+  relatedEntity: SellerNotificationRelatedEntity | null
   createdAt: string
   sentAt: string | null
 }
@@ -33,9 +57,14 @@ export type SellerNotificationFormValues = {
   description: string
   link: string
   icon: string
+  type: SellerNotificationType
   audienceType: SellerNotificationAudienceType
   audienceGroup: SellerNotificationAudienceGroup
   userIds: number[]
+  scheduledAt: string
+  image: string
+  relatedEntityType: string
+  relatedEntityId: string
 }
 
 export const sellerNotificationAudienceMeta: Record<
@@ -69,6 +98,29 @@ export const sellerNotificationGroupMeta: Record<
   },
 }
 
+export const sellerNotificationStatusMeta: Record<
+  SellerNotificationStatus,
+  { label: string, color: 'primary' | 'success' | 'warning' | 'error' | 'neutral' | 'info' }
+> = {
+  draft: { label: 'پیش‌نویس', color: 'neutral' },
+  scheduled: { label: 'زمان‌بندی‌شده', color: 'info' },
+  sent: { label: 'ارسال‌شده', color: 'success' },
+  failed: { label: 'ناموفق', color: 'error' },
+  cancelled: { label: 'لغو شده', color: 'error' },
+}
+
+export const sellerNotificationTypeMeta: Record<
+  SellerNotificationType,
+  { label: string }
+> = {
+  promotional: { label: 'پروموشنال' },
+  order: { label: 'سفارش' },
+  system: { label: 'سیستم' },
+  inventory: { label: 'موجودی' },
+  marketing: { label: 'بازاریابی' },
+  announcement: { label: 'اطلاعیه' },
+}
+
 export const sellerNotificationIcons = [
   'i-tabler-bell',
   'i-tabler-package',
@@ -96,15 +148,38 @@ export const sellerMockUsers: SellerMockUser[] = [
   { id: 12, name: 'پارسا احمدی', phone: '09120001122', groupHints: ['inactive', 'all_customers'] },
 ]
 
+function normalizeStatus(raw?: string): SellerNotificationStatus {
+  if (raw === 'draft' || raw === 'scheduled' || raw === 'failed' || raw === 'cancelled') return raw
+  return 'sent'
+}
+
+function normalizeType(raw?: string): SellerNotificationType {
+  if (
+    raw === 'order'
+    || raw === 'system'
+    || raw === 'inventory'
+    || raw === 'marketing'
+    || raw === 'announcement'
+  ) {
+    return raw
+  }
+  return 'promotional'
+}
+
 export function emptyNotificationForm(): SellerNotificationFormValues {
   return {
     title: '',
     description: '',
     link: '',
     icon: 'i-tabler-bell',
+    type: 'promotional',
     audienceType: 'all',
     audienceGroup: 'all_customers',
     userIds: [],
+    scheduledAt: '',
+    image: '',
+    relatedEntityType: '',
+    relatedEntityId: '',
   }
 }
 
@@ -143,17 +218,24 @@ export function audienceSummary(campaign: SellerNotificationCampaign) {
 export function toNotificationCampaign(
   raw: Partial<SellerNotificationCampaign> & { id: string, title: string },
 ): SellerNotificationCampaign {
+  const related = raw.relatedEntity
   return {
     id: raw.id,
     title: raw.title,
     description: raw.description ?? '',
     link: raw.link ?? null,
     icon: raw.icon || 'i-tabler-bell',
+    type: normalizeType(raw.type),
     audienceType: raw.audienceType ?? 'all',
     audienceGroup: raw.audienceGroup ?? null,
     userIds: Array.isArray(raw.userIds) ? raw.userIds.map(Number) : [],
     recipientCount: Number(raw.recipientCount ?? 0),
-    status: raw.status === 'draft' ? 'draft' : 'sent',
+    status: normalizeStatus(raw.status),
+    scheduledAt: raw.scheduledAt ?? null,
+    image: raw.image ?? null,
+    relatedEntity: related?.type && related?.id
+      ? { type: String(related.type), id: String(related.id) }
+      : null,
     createdAt: raw.createdAt || new Date().toISOString(),
     sentAt: raw.sentAt ?? null,
   }

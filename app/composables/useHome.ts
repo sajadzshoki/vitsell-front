@@ -15,6 +15,7 @@ import {
   homeTopMobileBrands,
   homeAppStores,
 } from '~/data/home'
+import { bannersForPlacement } from '~/data/seller-banners'
 import { products as localProducts, type Product } from '~/data/products'
 
 export type HomePayload = {
@@ -57,8 +58,25 @@ export function useHome() {
   const error = useState<string | null>('home-error', () => null)
   const inFlight = useState<Promise<{ home: HomePayload }> | null>('home-inflight', () => null)
   const { categories, fetchCategories } = useCategories()
+  const { banners: sellerBanners } = useSellerBanners()
+  const sellerBannersSeeded = useState('seller-banners-seeded', () => false)
 
-  const heroSlides = computed(() => home.value.heroSlides)
+  const heroSlides = computed(() => {
+    if (!sellerBannersSeeded.value) return home.value.heroSlides
+    const fromSeller = bannersForPlacement(sellerBanners.value, 'homepage_hero')
+    if (!fromSeller.length) return home.value.heroSlides
+    return fromSeller.map((b, index) => ({
+      id: b.id,
+      eyebrow: b.internalName || '',
+      title: b.title || home.value.heroSlides[index]?.title || '',
+      subtitle: home.value.heroSlides[index]?.subtitle || '',
+      cta: home.value.heroSlides[index]?.cta || 'مشاهده',
+      to: b.link,
+      image: b.image,
+      icon: home.value.heroSlides[index]?.icon || 'photo',
+      tone: (home.value.heroSlides[index]?.tone || 'inverted') as HeroSlide['tone'],
+    }))
+  })
   const heroFeatures = computed(() => home.value.heroFeatures)
   const brands = computed(() => home.value.brands)
   const circles = computed(() => home.value.circles)
@@ -76,7 +94,21 @@ export function useHome() {
     return fromApi.length ? fromApi : localProducts
   })
 
-  const bannerRows = computed<HomeBannerRow[]>(() => homeBannerRows)
+  const bannerRows = computed<HomeBannerRow[]>(() => {
+    if (!sellerBannersSeeded.value) return homeBannerRows
+    const strip = bannersForPlacement(sellerBanners.value, 'homepage_promo_strip')
+    if (!strip.length) return homeBannerRows
+    return [{
+      id: 'seller-promo-strip',
+      items: strip.map(b => ({
+        id: b.id,
+        title: b.title || '',
+        subtitle: b.alt || '',
+        image: b.imageMobile || b.image,
+        to: b.link,
+      })),
+    }]
+  })
   const topMobileBrands = computed<HomeTopBrand[]>(() => homeTopMobileBrands)
   const categoryShelves = computed<HomeCategoryShelf[]>(() => homeCategoryShelves)
   const seoBlocks = computed<HomeSeoBlock[]>(() => homeSeoBlocks)

@@ -33,7 +33,7 @@ const { ensureSeeded, getById } = useBlog()
 
 definePageMeta({
   layout: 'seller',
-  middleware: 'auth',
+  middleware: ['auth', 'admin'],
 })
 
 ensureSeeded()

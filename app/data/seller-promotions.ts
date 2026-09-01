@@ -3,9 +3,16 @@ import {
   toDatetimeLocalValue,
 } from '~/data/seller-deals'
 
+import { emptySeoMeta, type SeoMeta } from '~/data/seo'
+import {
+  emptyMarketingTargeting,
+  type SellerMarketingDiscountType,
+  type SellerMarketingTargeting,
+} from '~/data/seller-marketing-shared'
+
 export type SellerDiscountCode = {
   code: string
-  /** درصد ۱–۹۹ */
+  /** درصد ۱–۹۹ — فیلد API */
   percent: number
   active: boolean
   startsAt: string
@@ -14,6 +21,19 @@ export type SellerDiscountCode = {
   oncePerUser: boolean
   createdAt: string | null
   updatedAt: string | null
+  /** FE overlay / future API */
+  name?: string
+  description?: string
+  discountType?: SellerMarketingDiscountType
+  fixedAmount?: number
+  maxDiscount?: number | null
+  usageLimit?: number | null
+  usageCount?: number
+  perCustomerLimit?: number | null
+  priority?: number
+  targeting?: SellerMarketingTargeting
+  totalDiscountAmount?: number
+  seo?: SeoMeta | null
 }
 
 export type SellerDiscountCodeForm = {
@@ -24,6 +44,16 @@ export type SellerDiscountCodeForm = {
   endsAt: string
   minAmount: string
   oncePerUser: boolean
+  name: string
+  description: string
+  discountType: SellerMarketingDiscountType
+  fixedAmount: string
+  maxDiscount: string
+  usageLimit: string
+  perCustomerLimit: string
+  priority: number
+  targeting: SellerMarketingTargeting
+  seo: SeoMeta
 }
 
 export type SellerDiscountCodeApiPayload = {
@@ -108,6 +138,16 @@ export function emptyDiscountCodeForm(): SellerDiscountCodeForm {
     endsAt: toDatetimeLocalValue(end),
     minAmount: '0',
     oncePerUser: true,
+    name: '',
+    description: '',
+    discountType: 'percent',
+    fixedAmount: '0',
+    maxDiscount: '',
+    usageLimit: '',
+    perCustomerLimit: '1',
+    priority: 100,
+    targeting: emptyMarketingTargeting(),
+    seo: emptySeoMeta(),
   }
 }
 
@@ -124,6 +164,22 @@ export function toDiscountCode(
     oncePerUser: Boolean(raw.oncePerUser),
     createdAt: raw.createdAt ?? null,
     updatedAt: raw.updatedAt ?? null,
+    name: raw.name ?? '',
+    description: raw.description ?? '',
+    discountType: raw.discountType === 'fixed' ? 'fixed' : 'percent',
+    fixedAmount: Math.max(0, Math.round(Number(raw.fixedAmount ?? 0))),
+    maxDiscount: raw.maxDiscount == null ? null : Math.max(0, Math.round(Number(raw.maxDiscount))),
+    usageLimit: raw.usageLimit == null ? null : Math.max(0, Math.round(Number(raw.usageLimit))),
+    usageCount: Math.max(0, Math.round(Number(raw.usageCount ?? 0))),
+    perCustomerLimit: raw.perCustomerLimit == null
+      ? (raw.oncePerUser ? 1 : null)
+      : Math.max(0, Math.round(Number(raw.perCustomerLimit))),
+    priority: Math.max(0, Math.round(Number(raw.priority ?? 100))),
+    targeting: raw.targeting
+      ? { ...emptyMarketingTargeting(), ...raw.targeting }
+      : emptyMarketingTargeting(),
+    totalDiscountAmount: Math.max(0, Math.round(Number(raw.totalDiscountAmount ?? 0))),
+    seo: raw.seo ? { ...emptySeoMeta(), ...raw.seo } : null,
   }
 }
 
@@ -136,6 +192,18 @@ export function toDiscountCodeForm(item: SellerDiscountCode): SellerDiscountCode
     endsAt: toDatetimeLocalValue(new Date(item.endsAt)),
     minAmount: String(item.minAmount),
     oncePerUser: item.oncePerUser,
+    name: item.name || '',
+    description: item.description || '',
+    discountType: item.discountType || 'percent',
+    fixedAmount: String(item.fixedAmount ?? 0),
+    maxDiscount: item.maxDiscount == null ? '' : String(item.maxDiscount),
+    usageLimit: item.usageLimit == null ? '' : String(item.usageLimit),
+    perCustomerLimit: item.perCustomerLimit == null ? '' : String(item.perCustomerLimit),
+    priority: item.priority ?? 100,
+    targeting: item.targeting
+      ? { ...emptyMarketingTargeting(), ...item.targeting }
+      : emptyMarketingTargeting(),
+    seo: item.seo ? { ...emptySeoMeta(), ...item.seo } : emptySeoMeta(),
   }
 }
 
@@ -144,12 +212,38 @@ export function formToDiscountCodePayload(
 ): SellerDiscountCodeApiPayload {
   return {
     code: form.code.trim().toUpperCase(),
-    percent: clampPercent(Number(form.percent)),
+    percent: form.discountType === 'fixed'
+      ? 1
+      : clampPercent(Number(form.percent)),
     active: form.active,
     startsAt: fromDatetimeLocalValue(form.startsAt),
     endsAt: fromDatetimeLocalValue(form.endsAt),
     minAmount: Math.max(0, Math.round(Number(form.minAmount) || 0)),
-    oncePerUser: form.oncePerUser,
+    oncePerUser: form.oncePerUser || Number(form.perCustomerLimit) === 1,
+  }
+}
+
+/** Merge API code with FE overlay fields from form */
+export function applyCouponOverlay(
+  base: SellerDiscountCode,
+  form: SellerDiscountCodeForm,
+): SellerDiscountCode {
+  const maxRaw = form.maxDiscount.trim()
+  const usageRaw = form.usageLimit.trim()
+  const perRaw = form.perCustomerLimit.trim()
+  return {
+    ...base,
+    name: form.name.trim(),
+    description: form.description.trim(),
+    discountType: form.discountType,
+    fixedAmount: Math.max(0, Math.round(Number(form.fixedAmount) || 0)),
+    maxDiscount: maxRaw ? Math.max(0, Math.round(Number(maxRaw) || 0)) : null,
+    usageLimit: usageRaw ? Math.max(0, Math.round(Number(usageRaw) || 0)) : null,
+    perCustomerLimit: perRaw ? Math.max(0, Math.round(Number(perRaw) || 0)) : null,
+    priority: Math.max(0, Math.round(Number(form.priority) || 0)),
+    targeting: { ...emptyMarketingTargeting(), ...form.targeting },
+    seo: { ...emptySeoMeta(), ...form.seo },
+    oncePerUser: form.oncePerUser || Number(form.perCustomerLimit) === 1,
   }
 }
 

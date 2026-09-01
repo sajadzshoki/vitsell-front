@@ -6,9 +6,16 @@
 
 <script setup lang="ts">
 const { t } = useI18n()
+const { ensureLoaded, publishedPosts } = useBlog()
 
-useSeoMeta({
-  title: () => t('بلاگ دیجی‌شاپ'),
-  description: () => t('راهنمای خرید، بررسی محصول و اخبار دنیای تکنولوژی'),
-})
+await ensureLoaded()
+
+useEntitySeo(() => ({
+  fallbackTitle: t('بلاگ دیجی‌شاپ'),
+  fallbackDescription: t('راهنمای خرید، بررسی محصول و اخبار دنیای تکنولوژی'),
+  path: '/blog',
+}))
+
+// Ensure listing surface only published posts (TheBlogListing uses publishedPosts)
+void publishedPosts.value
 </script>

@@ -1,4 +1,4 @@
-import { sellerNavItems } from '~/data/seller'
+import { sellerLiveNavItems } from '~/data/seller'
 
 export function useSellerLayout() {
   const route = useRoute()
@@ -84,6 +84,22 @@ export function useSellerLayout() {
       || isContentPromoEdit.value,
   )
 
+  const isAdminCreate = computed(() =>
+    route.path === '/seller/admins/new' || route.path === '/seller/admins/new/',
+  )
+  const isAdminDetail = computed(() =>
+    /^\/seller\/admins\/[^/]+/.test(route.path) && !isAdminCreate.value,
+  )
+  const isAdminChild = computed(() => isAdminCreate.value || isAdminDetail.value)
+
+  const isRoleCreate = computed(() =>
+    route.path === '/seller/roles/new' || route.path === '/seller/roles/new/',
+  )
+  const isRoleDetail = computed(() =>
+    /^\/seller\/roles\/[^/]+/.test(route.path) && !isRoleCreate.value,
+  )
+  const isRoleChild = computed(() => isRoleCreate.value || isRoleDetail.value)
+
   const pageTitle = computed(() => {
     if (isDashboard.value) {
       return 'پیشخوان مدیریت'
@@ -91,6 +107,10 @@ export function useSellerLayout() {
     if (isOrderDetail.value) {
       return 'جزئیات سفارش'
     }
+    if (isAdminCreate.value) return 'افزودن ادمین'
+    if (isAdminDetail.value) return 'جزئیات ادمین'
+    if (isRoleCreate.value) return 'نقش جدید'
+    if (isRoleDetail.value) return 'ویرایش نقش'
     if (isProductCreate.value) {
       return 'افزودن محصول'
     }
@@ -136,10 +156,11 @@ export function useSellerLayout() {
     if (isContentPromoEdit.value) {
       return 'ویرایش پرومو'
     }
-    const item = sellerNavItems.find(
-      i => i.to !== '/seller' && (route.path === i.to || route.path.startsWith(`${i.to}/`)),
+    const matches = sellerLiveNavItems.filter(
+      i => i.to && i.to !== '/seller' && (route.path === i.to || route.path.startsWith(`${i.to}/`)),
     )
-    return item?.label ?? 'پنل فروشنده'
+    const item = matches.sort((a, b) => (b.to?.length ?? 0) - (a.to?.length ?? 0))[0]
+    return item?.label ?? 'پنل مدیریت'
   })
 
   const showDesktopSidebar = computed(() => !isMobile.value)
@@ -164,6 +185,8 @@ export function useSellerLayout() {
     isContentPromoCreate,
     isContentPromoEdit,
     isPromotionChild,
+    isAdminChild,
+    isRoleChild,
     pageTitle,
     showDesktopSidebar,
   }

@@ -1,4 +1,5 @@
 import {
+  applyDealOverlay,
   formToAmazingDealPayload,
   toAmazingDeal,
   type SellerAmazingDeal,
@@ -87,7 +88,7 @@ export function useSellerDeals() {
     if (error || !result?.id) {
       return { ok: false as const, error: apiErrorMessage(error, 'ثبت شگفت‌انگیز ناموفق بود') }
     }
-    const deal = toAmazingDeal(result)
+    const deal = applyDealOverlay(toAmazingDeal(result), form)
     upsertLocal(deal)
     seeded.value = true
     return { ok: true as const, deal }
@@ -104,7 +105,7 @@ export function useSellerDeals() {
     if (error || !result?.id) {
       return { ok: false as const, error: apiErrorMessage(error, 'به‌روزرسانی شگفت‌انگیز ناموفق بود') }
     }
-    const deal = toAmazingDeal(result)
+    const deal = applyDealOverlay(toAmazingDeal(result), form)
     upsertLocal(deal)
     return { ok: true as const, deal }
   }
@@ -134,6 +135,15 @@ export function useSellerDeals() {
     return { ok: true as const, deal }
   }
 
+  async function setActiveMany(ids: string[], active: boolean) {
+    let okCount = 0
+    for (const id of ids) {
+      const result = await setActive(id, active)
+      if (result.ok) okCount += 1
+    }
+    return { ok: true as const, count: okCount }
+  }
+
   return {
     deals,
     items,
@@ -146,5 +156,6 @@ export function useSellerDeals() {
     updateDeal,
     deleteDeal,
     setActive,
+    setActiveMany,
   }
 }

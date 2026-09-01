@@ -12,39 +12,51 @@ description: Banner CRUD rules for the digishop seller (admin) panel.
 ```ts
 type SellerBannerType = 'main' | 'secondary'
 
+type SellerBannerPlacement =
+  | 'homepage_hero'
+  | 'homepage_promo_strip'
+  | 'homepage_category'
+  | 'product_listing'
+  | 'category_page'
+  | 'product_detail'
+  | 'sidebar'
+  | 'footer_promo'
+
 type SellerBanner = {
   id: string
   image: string
+  imageMobile: string | null
   link: string
   type: SellerBannerType
+  placement: SellerBannerPlacement
   categoryId: string | null
   active: boolean
+  startsAt: string | null
+  endsAt: string | null
+  sortOrder: number
   createdAt: string | null
   updatedAt: string | null
 }
 ```
 
 منبع تایپ/seed: `app/data/seller-banners.ts`  
-منطق CRUD فرانت: `app/composables/useSellerBanners.ts`
+منطق CRUD فرانت: `app/composables/useSellerBanners.ts` (فعلاً local state)
 
 ## Validation
 
 | فیلد | قانون |
 |---|---|
 | `id` | الزامی در create؛ `[a-z0-9-]+`؛ یکتا؛ روی edit قفل |
-| `image` | الزامی |
+| `image` | الزامی (دسکتاپ) |
+| `imageMobile` | اختیاری |
 | `link` | الزامی (مسیر نسبی یا URL) |
 | `type` | فقط `main` یا `secondary` |
+| `placement` | یکی از placementهای بالا |
 | `categoryId` | اختیاری؛ خالی → `null` |
+| `startsAt` / `endsAt` | اختیاری؛ ISO؛ پایان بعد از شروع |
+| `sortOrder` | عدد ≥ ۰ |
 | `active` | boolean |
 
-## UX
+## Placement
 
-- لیست: پیش‌نمایش تصویر، نوع، وضعیت، دسته، لینک؛ فیلتر نوع + وضعیت؛ جستجو
-- اکشن سریع: فعال/غیرفعال کردن از لیست
-- فرم: پیش‌نمایش تصویر + لینک؛ select دسته از `useCategories`
-- حذف: `UModal` تأیید
-
-## نکته بک‌اند
-
-فعلاً mutate فقط در state فرانت است. seed از `heroSlides` (اصلی) و `homeBannerRows` (فرعی). وقتی API آماده شد، همان فیلدها را به endpoint وصل کن.
+جایگاه باید صریح باشد — بنر بدون context آپلود نشود. لیست placement قابل گسترش است؛ در استورفرانت بعداً بر اساس `placement` فیلتر کنید.

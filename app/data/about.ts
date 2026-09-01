@@ -1,3 +1,5 @@
+import { emptySeoMeta, type SeoMeta } from '~/data/seo'
+
 export type AboutStat = {
   id: string
   icon: string
@@ -36,6 +38,16 @@ export type AboutCta = {
   secondaryTo: string
 }
 
+export type AboutSectionVisibility = {
+  hero: boolean
+  stats: boolean
+  story: boolean
+  values: boolean
+  milestones: boolean
+  team: boolean
+  cta: boolean
+}
+
 export type AboutPagePayload = {
   title: string
   subtitle: string
@@ -54,6 +66,20 @@ export type AboutPagePayload = {
   teamSubtitle: string
   team: AboutTeamMember[]
   cta: AboutCta
+  seo: SeoMeta
+  sectionVisibility: AboutSectionVisibility
+}
+
+export function defaultAboutSectionVisibility(): AboutSectionVisibility {
+  return {
+    hero: true,
+    stats: true,
+    story: true,
+    values: true,
+    milestones: true,
+    team: true,
+    cta: true,
+  }
 }
 
 export function emptyAboutStat(): AboutStat {
@@ -209,6 +235,8 @@ export function buildDefaultAboutPage(): AboutPagePayload {
       secondaryLabel: 'تماس با ما',
       secondaryTo: '/contact',
     },
+    seo: emptySeoMeta(),
+    sectionVisibility: defaultAboutSectionVisibility(),
   }
 }
 

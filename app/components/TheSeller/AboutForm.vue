@@ -11,6 +11,24 @@
     </div>
 
     <template v-else>
+      <!-- Visibility -->
+      <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
+        <h2 class="font-bold text-highlighted mb-1">
+          {{ $t('نمایش بخش‌ها') }}
+        </h2>
+        <p class="text-xs text-muted mb-4 leading-6">
+          {{ $t('بخش‌هایی که در صفحه درباره ما نمایش داده می‌شوند را انتخاب کنید.') }}
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <UCheckbox
+            v-for="item in sectionVisibilityItems"
+            :key="item.key"
+            v-model="form.sectionVisibility[item.key]"
+            :label="$t(item.label)"
+          />
+        </div>
+      </div>
+
       <!-- Header / hero -->
       <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
         <h2 class="font-bold text-highlighted mb-1">
@@ -399,8 +417,16 @@
         </div>
       </div>
 
+      <TheSellerSeoFields
+        v-model="form.seo"
+        :preview-title="form.title"
+        :preview-description="form.subtitle"
+        preview-url="/about"
+      />
+
       <div class="flex items-center gap-3 flex-wrap pb-2">
         <UButton
+          v-if="can('about.update')"
           type="button"
           color="primary"
           size="lg"
@@ -411,6 +437,7 @@
           {{ $t('ذخیره تغییرات') }}
         </UButton>
         <UButton
+          v-if="can('about.update')"
           type="button"
           color="neutral"
           variant="outline"
@@ -427,6 +454,7 @@
           size="lg"
           to="/about"
           target="_blank"
+          class="cursor-pointer"
         >
           {{ $t('مشاهده صفحه') }}
         </UButton>
@@ -438,12 +466,15 @@
 <script setup lang="ts">
 import {
   cloneAboutPage,
+  defaultAboutSectionVisibility,
   emptyAboutMilestone,
   emptyAboutStat,
   emptyAboutTeamMember,
   emptyAboutValue,
   type AboutPagePayload,
+  type AboutSectionVisibility,
 } from '~/data/about'
+import { emptySeoMeta, type SeoMeta } from '~/data/seo'
 
 type AboutFormState = {
   title: string
@@ -463,16 +494,29 @@ type AboutFormState = {
   teamSubtitle: string
   team: AboutPagePayload['team']
   cta: AboutPagePayload['cta']
+  seo: SeoMeta
+  sectionVisibility: AboutSectionVisibility
 }
 
 const { t } = useI18n()
 const toast = useAppToast()
+const { can } = useSellerPermissions()
 const { about, ensureSeeded, updateAbout, resetToDefaults } = useAbout()
 
 const ready = ref(false)
 const saving = ref(false)
 const form = ref<AboutFormState>(payloadToForm(buildInitial()))
 const errors = ref<Partial<Record<'title' | 'subtitle' | 'heroImage' | 'storyText' | 'mission' | 'vision', string>>>({})
+
+const sectionVisibilityItems: { key: keyof AboutSectionVisibility, label: string }[] = [
+  { key: 'hero', label: 'هیرو' },
+  { key: 'stats', label: 'آمارها' },
+  { key: 'story', label: 'داستان' },
+  { key: 'values', label: 'ارزش‌ها' },
+  { key: 'milestones', label: 'مسیر رشد' },
+  { key: 'team', label: 'تیم' },
+  { key: 'cta', label: 'دعوت به اقدام' },
+]
 
 function buildInitial() {
   return cloneAboutPage(about.value)
@@ -497,6 +541,8 @@ function payloadToForm(payload: AboutPagePayload): AboutFormState {
     teamSubtitle: payload.teamSubtitle,
     team: cloneAboutPage(payload).team,
     cta: cloneAboutPage(payload).cta,
+    seo: { ...emptySeoMeta(), ...(payload.seo || {}) },
+    sectionVisibility: { ...defaultAboutSectionVisibility(), ...(payload.sectionVisibility || {}) },
   }
 }
 
@@ -558,6 +604,8 @@ function formToPayload(state: AboutFormState): AboutPagePayload {
       secondaryLabel: state.cta.secondaryLabel.trim(),
       secondaryTo: state.cta.secondaryTo.trim(),
     },
+    seo: { ...emptySeoMeta(), ...state.seo },
+    sectionVisibility: { ...state.sectionVisibility },
   }
 }
 
@@ -580,6 +628,10 @@ function validate() {
 }
 
 function onSave() {
+  if (!can('about.update')) {
+    toast.error(t('دسترسی ندارید'))
+    return
+  }
   if (!validate()) {
     toast.warning(t('لطفاً فیلدهای الزامی را تکمیل کنید'))
     return

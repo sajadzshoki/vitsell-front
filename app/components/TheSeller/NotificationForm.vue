@@ -7,6 +7,7 @@
         variant="ghost"
         size="sm"
         icon="i-tabler-chevron-right"
+        class="cursor-pointer"
       >
         {{ $t('بازگشت به اعلان‌ها') }}
       </UButton>
@@ -18,7 +19,7 @@
           {{ $t('ارسال اعلان') }}
         </h2>
         <p class="text-xs text-muted mt-1 leading-6">
-          {{ $t('عنوان، توضیحات و لینک را وارد کنید و مخاطب را انتخاب نمایید.') }}
+          {{ $t('عنوان، نوع، زمان‌بندی و مخاطب را تنظیم کنید.') }}
         </p>
       </div>
 
@@ -47,6 +48,28 @@
           />
         </UFormField>
 
+        <UFormField
+          :label="$t('نوع اعلان')"
+          required
+        >
+          <USelect
+            v-model="form.type"
+            :items="typeItems"
+            value-key="value"
+            class="w-full"
+          />
+        </UFormField>
+
+        <TheFormInput
+          v-model="form.scheduledAt"
+          type="datetime-local"
+          :label="$t('زمان‌بندی ارسال')"
+          dir="ltr"
+          icon="i-tabler-calendar-time"
+          :help="$t('خالی = ارسال فوری')"
+          :error="errors.scheduledAt"
+        />
+
         <TheFormInput
           v-model="form.link"
           class="md:col-span-2"
@@ -57,7 +80,36 @@
           :help="$t('اختیاری — با کلیک روی اعلان باز می‌شود')"
         />
 
-        <UFormField :label="$t('آیکون')">
+        <div class="md:col-span-2 max-w-sm">
+          <TheSellerImageUpload
+            v-model="form.image"
+            :label="$t('تصویر')"
+            :alt="form.title || $t('تصویر اعلان')"
+            :badge="$t('اختیاری')"
+          />
+        </div>
+
+        <TheFormInput
+          v-model="form.relatedEntityType"
+          :label="$t('نوع موجودیت مرتبط')"
+          :placeholder="$t('مثلاً order یا product')"
+          dir="ltr"
+          icon="i-tabler-link"
+          :help="$t('اختیاری')"
+        />
+
+        <TheFormInput
+          v-model="form.relatedEntityId"
+          :label="$t('شناسه موجودیت مرتبط')"
+          :placeholder="$t('اختیاری')"
+          dir="ltr"
+          icon="i-tabler-id"
+        />
+
+        <UFormField
+          class="md:col-span-2"
+          :label="$t('آیکون')"
+        >
           <div class="flex flex-wrap gap-2">
             <button
               v-for="icon in sellerNotificationIcons"
@@ -98,6 +150,7 @@
           :color="form.audienceType === item.value ? 'primary' : 'neutral'"
           :variant="form.audienceType === item.value ? 'soft' : 'outline'"
           size="sm"
+          class="cursor-pointer"
           @click="form.audienceType = item.value"
         >
           {{ $t(item.label) }}
@@ -187,14 +240,20 @@
       </div>
     </div>
 
-    <!-- Preview -->
     <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
       <h3 class="font-bold text-highlighted mb-3">
         {{ $t('پیش‌نمایش') }}
       </h3>
       <div class="rounded-2xl border border-muted bg-muted/30 p-4 flex items-start gap-3">
-        <div class="size-10 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
+        <div class="size-10 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0 overflow-hidden">
+          <img
+            v-if="form.image"
+            :src="form.image"
+            :alt="form.title || $t('تصویر اعلان')"
+            class="size-full object-cover"
+          >
           <UIcon
+            v-else
             :name="form.icon || 'i-tabler-bell'"
             class="size-5"
           />
@@ -205,6 +264,23 @@
           </div>
           <div class="text-xs text-muted mt-1 leading-5">
             {{ form.description.trim() || $t('توضیحات اعلان اینجا نمایش داده می‌شود.') }}
+          </div>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <UBadge
+              color="info"
+              variant="subtle"
+              size="xs"
+            >
+              {{ $t(sellerNotificationTypeMeta[form.type].label) }}
+            </UBadge>
+            <UBadge
+              v-if="form.scheduledAt"
+              color="warning"
+              variant="subtle"
+              size="xs"
+            >
+              {{ $t('زمان‌بندی‌شده') }}
+            </UBadge>
           </div>
           <div
             v-if="form.link.trim()"
@@ -222,18 +298,19 @@
         type="button"
         color="primary"
         size="lg"
-        class="font-bold"
+        class="font-bold cursor-pointer"
         :loading="sending"
-        icon="i-tabler-send"
+        :icon="form.scheduledAt ? 'i-tabler-calendar-plus' : 'i-tabler-send'"
         @click="onSend"
       >
-        {{ $t('ارسال اعلان') }}
+        {{ form.scheduledAt ? $t('زمان‌بندی اعلان') : $t('ارسال اعلان') }}
       </UButton>
       <UButton
         type="button"
         color="neutral"
         variant="outline"
         size="lg"
+        class="cursor-pointer"
         to="/seller/notifications"
       >
         {{ $t('انصراف') }}
@@ -249,8 +326,10 @@ import {
   sellerNotificationAudienceMeta,
   sellerNotificationGroupMeta,
   sellerNotificationIcons,
+  sellerNotificationTypeMeta,
   type SellerNotificationAudienceType,
   type SellerNotificationFormValues,
+  type SellerNotificationType,
 } from '~/data/seller-notifications'
 
 const { t } = useI18n()
@@ -265,7 +344,7 @@ const {
 const form = ref<SellerNotificationFormValues>(emptyNotificationForm())
 const sending = ref(false)
 const userQuery = ref('')
-const errors = ref<Partial<Record<'title' | 'description' | 'userIds', string>>>({})
+const errors = ref<Partial<Record<'title' | 'description' | 'userIds' | 'scheduledAt', string>>>({})
 const previewCount = ref(0)
 const previewPending = ref(false)
 
@@ -275,6 +354,13 @@ const audienceTypeItems = (
   value,
   label: sellerNotificationAudienceMeta[value].label,
 }))
+
+const typeItems = computed(() =>
+  (Object.keys(sellerNotificationTypeMeta) as SellerNotificationType[]).map(value => ({
+    label: t(sellerNotificationTypeMeta[value].label),
+    value,
+  })),
+)
 
 const filteredUsers = computed(() => {
   const q = userQuery.value.trim().toLowerCase()
@@ -333,6 +419,12 @@ function validate() {
   if (form.value.audienceType === 'users' && !form.value.userIds.length) {
     next.userIds = t('حداقل یک کاربر انتخاب کنید')
   }
+  if (form.value.scheduledAt.trim()) {
+    const when = new Date(form.value.scheduledAt).getTime()
+    if (Number.isNaN(when) || when <= Date.now()) {
+      next.scheduledAt = t('زمان‌بندی باید در آینده باشد')
+    }
+  }
   errors.value = next
   return !Object.keys(next).length
 }
@@ -350,8 +442,9 @@ async function onSend() {
       toast.error(result.error)
       return
     }
+    const scheduled = Boolean(form.value.scheduledAt.trim())
     toast.success(
-      t('اعلان ارسال شد'),
+      scheduled ? t('اعلان زمان‌بندی شد') : t('اعلان ارسال شد'),
       `${result.recipients.length.toLocaleString('fa-IR')} ${t('گیرنده')}`,
     )
     await navigateTo('/seller/notifications')

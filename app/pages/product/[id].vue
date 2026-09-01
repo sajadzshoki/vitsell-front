@@ -75,6 +75,10 @@
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
+import { productJsonLd, useJsonLd } from '~/composables/useJsonLd'
+import { useEntitySeo } from '~/composables/useEntitySeo'
+import { useSellerSeoSettings } from '~/composables/useSellerSeoSettings'
+import { useSellerProductCommerce } from '~/composables/useSellerProductCommerce'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -151,8 +155,35 @@ const breadcrumbItems = computed(() => {
   ]
 })
 
-useSeoMeta({
-  title: () => product.value?.title ?? '',
-  description: () => product.value?.shortDesc ?? product.value?.title ?? '',
+const { getByProductId } = useSellerProductCommerce()
+const { settings } = useSellerSeoSettings()
+
+const commerce = computed(() =>
+  productId.value ? getByProductId(productId.value) : null,
+)
+
+useEntitySeo(() => ({
+  entity: commerce.value?.seo,
+  fallbackTitle: product.value?.title ?? '',
+  fallbackDescription: product.value?.shortDesc ?? product.value?.title ?? '',
+  fallbackImage: product.value?.image ?? '',
+  path: productId.value ? `/product/${productId.value}` : undefined,
+}))
+
+useJsonLd(() => {
+  const p = product.value
+  if (!p) return null
+  const base = settings.value.siteUrl.replace(/\/+$/, '')
+  const price = p.price
+  return productJsonLd({
+    name: commerce.value?.seo?.metaTitle || p.title,
+    description: commerce.value?.seo?.metaDescription || p.shortDesc || p.title,
+    image: commerce.value?.seo?.ogImage || p.image,
+    url: base ? `${base}/product/${p.id}` : `/product/${p.id}`,
+    sku: commerce.value?.sku || undefined,
+    brand: p.brand,
+    price,
+    currency: 'IRR',
+  })
 })
 </script>

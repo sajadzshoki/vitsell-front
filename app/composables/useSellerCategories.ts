@@ -95,7 +95,13 @@ export function useSellerCategories() {
           || 'ثبت دسته‌بندی ناموفق بود'
       return { ok: false as const, error: message }
     }
-    const category = toSellerCategory(result)
+    const category = toSellerCategory({
+      ...result,
+      parentId: result.parentId ?? payload.parentId ?? null,
+      status: result.status ?? payload.status ?? 'active',
+      sortOrder: result.sortOrder ?? payload.sortOrder ?? 0,
+      seo: result.seo ?? payload.seo ?? null,
+    })
     upsertLocal(category)
     seeded.value = true
     await fetchCategories({ force: true })
@@ -117,7 +123,13 @@ export function useSellerCategories() {
           || 'به‌روزرسانی دسته‌بندی ناموفق بود'
       return { ok: false as const, error: message }
     }
-    const category = toSellerCategory(result)
+    const category = toSellerCategory({
+      ...result,
+      parentId: result.parentId ?? payload.parentId ?? null,
+      status: result.status ?? payload.status ?? 'active',
+      sortOrder: result.sortOrder ?? payload.sortOrder ?? 0,
+      seo: result.seo ?? payload.seo ?? null,
+    })
     upsertLocal(category)
     await fetchCategories({ force: true })
     return { ok: true as const, category }

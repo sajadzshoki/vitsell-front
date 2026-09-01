@@ -10,9 +10,9 @@
           color="primary"
           size="sm"
           icon="i-tabler-plus"
-          class="font-medium"
+          class="font-medium cursor-pointer"
         >
-          {{ activeTab === 'codes' ? $t('افزودن کد تخفیف') : $t('افزودن پرومو') }}
+          {{ activeTab === 'codes' ? $t('افزودن کوپن') : $t('افزودن پرومو') }}
         </UButton>
       </div>
 
@@ -22,9 +22,9 @@
           color="primary"
           block
           icon="i-tabler-plus"
-          class="font-medium"
+          class="font-medium cursor-pointer"
         >
-          {{ activeTab === 'codes' ? $t('افزودن کد تخفیف') : $t('افزودن پرومو') }}
+          {{ activeTab === 'codes' ? $t('افزودن کوپن') : $t('افزودن پرومو') }}
         </UButton>
       </div>
 
@@ -33,17 +33,17 @@
           :color="activeTab === 'codes' ? 'primary' : 'neutral'"
           :variant="activeTab === 'codes' ? 'soft' : 'ghost'"
           size="sm"
-          class="shrink-0"
+          class="shrink-0 cursor-pointer"
           @click="setTab('codes')"
         >
-          {{ $t('کدهای تخفیف') }}
+          {{ $t('کوپن‌ها') }}
           <span class="num ms-1">{{ codes.length.toLocaleString('fa-IR') }}</span>
         </UButton>
         <UButton
           :color="activeTab === 'promos' ? 'primary' : 'neutral'"
           :variant="activeTab === 'promos' ? 'soft' : 'ghost'"
           size="sm"
-          class="shrink-0"
+          class="shrink-0 cursor-pointer"
           @click="setTab('promos')"
         >
           {{ $t('پروموها') }}
@@ -54,9 +54,32 @@
       <TheFormInput
         v-model="query"
         icon="i-tabler-search"
-        :placeholder="activeTab === 'codes' ? $t('جستجوی کد') : $t('جستجوی پرومو')"
+        :placeholder="activeTab === 'codes' ? $t('جستجوی کد یا نام کوپن') : $t('جستجوی پرومو')"
         class="mb-4"
       />
+
+      <div
+        v-if="activeTab === 'codes'"
+        class="flex items-center gap-2 overflow-x-auto scrollbar-none mb-4"
+      >
+        <UButton
+          v-for="tab in codeStatusTabs"
+          :key="tab.id"
+          :color="codeStatusFilter === tab.id ? 'primary' : 'neutral'"
+          :variant="codeStatusFilter === tab.id ? 'soft' : 'ghost'"
+          size="sm"
+          class="shrink-0 cursor-pointer"
+          @click="codeStatusFilter = tab.id"
+        >
+          {{ $t(tab.label) }}
+        </UButton>
+        <USelect
+          v-model="discountTypeFilter"
+          :items="discountTypeFilterItems"
+          value-key="value"
+          class="w-40 shrink-0"
+        />
+      </div>
 
       <!-- Codes -->
       <div
@@ -73,18 +96,11 @@
           />
         </div>
 
-        <div
+        <TheSellerEmptyState
           v-else-if="!filteredCodes.length"
-          class="text-center py-12"
-        >
-          <UIcon
-            name="i-tabler-ticket"
-            class="size-16 text-dimmed mx-auto mb-4"
-          />
-          <p class="text-sm text-muted">
-            {{ $t('کد تخفیفی پیدا نشد') }}
-          </p>
-        </div>
+          icon="i-tabler-ticket"
+          :message="$t('کوپنی پیدا نشد')"
+        />
 
         <div
           v-for="item in filteredCodes"
@@ -99,6 +115,12 @@
               >
                 {{ item.code }}
               </div>
+              <div
+                v-if="item.name"
+                class="text-xs text-toned mt-0.5"
+              >
+                {{ item.name }}
+              </div>
               <div class="mt-1 flex flex-wrap gap-2">
                 <UBadge
                   color="error"
@@ -106,25 +128,21 @@
                   size="sm"
                   class="font-medium num"
                 >
-                  {{ item.percent.toLocaleString('fa-IR') }}٪
+                  {{
+                    item.discountType === 'fixed'
+                      ? `${formatMoneyFa(item.fixedAmount || 0)} ${$t('تومان')}`
+                      : `${item.percent.toLocaleString('fa-IR')}٪`
+                  }}
                 </UBadge>
                 <UBadge
-                  :color="item.active ? 'success' : 'neutral'"
+                  :color="scheduleBadge(item).color"
                   variant="subtle"
                   size="sm"
                 >
-                  {{ item.active ? $t('فعال') : $t('غیرفعال') }}
+                  {{ $t(scheduleBadge(item).label) }}
                 </UBadge>
                 <UBadge
-                  v-if="isDiscountCodeLive(item)"
-                  color="warning"
-                  variant="subtle"
-                  size="sm"
-                >
-                  {{ $t('در بازه') }}
-                </UBadge>
-                <UBadge
-                  v-if="item.oncePerUser"
+                  v-if="item.oncePerUser || item.perCustomerLimit === 1"
                   color="info"
                   variant="subtle"
                   size="sm"
@@ -141,6 +159,15 @@
                   {{ formatMoneyFa(item.minAmount) }}
                 </span>
                 {{ $t('تومان') }}
+                <span
+                  v-if="item.usageLimit != null"
+                  class="ms-2"
+                >
+                  · {{ $t('استفاده') }}:
+                  <span class="num font-medium text-highlighted">
+                    {{ (item.usageCount || 0).toLocaleString('fa-IR') }}/{{ item.usageLimit.toLocaleString('fa-IR') }}
+                  </span>
+                </span>
               </div>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
@@ -150,6 +177,7 @@
                 variant="soft"
                 size="xs"
                 icon="i-tabler-pencil"
+                class="cursor-pointer"
               >
                 {{ $t('ویرایش') }}
               </UButton>
@@ -158,6 +186,7 @@
                 :color="item.active ? 'neutral' : 'success'"
                 variant="ghost"
                 size="xs"
+                class="cursor-pointer"
                 @click="toggleCode(item)"
               >
                 {{ item.active ? $t('غیرفعال') : $t('فعال') }}
@@ -168,6 +197,7 @@
                 variant="ghost"
                 size="xs"
                 icon="i-tabler-trash"
+                class="cursor-pointer"
                 @click="openDeleteCode(item)"
               />
             </div>
@@ -190,18 +220,11 @@
           />
         </div>
 
-        <div
+        <TheSellerEmptyState
           v-else-if="!filteredPromos.length"
-          class="text-center py-12"
-        >
-          <UIcon
-            name="i-tabler-megaphone"
-            class="size-16 text-dimmed mx-auto mb-4"
-          />
-          <p class="text-sm text-muted">
-            {{ $t('پرومویی پیدا نشد') }}
-          </p>
-        </div>
+          icon="i-tabler-megaphone"
+          :message="$t('پرومویی پیدا نشد')"
+        />
 
         <div
           v-for="item in filteredPromos"
@@ -246,6 +269,7 @@
                   variant="soft"
                   size="xs"
                   icon="i-tabler-pencil"
+                  class="cursor-pointer"
                 >
                   {{ $t('ویرایش') }}
                 </UButton>
@@ -254,6 +278,7 @@
                   :color="item.active ? 'neutral' : 'success'"
                   variant="ghost"
                   size="xs"
+                  class="cursor-pointer"
                   @click="togglePromo(item)"
                 >
                   {{ item.active ? $t('غیرفعال') : $t('فعال') }}
@@ -264,6 +289,7 @@
                   variant="ghost"
                   size="xs"
                   icon="i-tabler-trash"
+                  class="cursor-pointer"
                   @click="openDeletePromo(item)"
                 />
               </div>
@@ -275,7 +301,7 @@
 
     <UModal
       v-model:open="deleteOpen"
-      :title="deleteMode === 'code' ? $t('حذف کد تخفیف') : $t('حذف پرومو')"
+      :title="deleteMode === 'code' ? $t('حذف کوپن') : $t('حذف پرومو')"
       :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود.')"
     >
       <template #body>
@@ -288,13 +314,14 @@
           <UButton
             color="neutral"
             variant="outline"
+            class="cursor-pointer"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
           </UButton>
           <UButton
             color="error"
-            class="font-bold"
+            class="font-bold cursor-pointer"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -309,10 +336,14 @@
 import {
   formatMoneyFa,
   formatPromoRange,
-  isDiscountCodeLive,
   type SellerContentPromo,
   type SellerDiscountCode,
 } from '~/data/seller-promotions'
+import {
+  deriveScheduleStatus,
+  sellerScheduleStatusMeta,
+  type SellerScheduleStatus,
+} from '~/data/seller-marketing-shared'
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -333,18 +364,48 @@ type TabId = 'codes' | 'promos'
 
 const query = ref('')
 const activeTab = ref<TabId>(route.query.tab === 'promos' ? 'promos' : 'codes')
+const codeStatusFilter = ref<'all' | SellerScheduleStatus>('all')
+const discountTypeFilter = ref<'all' | 'percent' | 'fixed'>('all')
 const deleteOpen = ref(false)
 const deleteMode = ref<'code' | 'promo'>('code')
 const pendingCode = ref<SellerDiscountCode | null>(null)
 const pendingPromo = ref<SellerContentPromo | null>(null)
 const actionBusy = ref(false)
 
+const codeStatusTabs = [
+  { id: 'all' as const, label: 'همه' },
+  { id: 'active' as const, label: 'فعال' },
+  { id: 'scheduled' as const, label: 'زمان‌بندی‌شده' },
+  { id: 'paused' as const, label: 'متوقف' },
+  { id: 'expired' as const, label: 'منقضی' },
+]
+
+const discountTypeFilterItems = computed(() => [
+  { label: t('همه انواع'), value: 'all' },
+  { label: t('درصدی'), value: 'percent' },
+  { label: t('مبلغ ثابت'), value: 'fixed' },
+])
+
 await ensureLoaded({ force: true })
 
 const filteredCodes = computed(() => {
-  const q = query.value.trim().toUpperCase()
-  if (!q) return codes.value
-  return codes.value.filter(c => c.code.includes(q))
+  const q = query.value.trim().toLowerCase()
+  return codes.value.filter((c) => {
+    const status = deriveScheduleStatus({
+      startsAt: c.startsAt,
+      endsAt: c.endsAt,
+      active: c.active,
+    })
+    if (codeStatusFilter.value !== 'all' && status !== codeStatusFilter.value) return false
+    const dtype = c.discountType || 'percent'
+    if (discountTypeFilter.value !== 'all' && dtype !== discountTypeFilter.value) return false
+    if (!q) return true
+    return (
+      c.code.toLowerCase().includes(q)
+      || (c.name || '').toLowerCase().includes(q)
+      || (c.description || '').toLowerCase().includes(q)
+    )
+  })
 })
 
 const filteredPromos = computed(() => {
@@ -364,9 +425,20 @@ const deleteLabel = computed(() => {
   return pendingPromo.value?.title ?? ''
 })
 
+function scheduleBadge(item: SellerDiscountCode) {
+  const status = deriveScheduleStatus({
+    startsAt: item.startsAt,
+    endsAt: item.endsAt,
+    active: item.active,
+  })
+  return sellerScheduleStatusMeta[status]
+}
+
 function setTab(tab: TabId) {
   activeTab.value = tab
   query.value = ''
+  codeStatusFilter.value = 'all'
+  discountTypeFilter.value = 'all'
   router.replace({ query: { ...route.query, tab } })
 }
 
@@ -379,7 +451,7 @@ async function toggleCode(item: SellerDiscountCode) {
       toast.error(result.error)
       return
     }
-    toast.success(item.active ? t('کد غیرفعال شد') : t('کد فعال شد'))
+    toast.success(item.active ? t('کوپن غیرفعال شد') : t('کوپن فعال شد'))
   }
   finally {
     actionBusy.value = false
@@ -428,7 +500,7 @@ async function confirmDelete() {
         toast.error(result.error)
         return
       }
-      toast.success(t('کد تخفیف حذف شد'))
+      toast.success(t('کوپن حذف شد'))
       return
     }
     if (pendingPromo.value) {

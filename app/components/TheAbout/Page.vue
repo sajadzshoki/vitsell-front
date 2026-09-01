@@ -1,7 +1,10 @@
 <template>
   <div class="flex flex-col gap-6 md:gap-8">
     <!-- Hero -->
-    <section class="relative overflow-hidden rounded-2xl border border-muted bg-elevated min-h-64 md:min-h-80">
+    <section
+      v-if="visibility.hero"
+      class="relative overflow-hidden rounded-2xl border border-muted bg-elevated min-h-64 md:min-h-80"
+    >
       <img
         v-if="about.heroImage"
         :src="about.heroImage"
@@ -40,7 +43,7 @@
 
     <!-- Stats -->
     <section
-      v-if="about.stats.length"
+      v-if="visibility.stats && about.stats.length"
       class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4"
     >
       <div
@@ -64,7 +67,10 @@
     </section>
 
     <!-- Story -->
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+    <section
+      v-if="visibility.story"
+      class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6"
+    >
       <div class="lg:col-span-7 bg-default border border-muted rounded-2xl p-5 md:p-7">
         <h2 class="text-lg md:text-xl font-bold text-highlighted mb-4 leading-8">
           {{ $t(about.storyTitle) }}
@@ -113,7 +119,7 @@
 
     <!-- Values -->
     <section
-      v-if="about.values.length"
+      v-if="visibility.values && about.values.length"
       class="flex flex-col gap-4"
     >
       <h2 class="text-lg font-bold text-highlighted">
@@ -143,7 +149,7 @@
 
     <!-- Timeline -->
     <section
-      v-if="about.milestones.length"
+      v-if="visibility.milestones && about.milestones.length"
       class="bg-default border border-muted rounded-2xl p-5 md:p-7"
     >
       <h2 class="text-lg font-bold text-highlighted mb-6">
@@ -178,7 +184,7 @@
 
     <!-- Team -->
     <section
-      v-if="about.team.length"
+      v-if="visibility.team && about.team.length"
       class="flex flex-col gap-4"
     >
       <div>
@@ -236,7 +242,10 @@
     </section>
 
     <!-- CTA -->
-    <section class="relative overflow-hidden rounded-2xl border border-primary/25 bg-primary/5 p-6 md:p-8">
+    <section
+      v-if="visibility.cta"
+      class="relative overflow-hidden rounded-2xl border border-primary/25 bg-primary/5 p-6 md:p-8"
+    >
       <div class="absolute inset-0 bg-gradient-to-bl from-primary/10 via-transparent to-secondary/10 pointer-events-none" />
       <div class="relative z-10 flex flex-col md:(flex-row items-center justify-between) gap-5">
         <div class="max-w-xl">
@@ -271,7 +280,22 @@
 </template>
 
 <script setup lang="ts">
+import {
+  defaultAboutSectionVisibility,
+  type AboutSectionVisibility,
+} from '~/data/about'
+
+const props = defineProps<{
+  sectionVisibility?: AboutSectionVisibility | null
+}>()
+
 const { about, ensureLoaded } = useAbout()
 
 await ensureLoaded()
+
+const visibility = computed<AboutSectionVisibility>(() => ({
+  ...defaultAboutSectionVisibility(),
+  ...(about.value.sectionVisibility || {}),
+  ...(props.sectionVisibility || {}),
+}))
 </script>

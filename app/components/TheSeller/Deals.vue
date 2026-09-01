@@ -13,7 +13,7 @@
           color="primary"
           size="sm"
           icon="i-tabler-plus"
-          class="font-medium"
+          class="font-medium cursor-pointer"
         >
           {{ $t('افزودن شگفت‌انگیز') }}
         </UButton>
@@ -26,7 +26,7 @@
         color="primary"
         block
         icon="i-tabler-plus"
-        class="font-medium"
+        class="font-medium cursor-pointer"
       >
         {{ $t('افزودن شگفت‌انگیز') }}
       </UButton>
@@ -36,7 +36,7 @@
       <TheFormInput
         v-model="query"
         icon="i-tabler-search"
-        :placeholder="$t('جستجوی محصول یا شناسه')"
+        :placeholder="$t('جستجوی محصول، نام یا شناسه')"
         class="flex-1 w-full"
       />
       <div class="flex items-center gap-2 overflow-x-auto scrollbar-none w-full sm:w-auto">
@@ -46,12 +46,53 @@
           :color="statusFilter === tab.id ? 'primary' : 'neutral'"
           :variant="statusFilter === tab.id ? 'soft' : 'ghost'"
           size="sm"
-          class="shrink-0"
+          class="shrink-0 cursor-pointer"
           @click="statusFilter = tab.id"
         >
           {{ $t(tab.label) }}
         </UButton>
       </div>
+    </div>
+
+    <div
+      v-if="selectedIds.length"
+      class="mb-4 flex items-center gap-2 flex-wrap rounded-xl border border-primary/30 bg-primary/5 p-3"
+    >
+      <span class="text-xs text-toned num">
+        {{ selectedIds.length.toLocaleString('fa-IR') }} {{ $t('انتخاب‌شده') }}
+      </span>
+      <UButton
+        type="button"
+        color="success"
+        variant="soft"
+        size="xs"
+        class="cursor-pointer"
+        :loading="bulkRunning"
+        @click="runBulk(true)"
+      >
+        {{ $t('فعال‌سازی گروهی') }}
+      </UButton>
+      <UButton
+        type="button"
+        color="neutral"
+        variant="soft"
+        size="xs"
+        class="cursor-pointer"
+        :loading="bulkRunning"
+        @click="runBulk(false)"
+      >
+        {{ $t('غیرفعال‌سازی گروهی') }}
+      </UButton>
+      <UButton
+        type="button"
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        class="cursor-pointer"
+        @click="selectedIds = []"
+      >
+        {{ $t('لغو انتخاب') }}
+      </UButton>
     </div>
 
     <div
@@ -64,29 +105,28 @@
       />
     </div>
 
-    <div
+    <TheSellerEmptyState
       v-else-if="!filtered.length"
-      class="text-center py-12"
+      icon="i-tabler-bolt"
+      :message="query.trim() || statusFilter !== 'all'
+        ? $t('موردی با این فیلتر پیدا نشد')
+        : $t('هنوز شگفت‌انگیزی ثبت نشده است')"
     >
-      <UIcon
-        name="i-tabler-bolt"
-        class="size-16 text-dimmed mx-auto mb-4"
-      />
-      <p class="text-sm text-muted mb-4">
-        {{ query.trim() || statusFilter !== 'all'
-          ? $t('موردی با این فیلتر پیدا نشد')
-          : $t('هنوز شگفت‌انگیزی ثبت نشده است') }}
-      </p>
-      <UButton
+      <template
         v-if="!query.trim() && statusFilter === 'all'"
-        to="/seller/deals/new"
-        color="primary"
-        variant="soft"
-        icon="i-tabler-plus"
+        #actions
       >
-        {{ $t('افزودن اولین شگفت‌انگیز') }}
-      </UButton>
-    </div>
+        <UButton
+          to="/seller/deals/new"
+          color="primary"
+          variant="soft"
+          icon="i-tabler-plus"
+          class="cursor-pointer"
+        >
+          {{ $t('افزودن اولین شگفت‌انگیز') }}
+        </UButton>
+      </template>
+    </TheSellerEmptyState>
 
     <div
       v-else
@@ -98,6 +138,11 @@
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
         <div class="flex items-start gap-3">
+          <UCheckbox
+            :model-value="selectedIds.includes(deal.id)"
+            class="mt-1"
+            @update:model-value="toggleSelect(deal.id, !!$event)"
+          />
           <div class="size-16 rounded-xl bg-default border border-muted overflow-hidden shrink-0">
             <img
               v-if="productOf(deal)?.image"
@@ -121,7 +166,7 @@
             <div class="flex items-start justify-between gap-2 flex-wrap">
               <div class="min-w-0">
                 <div class="text-sm font-medium text-highlighted line-clamp-2">
-                  {{ productOf(deal)?.title || deal.productId }}
+                  {{ deal.name || productOf(deal)?.title || deal.productId }}
                 </div>
                 <div
                   class="text-[11px] text-muted mt-0.5 num"
@@ -140,21 +185,12 @@
                   {{ deal.discountPercent.toLocaleString('fa-IR') }}٪
                 </UBadge>
                 <UBadge
-                  :color="deal.active ? 'success' : 'neutral'"
+                  :color="scheduleBadge(deal).color"
                   variant="subtle"
                   size="sm"
                   class="font-medium"
                 >
-                  {{ deal.active ? $t('فعال') : $t('غیرفعال') }}
-                </UBadge>
-                <UBadge
-                  v-if="isDealLive(deal)"
-                  color="warning"
-                  variant="subtle"
-                  size="sm"
-                  class="font-medium"
-                >
-                  {{ $t('در حال اجرا') }}
+                  {{ $t(scheduleBadge(deal).label) }}
                 </UBadge>
               </div>
             </div>
@@ -168,10 +204,16 @@
               class="mt-1 text-xs text-toned"
             >
               <span class="line-through text-muted num me-2">
-                {{ productOf(deal)!.price.toLocaleString('fa-IR') }}
+                {{ formatPrice(productOf(deal)!.price) }}
               </span>
               <span class="font-bold text-error num">
-                {{ dealPriceFrom(productOf(deal)!.price, deal.discountPercent).toLocaleString('fa-IR') }}
+                {{
+                  formatPrice(
+                    deal.specialPrice != null
+                      ? deal.specialPrice
+                      : dealPriceFrom(productOf(deal)!.price, deal.discountPercent),
+                  )
+                }}
               </span>
               <span class="text-muted ms-1">{{ $t('تومان') }}</span>
             </div>
@@ -183,6 +225,7 @@
                 variant="soft"
                 size="xs"
                 icon="i-tabler-pencil"
+                class="cursor-pointer"
               >
                 {{ $t('ویرایش') }}
               </UButton>
@@ -191,6 +234,7 @@
                 :color="deal.active ? 'neutral' : 'success'"
                 variant="ghost"
                 size="xs"
+                class="cursor-pointer"
                 :loading="togglingId === deal.id"
                 :icon="deal.active ? 'i-tabler-player-pause' : 'i-tabler-player-play'"
                 @click="toggleActive(deal)"
@@ -202,6 +246,7 @@
                 color="error"
                 variant="ghost"
                 size="xs"
+                class="cursor-pointer"
                 icon="i-tabler-trash"
                 @click="openDelete(deal)"
               >
@@ -243,13 +288,14 @@
           <UButton
             color="neutral"
             variant="outline"
+            class="cursor-pointer"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
           </UButton>
           <UButton
             color="error"
-            class="font-bold"
+            class="font-bold cursor-pointer"
             :loading="deleting"
             @click="confirmDelete"
           >
@@ -265,18 +311,25 @@
 import {
   dealPriceFrom,
   formatDealRange,
-  isDealLive,
   type SellerAmazingDeal,
 } from '~/data/seller-deals'
+import {
+  deriveScheduleStatus,
+  sellerScheduleStatusMeta,
+  type SellerScheduleStatus,
+} from '~/data/seller-marketing-shared'
+import { formatPrice } from '~/data/products'
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { deals, pending, ensureLoaded, deleteDeal, setActive } = useSellerDeals()
+const { deals, pending, ensureLoaded, deleteDeal, setActive, setActiveMany } = useSellerDeals()
 const { resolveProduct, fetchSeller } = useSeller()
 const { fetchProducts, getCachedProduct } = useProducts()
 
 const query = ref('')
-const statusFilter = ref<'all' | 'active' | 'inactive' | 'live'>('all')
+const statusFilter = ref<'all' | SellerScheduleStatus>('all')
+const selectedIds = ref<string[]>([])
+const bulkRunning = ref(false)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerAmazingDeal | null>(null)
 const deleting = ref(false)
@@ -284,9 +337,10 @@ const togglingId = ref<string | null>(null)
 
 const statusTabs = [
   { id: 'all' as const, label: 'همه' },
-  { id: 'live' as const, label: 'در حال اجرا' },
   { id: 'active' as const, label: 'فعال' },
-  { id: 'inactive' as const, label: 'غیرفعال' },
+  { id: 'scheduled' as const, label: 'زمان‌بندی‌شده' },
+  { id: 'paused' as const, label: 'متوقف' },
+  { id: 'expired' as const, label: 'منقضی' },
 ]
 
 await Promise.all([
@@ -298,21 +352,55 @@ await Promise.all([
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   return deals.value.filter((deal) => {
-    if (statusFilter.value === 'active' && !deal.active) return false
-    if (statusFilter.value === 'inactive' && deal.active) return false
-    if (statusFilter.value === 'live' && !isDealLive(deal)) return false
+    const status = deriveScheduleStatus({
+      startsAt: deal.startsAt,
+      endsAt: deal.endsAt,
+      active: deal.active,
+    })
+    if (statusFilter.value !== 'all' && status !== statusFilter.value) return false
     if (!q) return true
     const product = productOf(deal)
     return (
       deal.id.toLowerCase().includes(q)
       || deal.productId.toLowerCase().includes(q)
+      || (deal.name || '').toLowerCase().includes(q)
       || (product?.title.toLowerCase().includes(q) ?? false)
     )
   })
 })
 
+function scheduleBadge(deal: SellerAmazingDeal) {
+  const status = deriveScheduleStatus({
+    startsAt: deal.startsAt,
+    endsAt: deal.endsAt,
+    active: deal.active,
+  })
+  return sellerScheduleStatusMeta[status]
+}
+
 function productOf(deal: SellerAmazingDeal) {
   return getCachedProduct(deal.productId) || resolveProduct(deal.productId)
+}
+
+function toggleSelect(id: string, on: boolean) {
+  if (on) {
+    if (!selectedIds.value.includes(id)) selectedIds.value = [...selectedIds.value, id]
+    return
+  }
+  selectedIds.value = selectedIds.value.filter(x => x !== id)
+}
+
+async function runBulk(active: boolean) {
+  if (!selectedIds.value.length) return
+  bulkRunning.value = true
+  try {
+    await setActiveMany(selectedIds.value, active)
+    toast.success(active ? t('شگفت‌انگیزها فعال شدند') : t('شگفت‌انگیزها غیرفعال شدند'))
+    selectedIds.value = []
+  }
+  finally {
+    bulkRunning.value = false
+  }
 }
 
 async function toggleActive(deal: SellerAmazingDeal) {

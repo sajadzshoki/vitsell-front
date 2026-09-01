@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-5">
-    <!-- Step / category -->
     <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
       <div class="flex items-start justify-between gap-3 mb-4 flex-wrap">
         <div>
@@ -9,8 +8,8 @@
           </h2>
           <p class="text-xs text-muted mt-1 leading-6">
             {{ isEdit
-              ? $t('اطلاعات محصول را ویرایش کنید و ذخیره نمایید.')
-              : $t('ابتدا دسته‌بندی را انتخاب کنید؛ فیلدهای مشخصات فنی بر اساس همان دسته نمایش داده می‌شوند.') }}
+              ? $t('اطلاعات محصول، واریانت، موجودی و سئو را مدیریت کنید.')
+              : $t('ابتدا دسته‌بندی را انتخاب کنید؛ سپس بخش‌های فرم را تکمیل نمایید.') }}
           </p>
         </div>
         <UBadge
@@ -33,7 +32,7 @@
           v-for="category in categoryOptions"
           :key="category.id"
           type="button"
-          class="flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition"
+          class="flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition cursor-pointer"
           :class="form.category === category.id
             ? 'border-primary bg-primary/10 text-primary'
             : 'border-muted bg-muted/40 text-toned hover:(border-accented bg-elevated)'"
@@ -55,249 +54,309 @@
     </div>
 
     <template v-if="form.category">
-      <!-- Basic info -->
-      <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-        <h3 class="font-bold text-highlighted mb-4">
-          {{ $t('اطلاعات پایه') }}
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TheFormInput
-            v-model="form.title"
-            class="md:col-span-2"
-            :label="$t('عنوان محصول')"
-            :placeholder="$t('مثلاً گوشی موبایل سامسونگ Galaxy S25')"
-            :error="errors.title"
-            required
-          />
-          <TheFormInput
-            v-model="form.shortName"
-            :label="$t('نام کوتاه')"
-            :placeholder="$t('نمایش در کارت و مقایسه')"
-          />
-          <TheFormSelect
-            v-model="form.brand"
-            :label="$t('برند')"
-            :items="brandOptions"
-            :placeholder="$t('انتخاب برند')"
-            :error="errors.brand"
-            required
-            icon="i-tabler-building-store"
-          />
-          <UFormField
-            class="md:col-span-2"
-            :label="$t('توضیح کوتاه')"
-          >
-            <UTextarea
-              v-model="form.shortDesc"
-              :rows="2"
-              autoresize
-              class="w-full"
-              :placeholder="$t('یک تا دو جمله برای معرفی محصول')"
-            />
-          </UFormField>
-          <UFormField
-            class="md:col-span-2"
-            :label="$t('توضیحات کامل')"
-          >
-            <UTextarea
-              v-model="form.description"
-              :rows="4"
-              autoresize
-              class="w-full"
-              :placeholder="$t('توضیحات تکمیلی محصول برای صفحه جزئیات')"
-            />
-          </UFormField>
-        </div>
-      </div>
-
-      <!-- Pricing & stock -->
-      <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-        <h3 class="font-bold text-highlighted mb-4">
-          {{ $t('قیمت و موجودی') }}
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <TheFormInput
-            v-model="form.price"
-            :label="$t('قیمت فروش (تومان)')"
-            :placeholder="$t('مثلاً 25000000')"
-            dir="ltr"
-            digits-only
-            :error="errors.price"
-            required
-            icon="i-tabler-cash"
-          />
-          <TheFormInput
-            v-model="form.oldPrice"
-            :label="$t('قیمت قبلی (اختیاری)')"
-            :placeholder="$t('برای نمایش تخفیف')"
-            dir="ltr"
-            digits-only
-            :error="errors.oldPrice"
-          />
-          <TheFormInput
-            v-model="form.stock"
-            :label="$t('موجودی انبار')"
-            placeholder="0"
-            dir="ltr"
-            digits-only
-            :error="errors.stock"
-            required
-            icon="i-tabler-box"
-          />
-        </div>
-        <div
-          v-if="discountPercent > 0"
-          class="mt-3 text-xs text-success font-medium num"
-        >
-          {{ $t('تخفیف') }}: {{ discountPercent.toLocaleString('fa-IR') }}٪
-        </div>
-      </div>
-
-      <!-- Dynamic category attributes -->
-      <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-        <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <h3 class="font-bold text-highlighted">
-            {{ $t('مشخصات فنی') }}
-            <span class="text-sm font-medium text-muted">
-              ({{ $t(selectedCategory?.name || '') }})
-            </span>
-          </h3>
-          <span class="text-[11px] text-muted">
-            {{ attributeFields.length.toLocaleString('fa-IR') }} {{ $t('فیلد') }}
-          </span>
-        </div>
-
-        <div
-          v-for="group in attributeGroups"
-          :key="group.title"
-          class="mb-5 last:mb-0"
-        >
-          <h4 class="text-sm font-bold text-toned mb-3 flex items-center gap-2">
-            <span class="size-1.5 rounded-full bg-primary shrink-0" />
-            {{ $t(group.title) }}
-          </h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <template
-              v-for="field in group.fields"
-              :key="field.key"
-            >
-              <TheFormSelect
-                v-if="field.type === 'select'"
-                v-model="form.attrs[field.key]"
-                :label="$t(field.label)"
-                :items="field.options || []"
-                :placeholder="$t(field.placeholder || 'انتخاب کنید')"
-                :required="field.required"
-                :error="errors[`attr:${field.key}`]"
+      <UTabs
+        v-model="activeTab"
+        :items="tabItems"
+        variant="pill"
+        color="primary"
+        size="sm"
+        class="w-full"
+        :ui="{
+          list: 'bg-muted/60 p-1 rounded-xl w-full overflow-x-auto',
+          trigger: 'shrink-0 font-medium',
+          content: 'pt-4',
+        }"
+      >
+        <template #basic>
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TheFormInput
+                v-model="form.title"
+                class="md:col-span-2"
+                :label="$t('عنوان محصول')"
+                :placeholder="$t('مثلاً گوشی موبایل سامسونگ Galaxy S25')"
+                :error="errors.title"
+                required
               />
               <TheFormInput
-                v-else
-                v-model="form.attrs[field.key]"
-                :label="$t(field.label)"
-                :placeholder="$t(field.placeholder || '')"
-                :required="field.required"
-                :error="errors[`attr:${field.key}`]"
+                v-model="form.shortName"
+                :label="$t('نام کوتاه')"
+                :placeholder="$t('نمایش در کارت و مقایسه')"
               />
-            </template>
+              <TheFormInput
+                v-model="commerce.slug"
+                :label="$t('اسلاگ')"
+                dir="ltr"
+                icon="i-tabler-link"
+                :placeholder="$t('product-slug')"
+              />
+              <TheFormSelect
+                v-model="form.brand"
+                :label="$t('برند')"
+                :items="brandOptions"
+                :placeholder="$t('انتخاب برند')"
+                :error="errors.brand"
+                required
+                icon="i-tabler-building-store"
+              />
+              <TheFormInput
+                v-model="tagsInput"
+                :label="$t('برچسب‌ها')"
+                :placeholder="$t('با ویرگول جدا کنید')"
+                :help="$t('برای جستجو و فیلتر')"
+              />
+              <div class="flex items-end gap-4 flex-wrap md:col-span-2">
+                <UCheckbox
+                  v-model="commerce.featured"
+                  :label="$t('محصول ویژه')"
+                />
+                <UCheckbox
+                  v-model="commerce.published"
+                  :label="$t('منتشر شده')"
+                />
+                <UCheckbox
+                  v-model="form.fastDelivery"
+                  :label="$t('ارسال سریع')"
+                />
+              </div>
+              <UFormField
+                class="md:col-span-2"
+                :label="$t('توضیح کوتاه')"
+              >
+                <UTextarea
+                  v-model="form.shortDesc"
+                  :rows="2"
+                  autoresize
+                  class="w-full"
+                  :placeholder="$t('یک تا دو جمله برای معرفی محصول')"
+                />
+              </UFormField>
+              <UFormField
+                class="md:col-span-2"
+                :label="$t('توضیحات کامل')"
+              >
+                <UTextarea
+                  v-model="form.description"
+                  :rows="4"
+                  autoresize
+                  class="w-full"
+                  :placeholder="$t('توضیحات تکمیلی محصول برای صفحه جزئیات')"
+                />
+              </UFormField>
+            </div>
           </div>
-        </div>
-      </div>
+        </template>
 
-      <!-- Colors -->
-      <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-        <h3 class="font-bold text-highlighted mb-2">
-          {{ $t('رنگ‌های محصول') }}
-        </h3>
-        <p class="text-xs text-muted mb-4">
-          {{ $t('در صورت وجود تنوع رنگی، گزینه‌های قابل فروش را انتخاب کنید.') }}
-        </p>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="color in sellerProductColorPresets"
-            :key="color.hex"
-            type="button"
-            class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition"
-            :class="isColorSelected(color)
-              ? 'border-primary bg-primary/10 text-primary'
-              : 'border-muted text-toned hover:border-accented'"
-            @click="toggleColor(color)"
-          >
-            <span
-              class="size-4 rounded-full border border-default shrink-0"
-              :style="{ backgroundColor: color.hex }"
-            />
-            {{ $t(color.name) }}
-          </button>
-        </div>
-      </div>
+        <template #pricing>
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <TheFormInput
+                v-model="form.price"
+                :label="$t('قیمت فروش (تومان)')"
+                :placeholder="$t('مثلاً 25000000')"
+                dir="ltr"
+                digits-only
+                :error="errors.price"
+                required
+                icon="i-tabler-cash"
+              />
+              <TheFormInput
+                v-model="form.oldPrice"
+                :label="$t('قیمت قبلی / مقایسه‌ای')"
+                :placeholder="$t('برای نمایش تخفیف')"
+                dir="ltr"
+                digits-only
+                :error="errors.oldPrice"
+              />
+              <TheFormInput
+                v-model="form.stock"
+                :label="$t('موجودی پایه')"
+                placeholder="0"
+                dir="ltr"
+                digits-only
+                :error="errors.stock"
+                required
+                icon="i-tabler-box"
+                :help="commerce.variants.length ? $t('با واریانت، موجودی هر ترکیب جداست') : undefined"
+              />
+              <TheFormInput
+                v-model="commerce.sku"
+                :label="$t('SKU')"
+                dir="ltr"
+              />
+              <TheFormInput
+                v-model="commerce.barcode"
+                :label="$t('بارکد')"
+                dir="ltr"
+              />
+              <TheFormInput
+                v-model="commerce.weight"
+                :label="$t('وزن')"
+                dir="ltr"
+                :placeholder="$t('مثلاً 180g')"
+              />
+              <TheFormInput
+                v-model.number="commerce.lowStockThreshold"
+                type="number"
+                :label="$t('آستانه کم‌موجودی')"
+                dir="ltr"
+              />
+              <UFormField :label="$t('انبار پیش‌فرض')">
+                <USelect
+                  v-model="commerce.warehouseId"
+                  :items="warehouseItems"
+                  value-key="value"
+                  class="w-full"
+                />
+              </UFormField>
+              <UFormField :label="$t('برچسب ویژه')">
+                <USelect
+                  v-model="form.badge"
+                  :items="badgeItems"
+                  value-key="value"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+            <div
+              v-if="discountPercent > 0"
+              class="text-xs text-success font-medium num"
+            >
+              {{ $t('تخفیف') }}: {{ discountPercent.toLocaleString('fa-IR') }}٪
+            </div>
+          </div>
+        </template>
 
-      <!-- Media & extras -->
-      <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-        <h3 class="font-bold text-highlighted mb-1">
-          {{ $t('تصویر و تنظیمات نمایش') }}
-        </h3>
-        <p class="text-xs text-muted mb-4 leading-6">
-          {{ $t('تصاویر تم روشن/تاریک برای تصویر اصلی هستند؛ گالری محصول را بدون محدودیت تعداد اضافه کنید.') }}
-        </p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <TheSellerImageUpload
-            v-model="form.image"
-            :label="$t('تصویر تم روشن')"
-            :badge="$t('لایت')"
-            badge-color="warning"
-            icon="i-tabler-sun"
-            theme-preview="light"
-            :alt="form.title || $t('پیش‌نمایش لایت')"
-            :error="errors.image"
-            :hint="$t('در حالت تم روشن نمایش داده می‌شود')"
-            @error="form.image = ''"
+        <template #specs>
+          <div class="space-y-5">
+            <div
+              v-for="group in attributeGroups"
+              :key="group.title"
+            >
+              <h4 class="text-sm font-bold text-toned mb-3 flex items-center gap-2">
+                <span class="size-1.5 rounded-full bg-primary shrink-0" />
+                {{ $t(group.title) }}
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <template
+                  v-for="field in group.fields"
+                  :key="field.key"
+                >
+                  <TheFormSelect
+                    v-if="field.type === 'select'"
+                    v-model="form.attrs[field.key]"
+                    :label="$t(field.label)"
+                    :items="field.options || []"
+                    :placeholder="$t(field.placeholder || 'انتخاب کنید')"
+                    :required="field.required"
+                    :error="errors[`attr:${field.key}`]"
+                  />
+                  <TheFormInput
+                    v-else
+                    v-model="form.attrs[field.key]"
+                    :label="$t(field.label)"
+                    :placeholder="$t(field.placeholder || '')"
+                    :required="field.required"
+                    :error="errors[`attr:${field.key}`]"
+                  />
+                </template>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="text-sm font-bold text-toned mb-2">
+                {{ $t('رنگ‌های نمایشی (میراث)') }}
+              </h4>
+              <p class="text-xs text-muted mb-3">
+                {{ $t('برای واریانت واقعی از تب واریانت استفاده کنید. این بخش برای سازگاری با دادهٔ فعلی است.') }}
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="color in sellerProductColorPresets"
+                  :key="color.hex"
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition cursor-pointer"
+                  :class="isColorSelected(color)
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-muted text-toned hover:border-accented'"
+                  @click="toggleColor(color)"
+                >
+                  <span
+                    class="size-4 rounded-full border border-default shrink-0"
+                    :style="{ backgroundColor: color.hex }"
+                  />
+                  {{ $t(color.name) }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template #variants>
+          <TheSellerProductVariantsEditor
+            v-model:axes="commerce.variantAxes"
+            v-model:variants="commerce.variants"
+            :category-id="form.category"
+            :base-price="form.price"
+            :base-stock="form.stock"
           />
-          <TheSellerImageUpload
-            v-model="form.imageDark"
-            :label="$t('تصویر تم تاریک')"
-            :badge="$t('دارک')"
-            badge-color="neutral"
-            icon="i-tabler-moon"
-            theme-preview="dark"
-            :alt="form.title || $t('پیش‌نمایش دارک')"
-            :error="errors.imageDark"
-            :hint="$t('در حالت تم تاریک نمایش داده می‌شود؛ اگر خالی باشد همان تصویر لایت استفاده می‌شود')"
-            @error="form.imageDark = ''"
-          />
-        </div>
+        </template>
 
-        <TheSellerGalleryUpload
-          v-model="form.gallery"
-          :label="$t('گالری تصاویر')"
-          class="mb-4"
-          :hint="$t('می‌توانید هر تعداد تصویر اضافه کنید. اولین تصویر در صورت نبود تصویر اصلی استفاده می‌شود.')"
-        />
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <UFormField :label="$t('برچسب ویژه')">
-            <USelect
-              v-model="form.badge"
-              :items="badgeItems"
-              value-key="value"
-              class="w-full"
-            />
-          </UFormField>
-          <div class="flex items-end">
-            <UCheckbox
-              v-model="form.fastDelivery"
-              :label="$t('ارسال سریع')"
+        <template #media>
+          <div class="space-y-4">
+            <p class="text-xs text-muted leading-6">
+              {{ $t('آپلود مستقیم یا انتخاب از کتابخانه رسانه (/seller/media).') }}
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TheSellerImageUpload
+                v-model="form.image"
+                :label="$t('تصویر اصلی (تم روشن)')"
+                :badge="$t('لایت')"
+                badge-color="warning"
+                icon="i-tabler-sun"
+                theme-preview="light"
+                :alt="form.title || $t('پیش‌نمایش لایت')"
+                :error="errors.image"
+                @error="form.image = ''"
+              />
+              <TheSellerImageUpload
+                v-model="form.imageDark"
+                :label="$t('تصویر تم تاریک')"
+                :badge="$t('دارک')"
+                badge-color="neutral"
+                icon="i-tabler-moon"
+                theme-preview="dark"
+                :alt="form.title || $t('پیش‌نمایش دارک')"
+                :error="errors.imageDark"
+                @error="form.imageDark = ''"
+              />
+            </div>
+            <TheSellerGalleryUpload
+              v-model="form.gallery"
+              :label="$t('گالری تصاویر')"
+              :hint="$t('ترتیب با جابه‌جایی در آپلودر حفظ می‌شود')"
             />
           </div>
-        </div>
-      </div>
+        </template>
 
-      <!-- Actions -->
-      <div class="flex items-center justify-between gap-3 flex-wrap pb-2">
+        <template #seo>
+          <TheSellerSeoFields
+            v-model="commerce.seo"
+            :title="$t('سئوی محصول')"
+            :preview-title="form.title"
+            :preview-description="form.shortDesc"
+            :preview-url="commerce.seo.canonicalUrl || (commerce.slug ? `/product/${commerce.slug}` : '')"
+          />
+        </template>
+      </UTabs>
+
+      <div class="flex items-center justify-between gap-3 flex-wrap pb-2 pt-2">
         <UButton
           v-if="isEdit"
           color="neutral"
           variant="outline"
           size="lg"
+          class="cursor-pointer"
           @click="emit('cancel')"
         >
           {{ $t('انصراف') }}
@@ -308,6 +367,7 @@
           color="neutral"
           variant="outline"
           size="lg"
+          class="cursor-pointer"
         >
           {{ $t('انصراف') }}
         </UButton>
@@ -316,8 +376,9 @@
             <UButton
               color="primary"
               size="lg"
-              class="font-bold"
+              class="font-bold cursor-pointer"
               :loading="submitting"
+              :disabled="!can('products.update')"
               @click="onSubmit(true)"
             >
               {{ $t('ذخیره تغییرات') }}
@@ -328,7 +389,9 @@
               color="neutral"
               variant="soft"
               size="lg"
+              class="cursor-pointer"
               :loading="submitting"
+              :disabled="!can('products.create')"
               @click="onSubmit(false)"
             >
               {{ $t('ذخیره پیش‌نویس') }}
@@ -336,8 +399,9 @@
             <UButton
               color="primary"
               size="lg"
-              class="font-bold"
+              class="font-bold cursor-pointer"
               :loading="submitting"
+              :disabled="!can('products.create')"
               @click="onSubmit(true)"
             >
               {{ $t('ثبت و ارسال برای تأیید') }}
@@ -378,6 +442,7 @@ import {
   type SellerProductField,
   type SellerProductFormValues,
 } from '~/data/seller-product-form'
+import { emptyProductCommerce, type SellerProductCommerce } from '~/data/seller-product-variants'
 import type { ProductColor } from '~/data/products'
 
 const props = withDefaults(defineProps<{
@@ -402,17 +467,54 @@ const {
   resolveProduct,
 } = useSeller()
 const { pushChange } = useSellerProductPriceHistory()
+const { can } = useSellerPermissions()
+const { getCommerce, saveCommerce } = useSellerProductCommerce()
+const { brands, ensureLoaded: ensureBrands } = useSellerBrands()
+const { warehouses, ensureWarehouses } = useSellerInventory()
+
+ensureBrands()
+ensureWarehouses()
 
 const isEdit = computed(() => props.mode === 'edit' && Boolean(props.productId))
 const categoryOptions = getSellerCategoryOptions()
 const form = ref<SellerProductFormValues>(emptySellerProductForm())
+const commerce = ref<SellerProductCommerce>(emptyProductCommerce())
 const errors = ref<Record<string, string>>({})
 const submitting = ref(false)
+const activeTab = ref('basic')
+const savedSnapshot = ref('')
+
+const isDirty = computed(() =>
+  JSON.stringify({ form: form.value, commerce: commerce.value }) !== savedSnapshot.value,
+)
+const { allowNextNavigation } = useSellerUnsavedGuard(isDirty)
+
+function captureSnapshot() {
+  savedSnapshot.value = JSON.stringify({ form: form.value, commerce: commerce.value })
+}
+
+const tabItems = computed(() => [
+  { label: t('اطلاعات پایه'), value: 'basic', slot: 'basic' as const, icon: 'i-tabler-info-circle' },
+  { label: t('قیمت و موجودی'), value: 'pricing', slot: 'pricing' as const, icon: 'i-tabler-cash' },
+  { label: t('مشخصات'), value: 'specs', slot: 'specs' as const, icon: 'i-tabler-list-details' },
+  { label: t('واریانت'), value: 'variants', slot: 'variants' as const, icon: 'i-tabler-versions' },
+  { label: t('رسانه'), value: 'media', slot: 'media' as const, icon: 'i-tabler-photo' },
+  { label: t('سئو'), value: 'seo', slot: 'seo' as const, icon: 'i-tabler-world-search' },
+])
+
+function loadCommerce(productId: string) {
+  commerce.value = { ...getCommerce(productId), seo: { ...getCommerce(productId).seo } }
+}
 
 if (isEdit.value && props.productId) {
   const listing = getListing(props.productId)
   const product = resolveProduct(props.productId)
   form.value = productToSellerForm(product, listing?.stock ?? 0)
+  loadCommerce(props.productId)
+  captureSnapshot()
+}
+else {
+  captureSnapshot()
 }
 
 watch(
@@ -422,16 +524,35 @@ watch(
       const listing = getListing(props.productId)
       const product = resolveProduct(props.productId)
       form.value = productToSellerForm(product, listing?.stock ?? 0)
+      loadCommerce(props.productId)
       errors.value = {}
     }
   },
 )
 
+const tagsInput = computed({
+  get: () => commerce.value.tags.join('، '),
+  set: (value: string) => {
+    commerce.value.tags = value
+      .split(/[,،]/)
+      .map(s => s.trim())
+      .filter(Boolean)
+  },
+})
+
 const selectedCategory = computed(() =>
   categoryOptions.find(item => item.id === form.value.category),
 )
 
-const brandOptions = computed(() => getBrandOptions(form.value.category))
+const brandOptions = computed(() => {
+  const fromCategory = getBrandOptions(form.value.category)
+  const fromStore = brands.value.filter(b => b.status === 'active').map(b => b.name)
+  return [...new Set([...fromStore, ...fromCategory])]
+})
+
+const warehouseItems = computed(() =>
+  warehouses.value.map(w => ({ value: w.id, label: w.name })),
+)
 
 const attributeFields = computed(() =>
   getCategoryAttributeFields(form.value.category),
@@ -476,6 +597,7 @@ function onCategorySelect(categoryId: string) {
   form.value.colors = []
   resetAttrsForCategory(categoryId)
   errors.value = {}
+  activeTab.value = 'basic'
 }
 
 function isColorSelected(color: ProductColor) {
@@ -490,16 +612,32 @@ function toggleColor(color: ProductColor) {
   form.value.colors = [...form.value.colors, color]
 }
 
+function persistCommerce(productId: string) {
+  const slug = commerce.value.slug.trim() || productId
+  saveCommerce(productId, {
+    ...commerce.value,
+    productId,
+    slug,
+    published: commerce.value.published,
+  })
+}
+
 async function onSubmit(sendForReview: boolean) {
   errors.value = validateSellerProductForm(form.value, attributeFields.value)
   if (Object.keys(errors.value).length) {
     toast.error(t('لطفاً فیلدهای الزامی را تکمیل کنید'))
+    activeTab.value = errors.value.category || errors.value.title || errors.value.brand
+      ? 'basic'
+      : (errors.value.price || errors.value.stock ? 'pricing' : 'basic')
     return
   }
 
   submitting.value = true
   try {
-    const stock = Number.parseInt(form.value.stock.replace(/[^\d]/g, '') || '0', 10)
+    const variantStock = commerce.value.variants.reduce((sum, v) => sum + (v.stock || 0), 0)
+    const stock = commerce.value.variants.length
+      ? variantStock
+      : Number.parseInt(form.value.stock.replace(/[^\d]/g, '') || '0', 10)
 
     if (isEdit.value && props.productId) {
       const previous = resolveProduct(props.productId)
@@ -522,6 +660,7 @@ async function onSubmit(sendForReview: boolean) {
         toast.error(t('ذخیره محصول ناموفق بود'))
         return
       }
+      persistCommerce(props.productId)
       if (previous.price !== product.price || (previous.oldPrice ?? null) !== (product.oldPrice ?? null)) {
         pushChange(
           props.productId,
@@ -550,11 +689,17 @@ async function onSubmit(sendForReview: boolean) {
       return
     }
 
+    commerce.value.published = sendForReview
+    commerce.value.slug = commerce.value.slug.trim() || productId
+    persistCommerce(productId)
+
     toast.success(
       sendForReview
         ? t('محصول برای تأیید ثبت شد')
         : t('پیش‌نویس محصول ذخیره شد'),
     )
+    allowNextNavigation()
+    captureSnapshot()
     await router.push('/seller/products')
   }
   finally {

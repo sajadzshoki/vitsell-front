@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="hidden lg:block mb-5">
       <h1 class="font-bold text-highlighted text-lg">
@@ -17,7 +17,7 @@ const { t } = useI18n()
 
 definePageMeta({
   layout: 'seller',
-  middleware: 'auth',
+  middleware: ['auth', 'admin'],
 })
 
 useSeoMeta({

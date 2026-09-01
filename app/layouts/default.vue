@@ -28,8 +28,18 @@
 </template>
 
 <script setup lang="ts">
+import { webSiteJsonLd } from '~/composables/useJsonLd'
+
 const route = useRoute()
 const { isBackwardPage, title: backwardTitle } = useMobileBackward()
+const { settings, ensureLoaded } = useSellerSeoSettings()
+
+ensureLoaded()
+
+useJsonLd(() => webSiteJsonLd({
+  name: settings.value.siteName,
+  url: settings.value.siteUrl || undefined,
+}))
 
 const isCategoryIndex = computed(() => route.path === '/category')
 

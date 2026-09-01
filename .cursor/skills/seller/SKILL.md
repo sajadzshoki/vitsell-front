@@ -22,32 +22,46 @@ description: >-
 | لایه | مسیر |
 |---|---|
 | Layout | `app/layouts/seller.vue` |
-| Nav | `app/data/seller.ts` → `sellerNavItems` + `TheSellerSidebar` / `TheSellerMobileMenu` |
+| Nav | `app/data/seller.ts` → `sellerNavGroups` + `TheSellerSidebar` / `TheSellerMobileMenu` |
 | Layout helpers | `app/composables/useSellerLayout.ts` |
-| Data / mock | `app/data/seller.ts`, `app/data/seller-product-form.ts` |
-| Composable | `app/composables/useSeller.ts` |
+| Permissions | `app/data/seller-permissions.ts`, `useSellerPermissions` |
+| Filters / list query | `seller-filters.ts`, `useSellerFilters`, `useSellerListQuery` |
+| SEO | `app/data/seo.ts`, `TheSellerSeoFields` |
+| Foundation doc | `docs/ADMIN_FOUNDATION.md` |
+| Phase 2 doc | `docs/ADMIN_PHASE2.md` — products, attributes, variants, inventory |
+| Phase 3 doc | `docs/ADMIN_PHASE3.md` — orders, customers, returns, refunds, support |
+| Phase 4 doc | `docs/ADMIN_PHASE4.md` — taxonomy, brands, attributes, media library |
+| Phase 5 doc | `docs/ADMIN_PHASE5.md` — marketing, discounts, coupons, campaigns, banners, notifications |
+| Phase 6 doc | `docs/ADMIN_PHASE6.md` — CMS, blog, static pages, SEO, sitemap/robots |
+| Phase 7 doc | `docs/ADMIN_PHASE7.md` — finance, payments, transactions, settlements |
+| Phase 8 doc | `docs/ADMIN_PHASE8.md` — super admin, settings, RBAC, search, import/export |
+| Phase 9 doc | `docs/ADMIN_PHASE9.md` — production readiness, QA, gaps, readiness status |
+| RBAC UI | `/seller/admins`, `/seller/roles`, `/seller/audit`, `/seller/account` |
+| Data / mock | `app/data/seller.ts`, `seller-product-form.ts`, `seller-attributes`, `seller-brands`, `seller-media`, `seller-discounts`, `seller-campaigns`, `seller-marketing-shared`, `seller-inventory`, `seller-product-variants`, `seller-order-commerce`, `seller-customers`, `seller-returns-refunds`, `seller-export`, `seller-admins`, `seller-roles`, `seller-audit` |
+| Composable | `app/composables/useSeller.ts`, `useSellerAttributes`, `useSellerBrands`, `useSellerMedia`, `useSellerDiscounts`, `useSellerCampaigns`, `useSellerInventory`, `useSellerProductCommerce`, `useSellerOrderCommerce`, `useSellerCustomers`, `useSellerReturnsRefunds` |
 | صفحات | `app/pages/seller/**` |
 | کامپوننت‌ها | `app/components/TheSeller/**` |
 | API (عمومی) | `ROUTES.md` — prefix `/api/v1` |
 
-الگو صفحه: `pages/seller/<section>/index.vue` فقط `TheSeller*` را رندر کند؛ منطق در کامپوننت/composable؛ `definePageMeta({ layout: 'seller', middleware: 'auth' })`.
+الگو صفحه: `pages/seller/<section>/index.vue` فقط `TheSeller*` را رندر کند؛ منطق در کامپوننت/composable؛ `definePageMeta({ layout: 'seller', middleware: ['auth', 'admin'] })`.
 
 ## قوانین کلی ساخت بخش جدید
 
-1. آیتم را به `sellerNavItems` اضافه کن (`id`, `label`, `icon` از `i-tabler-*`, `to`).
-2. `SellerTabId` را گسترش بده.
-3. عنوان صفحه از `sellerNavItems` / `useSellerLayout` بیاید (breadcrumb موبایل/دسکتاپ خودکار بماند).
+1. آیتم را به `sellerNavGroups` اضافه کن (`id`, `label`, `icon` از `i-tabler-*`, `to` یا `comingSoon`).
+2. `SellerTabId` و در صورت نیاز `sellerNavPermissionMap` را گسترش بده.
+3. عنوان صفحه از nav / `useSellerLayout` بیاید (breadcrumb موبایل/دسکتاپ خودکار بماند).
 4. Nuxt UI + semantic colors + i18n (`$t` / کلید = متن فارسی) + RTL (`start`/`end`).
-5. داده از API برای خواندن؛ mutate ادمین فعلاً می‌تواند فقط state فرانت باشد تا endpoint آماده شود (مثل دسته‌بندی‌ها).
+5. داده از API برای خواندن؛ mutate ادمین فعلاً می‌تواند فقط state فرانت باشد تا endpoint آماده شود.
 6. هر کنترل کلیک‌پذیر `cursor-pointer` (قانون سراسری + کلاس سفارشی در صورت نیاز).
 7. UnoCSS variant group: `lg:(px-6 py-4)` نه تکرار پیشوند.
+8. برای لیست‌ها ترجیحاً `TheSellerPageHeader` + `TheSellerListToolbar` + `useSellerListQuery` / `useSellerFilters`.
 
 ## نقشه بخش‌ها (در حال گسترش)
 
 | اولویت | بخش | مسیر پیشنهادی | وضعیت در اسکیل |
 |---|---|---|---|
-| 1 | دسته‌بندی‌ها | `/seller/categories` | مشخص‌شده پایین + [categories.md](categories.md) |
-| 2 | بنرها | `/seller/banners` | مشخص‌شده پایین + [banners.md](banners.md) |
+| 1 | دسته‌بندی‌ها | `/seller/categories` | مشخص‌شده پایین + [categories.md](categories.md) — هدف: درخت `parentId` |
+| 2 | بنرها | `/seller/banners` | مشخص‌شده پایین + [banners.md](banners.md) — placement |
 | 3 | فوتر | `/seller/footer` | مشخص‌شده پایین + [footer.md](footer.md) |
 | 4 | شگفت‌انگیزها | `/seller/deals` | مشخص‌شده پایین + [deals.md](deals.md) |
 | 5 | اعلان‌ها | `/seller/notifications` | مشخص‌شده پایین + [notifications.md](notifications.md) |
@@ -57,6 +71,70 @@ description: >-
 | 9 | درباره ما | `/seller/about` | مشخص‌شده پایین + [about.md](about.md) |
 | — | جزئیات محصول | `/seller/products/:id` | تب‌ها: خلاصه / ویرایش / قیمت / سفارش / نظرات / پرسش |
 | — | محصولات / سفارش / نظرات / مالی / فروشگاه | موجود | الگو برای بخش‌های بعدی |
+
+### محصولات — variants / inventory (Phase 2)
+
+- لیست: فیلتر پیشرفته، bulk، export، pagination — `TheSellerProducts`
+- فرم تب‌دار: پایه / قیمت / مشخصات / واریانت / رسانه / سئو — `TheSellerProductForm` + `TheSellerProductVariantsEditor`
+- ویژگی‌های پویا: `/seller/attributes` (نه hardcode Color/Size)
+- برند: `/seller/brands`
+- موجودی و انبار: `/seller/inventory`, `/seller/inventory/movements`, `/seller/warehouses`
+- commerce overlay (slug, featured, SEO, variants): `useSellerProductCommerce` تا API واریانت آماده شود
+- جزئیات بیشتر: [docs/ADMIN_PHASE2.md](../../../docs/ADMIN_PHASE2.md)
+
+### سفارش / مشتری / پشتیبانی (Phase 3)
+
+- سفارش‌ها: فیلتر پیشرفته، bulk، export، جزئیات با timeline/یادداشت داخلی/کد پیگیری — وضعیت API حفظ شد (`new/packing/shipped/...`)
+- مشتریان: `/seller/customers` + پروفایل
+- مرجوعی / بازپرداخت / ارسال: `/seller/returns`, `/seller/refunds`, `/seller/shipping`
+- نظرات و پرسش: فیلتر، moderation، export، RBAC
+- جزئیات: [docs/ADMIN_PHASE3.md](../../../docs/ADMIN_PHASE3.md)
+
+### Taxonomy / برند / ویژگی / رسانه (Phase 4)
+
+- دسته‌ها: درخت چندسطحی، tree/flat، parent امن، SEO مشترک، اختصاص ویژگی، حذف ایمن
+- برندها: لیست + جزئیات + SEO — `useSellerBrands`
+- ویژگی‌ها: flags فیلتر/واریانت + `categoryIds` — `useSellerAttributes`
+- واریانت محصول: مصرف همان attribute architecture با scope دسته
+- کتابخانه رسانه: `/seller/media` + `MediaPicker` داخل `ImageUpload`
+- جزئیات: [docs/ADMIN_PHASE4.md](../../../docs/ADMIN_PHASE4.md)
+
+### بازاریابی (Phase 5)
+
+- داشبورد: `/seller/marketing`
+- تخفیف خودکار: `/seller/discounts` — `useSellerDiscounts`
+- کوپن‌ها: همان کدهای تخفیف در `/seller/promotions` (overlay هدف‌گیری/سقف)
+- کمپین: `/seller/campaigns` — گروه‌بندی مراجعه‌ای بدون موتور تخفیف موازی
+- بنر: placement صریح + MediaPicker + `bannersForPlacement`
+- شگفت‌انگیز / اعلان: ارتقای lifecycle و زمان‌بندی
+- جزئیات: [docs/ADMIN_PHASE5.md](../../../docs/ADMIN_PHASE5.md)
+
+### CMS / سئو (Phase 6)
+
+- بلاگ: وضعیت draft/scheduled/published/archived، تگ و دسته محتوایی، SEO، پیش‌نمایش — [blog.md](blog.md)
+- صفحات ثابت: `/seller/pages` روی مدل `StaticPage` موجود — [pages.md](pages.md)
+- درباره ما: visibility سکشن‌ها + SEO — [about.md](about.md)
+- سئو سراسری: `/seller/seo` + `useEntitySeo` روی صفحات عمومی + JSON-LD
+- robots/sitemap: `server/routes/*`
+- جزئیات: [docs/ADMIN_PHASE6.md](../../../docs/ADMIN_PHASE6.md)
+
+### مالی (Phase 7)
+
+- داشبورد KPI + بازه زمانی؛ تراکنش‌های derived؛ پرداخت‌ها از سفارش؛ تسویه درگاه/بانک (نه payout مارکت‌پلیس)
+- مغایرت‌گیری، تعدیل append-only، گزارش‌ها، درگاه‌ها بدون secret — [finance.md](finance.md)
+- جزئیات: [docs/ADMIN_PHASE7.md](../../../docs/ADMIN_PHASE7.md)
+
+### سوپر ادمین / سیستم (Phase 8)
+
+- هاب تنظیمات، نمای سیستم، منوی عمومی، CommandPalette، ورود/خروج داده، activity روی همان audit
+- RBAC: SUPPORT_MANAGER، suspended، self-lockout — [system.md](system.md)
+- جزئیات: [docs/ADMIN_PHASE8.md](../../../docs/ADMIN_PHASE8.md)
+
+### آمادگی تولید (Phase 9)
+
+- QA / empty / unsaved guard / dashboard permission / command palette RBAC
+- بدون rebuild؛ وضعیت: **READY WITH BACKEND GAPS**
+- جزئیات: [docs/ADMIN_PHASE9.md](../../../docs/ADMIN_PHASE9.md)
 
 بخش‌های بعدی را فقط وقتی کاربر خواست، به همین اسکیل اضافه کن (همین قالب جدول + فایل reference).
 

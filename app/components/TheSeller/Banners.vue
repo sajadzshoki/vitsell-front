@@ -13,7 +13,7 @@
           color="primary"
           size="sm"
           icon="i-tabler-plus"
-          class="font-medium"
+          class="font-medium cursor-pointer"
         >
           {{ $t('افزودن بنر') }}
         </UButton>
@@ -26,7 +26,7 @@
         color="primary"
         block
         icon="i-tabler-plus"
-        class="font-medium"
+        class="font-medium cursor-pointer"
       >
         {{ $t('افزودن بنر') }}
       </UButton>
@@ -36,61 +36,95 @@
       <TheFormInput
         v-model="query"
         icon="i-tabler-search"
-        :placeholder="$t('جستجوی بنر، لینک یا دسته')"
+        :placeholder="$t('جستجوی عنوان، شناسه یا لینک')"
         class="flex-1 w-full"
       />
-      <div class="flex items-center gap-2 overflow-x-auto scrollbar-none w-full sm:w-auto">
-        <UButton
-          v-for="tab in typeTabs"
-          :key="tab.id"
-          :color="typeFilter === tab.id ? 'primary' : 'neutral'"
-          :variant="typeFilter === tab.id ? 'soft' : 'ghost'"
-          size="sm"
-          class="shrink-0"
-          @click="typeFilter = tab.id"
-        >
-          {{ $t(tab.label) }}
-        </UButton>
-      </div>
+      <USelect
+        v-model="placementFilter"
+        :items="placementFilterItems"
+        value-key="value"
+        class="w-full sm:w-56"
+      />
     </div>
 
     <div class="flex items-center gap-2 overflow-x-auto scrollbar-none mb-4">
       <UButton
-        v-for="tab in activeTabs"
+        v-for="tab in scheduleTabs"
         :key="tab.id"
-        :color="activeFilter === tab.id ? 'primary' : 'neutral'"
-        :variant="activeFilter === tab.id ? 'soft' : 'ghost'"
+        :color="scheduleFilter === tab.id ? 'primary' : 'neutral'"
+        :variant="scheduleFilter === tab.id ? 'soft' : 'ghost'"
         size="sm"
-        class="shrink-0"
-        @click="activeFilter = tab.id"
+        class="shrink-0 cursor-pointer"
+        @click="scheduleFilter = tab.id"
       >
         {{ $t(tab.label) }}
       </UButton>
     </div>
 
     <div
-      v-if="!filtered.length"
-      class="text-center py-12"
+      v-if="selectedIds.length"
+      class="mb-4 flex items-center gap-2 flex-wrap rounded-xl border border-primary/30 bg-primary/5 p-3"
     >
-      <UIcon
-        name="i-tabler-photo"
-        class="size-16 text-dimmed mx-auto mb-4"
-      />
-      <p class="text-sm text-muted mb-4">
-        {{ query.trim() || typeFilter !== 'all' || activeFilter !== 'all'
-          ? $t('بنری با این فیلتر پیدا نشد')
-          : $t('هنوز بنری ثبت نشده است') }}
-      </p>
+      <span class="text-xs text-toned num">
+        {{ selectedIds.length.toLocaleString('fa-IR') }} {{ $t('انتخاب‌شده') }}
+      </span>
       <UButton
-        v-if="!query.trim() && typeFilter === 'all' && activeFilter === 'all'"
-        to="/seller/banners/new"
-        color="primary"
+        type="button"
+        color="success"
         variant="soft"
-        icon="i-tabler-plus"
+        size="xs"
+        class="cursor-pointer"
+        :loading="bulkRunning"
+        @click="runBulk(true)"
       >
-        {{ $t('افزودن اولین بنر') }}
+        {{ $t('فعال‌سازی گروهی') }}
+      </UButton>
+      <UButton
+        type="button"
+        color="neutral"
+        variant="soft"
+        size="xs"
+        class="cursor-pointer"
+        :loading="bulkRunning"
+        @click="runBulk(false)"
+      >
+        {{ $t('غیرفعال‌سازی گروهی') }}
+      </UButton>
+      <UButton
+        type="button"
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        class="cursor-pointer"
+        @click="selectedIds = []"
+      >
+        {{ $t('لغو انتخاب') }}
       </UButton>
     </div>
+
+    <TheSellerEmptyState
+      v-if="!filtered.length"
+      icon="i-tabler-photo"
+      :title="query.trim() || placementFilter !== 'all' || scheduleFilter !== 'all' ? $t('نتیجه‌ای نیست') : $t('هنوز بنری نیست')"
+      :message="query.trim() || placementFilter !== 'all' || scheduleFilter !== 'all'
+        ? $t('بنری با این فیلتر پیدا نشد')
+        : $t('هنوز بنری ثبت نشده است')"
+    >
+      <template
+        v-if="!query.trim() && placementFilter === 'all' && scheduleFilter === 'all'"
+        #actions
+      >
+        <UButton
+          to="/seller/banners/new"
+          color="primary"
+          variant="soft"
+          icon="i-tabler-plus"
+          class="cursor-pointer"
+        >
+          {{ $t('افزودن اولین بنر') }}
+        </UButton>
+      </template>
+    </TheSellerEmptyState>
 
     <div
       v-else
@@ -102,11 +136,16 @@
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
         <div class="flex items-start gap-3">
+          <UCheckbox
+            :model-value="selectedIds.includes(banner.id)"
+            class="mt-1"
+            @update:model-value="toggleSelect(banner.id, !!$event)"
+          />
           <div class="size-20 sm:w-28 sm:h-20 rounded-xl bg-default border border-muted overflow-hidden shrink-0">
             <img
               v-if="banner.image"
               :src="banner.image"
-              :alt="banner.id"
+              :alt="banner.alt || banner.title || banner.id"
               class="size-full object-cover"
             >
             <div
@@ -124,17 +163,14 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-2 flex-wrap">
               <div class="min-w-0">
-                <div
-                  class="text-sm font-medium text-highlighted truncate num"
-                  dir="ltr"
-                >
-                  {{ banner.id }}
+                <div class="text-sm font-medium text-highlighted truncate">
+                  {{ banner.title || banner.internalName || banner.id }}
                 </div>
                 <div
                   class="text-[11px] text-muted mt-0.5 truncate num"
                   dir="ltr"
                 >
-                  {{ banner.link }}
+                  {{ banner.id }} · {{ banner.link || '—' }}
                 </div>
               </div>
               <div class="flex items-center gap-1.5 flex-wrap">
@@ -147,12 +183,20 @@
                   {{ $t(sellerBannerTypeMeta[banner.type].label) }}
                 </UBadge>
                 <UBadge
-                  :color="banner.active ? 'success' : 'neutral'"
+                  color="info"
                   variant="subtle"
                   size="sm"
                   class="font-medium"
                 >
-                  {{ banner.active ? $t('فعال') : $t('غیرفعال') }}
+                  {{ $t(sellerBannerPlacementMeta[banner.placement]?.label || banner.placement) }}
+                </UBadge>
+                <UBadge
+                  :color="scheduleBadge(banner).color"
+                  variant="subtle"
+                  size="sm"
+                  class="font-medium"
+                >
+                  {{ $t(scheduleBadge(banner).label) }}
                 </UBadge>
               </div>
             </div>
@@ -162,6 +206,9 @@
               <span class="font-medium text-highlighted">
                 {{ categoryLabel(banner.categoryId) }}
               </span>
+              <span class="mx-2">·</span>
+              {{ $t('اولویت') }}:
+              <span class="font-medium num text-highlighted">{{ banner.priority }}</span>
             </div>
 
             <div class="mt-3 flex items-center gap-2 flex-wrap">
@@ -171,6 +218,7 @@
                 variant="soft"
                 size="xs"
                 icon="i-tabler-pencil"
+                class="cursor-pointer"
               >
                 {{ $t('ویرایش') }}
               </UButton>
@@ -179,6 +227,7 @@
                 :color="banner.active ? 'neutral' : 'success'"
                 variant="ghost"
                 size="xs"
+                class="cursor-pointer"
                 :icon="banner.active ? 'i-tabler-player-pause' : 'i-tabler-player-play'"
                 @click="toggleActive(banner)"
               >
@@ -189,6 +238,7 @@
                 color="error"
                 variant="ghost"
                 size="xs"
+                class="cursor-pointer"
                 icon="i-tabler-trash"
                 @click="openDelete(banner)"
               >
@@ -230,13 +280,14 @@
           <UButton
             color="neutral"
             variant="outline"
+            class="cursor-pointer"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
           </UButton>
           <UButton
             color="error"
-            class="font-bold"
+            class="font-bold cursor-pointer"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -249,33 +300,45 @@
 
 <script setup lang="ts">
 import {
+  sellerBannerPlacementMeta,
   sellerBannerTypeMeta,
   type SellerBanner,
-  type SellerBannerType,
+  type SellerBannerPlacement,
 } from '~/data/seller-banners'
+import {
+  deriveScheduleStatus,
+  sellerScheduleStatusMeta,
+  type SellerScheduleStatus,
+} from '~/data/seller-marketing-shared'
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { banners, ensureLoaded, deleteBanner, setActive } = useSellerBanners()
+const { banners, ensureLoaded, deleteBanner, setActive, setActiveMany } = useSellerBanners()
 const { categories, fetchCategories, getCategoryById } = useCategories()
 
 const query = ref('')
-const typeFilter = ref<'all' | SellerBannerType>('all')
-const activeFilter = ref<'all' | 'active' | 'inactive'>('all')
+const placementFilter = ref<'all' | SellerBannerPlacement>('all')
+const scheduleFilter = ref<'all' | SellerScheduleStatus>('all')
+const selectedIds = ref<string[]>([])
+const bulkRunning = ref(false)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerBanner | null>(null)
 
-const typeTabs = [
-  { id: 'all' as const, label: 'همه' },
-  { id: 'main' as const, label: 'بنر اصلی' },
-  { id: 'secondary' as const, label: 'بنر فرعی' },
-]
-
-const activeTabs = [
+const scheduleTabs = [
   { id: 'all' as const, label: 'همه وضعیت‌ها' },
   { id: 'active' as const, label: 'فعال' },
-  { id: 'inactive' as const, label: 'غیرفعال' },
+  { id: 'scheduled' as const, label: 'زمان‌بندی‌شده' },
+  { id: 'paused' as const, label: 'متوقف' },
+  { id: 'expired' as const, label: 'منقضی' },
 ]
+
+const placementFilterItems = computed(() => [
+  { label: t('همه جایگاه‌ها'), value: 'all' },
+  ...(Object.keys(sellerBannerPlacementMeta) as SellerBannerPlacement[]).map(value => ({
+    label: t(sellerBannerPlacementMeta[value].label),
+    value,
+  })),
+])
 
 ensureLoaded()
 await fetchCategories({ withCounts: false })
@@ -283,25 +346,61 @@ await fetchCategories({ withCounts: false })
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   return banners.value.filter((banner) => {
-    if (typeFilter.value !== 'all' && banner.type !== typeFilter.value) return false
-    if (activeFilter.value === 'active' && !banner.active) return false
-    if (activeFilter.value === 'inactive' && banner.active) return false
+    if (placementFilter.value !== 'all' && banner.placement !== placementFilter.value) return false
+    const status = deriveScheduleStatus({
+      startsAt: banner.startsAt,
+      endsAt: banner.endsAt,
+      active: banner.active,
+    })
+    if (scheduleFilter.value !== 'all' && status !== scheduleFilter.value) return false
     if (!q) return true
     const categoryName = categoryLabel(banner.categoryId).toLowerCase()
     return (
       banner.id.toLowerCase().includes(q)
       || banner.link.toLowerCase().includes(q)
+      || (banner.title || '').toLowerCase().includes(q)
+      || (banner.internalName || '').toLowerCase().includes(q)
       || (banner.categoryId ?? '').toLowerCase().includes(q)
       || categoryName.includes(q)
     )
   })
 })
 
+function scheduleBadge(banner: SellerBanner) {
+  const status = deriveScheduleStatus({
+    startsAt: banner.startsAt,
+    endsAt: banner.endsAt,
+    active: banner.active,
+  })
+  return sellerScheduleStatusMeta[status]
+}
+
 function categoryLabel(categoryId: string | null) {
   if (!categoryId) return t('بدون دسته')
   return getCategoryById(categoryId)?.name
     || categories.value.find(c => c.id === categoryId)?.name
     || categoryId
+}
+
+function toggleSelect(id: string, on: boolean) {
+  if (on) {
+    if (!selectedIds.value.includes(id)) selectedIds.value = [...selectedIds.value, id]
+    return
+  }
+  selectedIds.value = selectedIds.value.filter(x => x !== id)
+}
+
+function runBulk(active: boolean) {
+  if (!selectedIds.value.length) return
+  bulkRunning.value = true
+  try {
+    setActiveMany(selectedIds.value, active)
+    toast.success(active ? t('بنرها فعال شدند') : t('بنرها غیرفعال شدند'))
+    selectedIds.value = []
+  }
+  finally {
+    bulkRunning.value = false
+  }
 }
 
 function toggleActive(banner: SellerBanner) {

@@ -11,6 +11,6 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: () => t('پنل فروشنده'),
+  title: () => t('پنل مدیریت'),
 })
 </script>

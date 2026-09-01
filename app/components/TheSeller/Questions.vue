@@ -1,55 +1,36 @@
 <template>
   <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-    <div class="hidden lg:flex items-center justify-between mb-5 gap-3">
-      <h2 class="font-bold text-highlighted">
-        {{ $t('پرسش و پاسخ') }}
-      </h2>
-      <div class="text-xs text-muted">
-        <span class="num">{{ unansweredCount.toLocaleString('fa-IR') }}</span>
-        {{ $t('بدون پاسخ') }}
-      </div>
+    <div class="hidden lg:block">
+      <TheSellerPageHeader
+        :title="$t('پرسش و پاسخ')"
+        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('پرسش')}`"
+      >
+        <template #actions>
+          <UButton
+            type="button"
+            color="neutral"
+            variant="soft"
+            size="sm"
+            icon="i-tabler-download"
+            class="cursor-pointer"
+            @click="exportCsv"
+          >
+            {{ $t('خروجی') }}
+          </UButton>
+        </template>
+      </TheSellerPageHeader>
     </div>
 
-    <div class="flex flex-col sm:(flex-row items-center) gap-3 mb-4">
-      <TheFormInput
-        v-model="query"
-        icon="i-tabler-search"
-        :placeholder="$t('جستجوی پرسش یا محصول')"
-        class="flex-1 w-full"
-      />
-      <div class="flex items-center gap-2 overflow-x-auto scrollbar-none w-full sm:w-auto">
-        <UButton
-          :color="statusFilter === 'all' ? 'primary' : 'neutral'"
-          :variant="statusFilter === 'all' ? 'soft' : 'ghost'"
-          size="sm"
-          class="shrink-0"
-          @click="statusFilter = 'all'"
-        >
-          {{ $t('همه') }}
-        </UButton>
-        <UButton
-          :color="statusFilter === 'unanswered' ? 'primary' : 'neutral'"
-          :variant="statusFilter === 'unanswered' ? 'soft' : 'ghost'"
-          size="sm"
-          class="shrink-0"
-          @click="statusFilter = 'unanswered'"
-        >
-          {{ $t('بدون پاسخ') }}
-          <span class="num ms-1">
-            {{ unansweredCount.toLocaleString('fa-IR') }}
-          </span>
-        </UButton>
-        <UButton
-          :color="statusFilter === 'answered' ? 'primary' : 'neutral'"
-          :variant="statusFilter === 'answered' ? 'soft' : 'ghost'"
-          size="sm"
-          class="shrink-0"
-          @click="statusFilter = 'answered'"
-        >
-          {{ $t('پاسخ‌داده‌شده') }}
-        </UButton>
-      </div>
-    </div>
+    <TheSellerListToolbar
+      v-model:search="search"
+      :status="status"
+      :tabs="statusTabs"
+      :search-placeholder="$t('جستجوی پرسش یا محصول')"
+      :has-active="hasActiveFilters"
+      :clear-label="$t('پاک کردن فیلترها')"
+      @update:status="status = $event"
+      @clear="clearFilters"
+    />
 
     <div
       v-if="pending && !questions.length"
@@ -61,20 +42,13 @@
       />
     </div>
 
-    <div
+    <TheSellerEmptyState
       v-else-if="!filtered.length"
-      class="text-center py-12"
-    >
-      <UIcon
-        name="i-tabler-message-question"
-        class="size-16 text-dimmed mx-auto mb-4"
-      />
-      <p class="text-sm text-muted">
-        {{ query.trim() || statusFilter !== 'all'
-          ? $t('پرسشی با این فیلتر پیدا نشد')
-          : $t('پرسشی برای نمایش نیست') }}
-      </p>
-    </div>
+      icon="i-tabler-message-question"
+      :message="search.trim() || status !== 'all'
+        ? $t('پرسشی با این فیلتر پیدا نشد')
+        : $t('پرسشی برای نمایش نیست')"
+    />
 
     <div
       v-else
@@ -132,6 +106,7 @@
 
 <script setup lang="ts">
 import type { SellerProductQuestion } from '~/data/seller-questions'
+import { downloadSellerCsv } from '~/data/seller-export'
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -143,25 +118,33 @@ const {
   deleteQuestion,
 } = useSellerQuestions()
 const { resolveProduct } = useSeller()
+const { can } = useSellerPermissions()
+const { search, status, hasActiveFilters, clearFilters } = useSellerListQuery({
+  defaultStatus: 'all',
+})
 
-const query = ref('')
-const statusFilter = ref<'all' | 'unanswered' | 'answered'>('all')
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerProductQuestion | null>(null)
 const deleting = ref(false)
 
 await ensureLoaded({ force: true })
 
+const statusTabs = computed(() => [
+  { id: 'all', label: t('همه') },
+  { id: 'unanswered', label: t('بدون پاسخ'), count: unansweredCount.value },
+  { id: 'answered', label: t('پاسخ‌داده‌شده') },
+])
+
 const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
+  const q = search.value.trim().toLowerCase()
   return questions.value.filter((item) => {
-    if (statusFilter.value === 'unanswered' && item.answer) return false
-    if (statusFilter.value === 'answered' && !item.answer) return false
+    if (status.value === 'unanswered' && item.answer) return false
+    if (status.value === 'answered' && !item.answer) return false
     if (!q) return true
     const product = resolveProduct(item.productId)
     return (
-      item.question.includes(query.value.trim())
-      || item.name.includes(query.value.trim())
+      item.question.includes(search.value.trim())
+      || item.name.includes(search.value.trim())
       || product.title.toLowerCase().includes(q)
       || item.productId.toLowerCase().includes(q)
     )
@@ -169,6 +152,7 @@ const filtered = computed(() => {
 })
 
 function openDelete(question: SellerProductQuestion) {
+  if (!can('questions.delete')) return
   pendingDelete.value = question
   deleteOpen.value = true
 }
@@ -189,5 +173,21 @@ async function confirmDelete() {
   finally {
     deleting.value = false
   }
+}
+
+function exportCsv() {
+  downloadSellerCsv(
+    `questions-${Date.now()}`,
+    ['id', 'productId', 'name', 'question', 'answered', 'date'],
+    filtered.value.map(q => [
+      q.id,
+      q.productId,
+      q.name,
+      q.question,
+      Boolean(q.answer),
+      q.date,
+    ]),
+  )
+  toast.success(t('فایل خروجی آماده شد'))
 }
 </script>

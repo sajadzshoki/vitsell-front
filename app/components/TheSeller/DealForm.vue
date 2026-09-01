@@ -7,6 +7,7 @@
         variant="ghost"
         size="sm"
         icon="i-tabler-chevron-right"
+        class="cursor-pointer"
       >
         {{ $t('بازگشت به شگفت‌انگیزها') }}
       </UButton>
@@ -22,14 +23,25 @@
             {{ $t('محصول را انتخاب کنید، درصد تخفیف و بازه زمانی را مشخص کنید و فعال نمایید.') }}
           </p>
         </div>
-        <UBadge
-          :color="form.active ? 'success' : 'neutral'"
-          variant="subtle"
-          size="md"
-          class="font-medium"
-        >
-          {{ form.active ? $t('فعال') : $t('غیرفعال') }}
-        </UBadge>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <UBadge
+            :color="scheduleMeta.color"
+            variant="subtle"
+            size="md"
+            class="font-medium"
+          >
+            {{ $t(scheduleMeta.label) }}
+          </UBadge>
+          <UBadge
+            v-if="countdownLabel"
+            color="warning"
+            variant="subtle"
+            size="md"
+            class="font-medium"
+          >
+            {{ countdownLabel }}
+          </UBadge>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -45,7 +57,15 @@
           :help="isEdit ? $t('شناسه بعد از ایجاد قابل تغییر نیست') : $t('فقط حروف کوچک انگلیسی، عدد و خط تیره')"
         />
 
+        <TheFormInput
+          v-model="form.name"
+          :label="$t('نام نمایشی')"
+          :placeholder="$t('مثلاً شگفت‌انگیز آیفون')"
+          icon="i-tabler-tag"
+        />
+
         <UFormField
+          class="md:col-span-2"
           :label="$t('محصول')"
           required
           :error="errors.productId"
@@ -61,6 +81,14 @@
         </UFormField>
 
         <TheFormInput
+          v-model="form.variantId"
+          :label="$t('شناسه واریانت')"
+          :placeholder="$t('اختیاری')"
+          dir="ltr"
+          icon="i-tabler-versions"
+        />
+
+        <TheFormInput
           v-model="form.discountPercent"
           :label="$t('درصد تخفیف')"
           placeholder="20"
@@ -70,6 +98,43 @@
           :error="errors.discountPercent"
           required
           icon="i-tabler-percentage"
+        />
+
+        <TheFormInput
+          v-model="form.specialPrice"
+          :label="$t('قیمت ویژه (تومان)')"
+          :placeholder="$t('اختیاری — خالی = از درصد')"
+          dir="ltr"
+          digits-only
+          :error="errors.specialPrice"
+          icon="i-tabler-cash"
+        />
+
+        <TheFormInput
+          v-model="form.maxQuantity"
+          :label="$t('سقف موجودی شگفت‌انگیز')"
+          :placeholder="$t('اختیاری')"
+          dir="ltr"
+          digits-only
+          icon="i-tabler-box"
+        />
+
+        <TheFormInput
+          v-model="form.perCustomerLimit"
+          :label="$t('سقف خرید هر مشتری')"
+          :placeholder="$t('اختیاری')"
+          dir="ltr"
+          digits-only
+          icon="i-tabler-user"
+        />
+
+        <TheFormInput
+          v-model.number="form.priority"
+          type="number"
+          :label="$t('اولویت')"
+          dir="ltr"
+          icon="i-tabler-list-numbers"
+          :help="$t('عدد کوچکتر = اولویت بالاتر')"
         />
 
         <div class="flex items-end pb-1">
@@ -143,6 +208,12 @@
               <span class="num">({{ clampPercent(Number(form.discountPercent) || 0).toLocaleString('fa-IR') }}٪)</span>
             </span>
           </div>
+          <div
+            v-if="countdownLabel"
+            class="mt-2 text-xs text-warning font-medium"
+          >
+            {{ $t('زمان باقی‌مانده') }}: {{ countdownLabel }}
+          </div>
         </div>
       </div>
     </div>
@@ -152,7 +223,7 @@
         type="button"
         color="primary"
         size="lg"
-        class="font-bold"
+        class="font-bold cursor-pointer"
         :loading="saving"
         @click="onSave"
       >
@@ -163,6 +234,7 @@
         color="neutral"
         variant="outline"
         size="lg"
+        class="cursor-pointer"
         to="/seller/deals"
       >
         {{ $t('انصراف') }}
@@ -182,6 +254,11 @@ import {
   type SellerAmazingDeal,
   type SellerAmazingDealFormValues,
 } from '~/data/seller-deals'
+import {
+  deriveScheduleStatus,
+  formatCountdown,
+  sellerScheduleStatusMeta,
+} from '~/data/seller-marketing-shared'
 
 type ProductOption = {
   label: string
@@ -203,8 +280,41 @@ const saving = ref(false)
 const form = ref<SellerAmazingDealFormValues>(
   props.initial ? toAmazingDealForm(props.initial) : emptyAmazingDealForm(),
 )
-const errors = ref<Partial<Record<'id' | 'productId' | 'discountPercent' | 'startsAt' | 'endsAt', string>>>({})
+const errors = ref<Partial<Record<'id' | 'productId' | 'discountPercent' | 'specialPrice' | 'startsAt' | 'endsAt', string>>>({})
 const catalog = ref<Product[]>([])
+const nowTick = ref(Date.now())
+
+let tickTimer: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  tickTimer = setInterval(() => {
+    nowTick.value = Date.now()
+  }, 60_000)
+})
+onBeforeUnmount(() => {
+  if (tickTimer) clearInterval(tickTimer)
+})
+
+const scheduleMeta = computed(() => {
+  const status = deriveScheduleStatus({
+    startsAt: form.value.startsAt || null,
+    endsAt: form.value.endsAt || null,
+    active: form.value.active,
+  })
+  return sellerScheduleStatusMeta[status]
+})
+
+const countdownLabel = computed(() => {
+  void nowTick.value
+  if (!form.value.endsAt.trim()) return ''
+  const endIso = new Date(form.value.endsAt).toISOString()
+  const status = deriveScheduleStatus({
+    startsAt: form.value.startsAt || null,
+    endsAt: form.value.endsAt || null,
+    active: form.value.active,
+  })
+  if (status !== 'active' && status !== 'scheduled') return ''
+  return formatCountdown(endIso)
+})
 
 const productOptions = computed<ProductOption[]>(() =>
   catalog.value.map(p => ({
@@ -221,6 +331,11 @@ const selectedProduct = computed(() => {
 
 const previewDealPrice = computed(() => {
   if (!selectedProduct.value) return null
+  const special = form.value.specialPrice.trim()
+  if (special) {
+    const n = Number(special)
+    if (Number.isFinite(n) && n >= 0) return Math.round(n)
+  }
   const percent = Number(form.value.discountPercent)
   if (!Number.isFinite(percent) || percent <= 0) return null
   return dealPriceFrom(selectedProduct.value.price, percent)
@@ -260,6 +375,7 @@ function validate() {
   const percent = Number(form.value.discountPercent)
   const startsAt = form.value.startsAt.trim()
   const endsAt = form.value.endsAt.trim()
+  const specialRaw = form.value.specialPrice.trim()
 
   if (!isEdit.value) {
     if (!id) next.id = t('شناسه الزامی است')
@@ -268,6 +384,12 @@ function validate() {
   if (!productId) next.productId = t('انتخاب محصول الزامی است')
   if (!Number.isFinite(percent) || percent < 1 || percent > 99) {
     next.discountPercent = t('تخفیف باید بین ۱ تا ۹۹ باشد')
+  }
+  if (specialRaw) {
+    const special = Number(specialRaw)
+    if (!Number.isFinite(special) || special < 0) {
+      next.specialPrice = t('قیمت ویژه نامعتبر است')
+    }
   }
   if (!startsAt) next.startsAt = t('زمان شروع الزامی است')
   if (!endsAt) next.endsAt = t('زمان پایان الزامی است')

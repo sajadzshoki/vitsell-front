@@ -56,7 +56,7 @@
           :range="range"
           auto-submit
           clearable
-          custom-input="#my-custom-editable-input"
+          :custom-input="`#${inputId}`"
           :show="show"
           :max="withMax && (max || getMaximum)"
           :min="withMin && (min || getMaximum)"
@@ -65,7 +65,10 @@
           compact-time
           @close="show = false"
         />
-        <input id="my-custom-editable-input" hidden>
+        <input
+          :id="inputId"
+          hidden
+        >
       </div>
     </div>
   </ClientOnly>
@@ -101,6 +104,7 @@ const props = withDefaults(defineProps<{
 const value = defineModel<string | null>()
 const show = ref(false)
 const focused = ref(false)
+const inputId = `ir-date-${useId().replace(/:/g, '')}`
 
 const displayValue = computed(() => {
   if (!value.value || props.range) return ''

@@ -3,6 +3,12 @@ import type {
   CategoryPageMeta,
   CategorySuggestedItem,
 } from '~/data/category-pages'
+import { emptySeoMeta, sanitizeSeoMeta, seoMetaFromCategoryHeading, type SeoMeta } from '~/data/seo'
+
+export type SellerCategoryStatus = 'active' | 'inactive'
+
+/** Sentinel for USelect — empty string crashes Reka SelectItem */
+export const SELLER_CATEGORY_ROOT_PARENT = '__root__'
 
 export type SellerCategory = {
   id: string
@@ -10,6 +16,12 @@ export type SellerCategory = {
   icon: string
   image: string | null
   text: string | null
+  /** Target tree field — backend `parent_id` (Phase 0+: optional until API ships) */
+  parentId: string | null
+  status: SellerCategoryStatus
+  sortOrder: number
+  /** Indexable SEO — parallel to pageMeta.seo body content */
+  seo: SeoMeta | null
   subs: CategorySub[]
   pageMeta: CategoryPageMeta | null
   suggested: CategorySuggestedItem[] | null
@@ -23,6 +35,10 @@ export type SellerCategoryFormValues = {
   icon: string
   image: string
   text: string
+  parentId: string
+  status: SellerCategoryStatus
+  sortOrder: number
+  seo: SeoMeta
   subs: CategorySub[]
   pageMeta: CategoryPageMeta
   suggested: CategorySuggestedItem[]
@@ -35,12 +51,24 @@ export type SellerCategoryApiPayload = {
   icon: string
   image: string | null
   text: string | null
+  parentId?: string | null
+  status?: SellerCategoryStatus
+  sortOrder?: number
+  seo?: SeoMeta | null
   subs: CategorySub[]
   pageMeta: CategoryPageMeta | null
   suggested: CategorySuggestedItem[] | null
 }
 
 export const categoryIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+export const sellerCategoryStatusMeta: Record<
+  SellerCategoryStatus,
+  { label: string, color: 'success' | 'neutral' }
+> = {
+  active: { label: 'فعال', color: 'success' },
+  inactive: { label: 'غیرفعال', color: 'neutral' },
+}
 
 export function emptyPageMeta(): CategoryPageMeta {
   return {
@@ -81,19 +109,43 @@ export function emptyCategoryForm(): SellerCategoryFormValues {
     icon: 'category',
     image: '',
     text: '',
+    parentId: SELLER_CATEGORY_ROOT_PARENT,
+    status: 'active',
+    sortOrder: 0,
+    seo: emptySeoMeta(),
     subs: [],
     pageMeta: emptyPageMeta(),
     suggested: [],
   }
 }
 
-export function toSellerCategory(raw: Partial<SellerCategory> & { id: string, name: string }): SellerCategory {
+function resolveSeo(raw: Partial<SellerCategory>): SeoMeta | null {
+  if (raw.seo) return { ...emptySeoMeta(), ...raw.seo }
+  const heading = raw.pageMeta?.seo?.heading
+  if (heading) {
+    return seoMetaFromCategoryHeading(heading, raw.pageMeta?.seo?.paragraphs ?? [])
+  }
+  return null
+}
+
+export function toSellerCategory(raw: Partial<SellerCategory> & { id: string, name: string } & Record<string, unknown>): SellerCategory {
+  const status: SellerCategoryStatus = raw.status === 'inactive' ? 'inactive' : 'active'
+  const parentRaw = raw.parentId ?? raw.parent_id
+  const parentId = parentRaw == null || parentRaw === ''
+    ? null
+    : String(parentRaw)
   return {
     id: raw.id,
     name: raw.name,
     icon: raw.icon || 'category',
     image: raw.image ?? null,
     text: raw.text ?? null,
+    parentId,
+    status,
+    sortOrder: Number.isFinite(Number(raw.sortOrder ?? raw.sort_order))
+      ? Number(raw.sortOrder ?? raw.sort_order)
+      : 0,
+    seo: resolveSeo(raw),
     subs: (raw.subs ?? []).map(sub => ({
       name: sub.name,
       items: [...(sub.items ?? [])],
@@ -101,8 +153,8 @@ export function toSellerCategory(raw: Partial<SellerCategory> & { id: string, na
     })),
     pageMeta: raw.pageMeta ?? null,
     suggested: raw.suggested ?? null,
-    createdAt: raw.createdAt ?? null,
-    updatedAt: raw.updatedAt ?? null,
+    createdAt: raw.createdAt ?? raw.created_at ?? null,
+    updatedAt: raw.updatedAt ?? raw.updated_at ?? null,
   }
 }
 
@@ -113,6 +165,10 @@ export function toCategoryForm(category: SellerCategory): SellerCategoryFormValu
     icon: category.icon || 'category',
     image: category.image ?? '',
     text: category.text ?? '',
+    parentId: category.parentId || SELLER_CATEGORY_ROOT_PARENT,
+    status: category.status ?? 'active',
+    sortOrder: category.sortOrder ?? 0,
+    seo: category.seo ? { ...emptySeoMeta(), ...category.seo } : emptySeoMeta(),
     subs: category.subs.map(sub => ({
       name: sub.name,
       items: [...sub.items],
@@ -140,6 +196,14 @@ export function formToApiPayload(form: SellerCategoryFormValues): SellerCategory
     icon: form.icon.trim() || 'category',
     image: form.image.trim() || null,
     text: form.text.trim() || null,
+    parentId: (() => {
+      const raw = form.parentId.trim()
+      if (!raw || raw === SELLER_CATEGORY_ROOT_PARENT) return null
+      return raw
+    })(),
+    status: form.status,
+    sortOrder: Math.max(0, Math.round(Number(form.sortOrder) || 0)),
+    seo: sanitizeSeoMeta(form.seo),
     subs: sanitizeSubs(form.subs),
     pageMeta: sanitizePageMeta(form.pageMeta),
     suggested: (() => {
@@ -162,6 +226,56 @@ export function sellerCategoryToListItem(category: SellerCategory): Category {
       image: sub.image ?? null,
     })),
   }
+}
+
+/** Exclude self and descendants so parent picker cannot create cycles (client-side). */
+export function categoryParentOptions(
+  categories: SellerCategory[],
+  currentId?: string | null,
+): { value: string, label: string }[] {
+  const byParent = new Map<string | null, SellerCategory[]>()
+  for (const cat of categories) {
+    const key = cat.parentId ?? null
+    const list = byParent.get(key) ?? []
+    list.push(cat)
+    byParent.set(key, list)
+  }
+
+  const blocked = new Set<string>()
+  if (currentId) {
+    const walk = (id: string) => {
+      blocked.add(id)
+      for (const child of byParent.get(id) ?? []) {
+        walk(child.id)
+      }
+    }
+    walk(currentId)
+  }
+
+  const options: { value: string, label: string }[] = [
+    { value: SELLER_CATEGORY_ROOT_PARENT, label: 'دسته ریشه (بدون والد)' },
+  ]
+
+  function walkTree(parentId: string | null, depth: number) {
+    const children = (byParent.get(parentId) ?? []).slice().sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'fa'))
+    for (const cat of children) {
+      if (blocked.has(cat.id)) continue
+      const prefix = depth > 0 ? `${'— '.repeat(depth)}` : ''
+      options.push({ value: cat.id, label: `${prefix}${cat.name}` })
+      walkTree(cat.id, depth + 1)
+    }
+  }
+
+  walkTree(null, 0)
+
+  // Include orphans whose parent is missing from the list
+  for (const cat of categories) {
+    if (blocked.has(cat.id)) continue
+    if (options.some(o => o.value === cat.id)) continue
+    options.push({ value: cat.id, label: cat.name })
+  }
+
+  return options
 }
 
 function sanitizeSubs(subs: CategorySub[]): CategorySub[] {
@@ -210,6 +324,60 @@ function sanitizeSuggested(items: CategorySuggestedItem[]): CategorySuggestedIte
 
 export function countSubItems(subs: CategorySub[]) {
   return subs.reduce((sum, sub) => sum + (sub.items?.length ?? 0), 0)
+}
+
+export type SellerCategoryTreeRow = SellerCategory & {
+  depth: number
+  childCount: number
+  parentName: string | null
+}
+
+/** Flat tree rows for admin list (roots first, children indented by depth). */
+export function flattenCategoryTree(categories: SellerCategory[]): SellerCategoryTreeRow[] {
+  const byParent = new Map<string | null, SellerCategory[]>()
+  for (const cat of categories) {
+    const key = cat.parentId ?? null
+    const list = byParent.get(key) ?? []
+    list.push(cat)
+    byParent.set(key, list)
+  }
+  for (const list of byParent.values()) {
+    list.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'fa'))
+  }
+
+  const byId = new Map(categories.map(c => [c.id, c]))
+  const rows: SellerCategoryTreeRow[] = []
+  const seen = new Set<string>()
+
+  function walk(parentId: string | null, depth: number) {
+    for (const cat of byParent.get(parentId) ?? []) {
+      if (seen.has(cat.id)) continue
+      seen.add(cat.id)
+      const parent = cat.parentId ? byId.get(cat.parentId) : null
+      rows.push({
+        ...cat,
+        depth,
+        childCount: (byParent.get(cat.id) ?? []).length,
+        parentName: parent?.name ?? null,
+      })
+      walk(cat.id, depth + 1)
+    }
+  }
+
+  walk(null, 0)
+
+  for (const cat of categories) {
+    if (seen.has(cat.id)) continue
+    const parent = cat.parentId ? byId.get(cat.parentId) : null
+    rows.push({
+      ...cat,
+      depth: 0,
+      childCount: (byParent.get(cat.id) ?? []).length,
+      parentName: parent?.name ?? (cat.parentId ? cat.parentId : null),
+    })
+  }
+
+  return rows
 }
 
 export function resolveCategoryIconName(icon: string) {

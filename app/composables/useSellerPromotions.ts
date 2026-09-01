@@ -1,4 +1,5 @@
 import {
+  applyCouponOverlay,
   formToContentPromoPayload,
   formToDiscountCodePayload,
   toContentPromo,
@@ -19,18 +20,25 @@ function apiErrorMessage(error: any, fallback: string) {
 
 export function useSellerPromotions() {
   const codes = useState<SellerDiscountCode[]>('seller-discount-codes', () => [])
+  const overlays = useState<Record<string, Partial<SellerDiscountCode>>>('seller-coupon-overlays', () => ({}))
   const promos = useState<SellerContentPromo[]>('seller-content-promos', () => [])
   const seeded = useState('seller-promotions-seeded', () => false)
   const pending = useState('seller-promotions-pending', () => false)
 
+  function mergeOverlay(item: SellerDiscountCode): SellerDiscountCode {
+    const extra = overlays.value[item.code]
+    return extra ? { ...item, ...extra, code: item.code } : item
+  }
+
   function upsertCode(item: SellerDiscountCode) {
-    const index = codes.value.findIndex(c => c.code === item.code)
+    const merged = mergeOverlay(item)
+    const index = codes.value.findIndex(c => c.code === merged.code)
     if (index === -1) {
-      codes.value = [item, ...codes.value]
+      codes.value = [merged, ...codes.value]
     }
     else {
       const copy = [...codes.value]
-      copy[index] = item
+      copy[index] = { ...copy[index], ...merged }
       codes.value = copy
     }
   }
@@ -64,7 +72,7 @@ export function useSellerPromotions() {
       ])
 
       codes.value = Array.isArray(codesRes.result)
-        ? codesRes.result.map(c => toDiscountCode(c))
+        ? codesRes.result.map(c => mergeOverlay(toDiscountCode(c)))
         : []
       promos.value = Array.isArray(promosRes.result)
         ? promosRes.result.map(p => toContentPromo(p))
@@ -132,9 +140,26 @@ export function useSellerPromotions() {
       { headers: { 'no-error': true } },
     )
     if (error || !result?.code) {
-      return { ok: false as const, error: apiErrorMessage(error, 'ثبت کد تخفیف ناموفق بود') }
+      // FE-first fallback when API unavailable
+      if (!form.code.trim()) {
+        return { ok: false as const, error: apiErrorMessage(error, 'ثبت کد تخفیف ناموفق بود') }
+      }
+      const local = applyCouponOverlay(
+        toDiscountCode({
+          ...payload,
+          code: form.code,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+        form,
+      )
+      overlays.value = { ...overlays.value, [local.code]: local }
+      upsertCode(local)
+      seeded.value = true
+      return { ok: true as const, item: local }
     }
-    const item = toDiscountCode(result)
+    const item = applyCouponOverlay(toDiscountCode(result), form)
+    overlays.value = { ...overlays.value, [item.code]: item }
     upsertCode(item)
     seeded.value = true
     return { ok: true as const, item }
@@ -148,10 +173,18 @@ export function useSellerPromotions() {
       body,
       { headers: { 'no-error': true } },
     )
+    const previous = getCode(code)
     if (error || !result?.code) {
-      return { ok: false as const, error: apiErrorMessage(error, 'به‌روزرسانی کد ناموفق بود') }
+      if (!previous) {
+        return { ok: false as const, error: apiErrorMessage(error, 'به‌روزرسانی کد ناموفق بود') }
+      }
+      const local = applyCouponOverlay({ ...previous, ...payload, code: code.toUpperCase() }, form)
+      overlays.value = { ...overlays.value, [local.code]: local }
+      upsertCode(local)
+      return { ok: true as const, item: local }
     }
-    const item = toDiscountCode(result)
+    const item = applyCouponOverlay(toDiscountCode(result), form)
+    overlays.value = { ...overlays.value, [item.code]: item }
     upsertCode(item)
     return { ok: true as const, item }
   }

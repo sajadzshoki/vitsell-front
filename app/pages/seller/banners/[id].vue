@@ -33,7 +33,7 @@ const { ensureLoaded, getById } = useSellerBanners()
 
 definePageMeta({
   layout: 'seller',
-  middleware: 'auth',
+  middleware: ['auth', 'admin'],
 })
 
 ensureLoaded()

@@ -55,9 +55,10 @@
 </template>
 
 <script setup lang="ts">
-import { navQuickLinks, navSellerLink } from '~/data/nav-links'
+import { navSellerLink } from '~/data/nav-links'
 
-const links = navQuickLinks.filter(l => l.id !== 'categories')
+const { publicQuickLinks } = useSellerNavigation()
+const links = computed(() => publicQuickLinks.value.filter(l => l.id !== 'categories'))
 const seller = navSellerLink
 
 /** Ignore tiny trackpad/jitter; sticky height changes also nudge scrollY. */

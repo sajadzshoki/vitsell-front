@@ -72,19 +72,21 @@
           </div>
           <div class="flex items-center gap-2">
             <UButton
-              v-if="listing.status === 'active'"
+              v-if="can('products.update') && listing.status === 'active'"
               color="neutral"
               variant="soft"
               size="xs"
+              class="cursor-pointer"
               @click="setListingStatus(listing.productId, 'inactive')"
             >
               {{ $t('غیرفعال کردن') }}
             </UButton>
             <UButton
-              v-else-if="listing.status === 'inactive' || listing.status === 'out_of_stock'"
+              v-else-if="can('products.update') && (listing.status === 'inactive' || listing.status === 'out_of_stock')"
               color="primary"
               variant="soft"
               size="xs"
+              class="cursor-pointer"
               @click="setListingStatus(listing.productId, 'active')"
             >
               {{ $t('فعال کردن') }}
@@ -95,6 +97,7 @@
               variant="soft"
               size="xs"
               icon="i-tabler-eye"
+              class="cursor-pointer"
               :aria-label="$t('جزئیات محصول')"
             />
             <UButton
@@ -103,6 +106,7 @@
               variant="ghost"
               size="xs"
               icon="i-tabler-external-link"
+              class="cursor-pointer"
               :aria-label="$t('مشاهده در فروشگاه')"
             />
           </div>
@@ -121,6 +125,7 @@ const props = defineProps<{
 }>()
 
 const { setListingStatus, resolveProduct } = useSeller()
+const { can } = useSellerPermissions()
 
 const product = computed(() => resolveProduct(props.listing.productId))
 const statusMeta = computed(() => sellerProductStatusMeta[props.listing.status])

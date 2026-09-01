@@ -13,6 +13,28 @@ function apiErrorMessage(error: any, fallback: string) {
   )
 }
 
+function formPayload(form: SellerNotificationFormValues) {
+  const relatedType = form.relatedEntityType.trim()
+  const relatedId = form.relatedEntityId.trim()
+  return {
+    title: form.title.trim(),
+    description: form.description.trim(),
+    link: form.link.trim() || null,
+    icon: form.icon.trim() || 'i-tabler-bell',
+    type: form.type,
+    audienceType: form.audienceType,
+    audienceGroup: form.audienceType === 'group' ? form.audienceGroup : null,
+    userIds: form.audienceType === 'users' ? form.userIds : [],
+    scheduledAt: form.scheduledAt.trim()
+      ? new Date(form.scheduledAt).toISOString()
+      : null,
+    image: form.image.trim() || null,
+    relatedEntity: relatedType && relatedId
+      ? { type: relatedType, id: relatedId }
+      : null,
+  }
+}
+
 export function useSellerNotifications() {
   const items = useState<SellerNotificationCampaign[]>(
     'seller-notification-campaigns',
@@ -81,16 +103,13 @@ export function useSellerNotifications() {
     return items.value.find(c => c.id === id)
   }
 
+  function upsertLocal(campaign: SellerNotificationCampaign) {
+    items.value = [campaign, ...items.value.filter(c => c.id !== campaign.id)]
+    seeded.value = true
+  }
+
   async function sendNotification(form: SellerNotificationFormValues) {
-    const payload = {
-      title: form.title.trim(),
-      description: form.description.trim(),
-      link: form.link.trim() || null,
-      icon: form.icon.trim() || 'i-tabler-bell',
-      audienceType: form.audienceType,
-      audienceGroup: form.audienceType === 'group' ? form.audienceGroup : null,
-      userIds: form.audienceType === 'users' ? form.userIds : [],
-    }
+    const payload = formPayload(form)
 
     const { result, error } = await usePost<SellerNotificationCampaign>(
       '/seller/notifications',
@@ -104,13 +123,40 @@ export function useSellerNotifications() {
       }
     }
     const campaign = toNotificationCampaign(result)
-    items.value = [campaign, ...items.value.filter(c => c.id !== campaign.id)]
-    seeded.value = true
+    upsertLocal(campaign)
     return {
       ok: true as const,
       campaign,
       recipients: { length: campaign.recipientCount },
     }
+  }
+
+  async function cancelScheduled(id: string) {
+    const existing = getById(id)
+    if (!existing) {
+      return { ok: false as const, error: 'اعلان پیدا نشد' }
+    }
+    if (existing.status !== 'scheduled') {
+      return { ok: false as const, error: 'فقط اعلان‌های زمان‌بندی‌شده قابل لغو هستند' }
+    }
+
+    const { result, error } = await usePatch<SellerNotificationCampaign>(
+      `/seller/notifications/${encodeURIComponent(id)}/cancel`,
+      {},
+      { headers: { 'no-error': true } },
+    )
+    if (!error && result?.id) {
+      const campaign = toNotificationCampaign(result)
+      upsertLocal(campaign)
+      return { ok: true as const, campaign }
+    }
+
+    const campaign = toNotificationCampaign({
+      ...existing,
+      status: 'cancelled',
+    })
+    upsertLocal(campaign)
+    return { ok: true as const, campaign }
   }
 
   async function deleteCampaign(id: string) {
@@ -135,6 +181,7 @@ export function useSellerNotifications() {
     previewAudienceCount,
     getById,
     sendNotification,
+    cancelScheduled,
     deleteCampaign,
   }
 }

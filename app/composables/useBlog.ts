@@ -1,10 +1,12 @@
 import {
   buildDefaultSellerBlogPosts,
   formToSellerBlogPost,
+  isBlogPostPubliclyVisible,
   normalizeBlogPost,
   toStaticBlogPost,
   type SellerBlogFormValues,
   type SellerBlogPost,
+  type SellerBlogStatus,
 } from '~/data/seller-blog'
 import {
   getMoreBlogPosts as getMoreFromStatic,
@@ -47,6 +49,14 @@ function fromApiPost(post: StaticBlogPost, base?: SellerBlogPost): SellerBlogPos
     active: post.active !== false,
     createdAt: base?.createdAt ?? normalized.createdAt,
     updatedAt: base?.updatedAt ?? normalized.updatedAt,
+    status: base?.status ?? normalized.status,
+    publishedAt: base?.publishedAt ?? normalized.publishedAt,
+    scheduledAt: base?.scheduledAt ?? normalized.scheduledAt,
+    featured: base?.featured ?? normalized.featured,
+    imageAlt: base?.imageAlt ?? normalized.imageAlt,
+    tags: base?.tags ?? normalized.tags,
+    relatedPostIds: base?.relatedPostIds ?? normalized.relatedPostIds,
+    seo: base?.seo ?? normalized.seo,
   }
 }
 
@@ -58,7 +68,7 @@ export function useBlog() {
   const posts = computed(() => items.value)
 
   const publishedPosts = computed(() =>
-    items.value.filter(p => p.active !== false),
+    items.value.filter(p => isBlogPostPubliclyVisible(p)),
   )
 
   async function ensureLoaded(options?: { force?: boolean }) {
@@ -106,8 +116,15 @@ export function useBlog() {
 
   function getPublishedById(id: string) {
     const post = getById(id)
-    if (!post || post.active === false) return undefined
+    if (!post || !isBlogPostPubliclyVisible(post)) return undefined
     return post
+  }
+
+  function getByIdForPreview(id: string, allowPreview = false) {
+    const post = getById(id)
+    if (!post) return undefined
+    if (allowPreview || isBlogPostPubliclyVisible(post)) return post
+    return undefined
   }
 
   function createPost(form: SellerBlogFormValues) {
@@ -148,15 +165,23 @@ export function useBlog() {
   }
 
   function setActive(id: string, active: boolean) {
+    return setStatus(id, active ? 'published' : 'draft')
+  }
+
+  function setStatus(id: string, status: SellerBlogStatus) {
     const index = items.value.findIndex(p => p.id === id)
     if (index === -1) {
       return { ok: false as const, error: 'مطلب پیدا نشد' }
     }
+    const previous = items.value[index]!
+    const now = new Date().toISOString()
     const copy = [...items.value]
     copy[index] = {
-      ...copy[index]!,
-      active,
-      updatedAt: new Date().toISOString(),
+      ...previous,
+      status,
+      active: status === 'published',
+      publishedAt: status === 'published' ? (previous.publishedAt || now) : previous.publishedAt,
+      updatedAt: now,
     }
     items.value = copy
     return { ok: true as const, post: copy[index]! }
@@ -220,10 +245,12 @@ export function useBlog() {
     ensureSeeded,
     getById,
     getPublishedById,
+    getByIdForPreview,
     createPost,
     updatePost,
     deletePost,
     setActive,
+    setStatus,
     asStaticList,
     relatedForCategory,
     morePosts,

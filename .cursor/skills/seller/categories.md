@@ -17,11 +17,29 @@ Category, CategorySub
 
 // app/data/category-pages.ts
 CategoryPageMeta, CategorySuggestedItem
+
+// app/data/seller-categories.ts
+SellerCategory  // + parentId, status, sortOrder, seo
+
+// app/data/seo.ts
+SeoMeta
 ```
 
-`CategorySchema` (`types/models.ts`):
+`CategorySchema` (`types/models.ts`) امروز:
 
-- `id`, `name`, `icon`, `image`, `subs`, `pageMeta`, `suggested`, `createdAt`, `updatedAt`
+- `id`, `name`, `icon`, `image`, `text`, `subs`, `pageMeta`, `suggested`, `createdAt`, `updatedAt`
+- **هنوز `parentId` ندارد** — بک‌اند باید `parent_id` اضافه کند.
+
+### مدل هدف (درخت)
+
+هر دسته موجودیت مستقل است با:
+
+- `parentId: string | null` — ریشه یا والد (چند سطح؛ نه فقط Parent→Child)
+- `status`, `sortOrder`
+- `seo: SeoMeta` (متای ایندکس) + `pageMeta` (محتوای صفحه دسته)
+- `subs` فعلاً برای گروه‌های جستجو/MegaMenu می‌ماند تا مهاجرت استورفرانت
+
+فرم ادمین: انتخاب والد (ریشه یا یکی از دسته‌ها، بدون چرخه). استورفرانت تا مهاجرت به درخت، همان لیست تخت + `subs` را مصرف می‌کند.
 
 ## Validation
 
@@ -31,27 +49,32 @@ CategoryPageMeta, CategorySuggestedItem
 | `name` | الزامی؛ trim |
 | `icon` | الزامی؛ string کوتاه (کلید بدون پیشوند `i-tabler-`) |
 | `image` | اختیاری؛ URL نسبی/مطلق معتبر یا خالی → `null` |
+| `parentId` | اختیاری؛ `null`/خالی = ریشه؛ نباید self یا descendant باشد |
+| `status` | `active` \| `inactive` |
+| `sortOrder` | عدد ≥ ۰ |
+| `seo` | `SeoMeta` یا null پس از sanitize |
 | `subs` | آرایه؛ هر گروه `name` غیرخالی؛ `items` آرایه string (خالی‌ها را trim/حذف کن) |
-| `pageMeta` | `null` یا آبجکت کامل `CategoryPageMeta` (hero + seo) |
+| `pageMeta` | `null` یا آبجکت کامل `CategoryPageMeta` (hero + seo body) |
 | `suggested` | `null` یا آرایه `{ id, title, image, query }` |
 
 حذف دسته: تأیید صریح (`UModal` confirm). اگر بک‌اند به خاطر محصولات وابسته رد کرد، toast خطا نشان بده.
 
 ## UX فرم
 
-1. **پایه:** `id` (create)، `name`، `icon` با پیش‌نمایش آیکون زنده.
-2. **تصویر دسته:** فیلد URL یا آپلود مطابق الگوی پروژه؛ preview + clear.
-3. **زیردسته‌ها:** لیست گروه‌ها؛ هر گروه: نام، تصویر، لیست chip/input برای `items`، دکمه افزودن گروه، حذف گروه، drag یا دکمه بالا/پایین برای ترتیب.
-4. **صفحه دسته (`pageMeta`):** تب/آکاردئون — hero (`image`, `eyebrow`, `title`, `subtitle`) و seo (`heading`, `paragraphs[]` با افزودن/حذف پاراگراف).
-5. **پیشنهادی‌ها (`suggested`):** جدول/کارت‌های ردیفی با فیلدهای `id`, `title`, `image`, `query`.
+1. **پایه:** `id` (create)، `name`، `icon` با پیش‌نمایش، **والد**، وضعیت، ترتیب.
+2. **تصویر دسته:** فیلد URL یا آپلود؛ preview + clear.
+3. **زیردسته‌ها (`subs`):** گروه‌های جستجو (نه درخت والد/فرزند) تا مهاجرت.
+4. **صفحه دسته (`pageMeta`):** hero + seo heading/paragraphs.
+5. **سئو ایندکس (`TheSellerSeoFields`):** meta/OG/Twitter.
+6. **پیشنهادی‌ها (`suggested`):** کارت‌های `id`, `title`, `image`, `query`.
 
 دکمه‌ها: ذخیره / انصراف. در حالت edit، `createdAt`/`updatedAt` به‌صورت متن muted نشان بده.
 
 ## همسویی با استورفرانت
 
-- بعد از create/update/delete: `fetchCategories({ force: true })` یا پاک کردن `categories-loaded` در `useCategories`.
+- بعد از create/update/delete: sync `useCategories` / invalidate.
 - شکل `subs` را نشکن؛ MegaMenu و Search به همین ساختار وابسته‌اند.
-- آیکون‌های جدید: اگر فقط `icon` string ذخیره می‌شود و `categoryIcons` map فرانت قدیمی است، یا از `icon` مستقیم `i-tabler-${icon}` بساز (ترجیح API)، یا map را به‌روز نگه دار — با الگوی فعلی `getCategoryIcon` سازگار بمان.
+- تا وقتی بک‌اند `parent_id` ندارد، payload را بفرست؛ فیلدهای ناشناخته ممکن است نادیده گرفته شوند.
 
 ## API contract پیشنهادی
 
@@ -59,10 +82,22 @@ Body ایجاد/ویرایش (JSON):
 
 ```json
 {
-  "id": "mobile",
-  "name": "موبایل",
+  "id": "android",
+  "name": "اندروید",
   "icon": "device-mobile",
   "image": "/images/...",
+  "parentId": "mobile",
+  "status": "active",
+  "sortOrder": 1,
+  "seo": {
+    "metaTitle": "...",
+    "metaDescription": "...",
+    "canonicalUrl": "",
+    "robots": "index,follow",
+    "ogTitle": "",
+    "ogDescription": "",
+    "ogImage": ""
+  },
   "subs": [
     {
       "name": "برندهای موبایل",

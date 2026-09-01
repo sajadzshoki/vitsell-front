@@ -47,13 +47,14 @@
 </template>
 
 <script setup lang="ts">
-import { bottomNavItems, type BottomNavItem } from '~/data/nav-links'
+import type { BottomNavItem } from '~/data/nav-links'
 
 const route = useRoute()
 const { cartCount, cartBump, isLoggedIn } = useShop()
+const { publicBottomLinks } = useSellerNavigation()
 
 const items = computed(() =>
-  bottomNavItems.map((item) => {
+  publicBottomLinks.value.map((item) => {
     if (item.id !== 'account') return item
     return {
       ...item,

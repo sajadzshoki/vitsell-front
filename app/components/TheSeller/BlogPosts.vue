@@ -1,112 +1,217 @@
 <template>
   <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-    <div class="hidden lg:flex items-center justify-between mb-5 gap-3">
-      <h2 class="font-bold text-highlighted">
-        {{ $t('وبلاگ') }}
-      </h2>
-      <div class="flex items-center gap-3">
-        <div class="text-xs text-muted num">
-          {{ filtered.length.toLocaleString('fa-IR') }} {{ $t('مطلب') }}
-        </div>
-        <UButton
-          to="/seller/blog/new"
-          color="primary"
-          size="sm"
-          icon="i-tabler-plus"
-          class="font-medium"
-        >
-          {{ $t('افزودن مطلب') }}
-        </UButton>
-      </div>
+    <div class="hidden lg:block">
+      <TheSellerPageHeader
+        :title="$t('وبلاگ')"
+        :description="$t('مدیریت مطالب، دسته‌ها و برچسب‌های وبلاگ')"
+        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('مطلب')}`"
+      >
+        <template #actions>
+          <div class="flex items-center gap-2 flex-wrap">
+            <UButton
+              v-if="can('blog.view')"
+              to="/seller/blog/categories"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-category"
+              class="cursor-pointer"
+            >
+              {{ $t('دسته‌ها') }}
+            </UButton>
+            <UButton
+              v-if="can('blog.view')"
+              to="/seller/blog/tags"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-tags"
+              class="cursor-pointer"
+            >
+              {{ $t('برچسب‌ها') }}
+            </UButton>
+            <UButton
+              v-if="can('blog.create')"
+              to="/seller/blog/new"
+              color="primary"
+              size="sm"
+              icon="i-tabler-plus"
+              class="cursor-pointer font-medium"
+            >
+              {{ $t('افزودن مطلب') }}
+            </UButton>
+          </div>
+        </template>
+      </TheSellerPageHeader>
     </div>
 
-    <div class="lg:hidden mb-4">
+    <div class="lg:hidden mb-4 space-y-2">
       <UButton
+        v-if="can('blog.create')"
         to="/seller/blog/new"
         color="primary"
         block
         icon="i-tabler-plus"
-        class="font-medium"
+        class="cursor-pointer font-medium"
       >
         {{ $t('افزودن مطلب') }}
       </UButton>
-    </div>
-
-    <div class="flex flex-col sm:(flex-row items-center) gap-3 mb-4">
-      <TheFormInput
-        v-model="query"
-        icon="i-tabler-search"
-        :placeholder="$t('جستجوی عنوان، دسته یا نویسنده')"
-        class="flex-1 w-full"
-      />
-      <div class="flex items-center gap-2 overflow-x-auto scrollbar-none w-full sm:w-auto">
+      <div class="flex gap-2">
         <UButton
-          v-for="tab in categoryTabs"
-          :key="tab.id"
-          :color="categoryFilter === tab.id ? 'primary' : 'neutral'"
-          :variant="categoryFilter === tab.id ? 'soft' : 'ghost'"
-          size="sm"
-          class="shrink-0 cursor-pointer"
-          @click="categoryFilter = tab.id"
+          to="/seller/blog/categories"
+          color="neutral"
+          variant="soft"
+          block
+          icon="i-tabler-category"
+          class="cursor-pointer"
         >
-          {{ $t(tab.label) }}
+          {{ $t('دسته‌ها') }}
+        </UButton>
+        <UButton
+          to="/seller/blog/tags"
+          color="neutral"
+          variant="soft"
+          block
+          icon="i-tabler-tags"
+          class="cursor-pointer"
+        >
+          {{ $t('برچسب‌ها') }}
         </UButton>
       </div>
     </div>
 
-    <div class="flex items-center gap-2 overflow-x-auto scrollbar-none mb-4">
+    <TheSellerListToolbar
+      v-model:search="search"
+      :status="status"
+      :tabs="statusTabs"
+      :search-placeholder="$t('جستجوی عنوان، دسته یا نویسنده')"
+      :has-active="hasActiveFilters || authorFilter !== 'all' || categoryFilter !== 'all' || featuredOnly"
+      @update:status="status = $event"
+      @clear="clearAll"
+    >
+      <template #extra>
+        <USelect
+          v-model="authorFilter"
+          :items="authorItems"
+          value-key="value"
+          class="w-40"
+          :placeholder="$t('نویسنده')"
+        />
+        <USelect
+          v-model="categoryFilter"
+          :items="categoryItems"
+          value-key="value"
+          class="w-40"
+          :placeholder="$t('دسته')"
+        />
+        <UButton
+          type="button"
+          size="sm"
+          :color="featuredOnly ? 'primary' : 'neutral'"
+          :variant="featuredOnly ? 'soft' : 'ghost'"
+          icon="i-tabler-star"
+          class="cursor-pointer shrink-0"
+          @click="featuredOnly = !featuredOnly"
+        >
+          {{ $t('ویژه') }}
+        </UButton>
+      </template>
+    </TheSellerListToolbar>
+
+    <div
+      v-if="selectedIds.length && canBulk"
+      class="mb-4 flex items-center gap-2 flex-wrap rounded-xl border border-primary/30 bg-primary/5 p-3"
+    >
+      <span class="text-xs text-toned num">
+        {{ selectedIds.length.toLocaleString('fa-IR') }} {{ $t('انتخاب‌شده') }}
+      </span>
+      <USelect
+        v-model="bulkAction"
+        :items="bulkActionItems"
+        value-key="value"
+        class="w-44"
+        :placeholder="$t('اقدام گروهی')"
+      />
       <UButton
-        v-for="tab in activeTabs"
-        :key="tab.id"
-        :color="activeFilter === tab.id ? 'primary' : 'neutral'"
-        :variant="activeFilter === tab.id ? 'soft' : 'ghost'"
-        size="sm"
-        class="shrink-0 cursor-pointer"
-        @click="activeFilter = tab.id"
+        type="button"
+        color="primary"
+        size="xs"
+        class="cursor-pointer"
+        :disabled="!bulkAction || bulkRunning"
+        :loading="bulkRunning"
+        @click="runBulk"
       >
-        {{ $t(tab.label) }}
+        {{ $t('اجرا') }}
+      </UButton>
+      <UButton
+        type="button"
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        class="cursor-pointer"
+        @click="selectedIds = []"
+      >
+        {{ $t('لغو انتخاب') }}
       </UButton>
     </div>
 
-    <div
+    <TheSellerEmptyState
       v-if="!filtered.length"
-      class="text-center py-12"
+      icon="i-tabler-news-off"
+      :message="hasActiveFilters || authorFilter !== 'all' || categoryFilter !== 'all' || featuredOnly
+        ? $t('مطلبی با این فیلتر پیدا نشد')
+        : $t('هنوز مطلبی ثبت نشده است')"
     >
-      <UIcon
-        name="i-tabler-news-off"
-        class="size-16 text-dimmed mx-auto mb-4"
-      />
-      <p class="text-sm text-muted mb-4">
-        {{ query.trim() || categoryFilter !== 'all' || activeFilter !== 'all'
-          ? $t('مطلبی با این فیلتر پیدا نشد')
-          : $t('هنوز مطلبی ثبت نشده است') }}
-      </p>
-      <UButton
-        v-if="!query.trim() && categoryFilter === 'all' && activeFilter === 'all'"
-        to="/seller/blog/new"
-        color="primary"
-        variant="soft"
-        icon="i-tabler-plus"
+      <template
+        v-if="!hasActiveFilters && authorFilter === 'all' && categoryFilter === 'all' && !featuredOnly && can('blog.create')"
+        #actions
       >
-        {{ $t('افزودن اولین مطلب') }}
-      </UButton>
-    </div>
+        <UButton
+          to="/seller/blog/new"
+          color="primary"
+          variant="soft"
+          icon="i-tabler-plus"
+          class="cursor-pointer"
+        >
+          {{ $t('افزودن اولین مطلب') }}
+        </UButton>
+      </template>
+    </TheSellerEmptyState>
 
     <div
       v-else
       class="space-y-3"
     >
       <div
-        v-for="post in filtered"
+        v-if="canBulk"
+        class="flex items-center gap-2 text-xs text-muted"
+      >
+        <UCheckbox
+          :model-value="allPageSelected"
+          :indeterminate="somePageSelected && !allPageSelected"
+          :label="$t('انتخاب همهٔ صفحه')"
+          @update:model-value="toggleSelectPage(!!$event)"
+        />
+      </div>
+
+      <div
+        v-for="post in paged"
         :key="post.id"
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
         <div class="flex items-start gap-3">
+          <UCheckbox
+            v-if="canBulk"
+            :model-value="selectedIds.includes(post.id)"
+            class="mt-1 shrink-0"
+            @update:model-value="toggleSelect(post.id, !!$event)"
+          />
+
           <div class="size-20 sm:w-28 sm:h-20 rounded-xl bg-default border border-muted overflow-hidden shrink-0">
             <img
               v-if="post.image"
               :src="post.image"
-              :alt="post.title"
+              :alt="post.imageAlt || post.title"
               class="size-full object-cover"
             >
             <div
@@ -124,9 +229,12 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-2 flex-wrap">
               <div class="min-w-0">
-                <div class="text-sm font-medium text-highlighted line-clamp-2">
+                <NuxtLink
+                  :to="`/seller/blog/${post.id}`"
+                  class="text-sm font-medium text-highlighted line-clamp-2 block hover:text-primary transition cursor-pointer"
+                >
                   {{ $t(post.title) }}
-                </div>
+                </NuxtLink>
                 <div
                   class="text-[11px] text-muted mt-0.5 truncate num"
                   dir="ltr"
@@ -144,21 +252,21 @@
                   {{ $t(post.category) }}
                 </UBadge>
                 <UBadge
-                  v-if="post.popular"
-                  color="error"
+                  v-if="post.featured"
+                  color="warning"
                   variant="subtle"
                   size="sm"
                   class="font-medium"
                 >
-                  {{ $t('محبوب') }}
+                  {{ $t('ویژه') }}
                 </UBadge>
                 <UBadge
-                  :color="post.active ? 'success' : 'neutral'"
+                  :color="sellerBlogStatusMeta[post.status].color"
                   variant="subtle"
                   size="sm"
                   class="font-medium"
                 >
-                  {{ post.active ? $t('منتشر شده') : $t('پیش‌نویس') }}
+                  {{ $t(sellerBlogStatusMeta[post.status].label) }}
                 </UBadge>
               </div>
             </div>
@@ -174,36 +282,53 @@
 
             <div class="mt-3 flex items-center gap-2 flex-wrap">
               <UButton
+                v-if="can('blog.update')"
                 :to="`/seller/blog/${post.id}`"
                 color="primary"
                 variant="soft"
                 size="xs"
                 icon="i-tabler-pencil"
+                class="cursor-pointer"
               >
                 {{ $t('ویرایش') }}
               </UButton>
               <UButton
+                v-if="can('blog.publish') && post.status !== 'published'"
                 type="button"
-                :color="post.active ? 'neutral' : 'success'"
+                color="success"
                 variant="ghost"
                 size="xs"
-                :icon="post.active ? 'i-tabler-eye-off' : 'i-tabler-eye'"
+                icon="i-tabler-eye"
                 class="cursor-pointer"
-                @click="onToggleActive(post.id, !post.active)"
+                @click="onSetStatus(post.id, 'published')"
               >
-                {{ post.active ? $t('پیش‌نویس') : $t('انتشار') }}
+                {{ $t('انتشار') }}
               </UButton>
               <UButton
-                :to="getBlogPostPath(post.id)"
+                v-if="can('blog.publish') && post.status === 'published'"
+                type="button"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                icon="i-tabler-archive"
+                class="cursor-pointer"
+                @click="onSetStatus(post.id, 'archived')"
+              >
+                {{ $t('بایگانی') }}
+              </UButton>
+              <UButton
+                :to="`/blog/${post.id}?preview=1`"
                 target="_blank"
                 color="neutral"
                 variant="ghost"
                 size="xs"
                 icon="i-tabler-external-link"
+                class="cursor-pointer"
               >
-                {{ $t('مشاهده') }}
+                {{ $t('پیش‌نمایش') }}
               </UButton>
               <UButton
+                v-if="can('blog.delete')"
                 type="button"
                 color="error"
                 variant="ghost"
@@ -220,14 +345,31 @@
       </div>
     </div>
 
+    <div
+      v-if="pageCount > 1"
+      class="mt-5 flex justify-center"
+    >
+      <UPagination
+        v-model:page="page"
+        :total="filtered.length"
+        :items-per-page="pageSize"
+      />
+    </div>
+
     <UModal
       v-model:open="deleteOpen"
-      :title="$t('حذف مطلب')"
+      :title="bulkDeleteMode ? $t('حذف گروهی') : $t('حذف مطلب')"
       :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود و قابل بازگشت نیست.')"
     >
       <template #body>
         <div
-          v-if="pendingDelete"
+          v-if="bulkDeleteMode"
+          class="text-sm text-toned"
+        >
+          {{ $t('{n} مطلب حذف می‌شود', { n: selectedIds.length.toLocaleString('fa-IR') }) }}
+        </div>
+        <div
+          v-else-if="pendingDelete"
           class="rounded-xl border border-muted bg-muted/40 p-4 text-sm space-y-2"
         >
           <div class="font-medium text-highlighted">
@@ -247,14 +389,14 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
-            @click="deleteOpen = false"
+            @click="closeDelete"
           >
             {{ $t('انصراف') }}
           </UButton>
           <UButton
             color="error"
             class="font-bold cursor-pointer"
-            @click="onDelete"
+            @click="onDeleteConfirm"
           >
             {{ $t('حذف') }}
           </UButton>
@@ -265,67 +407,183 @@
 </template>
 
 <script setup lang="ts">
-import { collectBlogCategories, type SellerBlogPost } from '~/data/seller-blog'
-import { getBlogPostPath } from '~/data/static-pages'
+import {
+  collectBlogCategories,
+  sellerBlogStatusMeta,
+  type SellerBlogPost,
+  type SellerBlogStatus,
+} from '~/data/seller-blog'
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { posts, ensureSeeded, deletePost, setActive } = useBlog()
+const { can } = useSellerPermissions()
+const { posts, ensureSeeded, deletePost, setStatus } = useBlog()
+const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+  defaultStatus: 'all',
+})
 
 ensureSeeded()
 
-const query = ref('')
+const pageSize = 10
+const authorFilter = ref('all')
 const categoryFilter = ref('all')
-const activeFilter = ref<'all' | 'active' | 'draft'>('all')
+const featuredOnly = ref(false)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerBlogPost | null>(null)
+const bulkDeleteMode = ref(false)
+const selectedIds = ref<string[]>([])
+const bulkAction = ref('')
+const bulkRunning = ref(false)
 
-const categoryTabs = computed(() => [
-  { id: 'all', label: 'همه دسته‌ها' },
-  ...collectBlogCategories(posts.value).map(id => ({ id, label: id })),
+const canBulk = computed(() => can('blog.publish') || can('blog.delete'))
+
+const bulkActionItems = computed(() => {
+  const items: { value: string, label: string }[] = []
+  if (can('blog.publish')) {
+    items.push({ value: 'publish', label: t('انتشار') })
+    items.push({ value: 'archive', label: t('بایگانی') })
+  }
+  if (can('blog.delete')) {
+    items.push({ value: 'delete', label: t('حذف') })
+  }
+  return items
+})
+
+const statusTabs = computed(() => [
+  { id: 'all', label: t('همه'), count: posts.value.length },
+  ...((Object.keys(sellerBlogStatusMeta) as SellerBlogStatus[]).map(id => ({
+    id,
+    label: t(sellerBlogStatusMeta[id].label),
+    count: posts.value.filter(p => p.status === id).length,
+  }))),
 ])
 
-const activeTabs = [
-  { id: 'all' as const, label: 'همه وضعیت‌ها' },
-  { id: 'active' as const, label: 'منتشر شده' },
-  { id: 'draft' as const, label: 'پیش‌نویس' },
-]
+const authorItems = computed(() => {
+  const authors = [...new Set(posts.value.map(p => p.author).filter(Boolean))]
+  return [
+    { value: 'all', label: t('همه نویسنده‌ها') },
+    ...authors.map(a => ({ value: a, label: a })),
+  ]
+})
+
+const categoryItems = computed(() => [
+  { value: 'all', label: t('همه دسته‌ها') },
+  ...collectBlogCategories(posts.value).map(id => ({ value: id, label: id })),
+])
 
 const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
+  const q = search.value.trim().toLowerCase()
   return posts.value.filter((post) => {
+    if (status.value !== 'all' && post.status !== status.value) return false
+    if (authorFilter.value !== 'all' && post.author !== authorFilter.value) return false
     if (categoryFilter.value !== 'all' && post.category !== categoryFilter.value) return false
-    if (activeFilter.value === 'active' && !post.active) return false
-    if (activeFilter.value === 'draft' && post.active) return false
+    if (featuredOnly.value && !post.featured) return false
     if (!q) return true
     return (
       post.title.toLowerCase().includes(q)
       || post.category.toLowerCase().includes(q)
       || post.author.toLowerCase().includes(q)
       || post.id.toLowerCase().includes(q)
+      || post.tags.some(tag => tag.toLowerCase().includes(q))
     )
   })
 })
 
-function onToggleActive(id: string, active: boolean) {
-  const result = setActive(id, active)
+const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
+
+const paged = computed(() => {
+  const start = (page.value - 1) * pageSize
+  return filtered.value.slice(start, start + pageSize)
+})
+
+const allPageSelected = computed(() =>
+  paged.value.length > 0 && paged.value.every(p => selectedIds.value.includes(p.id)),
+)
+
+const somePageSelected = computed(() =>
+  paged.value.some(p => selectedIds.value.includes(p.id)),
+)
+
+function clearAll() {
+  clearFilters()
+  authorFilter.value = 'all'
+  categoryFilter.value = 'all'
+  featuredOnly.value = false
+}
+
+function toggleSelect(id: string, on: boolean) {
+  if (on) {
+    if (!selectedIds.value.includes(id)) selectedIds.value = [...selectedIds.value, id]
+  }
+  else {
+    selectedIds.value = selectedIds.value.filter(x => x !== id)
+  }
+}
+
+function toggleSelectPage(on: boolean) {
+  const ids = paged.value.map(p => p.id)
+  if (on) selectedIds.value = [...new Set([...selectedIds.value, ...ids])]
+  else selectedIds.value = selectedIds.value.filter(id => !ids.includes(id))
+}
+
+function onSetStatus(id: string, next: SellerBlogStatus) {
+  const result = setStatus(id, next)
   if (!result.ok) {
     toast.error(t(result.error))
     return
   }
-  toast.success(active ? t('مطلب منتشر شد') : t('مطلب به پیش‌نویس رفت'))
+  toast.success(t(sellerBlogStatusMeta[next].label))
+}
+
+async function runBulk() {
+  if (!bulkAction.value || !selectedIds.value.length) return
+  if (bulkAction.value === 'delete') {
+    bulkDeleteMode.value = true
+    pendingDelete.value = null
+    deleteOpen.value = true
+    return
+  }
+  bulkRunning.value = true
+  try {
+    const next: SellerBlogStatus = bulkAction.value === 'publish' ? 'published' : 'archived'
+    for (const id of selectedIds.value) {
+      setStatus(id, next)
+    }
+    toast.success(t('مطالب به‌روزرسانی شدند'))
+    selectedIds.value = []
+    bulkAction.value = ''
+  }
+  finally {
+    bulkRunning.value = false
+  }
 }
 
 function confirmDelete(post: SellerBlogPost) {
+  bulkDeleteMode.value = false
   pendingDelete.value = post
   deleteOpen.value = true
 }
 
-function onDelete() {
-  if (!pendingDelete.value) return
-  const result = deletePost(pendingDelete.value.id)
+function closeDelete() {
   deleteOpen.value = false
   pendingDelete.value = null
+  bulkDeleteMode.value = false
+}
+
+function onDeleteConfirm() {
+  if (bulkDeleteMode.value) {
+    for (const id of selectedIds.value) {
+      deletePost(id)
+    }
+    toast.success(t('مطالب حذف شدند'))
+    selectedIds.value = []
+    bulkAction.value = ''
+    closeDelete()
+    return
+  }
+  if (!pendingDelete.value) return
+  const result = deletePost(pendingDelete.value.id)
+  closeDelete()
   if (!result.ok) {
     toast.error(t(result.error))
     return

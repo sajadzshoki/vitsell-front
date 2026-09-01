@@ -5,14 +5,26 @@
       color="neutral"
       variant="ghost"
       size="lg"
-      icon="i-tabler-arrow-right"
-      :aria-label="$t('بازگشت به پیشخوان')"
-      class="shrink-0"
-      @click="navigateTo('/seller')"
+      icon="i-tabler-menu-2"
+      :aria-label="$t('منوی پنل')"
+      :aria-expanded="mobileNavOpen"
+      class="shrink-0 cursor-pointer"
+      @click="mobileNavOpen = true"
     />
-    <h1 class="text-base font-bold text-highlighted truncate">
+    <h1 class="text-base font-bold text-highlighted truncate flex-1 min-w-0">
       {{ $t(title || '') }}
     </h1>
+    <UButton
+      v-if="!isDashboard"
+      type="button"
+      color="neutral"
+      variant="ghost"
+      size="lg"
+      icon="i-tabler-home"
+      :aria-label="$t('پیشخوان')"
+      class="shrink-0 cursor-pointer"
+      @click="navigateTo('/seller')"
+    />
   </header>
 </template>
 
@@ -20,4 +32,7 @@
 defineProps<{
   title: string
 }>()
+
+const { isDashboard } = useSellerLayout()
+const mobileNavOpen = useState('seller-mobile-nav-open', () => false)
 </script>

@@ -85,6 +85,8 @@
 </template>
 
 <script setup lang="ts">
+import { useEntitySeo } from '~/composables/useEntitySeo'
+
 const {
   catId,
   category,
@@ -107,8 +109,14 @@ const showSkeleton = computed(() =>
   (pending.value || !loaded.value) && !category.value,
 )
 
-useSeoMeta({
-  title: () => category.value?.name ?? meta.value.hero.title,
-  description: () => meta.value.seo.paragraphs[0] ?? meta.value.hero.subtitle,
-})
+const { getById: getSellerCategory } = useSellerCategories()
+const sellerSeo = computed(() => getSellerCategory(catId.value)?.seo ?? null)
+
+useEntitySeo(() => ({
+  entity: sellerSeo.value,
+  fallbackTitle: category.value?.name ?? meta.value.hero.title,
+  fallbackDescription: meta.value.seo.paragraphs[0] ?? meta.value.hero.subtitle,
+  fallbackImage: meta.value.hero.image || '',
+  path: catId.value ? `/category/${catId.value}` : undefined,
+}))
 </script>

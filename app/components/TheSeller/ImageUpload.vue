@@ -98,6 +98,30 @@
     </button>
 
     <div
+      v-if="canViewLibrary"
+      class="mt-2 flex justify-center"
+    >
+      <UButton
+        type="button"
+        color="neutral"
+        variant="outline"
+        size="xs"
+        icon="i-tabler-photo-search"
+        class="cursor-pointer"
+        @click="libraryOpen = true"
+      >
+        {{ $t('از کتابخانه') }}
+      </UButton>
+    </div>
+
+    <TheSellerMediaPicker
+      v-if="canViewLibrary"
+      v-model:open="libraryOpen"
+      v-model="model"
+      kind="image"
+    />
+
+    <div
       v-if="model.trim()"
       class="mt-2 flex justify-end"
     >
@@ -154,10 +178,14 @@ const model = defineModel<string>({ default: '' })
 
 const { t } = useI18n()
 const toast = useAppToast()
+const { can } = useSellerPermissions()
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const reading = ref(false)
 const dragOver = ref(false)
+const libraryOpen = ref(false)
+
+const canViewLibrary = computed(() => can('media.view'))
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024
 

@@ -53,12 +53,13 @@
         >
           <div class="text-[11px] font-medium text-primary mb-1">
             {{ $t('پاسخ فروشنده') }}
+            <span class="text-muted font-normal"> · {{ $t('قابل‌نمایش برای مشتری') }}</span>
           </div>
           {{ review.reply }}
         </div>
 
         <div
-          v-else
+          v-else-if="can('reviews.moderate')"
           class="mt-3 flex flex-col sm:(flex-row items-end) gap-2"
         >
           <TheFormInput
@@ -69,12 +70,59 @@
           <UButton
             color="primary"
             size="md"
-            class="font-medium shrink-0"
+            class="font-medium shrink-0 cursor-pointer"
             :disabled="!draft.trim()"
             :loading="sending"
             @click="onReply"
           >
             {{ $t('ارسال پاسخ') }}
+          </UButton>
+        </div>
+
+        <div
+          v-if="can('reviews.moderate') || can('reviews.delete')"
+          class="mt-3 flex items-center gap-2 flex-wrap"
+        >
+          <UBadge
+            v-if="moderation"
+            :color="moderation === 'approved' ? 'success' : moderation === 'rejected' ? 'error' : 'warning'"
+            variant="subtle"
+            size="xs"
+          >
+            {{ moderationLabel }}
+          </UBadge>
+          <UButton
+            v-if="can('reviews.moderate')"
+            type="button"
+            color="success"
+            variant="ghost"
+            size="xs"
+            class="cursor-pointer"
+            @click="emit('moderate', { id: review.id, status: 'approved' })"
+          >
+            {{ $t('تأیید') }}
+          </UButton>
+          <UButton
+            v-if="can('reviews.moderate')"
+            type="button"
+            color="error"
+            variant="ghost"
+            size="xs"
+            class="cursor-pointer"
+            @click="emit('moderate', { id: review.id, status: 'rejected' })"
+          >
+            {{ $t('رد') }}
+          </UButton>
+          <UButton
+            v-if="can('reviews.moderate')"
+            type="button"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            class="cursor-pointer"
+            @click="emit('moderate', { id: review.id, status: 'hidden' })"
+          >
+            {{ $t('مخفی') }}
           </UButton>
         </div>
       </div>
@@ -87,15 +135,28 @@ import type { SellerReview } from '~/data/seller'
 
 const props = defineProps<{
   review: SellerReview
+  moderation?: 'pending' | 'approved' | 'rejected' | 'hidden'
+}>()
+
+const emit = defineEmits<{
+  moderate: [{ id: string, status: 'pending' | 'approved' | 'rejected' | 'hidden' }]
 }>()
 
 const { t } = useI18n()
 const toast = useAppToast()
 const { replyToReview, resolveProduct } = useSeller()
+const { can } = useSellerPermissions()
 
 const product = computed(() => resolveProduct(props.review.productId))
 const draft = ref('')
 const sending = ref(false)
+
+const moderationLabel = computed(() => {
+  if (props.moderation === 'pending') return t('در انتظار')
+  if (props.moderation === 'rejected') return t('ردشده')
+  if (props.moderation === 'hidden') return t('مخفی')
+  return t('تأییدشده')
+})
 
 async function onReply() {
   const text = draft.value.trim()

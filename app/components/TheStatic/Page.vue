@@ -246,6 +246,7 @@
 <script setup lang="ts">
 import type { StaticPage, StaticPageId } from '~/data/static-pages'
 import { getBlogPostPath, staticPagePaths } from '~/data/static-pages'
+import { faqPageJsonLd } from '~/composables/useJsonLd'
 
 const props = defineProps<{
   pageId: StaticPageId
@@ -271,4 +272,24 @@ const { data: page, pending } = await useAsyncData<StaticPage | null>(
     default: () => getPage(props.pageId),
   },
 )
+
+useEntitySeo(() => ({
+  fallbackTitle: page.value?.title ? t(page.value.title) : t('صفحه'),
+  fallbackDescription: page.value?.subtitle ? t(page.value.subtitle) : '',
+  path: page.value?.path || staticPagePaths[props.pageId],
+}))
+
+useJsonLd(() => {
+  const current = page.value
+  if (!current) return null
+  const faqItems = current.sections
+    .filter((section): section is Extract<StaticPage['sections'][number], { type: 'faq' }> =>
+      section.type === 'faq',
+    )
+    .flatMap(section => section.items.map(item => ({
+      question: item.question,
+      answer: item.answer,
+    })))
+  return faqPageJsonLd(faqItems)
+})
 </script>
