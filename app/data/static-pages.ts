@@ -43,6 +43,12 @@ export type StaticBlogPost = {
   relatedCategories: string[]
   content: string[]
   highlights?: string[]
+  /** نشان محبوب در لیست بلاگ */
+  popular?: boolean
+  /** شمار تعامل نمایشی */
+  engagement?: number
+  /** انتشار در استورفرانت؛ پیش‌فرض true */
+  active?: boolean
 }
 
 export type StaticJobItem = {

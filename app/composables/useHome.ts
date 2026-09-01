@@ -16,7 +16,6 @@ import {
   homeAppStores,
 } from '~/data/home'
 import { products as localProducts, type Product } from '~/data/products'
-import { blogPosts, type StaticBlogPost } from '~/data/static-pages'
 
 export type HomePayload = {
   heroSlides: HeroSlide[]
@@ -82,7 +81,25 @@ export function useHome() {
   const categoryShelves = computed<HomeCategoryShelf[]>(() => homeCategoryShelves)
   const seoBlocks = computed<HomeSeoBlock[]>(() => homeSeoBlocks)
   const appStores = computed<HomeAppStore[]>(() => homeAppStores)
-  const homeBlogPosts = computed<StaticBlogPost[]>(() => blogPosts.slice(0, 8))
+  const { publishedPosts, ensureLoaded: ensureBlogLoaded } = useBlog()
+  const homeBlogPosts = computed(() =>
+    publishedPosts.value.slice(0, 8).map(p => ({
+      id: p.id,
+      title: p.title,
+      excerpt: p.excerpt,
+      date: p.date,
+      category: p.category,
+      readTime: p.readTime,
+      author: p.author,
+      image: p.image,
+      relatedCategories: [...p.relatedCategories],
+      content: [...p.content],
+      highlights: p.highlights ? [...p.highlights] : undefined,
+      popular: p.popular,
+      engagement: p.engagement,
+      active: p.active,
+    })),
+  )
 
   function productsForCategory(category: string, limit = 10): Product[] {
     const fromCatalog = catalogProducts.value
@@ -106,6 +123,7 @@ export function useHome() {
         const [{ result: homeResult, error: homeError }] = await Promise.all([
           useGet<HomePayload>('/home', { headers: { 'no-error': true } }),
           fetchCategories({ withCounts: false }),
+          ensureBlogLoaded(),
         ])
 
         if (homeError || !homeResult) {
