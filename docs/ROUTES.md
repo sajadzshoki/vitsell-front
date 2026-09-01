@@ -224,7 +224,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET\|PUT\|DELETE` | `/seller/content-promos/:id` | جزئیات / ویرایش / حذف پرومو |
 | `PATCH` | `/seller/content-promos/:id/active` | فعال/غیرفعال پرومو |
 
-ادمین نمونه (سید): شماره `09121234567` با `role: admin`.
+ادمین: حساب `role=admin` دستی ساخته می‌شود (سید خودکار نمی‌سازد).
 
 ---
 

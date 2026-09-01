@@ -190,7 +190,7 @@ export function toSellerSalesPoint(raw: Partial<SellerSalesPoint>): SellerSalesP
 export const defaultSellerShop: SellerShop = {
   name: 'دیجی‌شاپ',
   slug: 'digishop',
-  phone: '09121234567',
+  phone: '',
   email: 'info@digishop.ir',
   city: 'تهران',
   about:

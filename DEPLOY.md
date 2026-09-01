@@ -62,6 +62,8 @@ LOG_LEVEL=info
 APP_KEY=<generated-secret>
 APP_URL=https://api.example.com
 FRONTEND_URL=https://shop.example.com
+# پنل ادمین — Origin لاگین مدیر باید با این یکی باشد (اجباری در production)
+ADMIN_URL=https://admin.example.com
 
 SESSION_DRIVER=cookie
 
@@ -160,15 +162,22 @@ docker compose up -d --build
 | Prod start | `cd build && npm ci --omit=dev && node bin/server.js` |
 | Verify fail-closed | `node --import=@poppinss/ts-exec bin/verify_prod_fail_closed.ts` (با env production) |
 
-### ۱.۵ Seller seed (بعد از seed)
+### ۱.۵ ادمین اول (دستی)
 
-فروشنده نمونه:
+سید دیگر کاربر admin با شماره ثابت نمی‌سازد. برای اولین ادمین:
 
-- Phone: `09121234567`
-- Role: `seller`
-- Shop: فروشگاه آریا
+```sql
+-- password = bcrypt hash of your chosen password (via Adonis/User model in tinker or a one-off script)
+INSERT INTO users (phone, role, password, created_at, updated_at)
+VALUES ('09XXXXXXXXX', 'admin', '<bcrypt-hash>', NOW(), NOW());
+```
 
-در production با OTP واقعی لاگین می‌شود (بدون `devCode`).
+یا از پنل/اسکریپت داخلی پروژه بعد از راه‌اندازی DB.
+
+- ورود فقط از `ADMIN_URL` با `/auth/admin/login`
+- شماره تماس سایت در `/seller/shop` همان شماره ورود ادمین است
+
+در production با OTP واقعی برای مشتری لاگین می‌شود (بدون `devCode`).
 
 ---
 

@@ -8,9 +8,9 @@
     "dev": "nuxt dev --port 4000 --dotenv .env.store",
     "dev:store": "nuxt dev --port 4000 --dotenv .env.store",
     "dev:admin": "nuxt dev --port 4001 --dotenv .env.admin",
-    "generate": "nuxt generate",
-    "generate:store": "nuxt generate --dotenv .env.store",
-    "generate:admin": "nuxt generate --dotenv .env.admin",
+    "generate": "nuxt generate && node scripts/fix-spa-html.mjs",
+    "generate:store": "nuxt generate --dotenv .env.store && node scripts/fix-spa-html.mjs",
+    "generate:admin": "nuxt generate --dotenv .env.admin && node scripts/fix-spa-html.mjs",
     "preview": "nuxt preview",
     "postinstall": "patch-package && nuxt prepare"
   },

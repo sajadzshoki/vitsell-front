@@ -359,6 +359,46 @@ export function getProductReviewSummary(product: Product): ProductReviewSummary 
   }
 }
 
+/** خلاصه نظرات از لیست واقعی (API) */
+export function buildReviewSummary(reviews: ProductReview[]): ProductReviewSummary {
+  const total = reviews.length
+  if (!total) {
+    return {
+      recommendPercent: 0,
+      distribution: [
+        { stars: 5, percent: 0, count: 0 },
+        { stars: 4, percent: 0, count: 0 },
+        { stars: 3, percent: 0, count: 0 },
+        { stars: 2, percent: 0, count: 0 },
+        { stars: 1, percent: 0, count: 0 },
+      ],
+    }
+  }
+
+  const counts: Record<1 | 2 | 3 | 4 | 5, number> = {
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+  }
+  for (const review of reviews) {
+    const stars = Math.min(5, Math.max(1, Math.round(review.rating))) as 1 | 2 | 3 | 4 | 5
+    counts[stars]++
+  }
+
+  const recommendCount = reviews.filter(r => r.rating >= 4).length
+
+  return {
+    recommendPercent: Math.round((recommendCount / total) * 100),
+    distribution: ([5, 4, 3, 2, 1] as const).map(stars => ({
+      stars,
+      count: counts[stars],
+      percent: Math.round((counts[stars] / total) * 100),
+    })),
+  }
+}
+
 export function getProductCriteriaScores(
   product: Product,
 ): { label: string, score: number }[] {
