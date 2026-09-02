@@ -52,6 +52,33 @@
             {{ discount.toLocaleString('fa-IR') }}٪ {{ $t('تخفیف') }}
           </UBadge>
 
+          <template v-if="gallery.length > 1">
+            <UButton
+              type="button"
+              icon="i-tabler-chevron-right"
+              color="neutral"
+              variant="solid"
+              size="sm"
+              square
+              class="absolute start-2 top-1/2 -translate-y-1/2 z-20 rounded-full shadow-md !opacity-80 hover:!opacity-100"
+              :disabled="active <= 0"
+              :aria-label="$t('تصویر قبلی')"
+              @click.stop="goPrev"
+            />
+            <UButton
+              type="button"
+              icon="i-tabler-chevron-left"
+              color="neutral"
+              variant="solid"
+              size="sm"
+              square
+              class="absolute end-2 top-1/2 -translate-y-1/2 z-20 rounded-full shadow-md !opacity-80 hover:!opacity-100"
+              :disabled="active >= gallery.length - 1"
+              :aria-label="$t('تصویر بعدی')"
+              @click.stop="goNext"
+            />
+          </template>
+
           <div
             v-if="gallery.length > 1"
             class="absolute bottom-3 inset-x-0 z-10 flex justify-center gap-1.5 pointer-events-none"
@@ -180,28 +207,57 @@
     >
       <template #body>
         <div class="relative w-full max-w-5xl px-3 sm:px-4 flex flex-col items-center gap-3">
-          <UCarousel
-            ref="fsCarousel"
-            v-slot="{ item }"
-            :items="gallery"
-            :start-index="active"
-            wheel-gestures
-            class="w-full"
-            :ui="{
-              item: 'basis-full min-w-full ps-0',
-              container: 'ms-0',
-            }"
-            @select="onSelect"
-          >
-            <img
-              :src="imageSrc(item)"
-              :alt="product.title"
-              class="max-h-[70dvh] w-auto max-w-full mx-auto object-contain rounded-2xl"
-              loading="eager"
-              decoding="async"
-              draggable="false"
+          <div class="relative w-full">
+            <UCarousel
+              ref="fsCarousel"
+              v-slot="{ item }"
+              :items="gallery"
+              :start-index="active"
+              wheel-gestures
+              class="w-full"
+              :ui="{
+                item: 'basis-full min-w-full ps-0',
+                container: 'ms-0',
+              }"
+              @select="onSelect"
             >
-          </UCarousel>
+              <img
+                :src="imageSrc(item)"
+                :alt="product.title"
+                class="max-h-[70dvh] w-auto max-w-full mx-auto object-contain rounded-2xl"
+                loading="eager"
+                decoding="async"
+                draggable="false"
+              >
+            </UCarousel>
+
+            <template v-if="gallery.length > 1">
+              <UButton
+                type="button"
+                icon="i-tabler-chevron-right"
+                color="neutral"
+                variant="solid"
+                size="md"
+                square
+                class="absolute start-0 sm:start-2 top-1/2 -translate-y-1/2 z-20 rounded-full shadow-md !opacity-80 hover:!opacity-100"
+                :disabled="active <= 0"
+                :aria-label="$t('تصویر قبلی')"
+                @click.stop="goPrev"
+              />
+              <UButton
+                type="button"
+                icon="i-tabler-chevron-left"
+                color="neutral"
+                variant="solid"
+                size="md"
+                square
+                class="absolute end-0 sm:end-2 top-1/2 -translate-y-1/2 z-20 rounded-full shadow-md !opacity-80 hover:!opacity-100"
+                :disabled="active >= gallery.length - 1"
+                :aria-label="$t('تصویر بعدی')"
+                @click.stop="goNext"
+              />
+            </template>
+          </div>
 
           <div class="flex gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-1">
             <button
@@ -230,6 +286,7 @@
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
+import { products as localProducts } from '~/data/products'
 
 const props = defineProps<{
   product: Product
@@ -252,12 +309,19 @@ const liked = computed(() => isInWishlist(props.product.id))
 const colorMode = useColorMode()
 
 const gallery = computed(() => {
-  const images = props.product.gallery?.filter(Boolean) ?? []
+  const fromProduct = props.product.gallery?.filter(Boolean) ?? []
+  const fromLocal = localProducts
+    .find(p => p.id === props.product.id)
+    ?.gallery
+    ?.filter(Boolean) ?? []
+  // Prefer richer local mock gallery when API/seed payload is still short.
+  const images = fromLocal.length > fromProduct.length ? fromLocal : fromProduct
   if (images.length) return images
+
   const dark = props.product.imageDark?.trim()
   const light = props.product.image?.trim()
   const fallback = (colorMode.value === 'dark' && dark ? dark : light) || 'noImage.png'
-  return [fallback, fallback, fallback, fallback]
+  return [fallback]
 })
 
 const discount = computed(() => {
@@ -297,6 +361,16 @@ function select(index: number) {
   active.value = index
   carousel.value?.emblaApi?.scrollTo(index)
   fsCarousel.value?.emblaApi?.scrollTo(index)
+}
+
+function goPrev() {
+  if (active.value <= 0) return
+  select(active.value - 1)
+}
+
+function goNext() {
+  if (active.value >= gallery.value.length - 1) return
+  select(active.value + 1)
 }
 
 function canHoverZoom() {
