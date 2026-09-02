@@ -3,7 +3,7 @@
     class="group card-hover text-start bg-default border border-muted rounded-2xl p-3 <md:(p-2 rounded-xl) cursor-pointer"
     :class="isHorizontal
       ? 'flex flex-row gap-3 sm:gap-4 items-stretch'
-      : 'flex flex-col w-full'"
+      : 'flex flex-col w-full h-full'"
     :to="{ name: 'product-id', params: { id: product.id } }"
   >
     <div
@@ -80,8 +80,8 @@
     </div>
 
     <div
-      class="flex flex-col min-w-0"
-      :class="isHorizontal ? 'flex-1 py-0.5' : ''"
+      class="flex flex-col min-w-0 flex-1"
+      :class="isHorizontal ? 'py-0.5' : ''"
     >
       <h3
         class="text-[13px] leading-6 text-default line-clamp-2 mb-2 transition group-hover:text-primary"
@@ -90,7 +90,7 @@
         {{ product.title }}
       </h3>
 
-      <div class="flex items-center gap-1 mb-2 sm:mb-3 flex-wrap">
+      <div class="flex items-center gap-1 mb-2 sm:mb-3 flex-wrap min-h-6">
         <div class="flex items-center gap-0.5 bg-warning/10 text-warning rounded-md px-1.5 py-0.5">
           <UIcon name="i-tabler-star-filled" class="size-3" />
           <span class="text-[11px] font-semibold num">
@@ -116,16 +116,14 @@
         {{ $t('ناموجود') }}
       </p>
 
-
       <div class="mt-auto flex flex-col items-end gap-0.5">
         <p
-        v-if="product.reviews % 7 === 0"
-        class="text-[9px] text-error ml-auto"
-      >
-        {{ $t('تنها ۱ عدد در انبار باقی مانده') }}
-      </p>
+          v-if="product.reviews % 7 === 0"
+          class="text-[9px] text-error ms-auto"
+        >
+          {{ $t('تنها ۱ عدد در انبار باقی مانده') }}
+        </p>
         <div class="flex items-center gap-1.5">
-
           <span
             v-if="product.oldPrice"
             class="text-[11px] text-dimmed line-through num"

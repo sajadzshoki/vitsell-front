@@ -26,13 +26,13 @@
       :ui="{
         item: 'basis-full min-w-full ps-0',
         container: 'ms-0',
-        prev: 'start-3 md:start-5 z-20',
-        next: 'end-3 md:end-5 z-20',
-        dots: 'bottom-4 md:bottom-6 z-20 gap-2',
-        dot: 'size-2 bg-default/50 data-[state=active]:bg-default data-[state=active]:w-8 rounded-full transition-all',
+        prev: 'hidden md:flex start-5 z-20',
+        next: 'hidden md:flex end-5 z-20',
+        dots: 'bottom-2.5 md:bottom-6 z-20 gap-1.5 md:gap-2',
+        dot: 'size-1.5 md:size-2 bg-default/50 data-[state=active]:bg-default data-[state=active]:w-5 md:data-[state=active]:w-8 rounded-full transition-all',
       }"
     >
-      <div class="relative overflow-hidden min-h-[380px] md:min-h-[440px] bg-inverted">
+      <div class="relative overflow-hidden h-[220px] sm:h-[280px] md:h-auto md:min-h-[440px] bg-inverted">
         <img
           :src="item.image"
           :alt="$t(item.title)"
@@ -48,61 +48,69 @@
           :class="toneClass(item.tone)"
         />
 
-        <div class="absolute inset-0 bg-inverted/55 md:bg-inverted/25 pointer-events-none" />
+        <!-- Mobile: bottom scrim for readable text -->
         <div
-          class="absolute inset-0 pointer-events-none bg-[linear-gradient(to_inline-end,var(--ui-bg-inverted)_0%,color-mix(in_srgb,var(--ui-bg-inverted)_78%,transparent)_40%,transparent_76%)]"
+          class="absolute inset-0 pointer-events-none md:hidden bg-gradient-to-t from-inverted via-inverted/70 to-inverted/10"
+        />
+        <!-- Desktop: light wash + side gradient for copy -->
+        <div class="absolute inset-0 hidden md:block bg-inverted/25 pointer-events-none" />
+        <div
+          class="absolute inset-0 hidden md:block pointer-events-none bg-[linear-gradient(to_inline-end,var(--ui-bg-inverted)_0%,color-mix(in_srgb,var(--ui-bg-inverted)_78%,transparent)_40%,transparent_76%)]"
         />
 
-        <div class="relative z-10 mx-auto max-w-8xl grid grid-cols-1 md:grid-cols-2 items-center min-h-[380px] md:min-h-[440px] px-4 sm:px-6 lg:px-8">
-          <div class="py-10 md:py-0">
+        <div
+          class="relative z-10 mx-auto max-w-8xl h-full md:grid md:grid-cols-2 md:items-center md:min-h-[440px] px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-8 md:pb-0 md:justify-center"
+        >
+          <div class="w-full max-w-lg md:max-w-none py-0 md:py-0">
             <span
-              class="inline-flex items-center gap-2 bg-default/15 backdrop-blur px-3 py-1.5 rounded-full text-xs mb-4 border border-default/15 text-inverted"
+              class="inline-flex items-center gap-1.5 md:gap-2 bg-default/15 backdrop-blur px-2.5 py-1 md:(px-3 py-1.5) rounded-full text-[10px] md:text-xs mb-2 md:mb-4 border border-default/15 text-inverted"
             >
-              <span class="size-1.5 rounded-full bg-current animate-pulse" />
+              <span class="size-1 md:size-1.5 rounded-full bg-current animate-pulse" />
               {{ $t(item.eyebrow) }}
             </span>
 
             <component
               :is="index === 0 ? 'h1' : 'h2'"
-              class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-tight mb-4 text-inverted drop-shadow-sm"
+              class="text-xl sm:text-2xl md:text-5xl lg:text-6xl font-black leading-snug md:leading-tight mb-1.5 md:mb-4 text-inverted drop-shadow-sm line-clamp-2"
             >
               {{ $t(item.title) }}
             </component>
 
-            <p class="text-inverted/90 text-sm md:text-base leading-7 mb-7 max-w-md">
+            <p class="text-inverted/90 text-xs md:text-base leading-5 md:leading-7 mb-3 md:mb-7 max-w-md line-clamp-2 md:line-clamp-none">
               {{ $t(item.subtitle) }}
             </p>
 
-            <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex items-center gap-2 md:gap-3 flex-wrap">
               <UButton
                 :to="item.to"
                 color="neutral"
                 variant="outline"
-                size="xl"
+                size="md"
                 trailing-icon="i-tabler-arrow-left"
+                class="md:h-12 md:text-base md:px-5"
                 :ui="{
-                  base: 'h-12 rounded-xl font-bold shadow-lg border-default/20 bg-default text-highlighted dark:text-black hover:bg-elevated',
+                  base: 'rounded-xl font-bold shadow-lg border-default/20 bg-default text-highlighted dark:text-black hover:bg-elevated',
                 }"
               >
                 {{ $t(item.cta) }}
               </UButton>
 
               <div
-                v-if="item.discount"
-                class="h-12 px-4 rounded-xl bg-default/15 backdrop-blur border border-default/15 flex items-center gap-2 text-inverted"
+                v-if="slides[index]?.discount"
+                class="h-9 md:h-12 px-2.5 md:px-4 rounded-lg md:rounded-xl bg-default/15 backdrop-blur border border-default/15 flex items-center gap-1.5 md:gap-2 text-inverted"
               >
-                <span class="text-xs text-inverted/80">{{ $t('تا') }}</span>
-                <span class="text-lg font-black num">{{ item.discount.toLocaleString('fa-IR') }}٪</span>
-                <span class="text-xs text-inverted/80">{{ $t('تخفیف') }}</span>
+                <span class="text-[10px] md:text-xs text-inverted/80">{{ $t('تا') }}</span>
+                <span class="text-sm md:text-lg font-black num">{{ slides[index]!.discount!.toLocaleString('fa-IR') }}٪</span>
+                <span class="text-[10px] md:text-xs text-inverted/80">{{ $t('تخفیف') }}</span>
               </div>
             </div>
           </div>
 
-          <div class="relative h-56 md:h-full min-h-[240px] flex items-center justify-center order-first md:order-last p-6">
+          <div class="relative hidden md:flex h-full min-h-[240px] items-center justify-center p-6">
             <img
               :src="item.image"
               :alt="$t(item.title)"
-              class="max-h-52 md:max-h-80 w-auto max-w-full object-contain drop-shadow-2xl rounded-2xl"
+              class="max-h-80 w-auto max-w-full object-contain drop-shadow-2xl rounded-2xl"
               loading="eager"
               decoding="async"
             >

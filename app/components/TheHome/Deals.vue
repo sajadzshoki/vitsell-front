@@ -43,8 +43,8 @@
           prev-icon="i-tabler-chevron-right"
           next-icon="i-tabler-chevron-left"
           :ui="{
-            item: 'basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 ps-3',
-            container: 'ms-0 p-4',
+            item: 'basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 ps-3 flex',
+            container: 'ms-0 p-4 items-stretch',
             prev: 'start-1 sm:start-2 z-20',
             next: 'end-1 sm:end-2 z-20',
           }"

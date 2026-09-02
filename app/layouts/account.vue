@@ -3,7 +3,7 @@
     <TheNavbar />
     <div
       class="mx-auto max-w-8xl w-full px-3 py-4 sm:px-4 lg:px-6 flex-1 pb-24 md:pb-4"
-      :class="isMobile && !isDashboard ? 'pt-2' : ''"
+      :class="isMobile ? 'pt-2' : ''"
     >
       <nav class="hidden md:flex items-center gap-2 text-xs text-muted mb-4 flex-wrap">
         <NuxtLink
@@ -34,14 +34,9 @@
       </nav>
 
       <TheAccountMobileHeader
-        v-if="isMobile && !isDashboard"
+        v-if="isMobile"
         :title="pageTitle"
       />
-<!-- 
-      <ThePanelSwitch
-        v-if="isMobile"
-        class="mb-4 p-3 bg-default border border-muted rounded-2xl"
-      /> -->
 
       <div
         class="grid grid-cols-1 gap-5"
@@ -61,11 +56,37 @@
         </section>
       </div>
     </div>
+
     <TheFooter class="pb-20 md:pb-0" />
     <TheBottomNav />
+
+    <UDrawer
+      v-model:open="mobileNavOpen"
+      direction="right"
+      :title="$t('منوی حساب')"
+      :handle="false"
+      close
+      :ui="{ content: 'max-w-sm w-[min(88vw,22rem)]' }"
+    >
+      <template #body>
+        <TheAccountSidebar
+          embedded
+          @navigate="mobileNavOpen = false"
+        />
+      </template>
+    </UDrawer>
   </div>
 </template>
 
 <script setup lang="ts">
 const { isMobile, isDashboard, pageTitle, showDesktopSidebar } = useAccountLayout()
+const mobileNavOpen = useState('account-mobile-nav-open', () => false)
+
+const route = useRoute()
+watch(
+  () => route.fullPath,
+  () => {
+    mobileNavOpen.value = false
+  },
+)
 </script>

@@ -1,6 +1,6 @@
 <template>
   <main class="flex flex-col gap-6 md:gap-10">
-    <TheHeroCarousel class="<md:hidden" />
+    <TheHeroCarousel  />
 
     <TheHomeCircleStrip />
     <TheHomeDeals />

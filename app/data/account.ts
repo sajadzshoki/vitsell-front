@@ -1,7 +1,14 @@
 import type { CheckoutAddress } from '~/data/checkout'
 import { defaultAddresses } from '~/data/checkout'
 
-export type AccountTabId = 'dashboard' | 'orders' | 'reviews' | 'wallet' | 'addresses' | 'profile'
+export type AccountTabId =
+  | 'dashboard'
+  | 'wishlist'
+  | 'orders'
+  | 'reviews'
+  | 'wallet'
+  | 'addresses'
+  | 'profile'
 
 export type OrderStatus = 'delivered' | 'shipping' | 'processing' | 'cancelled'
 
@@ -50,6 +57,7 @@ export const accountNavItems: {
   to: string
 }[] = [
   { id: 'dashboard', label: 'پیشخوان', icon: 'i-tabler-layout-dashboard', to: '/account' },
+  { id: 'wishlist', label: 'علاقه‌مندی‌ها', icon: 'i-tabler-heart', to: '/account/wishlist' },
   { id: 'orders', label: 'سفارش‌های من', icon: 'i-tabler-package', to: '/account/orders' },
   { id: 'wallet', label: 'کیف پول', icon: 'i-tabler-wallet', to: '/account/wallet' },
   { id: 'reviews', label: 'نظرات و پرسش‌ها', icon: 'i-tabler-message-2', to: '/account/reviews' },

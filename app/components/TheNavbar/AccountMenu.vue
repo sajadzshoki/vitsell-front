@@ -143,11 +143,10 @@ const accountRef = ref<HTMLElement | null>(null)
 
 const links = computed(() => [
   { label: t('پیشخوان'), icon: 'i-tabler-layout-dashboard', to: '/account' },
-  // { label: t('پنل فروشنده'), icon: 'i-tabler-building-store', to: '/seller' },
+  { label: t('علاقه‌مندی‌ها'), icon: 'i-tabler-heart', to: '/account/wishlist' },
   { label: t('سفارش‌های من'), icon: 'i-tabler-package', to: '/account/orders' },
   { label: t('کیف پول'), icon: 'i-tabler-wallet', to: '/account/wallet' },
   { label: t('نظرات و پرسش‌ها'), icon: 'i-tabler-message-2', to: '/account/reviews' },
-  { label: t('علاقه‌مندی‌ها'), icon: 'i-tabler-heart', to: '/wishlist' },
   { label: t('آدرس‌ها'), icon: 'i-tabler-map-pin', to: '/account/addresses' },
   { label: t('اطلاعات حساب'), icon: 'i-tabler-user', to: '/account/profile' },
   { label: t('تنظیمات'), icon: 'i-tabler-settings', to: '/account/settings' },

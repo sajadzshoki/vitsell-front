@@ -4,13 +4,19 @@
   </section>
 
   <section v-else-if="categories.length">
-    <div class="bg-default border border-muted rounded-3xl p-4 md:p-6">
-      <div class="flex items-center justify-between mb-5 gap-3">
-        <div>
-          <h2 class="text-base md:text-lg font-bold text-highlighted">
-            {{ $t('دسته‌بندی‌های محبوب') }}
-          </h2>
-          <p class="text-xs text-muted mt-1">
+    <div class="bg-default border border-muted rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-6">
+      <div class="flex items-center justify-between mb-3 sm:mb-5 gap-2">
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5 sm:gap-2">
+            <UIcon
+              name="i-tabler-layout-grid"
+              class="size-4 sm:size-5 text-primary shrink-0"
+            />
+            <h2 class="text-sm sm:text-base md:text-lg font-bold text-highlighted truncate">
+              {{ $t('دسته‌بندی‌های محبوب') }}
+            </h2>
+          </div>
+          <p class="text-[11px] sm:text-xs text-muted mt-0.5 sm:mt-1 line-clamp-1">
             {{ $t('از میان دسته‌های پرمخاطب انتخاب کنید') }}
           </p>
         </div>
@@ -26,30 +32,69 @@
         </UButton>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3 md:gap-4">
+      <!-- Mobile: horizontal strip -->
+      <div class="sm:hidden">
+        <UCarousel
+          v-slot="{ item }"
+          :items="categories"
+          arrows
+          align="start"
+          :slides-to-scroll="3"
+          prev-icon="i-tabler-chevron-right"
+          next-icon="i-tabler-chevron-left"
+          :prev="{ color: 'neutral', variant: 'solid', size: 'sm' }"
+          :next="{ color: 'neutral', variant: 'solid', size: 'sm' }"
+          class="w-full"
+          :ui="{
+            item: 'basis-[22%] ps-2',
+            container: 'ms-0 items-start',
+            viewport: 'px-7',
+            prev: 'start-0 z-20 shadow-sm',
+            next: 'end-0 z-20 shadow-sm',
+          }"
+        >
+          <NuxtLink
+            :to="toSearchRoute({ category: item.id })"
+            class="group flex flex-col items-center gap-1.5 cursor-pointer w-full"
+          >
+            <div
+              class="relative size-14 mx-auto rounded-full bg-primary/10 overflow-hidden border border-muted ring-0 transition-all duration-300 group-hover:(border-primary/40 ring-4 ring-primary/10 bg-primary/12 shadow-sm)"
+            >
+              <img
+                :src="imageFor(item)"
+                :alt="$t(item.name)"
+                class="absolute inset-0 size-full object-cover p-1.5 transition duration-300 group-hover:scale-110"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+            <span class="text-[10px] font-medium text-toned text-center leading-tight line-clamp-2 w-full group-hover:text-primary transition">
+              {{ $t(item.name) }}
+            </span>
+          </NuxtLink>
+        </UCarousel>
+      </div>
+
+      <!-- Tablet / desktop grid -->
+      <div class="hidden sm:grid grid-cols-5 lg:grid-cols-10 gap-3 md:gap-4">
         <NuxtLink
           v-for="category in categories"
           :key="category.id"
           :to="toSearchRoute({ category: category.id })"
-          class="group flex flex-col items-center gap-2.5 cursor-pointer"
+          class="group flex flex-col items-center gap-2 cursor-pointer"
         >
           <div
-            class="relative w-full aspect-square rounded-3xl bg-muted overflow-hidden border border-muted transition duration-300 group-hover:(border-primary/30 shadow-md bg-primary/5)"
+            class="relative size-20 md:size-[4.75rem] lg:size-[5.25rem] mx-auto rounded-full bg-primary/10 overflow-hidden border border-muted transition-all duration-300 group-hover:(border-primary/40 ring-4 ring-primary/10 bg-primary/12 shadow-md)"
           >
             <img
               :src="imageFor(category)"
               :alt="$t(category.name)"
-              class="absolute inset-0 size-full object-contain p-4 md:p-5 transition duration-500 group-hover:scale-110"
+              class="absolute inset-0 size-full object-cover p-2.5 md:p-3 transition duration-300 group-hover:scale-110"
               loading="lazy"
               decoding="async"
             >
-            <div
-              class="pointer-events-none absolute inset-0 bg-gradient-to-t from-default/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"
-            />
           </div>
-          <span
-            class="text-xs sm:text-sm font-medium text-toned text-center leading-snug group-hover:text-primary transition"
-          >
+          <span class="text-xs md:text-sm font-medium text-toned text-center leading-snug line-clamp-2 group-hover:text-primary transition">
             {{ $t(category.name) }}
           </span>
         </NuxtLink>

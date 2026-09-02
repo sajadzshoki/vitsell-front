@@ -199,39 +199,44 @@ export const homeBannerRows: HomeBannerRow[] = [
 export type HomeTopBrand = {
   id: string
   name: string
-  images: [string, string]
+  image: string
   to: string
 }
+
+const phonePng = {
+  samsung: '/images/mock/pngtree-samsung-s25-ultra-pro-mobile-phone-png-image_17883915.png',
+  iphone: '/images/mock/iphone16_PNG13.png',
+} as const
 
 export const homeTopMobileBrands: HomeTopBrand[] = [
   {
     id: 'samsung',
     name: 'سامسونگ',
-    images: ['/images/mock/galaxy-s25-ultra.jpg', '/images/mock/iphone16pro-desert.jpg'],
+    image: phonePng.samsung,
     to: '/search?q=سامسونگ&category=mobile',
   },
   {
     id: 'poco',
     name: 'پوکو',
-    images: ['/images/mock/galaxy-s25-ultra.jpg', '/images/mock/galaxy-s25-ultra.jpg'],
+    image: phonePng.samsung,
     to: '/search?q=پوکو&category=mobile',
   },
   {
     id: 'iphone',
     name: 'آیفون',
-    images: ['/images/mock/iphone16pro-desert.jpg', '/images/mock/iphone16pro-desert.jpg'],
+    image: phonePng.iphone,
     to: '/search?q=آیفون&category=mobile',
   },
   {
     id: 'honor',
     name: 'آنر',
-    images: ['/images/mock/iphone16pro-desert.jpg', '/images/mock/galaxy-s25-ultra.jpg'],
+    image: phonePng.iphone,
     to: '/search?q=آنر&category=mobile',
   },
   {
     id: 'xiaomi',
     name: 'شیائومی',
-    images: ['/images/mock/galaxy-s25-ultra.jpg', '/images/mock/iphone16pro-desert.jpg'],
+    image: phonePng.samsung,
     to: '/search?q=شیائومی&category=mobile',
   },
 ]

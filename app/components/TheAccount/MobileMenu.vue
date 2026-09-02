@@ -53,26 +53,17 @@ const menuItems = computed(() => [
       icon: item.icon,
       to: item.to,
       iconWrap: 'bg-primary/10 text-primary',
-      badge: undefined as string | undefined,
+      badge: item.id === 'wishlist' && wishlistCount.value > 0
+        ? wishlistCount.value.toLocaleString('fa-IR')
+        : undefined as string | undefined,
     })),
-
-  {
-    label: 'علاقه‌مندی‌ها',
-    icon: 'i-tabler-heart',
-    to: '/wishlist',
-    iconWrap: 'bg-primary/10 text-primary',
-    badge: wishlistCount.value > 0
-      ? wishlistCount.value.toLocaleString('fa-IR')
-      : undefined,
-  },
   {
     label: 'تنظیمات',
     icon: 'i-tabler-settings',
     to: '/account/settings',
     iconWrap: 'bg-muted text-toned',
-    badge: undefined,
+    badge: undefined as string | undefined,
   },
-
 ])
 
 function onLogout() {

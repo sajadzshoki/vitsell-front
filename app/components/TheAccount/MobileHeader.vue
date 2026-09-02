@@ -5,14 +5,26 @@
       color="neutral"
       variant="ghost"
       size="lg"
-      icon="i-tabler-arrow-right"
-      :aria-label="$t('بازگشت به پیشخوان')"
-      class="shrink-0"
-      @click="navigateTo('/account')"
+      icon="i-tabler-menu-2"
+      :aria-label="$t('منوی حساب')"
+      :aria-expanded="mobileNavOpen"
+      class="shrink-0 cursor-pointer"
+      @click="mobileNavOpen = true"
     />
-    <h1 class="text-base font-bold text-highlighted truncate">
+    <h1 class="text-base font-bold text-highlighted truncate flex-1 min-w-0">
       {{ $t(title) }}
     </h1>
+    <UButton
+      v-if="!isDashboard"
+      type="button"
+      color="neutral"
+      variant="ghost"
+      size="lg"
+      icon="i-tabler-home"
+      :aria-label="$t('پیشخوان')"
+      class="shrink-0 cursor-pointer"
+      @click="navigateTo('/account')"
+    />
   </header>
 </template>
 
@@ -20,4 +32,7 @@
 defineProps<{
   title: string
 }>()
+
+const { isDashboard } = useAccountLayout()
+const mobileNavOpen = useState('account-mobile-nav-open', () => false)
 </script>

@@ -1,6 +1,56 @@
 <template>
   <section v-if="items.length">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+    <div class="sm:hidden">
+      <UCarousel
+        v-slot="{ item }"
+        :items="items"
+        arrows
+        align="start"
+        :slides-to-scroll="1"
+        prev-icon="i-tabler-chevron-right"
+        next-icon="i-tabler-chevron-left"
+        :prev="{ color: 'neutral', variant: 'solid', size: 'sm' }"
+        :next="{ color: 'neutral', variant: 'solid', size: 'sm' }"
+        class="w-full"
+        :ui="{
+          item: 'basis-[85%] ps-3 flex',
+          container: 'ms-0 items-stretch',
+          viewport: 'px-8',
+          prev: 'start-0 z-20 shadow-sm',
+          next: 'end-0 z-20 shadow-sm',
+        }"
+      >
+        <NuxtLink
+          :to="item.to"
+          class="group relative overflow-hidden rounded-2xl min-h-36 w-full cursor-pointer"
+        >
+          <img
+            :src="item.image"
+            :alt="$t(item.title)"
+            class="absolute inset-0 size-full object-cover transition-all duration-300 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
+          >
+          <div
+            class="absolute inset-0 opacity-90"
+            :class="toneOverlay(item.tone)"
+          />
+          <div class="relative z-10 h-full flex flex-col justify-end p-4 text-inverted">
+            <h3 class="text-base font-bold leading-snug">
+              {{ $t(item.title) }}
+            </h3>
+            <p
+              v-if="item.subtitle"
+              class="text-xs text-inverted/85 mt-1"
+            >
+              {{ $t(item.subtitle) }}
+            </p>
+          </div>
+        </NuxtLink>
+      </UCarousel>
+    </div>
+
+    <div class="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
       <NuxtLink
         v-for="banner in items"
         :key="banner.id"
@@ -37,7 +87,7 @@
 <script setup lang="ts">
 import type { HomeBanner } from '~/data/home'
 
-const props = defineProps<{
+defineProps<{
   items: HomeBanner[]
 }>()
 

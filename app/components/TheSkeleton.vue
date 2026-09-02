@@ -68,7 +68,7 @@ const n = computed(() => props.count ?? defaults[props.variant])
   <!-- Hero carousel -->
   <USkeleton
     v-if="variant === 'hero'"
-    class="w-full min-h-[380px] md:min-h-[440px] rounded-none"
+    class="w-full h-[220px] sm:h-[280px] md:h-auto md:min-h-[440px] rounded-none"
   />
 
   <!-- Circle strip -->
@@ -169,23 +169,33 @@ const n = computed(() => props.count ?? defaults[props.variant])
   <!-- Categories grid -->
   <div
     v-else-if="variant === 'category'"
-    class="bg-default border border-muted rounded-3xl p-4 md:p-6"
+    class="bg-default border border-muted rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-6"
   >
-    <div class="flex items-center justify-between mb-5 gap-3">
-      <div class="space-y-2 min-w-0 flex-1">
-        <USkeleton class="h-5 w-40 rounded-lg" />
-        <USkeleton class="h-3 w-56 rounded-lg" />
+    <div class="flex items-center justify-between mb-3 sm:mb-5 gap-2">
+      <div class="space-y-1.5 min-w-0 flex-1">
+        <USkeleton class="h-4 sm:h-5 w-36 sm:w-40 rounded-lg" />
+        <USkeleton class="h-3 w-44 sm:w-56 rounded-lg" />
       </div>
-      <USkeleton class="h-4 w-20 rounded-lg shrink-0" />
+      <USkeleton class="h-4 w-16 sm:w-20 rounded-lg shrink-0" />
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3 md:gap-4">
+    <div class="sm:hidden flex gap-2 overflow-hidden px-7">
       <div
         v-for="i in n"
-        :key="i"
-        class="flex flex-col items-center gap-2.5"
+        :key="`m-${i}`"
+        class="flex flex-col items-center gap-1.5 shrink-0 w-[22%]"
       >
-        <USkeleton class="w-full aspect-square rounded-3xl" />
-        <USkeleton class="h-3 w-16 rounded-lg" />
+        <USkeleton class="size-14 rounded-full shrink-0" />
+        <USkeleton class="h-2.5 w-10 rounded-lg" />
+      </div>
+    </div>
+    <div class="hidden sm:grid grid-cols-5 lg:grid-cols-10 gap-3 md:gap-4">
+      <div
+        v-for="i in n"
+        :key="`d-${i}`"
+        class="flex flex-col items-center gap-2"
+      >
+        <USkeleton class="size-20 md:size-[4.75rem] lg:size-[5.25rem] rounded-full" />
+        <USkeleton class="h-3 w-14 rounded-lg" />
       </div>
     </div>
   </div>
@@ -499,13 +509,16 @@ const n = computed(() => props.count ?? defaults[props.variant])
     v-else-if="variant === 'wallet'"
     class="space-y-4"
   >
-    <USkeleton class="h-44 rounded-3xl" />
-    <div class="grid grid-cols-3 gap-3">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <USkeleton
-        v-for="i in 3"
+        v-for="i in 4"
         :key="i"
-        class="h-24 rounded-2xl"
+        class="h-32 rounded-2xl"
       />
+    </div>
+    <div class="flex gap-2">
+      <USkeleton class="h-11 w-36 rounded-lg" />
+      <USkeleton class="h-11 w-36 rounded-lg" />
     </div>
     <USkeleton class="h-64 rounded-2xl" />
   </div>
@@ -551,10 +564,24 @@ const n = computed(() => props.count ?? defaults[props.variant])
   <!-- Account dashboard -->
   <div
     v-else-if="variant === 'dashboard'"
-    class="space-y-5"
+    class="space-y-4 sm:space-y-5"
   >
     <USkeleton class="h-36 sm:h-40 rounded-2xl" />
-    <USkeleton class="h-24 rounded-2xl" />
+    <USkeleton class="h-28 rounded-2xl" />
+    <div class="bg-default border border-muted rounded-2xl p-4 sm:p-5 space-y-3">
+      <USkeleton class="h-5 w-32 rounded-lg" />
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <USkeleton
+          v-for="i in 8"
+          :key="i"
+          class="h-24 rounded-2xl"
+        />
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <USkeleton class="h-40 rounded-2xl" />
+      <USkeleton class="h-40 rounded-2xl" />
+    </div>
     <div class="bg-default border border-muted rounded-2xl p-5 space-y-3">
       <div class="flex items-center justify-between mb-2">
         <USkeleton class="h-5 w-40 rounded-lg" />

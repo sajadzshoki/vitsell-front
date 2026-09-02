@@ -34,7 +34,7 @@ export const defaultNotifications: ShopNotification[] = [
     time: 'دیروز',
     icon: 'i-tabler-heart',
     read: false,
-    to: '/wishlist',
+    to: '/account/wishlist',
   },
   {
     id: '4',

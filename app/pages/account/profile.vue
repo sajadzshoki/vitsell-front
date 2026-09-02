@@ -47,10 +47,17 @@
         </div>
 
         <UFormField :label="$t('جنسیت')">
-          <USelect
+          <URadioGroup
             v-model="form.gender"
             :items="genderItems"
+            orientation="horizontal"
+            variant="table"
+            indicator="hidden"
+            size="md"
             class="w-full"
+            :ui="{
+              item: 'flex-1 justify-center cursor-pointer',
+            }"
           />
         </UFormField>
       </div>
@@ -185,7 +192,10 @@ const passwordErrors = ref({
 const showCurrentPassword = ref(false)
 const showNewPassword = ref(false)
 
-const genderItems = ['مرد', 'زن']
+const genderItems = computed(() => [
+  { label: t('مرد'), value: 'مرد', icon: 'i-tabler-man' },
+  { label: t('زن'), value: 'زن', icon: 'i-tabler-woman' },
+])
 
 watch(birthIso, (value) => {
   if (!value) {

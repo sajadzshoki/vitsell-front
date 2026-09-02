@@ -61,21 +61,25 @@ export function useHome() {
   const { banners: sellerBanners } = useSellerBanners()
   const sellerBannersSeeded = useState('seller-banners-seeded', () => false)
 
-  const heroSlides = computed(() => {
+  const heroSlides = computed<HeroSlide[]>(() => {
     if (!sellerBannersSeeded.value) return home.value.heroSlides
     const fromSeller = bannersForPlacement(sellerBanners.value, 'homepage_hero')
     if (!fromSeller.length) return home.value.heroSlides
-    return fromSeller.map((b, index) => ({
-      id: b.id,
-      eyebrow: b.internalName || '',
-      title: b.title || home.value.heroSlides[index]?.title || '',
-      subtitle: home.value.heroSlides[index]?.subtitle || '',
-      cta: home.value.heroSlides[index]?.cta || 'مشاهده',
-      to: b.link,
-      image: b.image,
-      icon: home.value.heroSlides[index]?.icon || 'photo',
-      tone: (home.value.heroSlides[index]?.tone || 'inverted') as HeroSlide['tone'],
-    }))
+    return fromSeller.map((b, index) => {
+      const fallback = home.value.heroSlides[index]
+      return {
+        id: b.id,
+        eyebrow: b.internalName || '',
+        title: b.title || fallback?.title || '',
+        subtitle: fallback?.subtitle || '',
+        cta: fallback?.cta || 'مشاهده',
+        to: b.link,
+        image: b.image,
+        icon: fallback?.icon || 'photo',
+        tone: (fallback?.tone || 'inverted') as HeroSlide['tone'],
+        discount: fallback?.discount,
+      }
+    })
   })
   const heroFeatures = computed(() => home.value.heroFeatures)
   const brands = computed(() => home.value.brands)

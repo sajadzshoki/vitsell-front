@@ -37,6 +37,7 @@
   /* --color-brand-500: #ffa600; */
   /* --color-brand-500: #00bd78; */
   --color-brand-500: #2563EB;
+  /* --color-brand-500: #00B7FF; */
   --color-brand-600: #1d4ed8;
   --color-brand-700: #1e40af;
   --color-brand-800: #1e3a8a;
@@ -78,6 +79,7 @@
 }
 
 .dark {
+  --color-brand-500: #00AAFF;
   /* Keep brand primary identical to light (#2563EB / 500) */
   --ui-primary: var(--ui-color-primary-500);
   --ui-secondary: var(--ui-color-secondary-400);
@@ -104,6 +106,8 @@
   --ui-border-muted: var(--ui-color-neutral-800);
   --ui-border-accented: var(--ui-color-neutral-600);
   --ui-border-inverted: white;
+
+
 }
 
 *,
