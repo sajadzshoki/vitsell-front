@@ -4,7 +4,7 @@
       <TheSellerPageHeader
         :title="$t('تخفیف‌ها')"
         :description="$t('قوانین تخفیف فروشگاه — درصد، مبلغ ثابت، هدف‌گیری و بازه زمانی')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('تخفیف')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('تخفیف')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -40,16 +40,18 @@
       :tabs="statusTabs"
       :search-placeholder="$t('جستجوی نام یا شناسه')"
       :has-active="hasActiveFilters || typeFilter !== 'all'"
+      :clear-label="$t('پاک کردن فیلترها')"
       @update:status="status = $event"
       @clear="clearAllFilters"
     >
       <template #extra>
         <USelect
-          v-model="typeFilter"
+          :model-value="typeFilter"
           :items="typeFilterItems"
           value-key="value"
           class="w-40"
           :placeholder="$t('نوع')"
+          @update:model-value="setType(String($event ?? 'all'))"
         />
       </template>
     </TheSellerListToolbar>
@@ -91,8 +93,18 @@
       </UButton>
     </div>
 
+    <div
+      v-if="(loading || pending) && !discounts.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!discounts.length"
       icon="i-tabler-discount"
       :message="hasActiveFilters || typeFilter !== 'all'
         ? $t('تخفیفی با این فیلتر پیدا نشد')
@@ -131,7 +143,7 @@
       </div>
 
       <div
-        v-for="discount in paged"
+        v-for="discount in discounts"
         :key="discount.id"
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
@@ -251,23 +263,23 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
-      />
+      <div
+        v-if="pageCount > 1"
+        class="mt-5 flex justify-center"
+      >
+        <UPagination
+          v-model:page="page"
+          :total="listMeta.total"
+          :items-per-page="listMeta.pageSize || pageSize"
+        />
+      </div>
     </div>
 
     <UModal
       v-model:open="deleteOpen"
       :title="$t('حذف تخفیف')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود و قابل بازگشت نیست.')"
+      :description="$t('این تخفیف برای همیشه حذف می‌شود.')"
     >
       <template #body>
         <div
@@ -293,6 +305,7 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
+            :disabled="deleting"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
@@ -300,6 +313,7 @@
           <UButton
             color="error"
             class="font-bold cursor-pointer"
+            :loading="deleting"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -317,19 +331,38 @@ import {
   deriveScheduleStatus,
   sellerScheduleStatusMeta,
 } from '~/data/seller-marketing-shared'
-
 import type { SellerPermission } from '~/data/seller-permissions'
 import { sellerPermissionCatalog } from '~/data/seller-permissions'
 
+const pageSize = 10
+
 const { t } = useI18n()
 const toast = useAppToast()
+const route = useRoute()
 const { can, canAny } = useSellerPermissions()
-const { discounts, ensureLoaded, deleteDiscount, setStatus } = useSellerDiscounts()
-const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const {
+  discounts,
+  listMeta,
+  pending,
+  fetchList,
+  deleteDiscount,
+  setStatus,
+  bulkSetStatus,
+  bulkDelete,
+} = useSellerDiscounts()
+const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
-ensureLoaded()
+const loading = ref(true)
+const deleteOpen = ref(false)
+const pendingDelete = ref<SellerDiscount | null>(null)
+const deleting = ref(false)
+const selectedIds = ref<string[]>([])
+const bulkAction = ref('')
+const bulkRunning = ref(false)
+
+const typeFilter = computed(() => String(route.query.type ?? 'all'))
 
 function canPerm(key: string) {
   const known = sellerPermissionCatalog.some(p => p.key === key)
@@ -337,13 +370,14 @@ function canPerm(key: string) {
   return can(key as SellerPermission)
 }
 
-const pageSize = 10
-const typeFilter = ref<'all' | 'percent' | 'fixed'>('all')
-const deleteOpen = ref(false)
-const pendingDelete = ref<SellerDiscount | null>(null)
-const selectedIds = ref<string[]>([])
-const bulkAction = ref('')
-const bulkRunning = ref(false)
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
 
 const canBulk = computed(() => {
   if (!sellerPermissionCatalog.some(p => p.key === 'discounts.update' || p.key === 'discounts.delete')) {
@@ -372,11 +406,18 @@ const bulkActionItems = computed(() => {
   return items
 })
 
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه'), count: discounts.value.length },
-  { id: 'active', label: t('فعال'), count: discounts.value.filter(d => d.status === 'active').length },
-  { id: 'inactive', label: t('غیرفعال'), count: discounts.value.filter(d => d.status === 'inactive').length },
-])
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'active', label: t('فعال'), count: Number(c.active) || 0 },
+    { id: 'inactive', label: t('غیرفعال'), count: Number(c.inactive) || 0 },
+  ]
+})
+
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
 
 function scheduleMeta(discount: SellerDiscount) {
   const key = deriveScheduleStatus({
@@ -387,38 +428,44 @@ function scheduleMeta(discount: SellerDiscount) {
   return sellerScheduleStatusMeta[key]
 }
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return discounts.value.filter((discount) => {
-    if (status.value !== 'all' && discount.status !== status.value) return false
-    if (typeFilter.value !== 'all' && discount.type !== typeFilter.value) return false
-    if (!q) return true
-    return (
-      discount.name.toLowerCase().includes(q)
-      || discount.id.toLowerCase().includes(q)
-      || discount.description.includes(search.value.trim())
-    )
-  })
-})
-
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
-
 const allPageSelected = computed(() =>
-  paged.value.length > 0 && paged.value.every(d => selectedIds.value.includes(d.id)),
+  discounts.value.length > 0 && discounts.value.every(d => selectedIds.value.includes(d.id)),
 )
 
 const somePageSelected = computed(() =>
-  paged.value.some(d => selectedIds.value.includes(d.id)),
+  discounts.value.some(d => selectedIds.value.includes(d.id)),
 )
 
-function clearAllFilters() {
-  typeFilter.value = 'all'
-  void clearFilters()
+async function setType(value: string) {
+  await patchQuery({
+    type: value && value !== 'all' ? value : undefined,
+    page: undefined,
+  })
+}
+
+async function clearAllFilters() {
+  selectedIds.value = []
+  await clearFilters()
+  await patchQuery({ type: undefined })
+}
+
+async function loadDiscounts() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      type: typeFilter.value !== 'all' ? typeFilter.value : undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری تخفیف‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
 }
 
 function toggleSelect(id: string, on: boolean) {
@@ -431,19 +478,20 @@ function toggleSelect(id: string, on: boolean) {
 }
 
 function toggleSelectPage(on: boolean) {
-  const ids = paged.value.map(d => d.id)
+  const ids = discounts.value.map(d => d.id)
   if (on) selectedIds.value = [...new Set([...selectedIds.value, ...ids])]
   else selectedIds.value = selectedIds.value.filter(id => !ids.includes(id))
 }
 
-function toggleStatus(discount: SellerDiscount) {
+async function toggleStatus(discount: SellerDiscount) {
   const next = discount.status === 'active' ? 'inactive' : 'active'
-  const result = setStatus(discount.id, next)
+  const result = await setStatus(discount.id, next)
   if (!result.ok) {
     toast.error(t(result.error))
     return
   }
   toast.success(next === 'active' ? t('تخفیف فعال شد') : t('تخفیف غیرفعال شد'))
+  await loadDiscounts()
 }
 
 async function runBulk() {
@@ -451,20 +499,25 @@ async function runBulk() {
   bulkRunning.value = true
   try {
     if (bulkAction.value === 'delete') {
-      for (const id of selectedIds.value) {
-        deleteDiscount(id)
+      const result = await bulkDelete(selectedIds.value)
+      if (!result.ok) {
+        toast.error(t(result.error))
+        return
       }
       toast.success(t('تخفیف‌ها حذف شدند'))
     }
     else {
       const target = bulkAction.value === 'activate' ? 'active' : 'inactive'
-      for (const id of selectedIds.value) {
-        setStatus(id, target)
+      const result = await bulkSetStatus(selectedIds.value, target)
+      if (!result.ok) {
+        toast.error(t(result.error))
+        return
       }
       toast.success(t('تخفیف‌ها به‌روزرسانی شدند'))
     }
     selectedIds.value = []
     bulkAction.value = ''
+    await loadDiscounts()
   }
   finally {
     bulkRunning.value = false
@@ -476,15 +529,34 @@ function openDelete(discount: SellerDiscount) {
   deleteOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDelete.value) return
-  const result = deleteDiscount(pendingDelete.value.id)
-  deleteOpen.value = false
-  pendingDelete.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  deleting.value = true
+  try {
+    const result = await deleteDiscount(pendingDelete.value.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('تخفیف حذف شد'))
+    await loadDiscounts()
   }
-  toast.success(t('تخفیف حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadDiscounts()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadDiscounts()
+})
 </script>

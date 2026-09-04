@@ -4,7 +4,7 @@
       <TheSellerPageHeader
         :title="$t('نظرات مشتریان')"
         :description="$t('مدیریت و پاسخ به نظرات محصولات')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('نظر')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('نظر')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -14,12 +14,28 @@
             size="sm"
             icon="i-tabler-download"
             class="cursor-pointer"
+            :loading="exporting"
             @click="exportCsv"
           >
             {{ $t('خروجی') }}
           </UButton>
         </template>
       </TheSellerPageHeader>
+    </div>
+
+    <div class="lg:hidden mb-4">
+      <UButton
+        type="button"
+        color="neutral"
+        variant="soft"
+        block
+        icon="i-tabler-download"
+        class="cursor-pointer"
+        :loading="exporting"
+        @click="exportCsv"
+      >
+        {{ $t('خروجی CSV') }}
+      </UButton>
     </div>
 
     <TheSellerListToolbar
@@ -34,10 +50,11 @@
     >
       <template #extra>
         <USelect
-          v-model="ratingFilter"
+          :model-value="ratingFilter"
           :items="ratingItems"
           value-key="value"
           class="w-36"
+          @update:model-value="setRating(String($event ?? 'all'))"
         />
       </template>
     </TheSellerListToolbar>
@@ -53,6 +70,7 @@
         variant="soft"
         size="xs"
         class="cursor-pointer"
+        :loading="bulkSaving"
         @click="bulkModerate('approved')"
       >
         {{ $t('تأیید') }}
@@ -63,6 +81,7 @@
         variant="soft"
         size="xs"
         class="cursor-pointer"
+        :loading="bulkSaving"
         @click="bulkModerate('rejected')"
       >
         {{ $t('رد') }}
@@ -79,10 +98,22 @@
       </UButton>
     </div>
 
+    <div
+      v-if="(loading || pending) && !reviews.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="filtered.length === 0"
+      v-else-if="!reviews.length"
       icon="i-tabler-message-2"
-      :message="$t('نظری برای نمایش نیست')"
+      :message="hasActiveFilters || ratingFilter !== 'all'
+        ? $t('نظری با این فیلتر پیدا نشد')
+        : $t('نظری برای نمایش نیست')"
     />
 
     <div
@@ -90,7 +121,7 @@
       class="space-y-3"
     >
       <div
-        v-for="review in paged"
+        v-for="review in reviews"
         :key="review.id"
         class="relative"
       >
@@ -106,38 +137,21 @@
         <div :class="can('reviews.moderate') ? 'ps-8' : ''">
           <TheSellerReviewCard
             :review="review"
-            :moderation="getModeration(review.id)"
+            :moderation="review.moderation || 'approved'"
             @moderate="onModerate"
+            @replied="loadReviews"
           />
         </div>
       </div>
 
       <div
-        v-if="totalPages > 1"
-        class="flex items-center justify-center gap-2 pt-2"
+        v-if="pageCount > 1"
+        class="mt-5 flex justify-center"
       >
-        <UButton
-          type="button"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          icon="i-tabler-chevron-right"
-          class="cursor-pointer"
-          :disabled="page <= 1"
-          @click="page = page - 1"
-        />
-        <span class="text-xs text-muted num">
-          {{ page.toLocaleString('fa-IR') }} / {{ totalPages.toLocaleString('fa-IR') }}
-        </span>
-        <UButton
-          type="button"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          icon="i-tabler-chevron-left"
-          class="cursor-pointer"
-          :disabled="page >= totalPages"
-          @click="page = page + 1"
+        <UPagination
+          v-model:page="page"
+          :total="listMeta.total"
+          :items-per-page="listMeta.pageSize || pageSize"
         />
       </div>
     </div>
@@ -146,105 +160,185 @@
 
 <script setup lang="ts">
 import { downloadSellerCsv } from '~/data/seller-export'
+import type { SellerReview, SellerReviewModeration } from '~/data/seller'
 
-type ReviewModeration = 'pending' | 'approved' | 'rejected' | 'hidden'
-
-const PAGE_SIZE = 10
+const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { reviews, unansweredReviews, resolveProduct } = useSeller()
+const route = useRoute()
 const { can } = useSellerPermissions()
-const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { fetchProduct, getCachedProduct } = useProducts()
+const {
+  reviews,
+  listMeta,
+  pending,
+  fetchList,
+  setModeration,
+  bulkSetModeration,
+} = useSellerReviews()
+const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
-const ratingFilter = ref('all')
+const loading = ref(true)
+const exporting = ref(false)
+const bulkSaving = ref(false)
 const selectedIds = ref<string[]>([])
-const moderationMap = useState<Record<string, ReviewModeration>>('seller-review-moderation', () => ({}))
 
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه') },
-  { id: 'unanswered', label: t('بدون پاسخ'), count: unansweredReviews.value },
-  { id: 'answered', label: t('پاسخ‌داده‌شده') },
-  { id: 'pending', label: t('در انتظار تأیید') },
-  { id: 'approved', label: t('تأییدشده') },
-  { id: 'rejected', label: t('ردشده') },
-])
+const ratingFilter = computed(() => String(route.query.rating ?? 'all'))
+
+async function hydrateReviewProducts(ids: string[]) {
+  const unique = [...new Set(ids.filter(Boolean))]
+  await Promise.all(
+    unique
+      .filter(id => !getCachedProduct(id))
+      .map(id => fetchProduct(id)),
+  )
+}
+
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'unanswered', label: t('بدون پاسخ'), count: Number(c.unanswered) || 0 },
+    { id: 'answered', label: t('پاسخ‌داده‌شده'), count: Number(c.answered) || 0 },
+    { id: 'pending', label: t('در انتظار تأیید'), count: Number(c.pending) || 0 },
+    { id: 'approved', label: t('تأییدشده'), count: Number(c.approved) || 0 },
+    { id: 'rejected', label: t('ردشده'), count: Number(c.rejected) || 0 },
+  ]
+})
 
 const ratingItems = computed(() => [
   { value: 'all', label: t('همه امتیازها') },
   ...[5, 4, 3, 2, 1].map(n => ({ value: String(n), label: `${n.toLocaleString('fa-IR')} ★` })),
 ])
 
-function getModeration(id: string): ReviewModeration {
-  return moderationMap.value[id] ?? 'approved'
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
 }
-
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return reviews.value.filter((review) => {
-    const mod = getModeration(review.id)
-    if (status.value === 'unanswered' && review.reply) return false
-    if (status.value === 'answered' && !review.reply) return false
-    if (status.value === 'pending' && mod !== 'pending') return false
-    if (status.value === 'approved' && mod !== 'approved') return false
-    if (status.value === 'rejected' && mod !== 'rejected') return false
-    if (ratingFilter.value !== 'all' && review.rating !== Number(ratingFilter.value)) return false
-    if (!q) return true
-    const product = resolveProduct(review.productId)
-    return review.name.toLowerCase().includes(q)
-      || review.text.toLowerCase().includes(q)
-      || product.title.toLowerCase().includes(q)
-      || review.productId.toLowerCase().includes(q)
-  })
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / PAGE_SIZE)))
-const paged = computed(() => {
-  const start = (page.value - 1) * PAGE_SIZE
-  return filtered.value.slice(start, start + PAGE_SIZE)
-})
 
 function toggle(id: string, on: boolean) {
   if (on) selectedIds.value = [...new Set([...selectedIds.value, id])]
   else selectedIds.value = selectedIds.value.filter(x => x !== id)
 }
 
-function onModerate(payload: { id: string, status: ReviewModeration }) {
-  moderationMap.value = { ...moderationMap.value, [payload.id]: payload.status }
-  toast.success(t('وضعیت نظر به‌روز شد'))
-}
-
-function bulkModerate(statusValue: ReviewModeration) {
-  const next = { ...moderationMap.value }
-  for (const id of selectedIds.value) next[id] = statusValue
-  moderationMap.value = next
-  selectedIds.value = []
-  toast.success(t('اقدام گروهی انجام شد'))
+async function setRating(value: string) {
+  await patchQuery({
+    rating: value && value !== 'all' ? value : undefined,
+    page: undefined,
+  })
 }
 
 async function clearAll() {
-  ratingFilter.value = 'all'
   selectedIds.value = []
   await clearFilters()
+  await patchQuery({ rating: undefined })
 }
 
-function exportCsv() {
-  downloadSellerCsv(
-    `reviews-${Date.now()}`,
-    ['id', 'productId', 'name', 'rating', 'text', 'date', 'hasReply', 'moderation'],
-    filtered.value.map(r => [
-      r.id,
-      r.productId,
-      r.name,
-      r.rating,
-      r.text,
-      r.date,
-      Boolean(r.reply),
-      getModeration(r.id),
-    ]),
-  )
-  toast.success(t('فایل خروجی آماده شد'))
+async function loadReviews() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      rating: ratingFilter.value !== 'all' ? ratingFilter.value : undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری نظرات ناموفق بود')))
+      return
+    }
+    await hydrateReviewProducts(reviews.value.map(r => r.productId))
+  }
+  finally {
+    loading.value = false
+  }
 }
+
+async function onModerate(payload: { id: string, status: SellerReviewModeration }) {
+  const result = await setModeration(payload.id, payload.status)
+  if (!result.ok) {
+    toast.error(t(result.error))
+    return
+  }
+  toast.success(t('وضعیت نظر به‌روز شد'))
+  await loadReviews()
+}
+
+async function bulkModerate(statusValue: SellerReviewModeration) {
+  if (!selectedIds.value.length) return
+  bulkSaving.value = true
+  try {
+    const result = await bulkSetModeration(selectedIds.value, statusValue)
+    selectedIds.value = []
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('اقدام گروهی انجام شد'))
+    await loadReviews()
+  }
+  finally {
+    bulkSaving.value = false
+  }
+}
+
+async function exportCsv() {
+  exporting.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      rating: ratingFilter.value !== 'all' ? ratingFilter.value : undefined,
+      all: true,
+      pageSize: 200,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('خروجی نظرات ناموفق بود')))
+      return
+    }
+    downloadSellerCsv(
+      `reviews-${Date.now()}`,
+      ['id', 'productId', 'name', 'rating', 'text', 'date', 'hasReply', 'moderation'],
+      reviews.value.map((r: SellerReview) => [
+        r.id,
+        r.productId,
+        r.name,
+        r.rating,
+        r.text,
+        r.date,
+        Boolean(r.reply),
+        r.moderation || 'approved',
+      ]),
+    )
+    toast.success(t('فایل خروجی آماده شد'))
+    await loadReviews()
+  }
+  finally {
+    exporting.value = false
+  }
+}
+
+watch(
+  () => route.query,
+  () => {
+    void loadReviews()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadReviews()
+})
 </script>

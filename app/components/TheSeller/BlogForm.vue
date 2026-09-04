@@ -211,13 +211,11 @@
           :label="$t('متن مطلب')"
           required
           :error="errors.contentText"
-          :help="$t('هر پاراگراف را با یک خط خالی از هم جدا کنید')"
+          :help="$t('از تیترهای H2/H3، فهرست و لینک برای سئوی بهتر استفاده کنید')"
         >
-          <UTextarea
+          <TheSellerRichTextEditor
             v-model="form.contentText"
-            :rows="12"
-            :placeholder="$t('متن کامل مطلب...')"
-            class="w-full"
+            :placeholder="$t('متن کامل مطلب…')"
           />
         </UFormField>
 
@@ -364,6 +362,7 @@ import {
   blogCategoryChips,
   blogPostIdPattern,
   emptyBlogForm,
+  isEmptyHtml,
   sellerBlogStatusMeta,
   toBlogForm,
   type SellerBlogFormValues,
@@ -379,7 +378,7 @@ const { t } = useI18n()
 const toast = useAppToast()
 const router = useRouter()
 const { can } = useSellerPermissions()
-const { createPost, updatePost, ensureSeeded, posts } = useBlog()
+const { createPost, updatePost, ensureLoaded, posts } = useSellerBlog()
 const { categories, fetchCategories } = useCategories()
 const blogCategories = useSellerBlogCategories()
 const blogTags = useSellerBlogTags()
@@ -478,7 +477,7 @@ onBeforeRouteLeave(() => {
   return window.confirm(t('تغییرات ذخیره نشده دارید. خارج می‌شوید؟'))
 })
 
-ensureSeeded()
+ensureLoaded()
 blogCategories.ensureLoaded()
 blogTags.ensureLoaded()
 await fetchCategories({ withCounts: false })
@@ -533,7 +532,7 @@ function validate() {
   if (!form.value.author.trim()) next.author = t('نویسنده الزامی است')
   if (!form.value.date.trim()) next.date = t('تاریخ الزامی است')
   if (!form.value.readTime.trim()) next.readTime = t('زمان مطالعه الزامی است')
-  if (!form.value.contentText.trim()) next.contentText = t('متن مطلب الزامی است')
+  if (isEmptyHtml(form.value.contentText)) next.contentText = t('متن مطلب الزامی است')
   if (form.value.status === 'scheduled' && !form.value.scheduledAt.trim()) {
     next.scheduledAt = t('زمان‌بندی الزامی است')
   }
@@ -559,13 +558,13 @@ async function onSave() {
   saving.value = true
   try {
     const result = isEdit.value
-      ? updatePost(props.initial!.id, form.value)
-      : createPost(form.value)
+      ? await updatePost(props.initial!.id, form.value)
+      : await createPost(form.value)
 
     if (!result.ok) {
-      toast.error(t(result.error))
-      if (result.error.includes('تکراری')) {
-        errors.value = { ...errors.value, id: t(result.error) }
+      toast.error(t(result.error || 'ذخیره ناموفق بود'))
+      if (String(result.error || '').includes('تکراری')) {
+        errors.value = { ...errors.value, id: t(String(result.error)) }
       }
       return
     }

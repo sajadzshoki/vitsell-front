@@ -27,19 +27,19 @@ export function useSellerDashboard() {
   const { banners, ensureLoaded: ensureBanners } = useSellerBanners()
   const { deals, ensureLoaded: ensureDeals } = useSellerDeals()
   const { codes, ensureLoaded: ensurePromos } = useSellerPromotions()
-  const { recent: recentAudit } = useSellerAudit()
+  const { recent: recentAudit, ensureLoaded: ensureAudit } = useSellerAudit()
   const { can } = useSellerPermissions()
 
   const range = useState<SellerDashboardRangeId>('seller-dashboard-range', () => 'last_7')
 
   function hydrateSideData() {
     void ensureQuestions()
-    ensureReturns()
-    ensureRefunds()
+    void ensureReturns()
+    void ensureRefunds()
     ensureBanners()
     void ensureDeals()
     void ensurePromos()
-    recentAudit(1)
+    void ensureAudit()
   }
 
   const orderStatusCounts = computed(() => {

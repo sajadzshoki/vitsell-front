@@ -6,12 +6,109 @@ import {
   type SellerCategoryFormValues,
 } from '~/data/seller-categories'
 
+export type SellerCategoriesQuery = {
+  q?: string
+  status?: string
+  parentId?: string
+}
+
+export type SellerCategoriesPage = {
+  items: SellerCategory[]
+  total: number
+  statusCounts: {
+    all: number
+    active: number
+    inactive: number
+  }
+  parentOptions: Array<{ id: string, name: string }>
+}
+
+type CategoryApiItem = Partial<SellerCategory> & {
+  id: string
+  name: string
+  productCount?: number
+  childCount?: number
+  parentName?: string | null
+}
+
+function emptyMeta(): Omit<SellerCategoriesPage, 'items'> {
+  return {
+    total: 0,
+    statusCounts: { all: 0, active: 0, inactive: 0 },
+    parentOptions: [],
+  }
+}
+
+function normalizePage(result: unknown): SellerCategoriesPage {
+  if (Array.isArray(result)) {
+    const items = result.map(c => toSellerCategory(c as CategoryApiItem))
+    return {
+      items,
+      total: items.length,
+      statusCounts: {
+        all: items.length,
+        active: items.filter(c => c.status === 'active').length,
+        inactive: items.filter(c => c.status === 'inactive').length,
+      },
+      parentOptions: items.map(c => ({ id: c.id, name: c.name })),
+    }
+  }
+
+  const page = (result || {}) as Partial<SellerCategoriesPage> & { items?: CategoryApiItem[] }
+  const rawItems = Array.isArray(page.items) ? page.items : []
+  const items = rawItems.map((raw) => {
+    const cat = toSellerCategory(raw)
+    return {
+      ...cat,
+      productCount: Number(raw.productCount) || 0,
+      childCount: Number(raw.childCount) || 0,
+      parentName: raw.parentName ?? null,
+    } as SellerCategory & {
+      productCount?: number
+      childCount?: number
+      parentName?: string | null
+    }
+  })
+
+  return {
+    items,
+    total: Number(page.total) || items.length,
+    statusCounts: {
+      all: Number(page.statusCounts?.all) || items.length,
+      active: Number(page.statusCounts?.active) || 0,
+      inactive: Number(page.statusCounts?.inactive) || 0,
+    },
+    parentOptions: Array.isArray(page.parentOptions)
+      ? page.parentOptions.map(p => ({ id: p.id, name: p.name }))
+      : items.map(c => ({ id: c.id, name: c.name })),
+  }
+}
+
+function buildQuery(input?: SellerCategoriesQuery) {
+  const params: Record<string, string> = {}
+  if (!input) return params
+  if (input.q?.trim()) params.q = input.q.trim()
+  if (input.status && input.status !== 'all') params.status = input.status
+  if (input.parentId && input.parentId !== 'all') params.parentId = input.parentId
+  return params
+}
+
 export function useSellerCategories() {
   const { list: storefrontList, fetchCategories, pending: fetchPending } = useCategories()
 
   const items = useState<SellerCategory[]>('seller-categories-items', () => [])
+  const listItems = useState<Array<SellerCategory & {
+    productCount?: number
+    childCount?: number
+    parentName?: string | null
+  }>>('seller-categories-list-items', () => [])
+  const listMeta = useState<Omit<SellerCategoriesPage, 'items'>>(
+    'seller-categories-list-meta',
+    () => emptyMeta(),
+  )
   const seeded = useState('seller-categories-seeded', () => false)
   const pending = useState('seller-categories-pending', () => false)
+  const listPending = useState('seller-categories-list-pending', () => false)
 
   const categories = computed(() => items.value)
 
@@ -32,6 +129,12 @@ export function useSellerCategories() {
     syncStorefront()
   }
 
+  function applyFullList(page: SellerCategoriesPage) {
+    items.value = page.items.map(c => toSellerCategory(c))
+    seeded.value = true
+    syncStorefront()
+  }
+
   async function ensureLoaded(options?: { force?: boolean }) {
     if (seeded.value && items.value.length && !options?.force) {
       return items.value
@@ -39,11 +142,11 @@ export function useSellerCategories() {
 
     pending.value = true
     try {
-      const { result, error } = await useGet<SellerCategory[]>('/seller/categories', {
-        headers: { 'no-error': true },
-      })
-      if (error || !Array.isArray(result)) {
-        // Fallback to public list (no pageMeta) if admin endpoint unavailable
+      const { result, error } = await useGet<SellerCategoriesPage | SellerCategory[]>(
+        '/seller/categories',
+        { headers: { 'no-error': true } },
+      )
+      if (error || result == null) {
         const { categories: fetched } = await fetchCategories({
           withCounts: false,
           force: true,
@@ -51,7 +154,7 @@ export function useSellerCategories() {
         items.value = fetched.map(c => toSellerCategory(c))
       }
       else {
-        items.value = result.map(c => toSellerCategory(c))
+        applyFullList(normalizePage(result))
       }
       seeded.value = true
       syncStorefront()
@@ -59,6 +162,58 @@ export function useSellerCategories() {
     }
     finally {
       pending.value = false
+    }
+  }
+
+  /** Filtered admin list for /seller/categories */
+  async function fetchList(options?: {
+    force?: boolean
+    query?: SellerCategoriesQuery
+  }) {
+    listPending.value = true
+    try {
+      const params = buildQuery(options?.query)
+      const { result, error } = await useGet<SellerCategoriesPage | SellerCategory[]>(
+        '/seller/categories',
+        {
+          query: params,
+          headers: { 'no-error': true },
+        },
+      )
+      if (error || result == null) {
+        return {
+          ok: false as const,
+          error: error ?? { message: 'categories-fetch-failed' },
+          page: {
+            items: listItems.value,
+            ...listMeta.value,
+          } as SellerCategoriesPage,
+        }
+      }
+
+      const page = normalizePage(result)
+      listItems.value = page.items
+      listMeta.value = {
+        total: page.total,
+        statusCounts: page.statusCounts,
+        parentOptions: page.parentOptions,
+      }
+
+      // Keep form cache fresh when unfiltered
+      const unfiltered = !params.q && !params.status && !params.parentId
+      if (unfiltered || !seeded.value) {
+        if (unfiltered) {
+          applyFullList(page)
+        }
+        else if (!seeded.value) {
+          await ensureLoaded({ force: true })
+        }
+      }
+
+      return { ok: true as const, error: null as null, page }
+    }
+    finally {
+      listPending.value = false
     }
   }
 
@@ -81,6 +236,8 @@ export function useSellerCategories() {
 
   function getById(id: string) {
     return items.value.find(c => c.id === id)
+      ?? listItems.value.find(c => c.id === id)
+      ?? null
   }
 
   async function createCategory(form: SellerCategoryFormValues) {
@@ -96,6 +253,7 @@ export function useSellerCategories() {
       return { ok: false as const, error: message }
     }
     const category = toSellerCategory({
+      ...payload,
       ...result,
       parentId: result.parentId ?? payload.parentId ?? null,
       status: result.status ?? payload.status ?? 'active',
@@ -124,7 +282,9 @@ export function useSellerCategories() {
       return { ok: false as const, error: message }
     }
     const category = toSellerCategory({
+      ...payload,
       ...result,
+      id,
       parentId: result.parentId ?? payload.parentId ?? null,
       status: result.status ?? payload.status ?? 'active',
       sortOrder: result.sortOrder ?? payload.sortOrder ?? 0,
@@ -147,6 +307,7 @@ export function useSellerCategories() {
       return { ok: false as const, error: message }
     }
     items.value = items.value.filter(c => c.id !== id)
+    listItems.value = listItems.value.filter(c => c.id !== id)
     syncStorefront()
     await fetchCategories({ force: true })
     return { ok: true as const }
@@ -155,9 +316,13 @@ export function useSellerCategories() {
   return {
     categories,
     items,
-    pending: computed(() => pending.value || fetchPending.value),
+    listItems,
+    listMeta,
+    pending: computed(() => pending.value || fetchPending.value || listPending.value),
+    listPending: computed(() => listPending.value),
     seeded,
     ensureLoaded,
+    fetchList,
     fetchCategory,
     getById,
     createCategory,

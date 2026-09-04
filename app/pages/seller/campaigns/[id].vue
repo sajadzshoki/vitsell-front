@@ -1,7 +1,16 @@
 <template>
   <div>
     <div
-      v-if="!campaign"
+      v-if="loading"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+    <div
+      v-else-if="!campaign"
       class="bg-default border border-muted rounded-2xl p-8 text-center"
     >
       <UIcon
@@ -28,19 +37,39 @@
 </template>
 
 <script setup lang="ts">
+import type { SellerCampaign } from '~/data/seller-campaigns'
+
 const { t } = useI18n()
 const route = useRoute()
-const { ensureLoaded, getById } = useSellerCampaigns()
+const { fetchCampaign } = useSellerCampaigns()
 
 definePageMeta({
   layout: 'seller',
   middleware: ['auth', 'admin'],
 })
 
-ensureLoaded()
-
+const loading = ref(true)
+const campaign = ref<SellerCampaign | null>(null)
 const campaignId = computed(() => String(route.params.id ?? ''))
-const campaign = computed(() => getById(campaignId.value) ?? null)
+
+async function load() {
+  loading.value = true
+  try {
+    if (!campaignId.value) {
+      campaign.value = null
+      return
+    }
+    const result = await fetchCampaign(campaignId.value, { force: true })
+    campaign.value = result.ok ? result.campaign : null
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+watch(campaignId, () => {
+  void load()
+}, { immediate: true })
 
 useSeoMeta({
   title: () => campaign.value

@@ -4,7 +4,7 @@
       <TheSellerPageHeader
         :title="$t('کتابخانه رسانه')"
         :description="$t('مدیریت تصاویر، ویدیوها و فایل‌های آپلودشده — جستجو، ویرایش متادیتا و حذف')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('فایل')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('فایل')}` : undefined"
       >
         <template
           v-if="canUpload"
@@ -86,7 +86,7 @@
     </TheSellerListToolbar>
 
     <div
-      v-if="canDelete && filtered.length"
+      v-if="canDelete && media.length"
       class="mb-4 flex items-center gap-2 flex-wrap"
     >
       <UCheckbox
@@ -129,7 +129,13 @@
     </div>
 
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-if="loading"
+      icon="i-tabler-loader-2"
+      :message="$t('در حال بارگذاری...')"
+    />
+
+    <TheSellerEmptyState
+      v-else-if="!media.length"
       icon="i-tabler-photo-cog"
       :message="hasActiveFilters ? $t('فایلی با این فیلتر پیدا نشد') : $t('هنوز فایلی در کتابخانه نیست')"
     >
@@ -156,7 +162,7 @@
       class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3"
     >
       <article
-        v-for="item in paged"
+        v-for="item in media"
         :key="item.id"
         class="group relative rounded-2xl border border-muted bg-muted overflow-hidden cursor-pointer transition hover:(border-primary/40 ring-1 ring-primary/20)"
         @click="openDetail(item)"
@@ -208,7 +214,7 @@
       class="space-y-2"
     >
       <article
-        v-for="item in paged"
+        v-for="item in media"
         :key="item.id"
         class="flex items-center gap-3 rounded-2xl border border-muted bg-muted p-3 cursor-pointer transition hover:(border-primary/40 bg-primary/5)"
         @click="openDetail(item)"
@@ -268,8 +274,8 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
+        :total="listMeta.total"
+        :items-per-page="listMeta.pageSize || pageSize"
       />
     </div>
 
@@ -441,7 +447,7 @@
     <UModal
       v-model:open="bulkDeleteOpen"
       :title="$t('حذف گروهی')"
-      :description="$t('فایل‌های انتخاب‌شده از کتابخانه حذف می‌شوند. این عمل در نشست فعلی فرانت اعمال می‌شود.')"
+      :description="$t('فایل‌های انتخاب‌شده از کتابخانه حذف می‌شوند.')"
     >
       <template #body>
         <p class="text-sm text-muted">
@@ -516,16 +522,21 @@ import {
 const { t } = useI18n()
 const toast = useAppToast()
 const { canAny } = useSellerPermissions()
-const { media, ensureLoaded, uploadFiles, updateMedia, deleteMedia } = useSellerMedia()
+const {
+  media,
+  listMeta,
+  fetchList,
+  uploadFiles,
+  updateMedia,
+  deleteMedia,
+} = useSellerMedia()
 const { search, status: kindFilter, page, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
   statusKey: 'kind',
 })
 
-onMounted(() => ensureLoaded())
-ensureLoaded()
-
 const pageSize = 24
+const loading = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
@@ -537,46 +548,27 @@ const saving = ref(false)
 const bulkDeleteOpen = ref(false)
 const singleDeleteOpen = ref(false)
 const pendingDelete = ref<SellerMediaItem | null>(null)
+const deleting = ref(false)
 
 const canUpload = computed(() => canAny('media.upload', 'media.manage'))
 const canUpdate = computed(() => canAny('media.update', 'media.manage'))
 const canDelete = computed(() => canAny('media.delete', 'media.manage'))
 
 const kindTabs = computed(() => {
-  const all = media.value.length
-  const image = media.value.filter(m => m.kind === 'image').length
-  const video = media.value.filter(m => m.kind === 'video').length
-  const document = media.value.filter(m => m.kind === 'document').length
+  const c = listMeta.value.statusCounts
   return [
-    { id: 'all', label: t('همه'), count: all },
-    { id: 'image', label: t('تصویر'), count: image },
-    { id: 'video', label: t('ویدیو'), count: video },
-    { id: 'document', label: t('سند'), count: document },
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'image', label: t('تصویر'), count: Number(c.image) || 0 },
+    { id: 'video', label: t('ویدیو'), count: Number(c.video) || 0 },
+    { id: 'document', label: t('سند'), count: Number(c.document) || 0 },
   ]
 })
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return media.value.filter((item) => {
-    if (kindFilter.value !== 'all' && item.kind !== kindFilter.value) return false
-    if (!q) return true
-    return (
-      item.filename.toLowerCase().includes(q)
-      || item.title.toLowerCase().includes(q)
-      || item.alt.toLowerCase().includes(q)
-      || item.url.toLowerCase().includes(q)
-    )
-  })
-})
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
-
-const pageIds = computed(() => paged.value.map(m => m.id))
+const pageIds = computed(() => media.value.map(m => m.id))
 
 const allPageSelected = computed(() =>
   pageIds.value.length > 0 && pageIds.value.every(id => selectedIds.value.includes(id)),
@@ -585,6 +577,33 @@ const allPageSelected = computed(() =>
 const somePageSelected = computed(() =>
   pageIds.value.some(id => selectedIds.value.includes(id)),
 )
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
+async function loadList() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      kind: kindFilter.value,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(t(apiErrorMessage(error, 'بارگذاری رسانه ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 function kindIcon(kind: SellerMediaKind) {
   if (kind === 'video') return 'i-tabler-video'
@@ -619,6 +638,11 @@ async function onFilesSelected(event: Event) {
     const result = await uploadFiles(files)
     if (result.ok) {
       toast.success(`${result.items.length.toLocaleString('fa-IR')} ${t('فایل آپلود شد')}`)
+      if (result.error) toast.error(t(result.error))
+      await loadList()
+    }
+    else {
+      toast.error(t(result.error || 'آپلود ناموفق بود'))
     }
   }
   catch {
@@ -657,21 +681,25 @@ function openDetail(item: SellerMediaItem) {
   detailOpen.value = true
 }
 
-function saveDetail() {
+async function saveDetail() {
   if (!activeItem.value) return
   saving.value = true
-  const result = updateMedia(activeItem.value.id, {
-    title: editForm.title.trim(),
-    alt: editForm.alt.trim(),
-    description: editForm.description.trim(),
-  })
-  saving.value = false
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  try {
+    const result = await updateMedia(activeItem.value.id, {
+      title: editForm.title.trim(),
+      alt: editForm.alt.trim(),
+      description: editForm.description.trim(),
+    })
+    if (!result.ok || !result.item) {
+      toast.error(t(result.error || 'به‌روزرسانی رسانه ناموفق بود'))
+      return
+    }
+    activeItem.value = result.item
+    toast.success(t('رسانه به‌روزرسانی شد'))
   }
-  activeItem.value = result.item
-  toast.success(t('رسانه به‌روزرسانی شد'))
+  finally {
+    saving.value = false
+  }
 }
 
 function openSingleDelete(item: SellerMediaItem) {
@@ -679,28 +707,61 @@ function openSingleDelete(item: SellerMediaItem) {
   singleDeleteOpen.value = true
 }
 
-function confirmSingleDelete() {
+async function confirmSingleDelete() {
   if (!pendingDelete.value) return
-  deleteMedia([pendingDelete.value.id])
-  selectedIds.value = selectedIds.value.filter(id => id !== pendingDelete.value!.id)
-  if (activeItem.value?.id === pendingDelete.value.id) {
-    detailOpen.value = false
-    activeItem.value = null
+  deleting.value = true
+  try {
+    const result = await deleteMedia([pendingDelete.value.id])
+    if (!result.ok) {
+      toast.error(t(result.error || 'حذف ناموفق بود'))
+      return
+    }
+    selectedIds.value = selectedIds.value.filter(id => id !== pendingDelete.value!.id)
+    if (activeItem.value?.id === pendingDelete.value.id) {
+      detailOpen.value = false
+      activeItem.value = null
+    }
+    singleDeleteOpen.value = false
+    pendingDelete.value = null
+    toast.success(t('رسانه حذف شد'))
+    await loadList()
   }
-  singleDeleteOpen.value = false
-  pendingDelete.value = null
-  toast.success(t('رسانه حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
 
-function confirmBulkDelete() {
-  deleteMedia(selectedIds.value)
-  if (activeItem.value && selectedIds.value.includes(activeItem.value.id)) {
-    detailOpen.value = false
-    activeItem.value = null
+async function confirmBulkDelete() {
+  deleting.value = true
+  try {
+    const result = await deleteMedia(selectedIds.value)
+    if (!result.ok) {
+      toast.error(t(result.error || 'حذف گروهی ناموفق بود'))
+      return
+    }
+    if (activeItem.value && selectedIds.value.includes(activeItem.value.id)) {
+      detailOpen.value = false
+      activeItem.value = null
+    }
+    const count = selectedIds.value.length
+    selectedIds.value = []
+    bulkDeleteOpen.value = false
+    toast.success(`${count.toLocaleString('fa-IR')} ${t('فایل حذف شد')}`)
+    await loadList()
   }
-  const count = selectedIds.value.length
-  selectedIds.value = []
-  bulkDeleteOpen.value = false
-  toast.success(`${count.toLocaleString('fa-IR')} ${t('فایل حذف شد')}`)
+  finally {
+    deleting.value = false
+  }
 }
+
+watch(
+  [search, kindFilter, page],
+  () => {
+    void loadList()
+  },
+)
+
+onMounted(() => {
+  void loadList()
+})
 </script>

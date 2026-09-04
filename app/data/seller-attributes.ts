@@ -108,6 +108,69 @@ export function toAttributeForm(attr: SellerAttribute): SellerAttributeFormValue
   }
 }
 
+export function toSellerAttribute(
+  raw: Partial<SellerAttribute> & { id: string, name: string } & Record<string, unknown>,
+): SellerAttribute {
+  const type = (raw.type || 'select') as SellerAttributeType
+  return {
+    id: raw.id,
+    name: raw.name,
+    slug: String(raw.slug || raw.id),
+    type: type in sellerAttributeTypeMeta ? type : 'select',
+    values: Array.isArray(raw.values)
+      ? raw.values.map((v: any, i: number) => ({
+          id: String(v.id || `val-${i}`),
+          label: String(v.label || ''),
+          value: String(v.value || v.label || ''),
+          meta: v.meta ?? null,
+          sortOrder: Number(v.sortOrder) || i,
+          status: v.status === 'inactive' ? 'inactive' : 'active',
+          ...(v.slug ? { slug: String(v.slug) } : {}),
+        }))
+      : [],
+    status: raw.status === 'inactive' ? 'inactive' : 'active',
+    sortOrder: Number(raw.sortOrder ?? raw.sort_order) || 0,
+    filterable: raw.filterable !== false,
+    searchable: Boolean(raw.searchable),
+    variantDefining: raw.variantDefining !== false && (raw as any).variant_defining !== false,
+    categoryIds: Array.isArray(raw.categoryIds)
+      ? raw.categoryIds.map(String)
+      : Array.isArray(raw.category_ids)
+        ? (raw.category_ids as string[]).map(String)
+        : [],
+    createdAt: String(raw.createdAt ?? raw.created_at ?? new Date().toISOString()),
+    updatedAt: String(raw.updatedAt ?? raw.updated_at ?? new Date().toISOString()),
+  }
+}
+
+export type SellerAttributesQuery = {
+  q?: string
+  status?: string
+  type?: string
+  trait?: 'all' | 'filterable' | 'variant' | string
+  page?: number
+  pageSize?: number
+  all?: boolean
+}
+
+export type SellerAttributesPage = {
+  items: SellerAttribute[]
+  total: number
+  page: number
+  pageSize: number
+  statusCounts: {
+    all: number
+    active: number
+    inactive: number
+  }
+  traitCounts: {
+    all: number
+    filterable: number
+    variant: number
+  }
+}
+
+/** @deprecated Prefer API — kept for offline fallbacks */
 export function buildDefaultSellerAttributes(): SellerAttribute[] {
   const now = new Date().toISOString()
   const base = {

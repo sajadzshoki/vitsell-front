@@ -18,7 +18,9 @@ Frontend-first CMS and SEO completion for digishop seller + storefront.
 - Status: `draft | scheduled | published | archived` (storefront = published / due scheduled)
 - Tags + blog categories (separate from product categories)
 - SEO per post, preview `?preview=1`, bulk actions
-- Editor remains UTextarea → `content: string[]` (no TipTap)
+- Editor: `TheSellerRichTextEditor` (UEditor/TipTap HTML) → `content: string[]` (rich = single HTML blob); image via Media Library + required alt
+- Public SEO: auto canonical from path, OG fallback to cover, `noindex` for preview/draft, BlogPosting + BreadcrumbList JSON-LD, article Open Graph times
+- Sitemap includes `/blog/:id` for publicly visible posts (`lastmod` from updated/published)
 
 ## About
 

@@ -96,9 +96,14 @@
 
     <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 space-y-4">
       <div class="flex items-center justify-between gap-3 flex-wrap">
-        <h3 class="font-bold text-highlighted">
-          {{ $t('پاراگراف‌ها') }}
-        </h3>
+        <div>
+          <h3 class="font-bold text-highlighted">
+            {{ $t('متن صفحه') }}
+          </h3>
+          <p class="text-xs text-muted mt-1 leading-5">
+            {{ $t('از تیترهای H2/H3، فهرست و لینک برای محتوای بهتر استفاده کنید') }}
+          </p>
+        </div>
         <UButton
           type="button"
           color="primary"
@@ -129,11 +134,9 @@
             @click="form.paragraphSections.splice(index, 1)"
           />
         </div>
-        <UTextarea
+        <TheSellerRichTextEditor
           v-model="block.itemsText"
-          :rows="5"
-          class="w-full"
-          :placeholder="$t('هر پاراگراف را با خط خالی جدا کنید')"
+          :placeholder="$t('متن بلوک را بنویسید…')"
         />
       </div>
     </div>
@@ -246,9 +249,7 @@ const { t } = useI18n()
 const toast = useAppToast()
 const router = useRouter()
 const { can } = useSellerPermissions()
-const { createPage, updatePage, ensureLoaded } = useSellerPages()
-
-ensureLoaded()
+const { createPage, updatePage } = useSellerPages()
 
 const isEdit = computed(() => Boolean(props.initial?.id))
 const saving = ref(false)
@@ -308,10 +309,10 @@ async function onSave() {
   saving.value = true
   try {
     const result = isEdit.value
-      ? updatePage(props.initial!.id, form.value)
-      : createPage(form.value)
+      ? await updatePage(props.initial!.id, form.value)
+      : await createPage(form.value)
     if (!result.ok) {
-      toast.error(t(result.error))
+      toast.error(t(result.error || 'ذخیره ناموفق بود'))
       return
     }
     toast.success(isEdit.value ? t('صفحه به‌روز شد') : t('صفحه اضافه شد'))

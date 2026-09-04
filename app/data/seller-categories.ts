@@ -16,7 +16,7 @@ export type SellerCategory = {
   icon: string
   image: string | null
   text: string | null
-  /** Target tree field — backend `parent_id` (Phase 0+: optional until API ships) */
+  /** Tree field — backend `parent_id` */
   parentId: string | null
   status: SellerCategoryStatus
   sortOrder: number

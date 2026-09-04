@@ -4,7 +4,7 @@
       <TheSellerPageHeader
         :title="$t('صفحات ثابت')"
         :description="$t('مدیریت صفحات استاتیک سایت — عنوان، مسیر، وضعیت و سئو')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('صفحه')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('صفحه')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -44,18 +44,43 @@
       @clear="clearFilters"
     />
 
+    <div
+      v-if="loading"
+      class="py-16 flex justify-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!pages.length"
       icon="i-tabler-file-text"
       :message="hasActiveFilters ? $t('صفحه‌ای با این فیلتر پیدا نشد') : $t('هنوز صفحه‌ای ثبت نشده است')"
-    />
+    >
+      <template
+        v-if="!hasActiveFilters && can('pages.create')"
+        #actions
+      >
+        <UButton
+          to="/seller/pages/new"
+          color="primary"
+          variant="soft"
+          icon="i-tabler-plus"
+          class="cursor-pointer"
+        >
+          {{ $t('افزودن اولین صفحه') }}
+        </UButton>
+      </template>
+    </TheSellerEmptyState>
 
     <div
       v-else
       class="space-y-3"
     >
       <div
-        v-for="pageItem in paged"
+        v-for="pageItem in pages"
         :key="pageItem.id"
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
@@ -109,8 +134,9 @@
                 {{ $t('ویرایش') }}
               </UButton>
               <UButton
-                :to="pageItem.path"
+                :to="viewHref(pageItem.path)"
                 target="_blank"
+                external
                 color="neutral"
                 variant="ghost"
                 size="xs"
@@ -143,15 +169,15 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
+        :total="listMeta.total"
+        :items-per-page="listMeta.pageSize || pageSize"
       />
     </div>
 
     <UModal
       v-model:open="deleteOpen"
       :title="$t('حذف صفحه')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود و قابل بازگشت نیست.')"
+      :description="$t('این عمل قابل بازگشت نیست.')"
     >
       <template #body>
         <div
@@ -167,6 +193,7 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
+            :disabled="deleting"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
@@ -174,6 +201,7 @@
           <UButton
             color="error"
             class="font-bold cursor-pointer"
+            :loading="deleting"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -191,63 +219,105 @@ import {
   type SellerPageStatus,
 } from '~/data/seller-pages'
 
+const pageSize = 10
+
 const { t } = useI18n()
 const toast = useAppToast()
 const { can } = useSellerPermissions()
-const { pages, ensureLoaded, deletePage } = useSellerPages()
+const { isAdminApp, storeUrl } = useAppMode()
+const {
+  pages,
+  listMeta,
+  fetchList,
+  deletePage,
+} = useSellerPages()
 const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
-ensureLoaded()
-
-const pageSize = 10
+const loading = ref(true)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerManagedPage | null>(null)
+const deleting = ref(false)
 
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه'), count: pages.value.length },
-  ...((Object.keys(sellerPageStatusMeta) as SellerPageStatus[]).map(id => ({
-    id,
-    label: t(sellerPageStatusMeta[id].label),
-    count: pages.value.filter(p => p.status === id).length,
-  }))),
-])
-
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return pages.value.filter((item) => {
-    if (status.value !== 'all' && item.status !== status.value) return false
-    if (!q) return true
-    return (
-      item.title.toLowerCase().includes(q)
-      || item.path.toLowerCase().includes(q)
-      || item.id.toLowerCase().includes(q)
-      || item.subtitle.toLowerCase().includes(q)
-    )
-  })
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    ...(Object.keys(sellerPageStatusMeta) as SellerPageStatus[]).map(id => ({
+      id,
+      label: t(sellerPageStatusMeta[id].label),
+      count: Number(c[id]) || 0,
+    })),
+  ]
 })
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
+
+function viewHref(path: string) {
+  if (!isAdminApp) return path
+  const base = storeUrl.replace(/\/+$/, '')
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`
+}
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
+async function loadList() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(t(apiErrorMessage(error, 'بارگذاری صفحات ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 function openDelete(item: SellerManagedPage) {
   pendingDelete.value = item
   deleteOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDelete.value) return
-  const result = deletePage(pendingDelete.value.id)
-  deleteOpen.value = false
-  pendingDelete.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  deleting.value = true
+  try {
+    const result = await deletePage(pendingDelete.value.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    if (!result.ok) {
+      toast.error(t(result.error || 'حذف ناموفق بود'))
+      return
+    }
+    toast.success(t('صفحه حذف شد'))
+    await loadList()
   }
-  toast.success(t('صفحه حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
+
+watch([search, status, page], () => {
+  void loadList()
+})
+
+onMounted(() => {
+  void loadList()
+})
 </script>

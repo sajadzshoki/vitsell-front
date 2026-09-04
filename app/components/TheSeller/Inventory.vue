@@ -12,7 +12,7 @@
       <TheSellerPageHeader
         :title="$t('مدیریت موجودی')"
         :description="$t('موجودی محصولات و واریانت‌ها در انبارها')"
-        :count-label="!loading ? `${filtered.length.toLocaleString('fa-IR')} ${$t('ردیف')}` : undefined"
+        :count-label="!loading ? `${inventoryMeta.total.toLocaleString('fa-IR')} ${$t('ردیف')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -112,9 +112,9 @@
     </div>
 
     <TheSellerEmptyState
-      v-else-if="filtered.length === 0"
+      v-else-if="inventoryRows.length === 0"
       icon="i-tabler-packages"
-      :message="inventoryRows.length === 0 ? $t('ردیف موجودی ثبت نشده') : $t('ردیفی با این فیلتر پیدا نشد')"
+      :message="hasActiveFiltersCombined ? $t('ردیفی با این فیلتر پیدا نشد') : $t('ردیف موجودی ثبت نشده')"
     />
 
     <template v-else>
@@ -131,7 +131,7 @@
             <span class="text-center">{{ $t('آستانه') }}</span>
           </div>
           <div
-            v-for="row in paged"
+            v-for="row in inventoryRows"
             :key="row.id"
             class="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_repeat(4,minmax(0,0.75fr))] gap-3 items-center bg-muted border border-muted rounded-2xl px-4 py-3 mb-2"
           >
@@ -192,7 +192,7 @@
 
       <div class="lg:hidden space-y-3">
         <div
-          v-for="row in paged"
+          v-for="row in inventoryRows"
           :key="row.id"
           class="bg-muted border border-muted rounded-2xl p-4 space-y-3"
         >
@@ -272,8 +272,8 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
+        :total="inventoryMeta.total"
+        :items-per-page="inventoryMeta.pageSize || pageSize"
       />
     </div>
   </div>
@@ -286,15 +286,14 @@ import type { SellerInventoryRow } from '~/data/seller-inventory'
 const { t } = useI18n()
 const toast = useAppToast()
 const { can } = useSellerPermissions()
-const { fetchListings, resolveProduct, updateListingStock } = useSeller()
-const { getCommerce, setVariants } = useSellerProductCommerce()
 const {
   inventoryRows,
+  inventoryMeta,
   warehouses,
-  ensureLoaded,
   ensureWarehouses,
+  fetchInventory,
   getWarehouse,
-  appendMovement,
+  adjustStock,
 } = useSellerInventory()
 const { currentAdminUser, ensureLoaded: ensureAdmins } = useSellerAdmins()
 const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
@@ -307,7 +306,6 @@ const savingId = ref<string | null>(null)
 const stockDrafts = ref<Record<string, number>>({})
 const pageSize = 15
 
-ensureLoaded()
 ensureWarehouses()
 ensureAdmins()
 
@@ -332,43 +330,30 @@ const brandFilter = computed({
   },
 })
 
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه'), count: inventoryRows.value.length },
-  { id: 'in_stock', label: t('موجود'), count: countByStatus('in_stock') },
-  { id: 'low_stock', label: t('کمبود'), count: countByStatus('low_stock') },
-  { id: 'out_of_stock', label: t('ناموجود'), count: countByStatus('out_of_stock') },
-])
+const statusTabs = computed(() => {
+  const c = inventoryMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: c.all },
+    { id: 'in_stock', label: t('موجود'), count: c.in_stock },
+    { id: 'low_stock', label: t('کمبود'), count: c.low_stock },
+    { id: 'out_of_stock', label: t('ناموجود'), count: c.out_of_stock },
+  ]
+})
 
 const warehouseItems = computed(() => [
   { value: 'all', label: t('همه انبارها') },
   ...warehouses.value.map(w => ({ value: w.id, label: w.name })),
 ])
 
-const categoryItems = computed(() => {
-  const map = new Map<string, string>()
-  for (const row of inventoryRows.value) {
-    const product = resolveProduct(row.productId)
-    if (product.category) {
-      map.set(product.category, product.categoryLabel || product.category)
-    }
-  }
-  return [
-    { value: 'all', label: t('همه دسته‌ها') },
-    ...[...map.entries()].map(([value, label]) => ({ value, label })),
-  ]
-})
+const categoryItems = computed(() => [
+  { value: 'all', label: t('همه دسته‌ها') },
+  ...(inventoryMeta.value.categoryOptions || []),
+])
 
-const brandItems = computed(() => {
-  const set = new Set<string>()
-  for (const row of inventoryRows.value) {
-    const product = resolveProduct(row.productId)
-    if (product.brand) set.add(product.brand)
-  }
-  return [
-    { value: 'all', label: t('همه برندها') },
-    ...[...set].sort().map(value => ({ value, label: value })),
-  ]
-})
+const brandItems = computed(() => [
+  { value: 'all', label: t('همه برندها') },
+  ...(inventoryMeta.value.brandOptions || []),
+])
 
 const hasExtraFilters = computed(() =>
   Boolean(
@@ -382,6 +367,10 @@ const hasActiveFiltersCombined = computed(() =>
   hasActiveFilters.value || hasExtraFilters.value,
 )
 
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((inventoryMeta.value.total || 0) / (inventoryMeta.value.pageSize || pageSize))),
+)
+
 function onStatusChange(id: string) {
   status.value = id
 }
@@ -389,10 +378,6 @@ function onStatusChange(id: string) {
 async function clearAllFilters() {
   await clearFilters()
   await patchQuery({ warehouse: undefined, category: undefined, brand: undefined })
-}
-
-function countByStatus(id: SellerInventoryRow['status']) {
-  return inventoryRows.value.filter(row => row.status === id).length
 }
 
 function warehouseName(id: string) {
@@ -425,68 +410,26 @@ function actorName() {
   return admin ? adminFullName(admin) : t('مدیر')
 }
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return inventoryRows.value.filter((row) => {
-    if (status.value !== 'all' && row.status !== status.value) return false
-    if (warehouseFilter.value && warehouseFilter.value !== 'all' && row.warehouseId !== warehouseFilter.value) return false
-    const product = resolveProduct(row.productId)
-    if (categoryFilter.value && categoryFilter.value !== 'all' && product.category !== categoryFilter.value) return false
-    if (brandFilter.value && brandFilter.value !== 'all' && product.brand !== brandFilter.value) return false
-    if (!q) return true
-    return (
-      row.productTitle.toLowerCase().includes(q)
-      || row.sku.toLowerCase().includes(q)
-      || (row.variantLabel?.toLowerCase().includes(q) ?? false)
-      || product.brand.toLowerCase().includes(q)
-    )
-  })
-})
-
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
-
 async function saveStock(row: SellerInventoryRow) {
   if (!can('inventory.update')) return
   const newStock = draftStock(row.id, row.stock)
-  const before = row.stock
-  if (newStock === before) return
+  if (newStock === row.stock) return
 
   savingId.value = row.id
   try {
-    if (row.variantId) {
-      const commerce = getCommerce(row.productId)
-      const variants = commerce.variants.map(variant =>
-        variant.id === row.variantId ? { ...variant, stock: newStock } : variant,
-      )
-      setVariants(row.productId, variants)
-    }
-    else {
-      const ok = await updateListingStock(row.productId, newStock)
-      if (!ok) {
-        toast.error(t('به‌روزرسانی موجودی ناموفق بود'))
-        return
-      }
-    }
-
-    appendMovement({
+    const result = await adjustStock({
       productId: row.productId,
-      productTitle: row.productTitle,
+      stock: newStock,
+      warehouseId: row.warehouseId,
       variantId: row.variantId,
       variantLabel: row.variantLabel,
-      warehouseId: row.warehouseId,
-      type: 'adjust',
-      quantity: newStock - before,
-      before,
-      after: newStock,
       reason: t('تنظیم دستی موجودی'),
       actorName: actorName(),
     })
-
+    if (!result.ok) {
+      toast.error(result.error)
+      return
+    }
     delete stockDrafts.value[row.id]
     toast.success(t('موجودی به‌روز شد'))
   }
@@ -504,7 +447,15 @@ function apiErrorMessage(error: unknown, fallback: string) {
 async function loadInventory() {
   loading.value = true
   try {
-    const { ok, error } = await fetchListings({ force: true })
+    const { ok, error } = await fetchInventory({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      warehouseId: warehouseFilter.value !== 'all' ? warehouseFilter.value : undefined,
+      category: categoryFilter.value !== 'all' ? categoryFilter.value : undefined,
+      brand: brandFilter.value !== 'all' ? brandFilter.value : undefined,
+      page: page.value,
+      pageSize,
+    })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری موجودی ناموفق بود')))
     }
@@ -514,7 +465,15 @@ async function loadInventory() {
   }
 }
 
+watch(
+  () => route.query,
+  () => {
+    void loadInventory()
+  },
+  { deep: true },
+)
+
 onMounted(() => {
-  loadInventory()
+  void loadInventory()
 })
 </script>

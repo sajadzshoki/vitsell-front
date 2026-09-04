@@ -3,7 +3,7 @@
     <div class="hidden lg:block">
       <TheSellerPageHeader
         :title="$t('مشتریان فروشگاه')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('نفر')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('نفر')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -14,6 +14,7 @@
             size="sm"
             icon="i-tabler-download"
             class="cursor-pointer"
+            :loading="exporting"
             @click="exportCsv"
           >
             {{ $t('خروجی') }}
@@ -33,6 +34,7 @@
         block
         icon="i-tabler-download"
         class="cursor-pointer"
+        :loading="exporting"
         @click="exportCsv"
       >
         {{ $t('خروجی CSV') }}
@@ -118,6 +120,7 @@
         size="xs"
         class="cursor-pointer"
         :disabled="!bulkAction"
+        :loading="bulkSaving"
         @click="openBulkConfirm"
       >
         {{ $t('اجرا') }}
@@ -134,10 +137,20 @@
       </UButton>
     </div>
 
+    <div
+      v-if="(loading || pending) && !customers.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!customers.length"
       icon="i-tabler-users"
-      :message="$t('مشتری‌ای با این فیلتر پیدا نشد')"
+      :message="hasAnyFilters ? $t('مشتری‌ای با این فیلتر پیدا نشد') : $t('هنوز مشتری‌ای ثبت نشده')"
     />
 
     <div
@@ -157,7 +170,7 @@
       </div>
 
       <div
-        v-for="customer in paged"
+        v-for="customer in customers"
         :key="customer.id"
         class="bg-muted border border-muted rounded-2xl p-4"
       >
@@ -174,7 +187,7 @@
                 {{ customerFullName(customer) }}
               </div>
               <div class="text-[11px] text-muted mt-1 num" dir="ltr">
-                {{ customer.email }}
+                {{ customer.email || '—' }}
                 <span v-if="customer.phone"> · {{ customer.phone }}</span>
               </div>
               <div class="flex items-center gap-1.5 mt-2 flex-wrap">
@@ -212,8 +225,8 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
+        :total="listMeta.total"
+        :items-per-page="listMeta.pageSize || pageSize"
       />
     </div>
 
@@ -235,6 +248,7 @@
           <UButton
             :color="bulkAction === 'block' ? 'error' : 'primary'"
             class="font-bold cursor-pointer"
+            :loading="bulkSaving"
             @click="runBulk"
           >
             {{ $t('تأیید') }}
@@ -255,21 +269,21 @@ import {
 } from '~/data/seller-customers'
 import { formatPrice } from '~/data/products'
 
-const PAGE_SIZE = 10
+const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
 const route = useRoute()
 const { can } = useSellerPermissions()
-const { customers, ensureLoaded, setStatus } = useSellerCustomers()
+const { customers, listMeta, pending, fetchList, bulkSetStatus } = useSellerCustomers()
 const { search, status, sort, page, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
   defaultSort: 'newest',
 })
 
-ensureLoaded()
-
-const pageSize = PAGE_SIZE
+const loading = ref(true)
+const exporting = ref(false)
+const bulkSaving = ref(false)
 const showAdvanced = ref(false)
 const selectedIds = ref<string[]>([])
 const bulkAction = ref('')
@@ -282,12 +296,15 @@ const spendMax = computed(() => String(route.query.spendMax ?? ''))
 const canExport = computed(() => can('customers.export') || can('customers.view'))
 const canBulk = computed(() => can('customers.update') || can('customers.block'))
 
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه'), count: customers.value.length },
-  { id: 'active', label: t('فعال'), count: customers.value.filter(c => c.status === 'active').length },
-  { id: 'inactive', label: t('غیرفعال'), count: customers.value.filter(c => c.status === 'inactive').length },
-  { id: 'blocked', label: t('مسدود'), count: customers.value.filter(c => c.status === 'blocked').length },
-])
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'active', label: t('فعال'), count: Number(c.active) || 0 },
+    { id: 'inactive', label: t('غیرفعال'), count: Number(c.inactive) || 0 },
+    { id: 'blocked', label: t('مسدود'), count: Number(c.blocked) || 0 },
+  ]
+})
 
 const sortItems = computed(() => [
   { label: t('جدیدترین'), value: 'newest' },
@@ -320,56 +337,16 @@ const hasAnyFilters = computed(() =>
   ),
 )
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  const min = spendMin.value ? Number(spendMin.value.replace(/\D/g, '')) : null
-  const max = spendMax.value ? Number(spendMax.value.replace(/\D/g, '')) : null
-
-  let list = customers.value.filter((customer) => {
-    if (status.value !== 'all' && customer.status !== status.value) return false
-    if (hasOrdersFilter.value && customer.orderCount <= 0) return false
-    if (min != null && customer.totalSpent < min) return false
-    if (max != null && customer.totalSpent > max) return false
-    if (!q) return true
-    return (
-      customerFullName(customer).toLowerCase().includes(q)
-      || customer.email.toLowerCase().includes(q)
-      || customer.phone.includes(q)
-    )
-  })
-
-  list = [...list].sort((a, b) => {
-    switch (sort.value) {
-      case 'oldest':
-        return a.registeredAt.localeCompare(b.registeredAt)
-      case 'spending_desc':
-        return b.totalSpent - a.totalSpent
-      case 'spending_asc':
-        return a.totalSpent - b.totalSpent
-      case 'name':
-        return customerFullName(a).localeCompare(customerFullName(b), 'fa')
-      case 'newest':
-      default:
-        return b.registeredAt.localeCompare(a.registeredAt)
-    }
-  })
-
-  return list
-})
-
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
 
 const allPageSelected = computed(() =>
-  paged.value.length > 0 && paged.value.every(c => selectedIds.value.includes(c.id)),
+  customers.value.length > 0 && customers.value.every(c => selectedIds.value.includes(c.id)),
 )
 
 const somePageSelected = computed(() =>
-  paged.value.some(c => selectedIds.value.includes(c.id)),
+  customers.value.some(c => selectedIds.value.includes(c.id)),
 )
 
 const confirmTitle = computed(() => {
@@ -386,6 +363,15 @@ const confirmDescription = computed(() => {
   if (bulkAction.value === 'block') return `آیا ${count} مشتری مسدود شوند؟`
   return 'این عملیات روی مشتریان انتخاب‌شده اعمال می‌شود.'
 })
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
 
 function onStatusChange(value: string) {
   status.value = value
@@ -421,7 +407,7 @@ function toggleSelect(id: string, checked: boolean) {
 }
 
 function toggleSelectPage(checked: boolean) {
-  const pageIds = paged.value.map(c => c.id)
+  const pageIds = customers.value.map(c => c.id)
   if (checked) {
     selectedIds.value = [...new Set([...selectedIds.value, ...pageIds])]
   }
@@ -435,7 +421,29 @@ function openBulkConfirm() {
   confirmOpen.value = true
 }
 
-function runBulk() {
+async function loadCustomers() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      hasOrders: hasOrdersFilter.value || undefined,
+      spendMin: spendMin.value || undefined,
+      spendMax: spendMax.value || undefined,
+      sort: sort.value || 'newest',
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری مشتریان ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+async function runBulk() {
   const action = bulkAction.value
   const targetStatus: SellerCustomerStatus | null =
     action === 'activate' ? 'active'
@@ -445,33 +453,73 @@ function runBulk() {
 
   if (!targetStatus) return
 
-  let ok = 0
-  for (const id of selectedIds.value) {
-    const result = setStatus(id, targetStatus)
-    if (result.ok) ok++
+  bulkSaving.value = true
+  try {
+    const result = await bulkSetStatus(selectedIds.value, targetStatus)
+    confirmOpen.value = false
+    selectedIds.value = []
+    bulkAction.value = ''
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('مشتریان به‌روزرسانی شدند'))
+    await loadCustomers()
   }
-
-  confirmOpen.value = false
-  selectedIds.value = []
-  bulkAction.value = ''
-  toast.success(t('مشتریان به‌روزرسانی شدند'))
+  finally {
+    bulkSaving.value = false
+  }
 }
 
-function exportCsv() {
-  const rows = filtered.value.map((c: SellerCustomer) => [
-    c.id,
-    customerFullName(c),
-    c.email,
-    c.phone,
-    sellerCustomerStatusMeta[c.status].label,
-    c.orderCount,
-    c.totalSpent,
-    c.registeredAt.slice(0, 10),
-  ])
-  downloadSellerCsv(
-    'customers-export',
-    ['شناسه', 'نام', 'ایمیل', 'تلفن', 'وضعیت', 'تعداد سفارش', 'مجموع خرید', 'تاریخ ثبت'],
-    rows,
-  )
+async function exportCsv() {
+  exporting.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      hasOrders: hasOrdersFilter.value || undefined,
+      spendMin: spendMin.value || undefined,
+      spendMax: spendMax.value || undefined,
+      sort: sort.value || 'newest',
+      all: true,
+      pageSize: 200,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('خروجی مشتریان ناموفق بود')))
+      return
+    }
+    const rows = customers.value.map((c: SellerCustomer) => [
+      c.id,
+      customerFullName(c),
+      c.email,
+      c.phone,
+      sellerCustomerStatusMeta[c.status].label,
+      c.orderCount,
+      c.totalSpent,
+      c.registeredAt.slice(0, 10),
+    ])
+    downloadSellerCsv(
+      `customers-${Date.now()}`,
+      ['شناسه', 'نام', 'ایمیل', 'تلفن', 'وضعیت', 'تعداد سفارش', 'مجموع خرید', 'تاریخ ثبت'],
+      rows,
+    )
+    toast.success(t('فایل خروجی آماده شد'))
+    await loadCustomers()
+  }
+  finally {
+    exporting.value = false
+  }
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadCustomers()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadCustomers()
+})
 </script>

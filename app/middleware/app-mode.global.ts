@@ -5,6 +5,8 @@ export default defineNuxtRouteMiddleware((to) => {
   const { isLoggedIn } = useShop()
   const path = to.path
   const onLogin = path === '/login'
+  const isBlogPreview = path.startsWith('/blog/')
+    && (to.query.preview === '1' || to.query.preview === 'true')
 
   // Guest on admin app → always login (except already there)
   if (!isLoggedIn.value) {
@@ -15,8 +17,8 @@ export default defineNuxtRouteMiddleware((to) => {
     })
   }
 
-  // Logged-in admin → keep inside /seller (and away from login/home)
-  if (onLogin || path === '/' || !path.startsWith('/seller')) {
+  // Logged-in admin → keep inside /seller (و پیش‌نمایش بلاگ با ?preview=1)
+  if (onLogin || path === '/' || (!path.startsWith('/seller') && !isBlogPreview)) {
     const raw = to.query.redirect
     if (
       typeof raw === 'string'

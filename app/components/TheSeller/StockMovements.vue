@@ -12,7 +12,7 @@
       <TheSellerPageHeader
         :title="$t('گردش موجودی')"
         :description="$t('تاریخچه تغییرات موجودی محصولات در انبارها')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('رویداد')}`"
+        :count-label="!loading ? `${movementsMeta.total.toLocaleString('fa-IR')} ${$t('رویداد')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -47,16 +47,36 @@
       :status="typeFilter"
       :tabs="typeTabs"
       :search-placeholder="$t('جستجوی محصول، دلیل یا عامل')"
-      :has-active="hasActiveFilters"
+      :has-active="hasActiveFiltersCombined"
       :clear-label="$t('پاک کردن فیلترها')"
       @update:status="onTypeChange"
-      @clear="clearFilters"
-    />
+      @clear="clearAllFilters"
+    >
+      <template #extra>
+        <USelect
+          :model-value="warehouseFilter"
+          :items="warehouseItems"
+          value-key="value"
+          class="w-full sm:w-44 shrink-0"
+          @update:model-value="warehouseFilter = $event"
+        />
+      </template>
+    </TheSellerListToolbar>
+
+    <div
+      v-if="loading && !movements.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
 
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!movements.length"
       icon="i-tabler-arrows-exchange"
-      :message="movements.length === 0 ? $t('هنوز گردش موجودی ثبت نشده') : $t('رویدادی با این فیلتر پیدا نشد')"
+      :message="hasActiveFiltersCombined ? $t('رویدادی با این فیلتر پیدا نشد') : $t('هنوز گردش موجودی ثبت نشده')"
     />
 
     <div
@@ -64,7 +84,7 @@
       class="space-y-3"
     >
       <div
-        v-for="movement in paged"
+        v-for="movement in movements"
         :key="movement.id"
         class="bg-muted border border-muted rounded-2xl p-4"
       >
@@ -76,7 +96,7 @@
                 variant="subtle"
                 size="xs"
               >
-                {{ sellerStockMovementMeta[movement.type].label }}
+                {{ sellerStockMovementMeta[movement.type]?.label || movement.type }}
               </UBadge>
               <span class="text-sm font-medium text-highlighted">
                 {{ movement.productTitle }}
@@ -121,8 +141,8 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
+        :total="movementsMeta.total"
+        :items-per-page="movementsMeta.pageSize || pageSize"
       />
     </div>
   </div>
@@ -132,24 +152,54 @@
 import { sellerStockMovementMeta, type SellerStockMovementType } from '~/data/seller-inventory'
 
 const { t } = useI18n()
+const toast = useAppToast()
+const route = useRoute()
 const { can } = useSellerPermissions()
-const { movements, ensureLoaded, getWarehouse } = useSellerInventory()
-const { search, status: typeFilter, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const {
+  movements,
+  movementsMeta,
+  warehouses,
+  ensureWarehouses,
+  fetchMovements,
+  getWarehouse,
+} = useSellerInventory()
+const { search, status: typeFilter, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
   statusKey: 'type',
 })
 
-ensureLoaded()
-
+const loading = ref(true)
 const pageSize = 15
 
+ensureWarehouses()
+
+const warehouseFilter = computed({
+  get: () => String(route.query.warehouse ?? 'all') || 'all',
+  set: (value: string) => {
+    void patchQuery({ warehouse: !value || value === 'all' ? undefined : value, page: undefined })
+  },
+})
+
+const hasExtraFilters = computed(() =>
+  Boolean(warehouseFilter.value && warehouseFilter.value !== 'all'),
+)
+
+const hasActiveFiltersCombined = computed(() =>
+  hasActiveFilters.value || hasExtraFilters.value,
+)
+
+const warehouseItems = computed(() => [
+  { value: 'all', label: t('همه انبارها') },
+  ...warehouses.value.map(w => ({ value: w.id, label: w.name })),
+])
+
 const typeTabs = computed(() => {
-  const all = movements.value.length
+  const counts = movementsMeta.value.typeCounts || { all: 0 }
   const tabs: { id: string, label: string, count?: number }[] = [
-    { id: 'all', label: t('همه'), count: all },
+    { id: 'all', label: t('همه'), count: Number(counts.all) || 0 },
   ]
   for (const [type, meta] of Object.entries(sellerStockMovementMeta) as [SellerStockMovementType, { label: string }][]) {
-    const count = movements.value.filter(m => m.type === type).length
+    const count = Number(counts[type]) || 0
     if (count > 0) {
       tabs.push({ id: type, label: meta.label, count })
     }
@@ -157,8 +207,17 @@ const typeTabs = computed(() => {
   return tabs
 })
 
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((movementsMeta.value.total || 0) / (movementsMeta.value.pageSize || pageSize))),
+)
+
 function onTypeChange(id: string) {
   typeFilter.value = id
+}
+
+async function clearAllFilters() {
+  await clearFilters()
+  await patchQuery({ warehouse: undefined })
 }
 
 function warehouseName(id: string) {
@@ -169,24 +228,43 @@ function formatDateTime(iso: string) {
   return iso.slice(0, 16).replace('T', ' ')
 }
 
-const filtered = computed(() => {
-  const q = search.value.trim()
-  return movements.value.filter((movement) => {
-    if (typeFilter.value !== 'all' && movement.type !== typeFilter.value) return false
-    if (!q) return true
-    return (
-      movement.productTitle.includes(q)
-      || movement.reason.includes(q)
-      || movement.actorName.includes(q)
-      || (movement.variantLabel?.includes(q) ?? false)
-    )
-  })
-})
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
+async function loadMovements() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchMovements({
+      q: search.value || undefined,
+      type: typeFilter.value || undefined,
+      warehouseId: warehouseFilter.value !== 'all' ? warehouseFilter.value : undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری گردش موجودی ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
+watch(
+  () => route.query,
+  () => {
+    void loadMovements()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadMovements()
 })
 </script>

@@ -15,7 +15,7 @@
     class="space-y-5"
   >
     <!-- Header / status workflow -->
-    <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
+    <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 print:hidden">
       <div class="flex items-start justify-between flex-wrap gap-3 mb-4">
         <div>
           <h1 class="text-xl font-bold text-highlighted flex items-center gap-2 flex-wrap">
@@ -83,12 +83,13 @@
           </UButton>
           <UButton
             v-if="can('orders.refund') || can('refunds.create')"
-            to="/seller/refunds"
+            type="button"
             color="neutral"
             variant="soft"
             size="sm"
             icon="i-tabler-receipt-refund"
             class="cursor-pointer"
+            @click="openRefund"
           >
             {{ $t('بازپرداخت') }}
           </UButton>
@@ -258,7 +259,140 @@
       </template>
     </UModal>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <UModal
+      v-model:open="refundOpen"
+      :title="$t('ثبت بازپرداخت')"
+      :description="$t('مبلغ بازپرداخت برای این سفارش ثبت می‌شود')"
+    >
+      <template #body>
+        <div class="space-y-3">
+          <div class="rounded-xl border border-muted bg-muted/40 p-3 text-xs space-y-1">
+            <div class="flex justify-between gap-2">
+              <span class="text-muted">{{ $t('مبلغ سفارش') }}</span>
+              <span class="num">{{ formatPrice(order.total) }}</span>
+            </div>
+            <div class="flex justify-between gap-2">
+              <span class="text-muted">{{ $t('بازپرداخت‌شده') }}</span>
+              <span class="num">{{ formatPrice(commerce.refundedAmount) }}</span>
+            </div>
+            <div class="flex justify-between gap-2 font-medium">
+              <span class="text-muted">{{ $t('قابل بازپرداخت') }}</span>
+              <span class="num text-primary">{{ formatPrice(refundableLeft) }}</span>
+            </div>
+          </div>
+          <TheFormInput
+            v-model="refundAmount"
+            type="number"
+            :label="$t('مبلغ')"
+            dir="ltr"
+            digits-only
+          />
+          <TheFormInput
+            v-model="refundReason"
+            :label="$t('دلیل')"
+            :placeholder="$t('مثلاً لغو کالا / مرجوعی')"
+          />
+          <TheFormInput
+            v-model="refundTxn"
+            :label="$t('شناسه تراکنش (اختیاری)')"
+            dir="ltr"
+          />
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex items-center gap-2 w-full justify-end">
+          <UButton
+            color="neutral"
+            variant="outline"
+            class="cursor-pointer"
+            @click="refundOpen = false"
+          >
+            {{ $t('انصراف') }}
+          </UButton>
+          <UButton
+            color="primary"
+            class="font-bold cursor-pointer"
+            :loading="refunding"
+            :disabled="!refundableLeft"
+            @click="confirmRefund"
+          >
+            {{ $t('ثبت بازپرداخت') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Printable invoice (hidden on screen, shown when printing) -->
+    <div
+      id="seller-order-invoice"
+      class="hidden print:block bg-white text-black p-8"
+    >
+      <div class="flex items-start justify-between gap-4 mb-6 border-b border-gray-300 pb-4">
+        <div>
+          <h1 class="text-xl font-bold">
+            {{ $t('فاکتور فروش') }}
+          </h1>
+          <div class="text-sm mt-1 num" dir="ltr">
+            {{ order.id }}
+          </div>
+          <div class="text-xs mt-1">
+            {{ $t('تاریخ') }}: {{ order.date }}
+          </div>
+        </div>
+        <div class="text-sm text-end">
+          <div>{{ order.customerName }}</div>
+          <div class="num" dir="ltr">{{ order.customerPhone }}</div>
+          <div v-if="commerce.customerEmail">{{ commerce.customerEmail }}</div>
+        </div>
+      </div>
+      <table class="w-full text-sm mb-6">
+        <thead>
+          <tr class="border-b border-gray-300 text-start">
+            <th class="py-2">{{ $t('کالا') }}</th>
+            <th class="py-2">{{ $t('تعداد') }}</th>
+            <th class="py-2">{{ $t('فی') }}</th>
+            <th class="py-2">{{ $t('جمع') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="item in lineItems"
+            :key="item.productId"
+            class="border-b border-gray-200"
+          >
+            <td class="py-2">{{ item.product.title }}</td>
+            <td class="py-2 num">{{ item.qty }}</td>
+            <td class="py-2 num">{{ formatPrice(item.price) }}</td>
+            <td class="py-2 num">{{ formatPrice(item.price * item.qty) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="text-sm space-y-1 max-w-xs ms-auto">
+        <div class="flex justify-between gap-6">
+          <span>{{ $t('جمع کالاها') }}</span>
+          <span class="num">{{ formatPrice(subtotal) }}</span>
+        </div>
+        <div class="flex justify-between gap-6">
+          <span>{{ $t('تخفیف') }}</span>
+          <span class="num">{{ formatPrice(commerce.discountAmount) }}</span>
+        </div>
+        <div class="flex justify-between gap-6">
+          <span>{{ $t('ارسال') }}</span>
+          <span class="num">{{ formatPrice(commerce.shippingCost) }}</span>
+        </div>
+        <div class="flex justify-between gap-6 font-bold pt-2 border-t border-gray-300">
+          <span>{{ $t('مبلغ نهایی') }}</span>
+          <span class="num">{{ formatPrice(order.total) }}</span>
+        </div>
+      </div>
+      <div class="mt-6 text-xs space-y-1">
+        <div>{{ $t('آدرس') }}: {{ order.address.province }}، {{ order.address.city }}، {{ order.address.address }}</div>
+        <div>{{ $t('پرداخت') }}: {{ order.paymentMethod }} · {{ $t('ارسال') }}: {{ order.shippingMethod }}</div>
+        <div v-if="commerce.trackingCode">{{ $t('کد پیگیری') }}: <span class="num" dir="ltr">{{ commerce.trackingCode }}</span></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 print:hidden">
       <div class="lg:col-span-2 space-y-3">
         <!-- Items -->
         <div class="bg-default border border-muted rounded-2xl p-5">
@@ -388,6 +522,7 @@
               size="md"
               class="cursor-pointer shrink-0"
               :disabled="!noteDraft.trim()"
+              :loading="savingNote"
               @click="addNote"
             >
               {{ $t('افزودن') }}
@@ -520,25 +655,89 @@
               <span class="text-muted">{{ $t('وضعیت') }}</span>
               <span class="text-default">{{ $t(shippingMeta.label) }}</span>
             </div>
+            <div
+              v-if="commerce.trackingCode"
+              class="flex justify-between gap-3"
+            >
+              <span class="text-muted">{{ $t('کد پیگیری') }}</span>
+              <span
+                class="num text-default"
+                dir="ltr"
+              >{{ commerce.trackingCode }}</span>
+            </div>
+            <div
+              v-if="commerce.carrier"
+              class="flex justify-between gap-3"
+            >
+              <span class="text-muted">{{ $t('حامل') }}</span>
+              <span class="text-default">{{ commerce.carrier }}</span>
+            </div>
+            <div
+              v-if="commerce.estimatedDelivery"
+              class="flex justify-between gap-3"
+            >
+              <span class="text-muted">{{ $t('تحویل تقریبی') }}</span>
+              <span class="text-default">{{ commerce.estimatedDelivery }}</span>
+            </div>
           </div>
-          <TheFormInput
+          <div
             v-if="can('shipping.manage') || canUpdateOrder"
-            v-model="trackingDraft"
-            :label="$t('کد پیگیری')"
-            dir="ltr"
-            class="mb-2"
-          />
-          <UButton
-            v-if="can('shipping.manage') || canUpdateOrder"
-            color="primary"
-            variant="soft"
-            size="sm"
-            block
-            class="cursor-pointer"
-            @click="saveTracking"
+            class="space-y-2"
           >
-            {{ $t('ذخیره کد پیگیری') }}
-          </UButton>
+            <TheFormInput
+              v-model="trackingDraft"
+              :label="$t('کد پیگیری')"
+              dir="ltr"
+            />
+            <TheFormInput
+              v-model="carrierDraft"
+              :label="$t('حامل / شرکت ارسال')"
+            />
+            <TheFormInput
+              v-model="etaDraft"
+              :label="$t('تحویل تقریبی')"
+              :placeholder="$t('مثلاً ۲ تا ۴ روز کاری')"
+            />
+            <UButton
+              color="primary"
+              variant="soft"
+              size="sm"
+              block
+              class="cursor-pointer"
+              :loading="savingTracking"
+              @click="saveTracking"
+            >
+              {{ $t('ذخیره پیگیری') }}
+            </UButton>
+          </div>
+        </div>
+
+        <!-- Refunds -->
+        <div
+          v-if="(commerce.refunds?.length || commerce.refundedAmount)"
+          class="bg-default border border-muted rounded-2xl p-5"
+        >
+          <h3 class="font-bold text-highlighted mb-3 text-sm">
+            {{ $t('بازپرداخت‌ها') }}
+          </h3>
+          <div class="space-y-2 text-xs">
+            <div
+              v-for="refund in (commerce.refunds || [])"
+              :key="refund.id"
+              class="rounded-xl border border-muted bg-muted/40 p-3"
+            >
+              <div class="flex justify-between gap-2">
+                <span class="font-medium text-highlighted num" dir="ltr">{{ refund.id }}</span>
+                <span class="num text-info">{{ formatPrice(refund.amount) }}</span>
+              </div>
+              <div class="text-muted mt-1">
+                {{ refund.reason }}
+              </div>
+              <div class="text-[10px] text-muted mt-1">
+                {{ refund.status }} · <span class="num">{{ formatEventDate(refund.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Totals -->
@@ -633,20 +832,29 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { fetchOrder, advanceOrder, revertOrder, setOrderStatus, resolveProduct } = useSeller()
-const { getCommerce, saveCommerce, addInternalNote, appendTimeline } = useSellerOrderCommerce()
+const { fetchOrder, advanceOrder, revertOrder, setOrderStatus, resolveProduct, updateOrderTracking, addOrderNote, createOrderRefund } = useSeller()
+const { getCommerce } = useSellerOrderCommerce()
 const { customers, ensureLoaded: ensureCustomers } = useSellerCustomers()
 const { can } = useSellerPermissions()
 const canUpdateOrder = computed(() => can('orders.update'))
 
-ensureCustomers()
+void ensureCustomers()
 
 const order = ref<SellerOrder | null>(null)
 const loading = ref(true)
 const noteDraft = ref('')
 const trackingDraft = ref('')
+const carrierDraft = ref('')
+const etaDraft = ref('')
 const cancelOpen = ref(false)
 const cancelling = ref(false)
+const savingTracking = ref(false)
+const savingNote = ref(false)
+const refundOpen = ref(false)
+const refunding = ref(false)
+const refundAmount = ref('')
+const refundReason = ref('')
+const refundTxn = ref('')
 
 const commerce = computed(() =>
   order.value ? getCommerce(order.value) : emptyOrderCommerce({
@@ -663,6 +871,10 @@ const commerce = computed(() =>
     shippingMethod: '',
     paymentMethod: '',
   }),
+)
+
+const refundableLeft = computed(() =>
+  Math.max(0, (order.value?.total || 0) - (commerce.value.refundedAmount || 0)),
 )
 
 const paymentMeta = computed(() =>
@@ -686,7 +898,10 @@ async function loadOrder() {
     const { ok, order: fetched } = await fetchOrder(props.orderId, { force: true })
     order.value = ok ? fetched : null
     if (order.value) {
-      trackingDraft.value = getCommerce(order.value).trackingCode
+      const c = getCommerce(order.value)
+      trackingDraft.value = c.trackingCode || ''
+      carrierDraft.value = c.carrier || order.value.shippingMethod || ''
+      etaDraft.value = c.estimatedDelivery || ''
     }
   }
   finally {
@@ -789,15 +1004,7 @@ async function confirmStatusChange() {
   }
 
   const refreshed = await fetchOrder(id, { force: true })
-  if (refreshed.ok) {
-    order.value = refreshed.order
-    appendTimeline(
-      id,
-      pendingMode.value === 'undo' ? 'بازگشت وضعیت' : 'تغییر وضعیت',
-      'ادمین',
-      refreshed.order.status,
-    )
-  }
+  if (refreshed.ok) order.value = refreshed.order
   toast.success(
     pendingMode.value === 'undo'
       ? t('وضعیت به مرحله قبل برگشت')
@@ -815,7 +1022,6 @@ async function confirmCancel() {
       toast.error(t('لغو سفارش ناموفق بود'))
       return
     }
-    appendTimeline(order.value.id, 'لغو سفارش', 'ادمین')
     const refreshed = await fetchOrder(order.value.id, { force: true })
     if (refreshed.ok) order.value = refreshed.order
     toast.success(t('سفارش لغو شد'))
@@ -825,21 +1031,81 @@ async function confirmCancel() {
   }
 }
 
-function addNote() {
-  if (!order.value || !noteDraft.value.trim()) return
-  addInternalNote(order.value.id, noteDraft.value, 'ادمین')
-  noteDraft.value = ''
-  toast.success(t('یادداشت ذخیره شد'))
+function openRefund() {
+  refundAmount.value = String(refundableLeft.value || '')
+  refundReason.value = ''
+  refundTxn.value = ''
+  refundOpen.value = true
 }
 
-function saveTracking() {
+async function confirmRefund() {
   if (!order.value) return
-  saveCommerce(order.value.id, {
-    ...getCommerce(order.value),
-    trackingCode: trackingDraft.value.trim(),
-  })
-  appendTimeline(order.value.id, 'ثبت کد پیگیری', 'ادمین', trackingDraft.value.trim())
-  toast.success(t('کد پیگیری ذخیره شد'))
+  const amount = Math.round(Number(refundAmount.value) || 0)
+  if (amount <= 0) {
+    toast.error(t('مبلغ بازپرداخت نامعتبر است'))
+    return
+  }
+  refunding.value = true
+  try {
+    const result = await createOrderRefund(order.value.id, {
+      amount,
+      reason: refundReason.value.trim() || undefined,
+      transactionId: refundTxn.value.trim() || undefined,
+      status: 'completed',
+    })
+    if (!result.ok) {
+      toast.error(result.message || t('بازپرداخت ناموفق بود'))
+      return
+    }
+    refundOpen.value = false
+    const refreshed = await fetchOrder(order.value.id, { force: true })
+    if (refreshed.ok) order.value = refreshed.order
+    toast.success(t('بازپرداخت ثبت شد'))
+  }
+  finally {
+    refunding.value = false
+  }
+}
+
+async function addNote() {
+  if (!order.value || !noteDraft.value.trim()) return
+  savingNote.value = true
+  try {
+    const result = await addOrderNote(order.value.id, noteDraft.value.trim(), 'ادمین')
+    if (!result.ok) {
+      toast.error(t('ذخیره یادداشت ناموفق بود'))
+      return
+    }
+    noteDraft.value = ''
+    const refreshed = await fetchOrder(order.value.id, { force: true })
+    if (refreshed.ok) order.value = refreshed.order
+    toast.success(t('یادداشت ذخیره شد'))
+  }
+  finally {
+    savingNote.value = false
+  }
+}
+
+async function saveTracking() {
+  if (!order.value) return
+  savingTracking.value = true
+  try {
+    const result = await updateOrderTracking(order.value.id, {
+      trackingCode: trackingDraft.value.trim(),
+      carrier: carrierDraft.value.trim(),
+      estimatedDelivery: etaDraft.value.trim(),
+    })
+    if (!result.ok) {
+      toast.error(t('ذخیره کد پیگیری ناموفق بود'))
+      return
+    }
+    const refreshed = await fetchOrder(order.value.id, { force: true })
+    if (refreshed.ok) order.value = refreshed.order
+    toast.success(t('کد پیگیری ذخیره شد'))
+  }
+  finally {
+    savingTracking.value = false
+  }
 }
 
 function printInvoice() {
@@ -859,3 +1125,21 @@ function formatEventDate(value: string) {
   return value
 }
 </script>
+
+<style>
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #seller-order-invoice,
+  #seller-order-invoice * {
+    visibility: visible !important;
+  }
+  #seller-order-invoice {
+    display: block !important;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+  }
+}
+</style>

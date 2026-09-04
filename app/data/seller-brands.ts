@@ -13,6 +13,7 @@ export type SellerBrand = {
   seo: SeoMeta
   createdAt: string
   updatedAt: string
+  productCount?: number
 }
 
 export type SellerBrandFormValues = {
@@ -54,6 +55,23 @@ export function toBrandForm(brand: SellerBrand): SellerBrandFormValues {
   }
 }
 
+export function toSellerBrand(raw: Partial<SellerBrand> & { id: string, name: string } & Record<string, unknown>): SellerBrand {
+  return {
+    id: raw.id,
+    name: raw.name,
+    slug: String(raw.slug || raw.id),
+    logo: raw.logo ?? null,
+    description: String(raw.description ?? ''),
+    status: raw.status === 'inactive' ? 'inactive' : 'active',
+    sortOrder: Number(raw.sortOrder ?? raw.sort_order) || 0,
+    seo: { ...emptySeoMeta(), ...(raw.seo || {}) },
+    createdAt: String(raw.createdAt ?? raw.created_at ?? new Date().toISOString()),
+    updatedAt: String(raw.updatedAt ?? raw.updated_at ?? new Date().toISOString()),
+    productCount: Number(raw.productCount) || 0,
+  }
+}
+
+/** @deprecated Prefer API — kept for offline fallbacks */
 export function buildDefaultSellerBrands(): SellerBrand[] {
   const now = new Date().toISOString()
   const names = [
@@ -71,5 +89,26 @@ export function buildDefaultSellerBrands(): SellerBrand[] {
     seo: emptySeoMeta(),
     createdAt: now,
     updatedAt: now,
+    productCount: 0,
   }))
+}
+
+export type SellerBrandsQuery = {
+  q?: string
+  status?: string
+  page?: number
+  pageSize?: number
+  all?: boolean
+}
+
+export type SellerBrandsPage = {
+  items: SellerBrand[]
+  total: number
+  page: number
+  pageSize: number
+  statusCounts: {
+    all: number
+    active: number
+    inactive: number
+  }
 }

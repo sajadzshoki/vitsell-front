@@ -57,7 +57,13 @@
         </div>
 
         <TheSellerEmptyState
-          v-if="!filtered.length"
+          v-if="loading"
+          icon="i-tabler-loader-2"
+          :message="$t('در حال بارگذاری...')"
+        />
+
+        <TheSellerEmptyState
+          v-else-if="!media.length"
           icon="i-tabler-photo"
           :message="localSearch.trim() ? $t('فایلی پیدا نشد') : $t('کتابخانه خالی است')"
         />
@@ -67,7 +73,7 @@
           class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-80 overflow-y-auto pe-1"
         >
           <button
-            v-for="item in filtered"
+            v-for="item in media"
             :key="item.id"
             type="button"
             class="relative rounded-xl border overflow-hidden text-start cursor-pointer transition"
@@ -156,13 +162,14 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const toast = useAppToast()
 const { canAny } = useSellerPermissions()
-const { media, ensureLoaded, uploadFiles } = useSellerMedia()
+const { media, fetchList, uploadFiles } = useSellerMedia()
 
 const localSearch = ref('')
 const kindFilter = ref('all')
 const pickedUrls = ref<string[]>([])
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
+const loading = ref(false)
 
 const canUpload = computed(() => canAny('media.upload', 'media.manage'))
 
@@ -184,30 +191,46 @@ const kindTabs = computed(() => [
   { id: 'document', label: t('سند') },
 ])
 
-const filtered = computed(() => {
-  ensureLoaded()
-  const q = localSearch.value.trim().toLowerCase()
-  const activeKind = props.kind || kindFilter.value
-  return media.value.filter((item) => {
-    if (activeKind !== 'all' && item.kind !== activeKind) return false
-    if (!q) return true
-    return (
-      item.filename.toLowerCase().includes(q)
-      || item.title.toLowerCase().includes(q)
-      || item.url.toLowerCase().includes(q)
-    )
-  })
-})
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
+async function loadPickerList() {
+  loading.value = true
+  try {
+    const activeKind = props.kind || kindFilter.value
+    await fetchList({
+      q: localSearch.value || undefined,
+      kind: activeKind,
+      page: 1,
+      pageSize: 100,
+      all: true,
+    })
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 watch(open, (isOpen) => {
   if (!isOpen) return
-  ensureLoaded()
   localSearch.value = ''
   kindFilter.value = 'all'
   const current = modelValue.value
   if (Array.isArray(current)) pickedUrls.value = [...current]
   else if (typeof current === 'string' && current.trim()) pickedUrls.value = [current]
   else pickedUrls.value = []
+  void loadPickerList()
+})
+
+watch([localSearch, kindFilter], () => {
+  if (!open.value) return
+  void loadPickerList()
 })
 
 function kindIcon(kind: SellerMediaKind) {
@@ -264,10 +287,14 @@ async function onFilesSelected(event: Event) {
       else {
         pickedUrls.value = [first.url]
       }
+      await loadPickerList()
+    }
+    else {
+      toast.error(t(result.error || 'آپلود ناموفق بود'))
     }
   }
-  catch {
-    toast.error(t('آپلود ناموفق بود'))
+  catch (error) {
+    toast.error(t(apiErrorMessage(error, 'آپلود ناموفق بود')))
   }
   finally {
     uploading.value = false

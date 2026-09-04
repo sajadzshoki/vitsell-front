@@ -45,7 +45,7 @@
       </p>
 
       <div
-        v-if="loading"
+        v-if="loading || pending"
         class="grid grid-cols-2 lg:grid-cols-3 gap-3"
       >
         <USkeleton
@@ -103,10 +103,10 @@
               {{ $t('مصرف کوپن‌ها') }}
             </h3>
             <p class="text-[11px] text-muted mb-4 leading-6">
-              {{ $t('بر اساس usageCount و totalDiscountAmount کدهای تخفیف') }}
+              {{ $t('بر اساس سفارش‌های واقعی که کد تخفیف داشته‌اند') }}
             </p>
             <div
-              v-if="!codesInRange.length"
+              v-if="!summary.coupons.top.length"
               class="text-sm text-muted py-6 text-center"
             >
               {{ $t('کوپنی برای نمایش نیست — یا هنوز داده‌ای ثبت نشده یا بازه فیلتر خالی است.') }}
@@ -118,19 +118,19 @@
               <div class="flex items-center justify-between gap-3 text-sm">
                 <span class="text-muted">{{ $t('کل استفاده‌ها') }}</span>
                 <span class="font-bold num text-highlighted">
-                  {{ couponUsageTotal.toLocaleString('fa-IR') }}
+                  {{ summary.coupons.usageTotal.toLocaleString('fa-IR') }}
                 </span>
               </div>
               <div class="flex items-center justify-between gap-3 text-sm">
                 <span class="text-muted">{{ $t('مجموع مبلغ تخفیف') }}</span>
                 <span class="font-bold num text-highlighted">
-                  {{ formatPrice(couponDiscountTotal) }} {{ $t('تومان') }}
+                  {{ formatPrice(summary.coupons.discountTotal) }} {{ $t('تومان') }}
                 </span>
               </div>
               <USeparator />
               <div class="space-y-2 max-h-48 overflow-y-auto">
                 <div
-                  v-for="code in topCoupons"
+                  v-for="code in summary.coupons.top"
                   :key="code.code"
                   class="flex items-center justify-between gap-2 text-xs"
                 >
@@ -139,9 +139,9 @@
                     dir="ltr"
                   >{{ code.code }}</span>
                   <span class="text-muted shrink-0 num">
-                    {{ (code.usageCount ?? 0).toLocaleString('fa-IR') }}
+                    {{ code.usageCount.toLocaleString('fa-IR') }}
                     ·
-                    {{ formatPrice(code.totalDiscountAmount ?? 0) }}
+                    {{ formatPrice(code.totalDiscountAmount) }}
                   </span>
                 </div>
               </div>
@@ -186,17 +186,11 @@
 <script setup lang="ts">
 import { formatPrice } from '~/data/products'
 import { sellerPermissionCatalog, type SellerPermission } from '~/data/seller-permissions'
-import { overlapsDateRange } from '~/data/seller-marketing-shared'
 
 const { t } = useI18n()
+const toast = useAppToast()
 const { can } = useSellerPermissions()
-
-const { discounts, ensureLoaded: ensureDiscounts } = useSellerDiscounts()
-const { campaigns, ensureLoaded: ensureCampaigns, campaignLifecycle: lifecycleFn } = useSellerCampaigns()
-const { banners, ensureLoaded: ensureBanners } = useSellerBanners()
-const { deals, ensureLoaded: ensureDeals } = useSellerDeals()
-const { codes, promos, ensureLoaded: ensurePromos } = useSellerPromotions()
-const { campaigns: notifications, ensureLoaded: ensureNotifications } = useSellerNotifications()
+const { summary, pending, fetchSummary } = useSellerMarketing()
 
 const loading = ref(true)
 const rangeStart = ref<string | null>(null)
@@ -208,98 +202,55 @@ function canPerm(key: string) {
   return can(key as SellerPermission)
 }
 
-function toRangeIso(dateStr: string | null, endOfDay = false) {
-  if (!dateStr) return null
-  const d = new Date(dateStr)
-  if (Number.isNaN(d.getTime())) return null
-  if (endOfDay) d.setHours(23, 59, 59, 999)
-  else d.setHours(0, 0, 0, 0)
-  return d.toISOString()
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
 }
 
-const rangeStartIso = computed(() => toRangeIso(rangeStart.value, false))
-const rangeEndIso = computed(() => toRangeIso(rangeEnd.value, true))
-
-function inRange(startsAt?: string | null, endsAt?: string | null) {
-  return overlapsDateRange(startsAt, endsAt, rangeStartIso.value, rangeEndIso.value)
-}
-
-onMounted(async () => {
-  ensureDiscounts()
-  ensureCampaigns()
-  ensureBanners()
+async function loadSummary() {
+  loading.value = true
   try {
-    await Promise.all([
-      ensureDeals(),
-      ensurePromos(),
-      ensureNotifications(),
-    ])
+    const { ok, error } = await fetchSummary({
+      from: rangeStart.value,
+      to: rangeEnd.value,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری داشبورد بازاریابی ناموفق بود')))
+    }
   }
   finally {
     loading.value = false
   }
-})
+}
 
 function clearRange() {
   rangeStart.value = null
   rangeEnd.value = null
 }
 
-const discountsInRange = computed(() =>
-  discounts.value.filter(d => inRange(d.startsAt, d.endsAt)),
-)
-const campaignsInRange = computed(() =>
-  campaigns.value.filter(c => inRange(c.startsAt, c.endsAt)),
-)
-const bannersInRange = computed(() =>
-  banners.value.filter(b => inRange(b.startsAt, b.endsAt)),
-)
-const dealsInRange = computed(() =>
-  deals.value.filter(d => inRange(d.startsAt, d.endsAt)),
-)
-const codesInRange = computed(() =>
-  codes.value.filter(c => inRange(c.startsAt, c.endsAt)),
-)
-const promosInRange = computed(() => {
-  // Content promos have no schedule window — count all unless createdAt falls outside a set range
-  if (!rangeStartIso.value && !rangeEndIso.value) return promos.value
-  return promos.value.filter(p => inRange(p.createdAt, p.createdAt))
+watch([rangeStart, rangeEnd], () => {
+  void loadSummary()
 })
-const notificationsInRange = computed(() =>
-  notifications.value.filter(n => inRange(n.sentAt || n.createdAt, n.sentAt || n.createdAt)),
-)
 
-const couponUsageTotal = computed(() =>
-  codesInRange.value.reduce((sum, c) => sum + (c.usageCount ?? 0), 0),
-)
-const couponDiscountTotal = computed(() =>
-  codesInRange.value.reduce((sum, c) => sum + (c.totalDiscountAmount ?? 0), 0),
-)
-
-const topCoupons = computed(() =>
-  [...codesInRange.value]
-    .sort((a, b) => (b.usageCount ?? 0) - (a.usageCount ?? 0))
-    .slice(0, 8),
-)
-
-const life = lifecycleFn
+onMounted(() => {
+  void loadSummary()
+})
 
 const kpiCards = computed(() => {
-  const activeDiscounts = discountsInRange.value.filter(d => d.status === 'active').length
-  const activeCampaigns = campaignsInRange.value.filter(c => life(c) === 'active').length
-  const activeBanners = bannersInRange.value.filter(b => b.active).length
-  const activeDeals = dealsInRange.value.filter(d => d.active).length
-  const activeCodes = codesInRange.value.filter(c => c.active).length
-  const activePromos = promosInRange.value.filter(p => p.active).length
+  const k = summary.value.kpis
+  const activeLabel = (active: number) =>
+    active > 0 ? `${active.toLocaleString('fa-IR')} ${t('فعال')}` : undefined
 
   return [
     {
       id: 'discounts',
       label: 'تخفیف‌ها',
-      value: discountsInRange.value.length,
-      activeLabel: activeDiscounts
-        ? `${activeDiscounts.toLocaleString('fa-IR')} ${t('فعال')}`
-        : undefined,
+      value: k.discounts.total,
+      activeLabel: activeLabel(k.discounts.active),
       hint: undefined as string | undefined,
       to: '/seller/discounts',
       icon: 'i-tabler-discount',
@@ -308,10 +259,9 @@ const kpiCards = computed(() => {
     {
       id: 'campaigns',
       label: 'کمپین‌ها',
-      value: campaignsInRange.value.length,
-      activeLabel: activeCampaigns
-        ? `${activeCampaigns.toLocaleString('fa-IR')} ${t('فعال')}`
-        : undefined,
+      value: k.campaigns.total,
+      activeLabel: activeLabel(k.campaigns.active),
+      hint: undefined as string | undefined,
       to: '/seller/campaigns',
       icon: 'i-tabler-speakerphone',
       tone: 'info' as const,
@@ -319,10 +269,8 @@ const kpiCards = computed(() => {
     {
       id: 'banners',
       label: 'بنرها',
-      value: bannersInRange.value.length,
-      activeLabel: activeBanners
-        ? `${activeBanners.toLocaleString('fa-IR')} ${t('فعال')}`
-        : undefined,
+      value: k.banners.total,
+      activeLabel: activeLabel(k.banners.active),
       to: '/seller/banners',
       icon: 'i-tabler-photo',
       tone: 'success' as const,
@@ -330,10 +278,8 @@ const kpiCards = computed(() => {
     {
       id: 'deals',
       label: 'شگفت‌انگیزها',
-      value: dealsInRange.value.length,
-      activeLabel: activeDeals
-        ? `${activeDeals.toLocaleString('fa-IR')} ${t('فعال')}`
-        : undefined,
+      value: k.deals.total,
+      activeLabel: activeLabel(k.deals.active),
       to: '/seller/deals',
       icon: 'i-tabler-bolt',
       tone: 'warning' as const,
@@ -341,11 +287,9 @@ const kpiCards = computed(() => {
     {
       id: 'coupons',
       label: 'کدهای تخفیف',
-      value: codesInRange.value.length,
-      activeLabel: activeCodes
-        ? `${activeCodes.toLocaleString('fa-IR')} ${t('فعال')}`
-        : undefined,
-      hint: `${couponUsageTotal.value.toLocaleString('fa-IR')} ${t('استفاده')}`,
+      value: k.coupons.total,
+      activeLabel: activeLabel(k.coupons.active),
+      hint: `${summary.value.coupons.usageTotal.toLocaleString('fa-IR')} ${t('استفاده')}`,
       to: '/seller/promotions',
       icon: 'i-tabler-ticket',
       tone: 'primary' as const,
@@ -353,10 +297,8 @@ const kpiCards = computed(() => {
     {
       id: 'promos',
       label: 'پروموهای محتوایی',
-      value: promosInRange.value.length,
-      activeLabel: activePromos
-        ? `${activePromos.toLocaleString('fa-IR')} ${t('فعال')}`
-        : undefined,
+      value: k.promos.total,
+      activeLabel: activeLabel(k.promos.active),
       to: '/seller/promotions',
       icon: 'i-tabler-ad-2',
       tone: 'neutral' as const,
@@ -364,7 +306,7 @@ const kpiCards = computed(() => {
     {
       id: 'notifications',
       label: 'اعلان‌ها',
-      value: notificationsInRange.value.length,
+      value: k.notifications.total,
       to: '/seller/notifications',
       icon: 'i-tabler-bell',
       tone: 'error' as const,
@@ -372,15 +314,16 @@ const kpiCards = computed(() => {
   ]
 })
 
-const isCompletelyEmpty = computed(() =>
-  !discounts.value.length
-  && !campaigns.value.length
-  && !banners.value.length
-  && !deals.value.length
-  && !codes.value.length
-  && !promos.value.length
-  && !notifications.value.length,
-)
+const isCompletelyEmpty = computed(() => {
+  const k = summary.value.kpis
+  return (
+    !k.banners.total
+    && !k.deals.total
+    && !k.coupons.total
+    && !k.promos.total
+    && !k.notifications.total
+  )
+})
 
 const quickLinks = computed(() => {
   const links = [
@@ -392,7 +335,6 @@ const quickLinks = computed(() => {
     { label: 'ارسال اعلان', to: '/seller/notifications/new', icon: 'i-tabler-bell', show: canPerm('notifications.create') },
   ]
   const visible = links.filter(l => l.show)
-  // Honest empty: if RBAC hides everything, still show navigational overview links
   if (visible.length) return visible
   return [
     { label: 'تخفیف‌ها', to: '/seller/discounts', icon: 'i-tabler-discount', show: true },

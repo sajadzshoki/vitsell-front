@@ -43,9 +43,10 @@ Frontend-first completion of category taxonomy, brands, dynamic attributes, and 
 
 ## Media
 
-- `seller-media` / `useSellerMedia` — upload via `POST /upload`, metadata in session state
-- `TheSellerMediaLibrary` — grid/list, search, type/date filters, detail panel, bulk delete
-- `TheSellerMediaPicker` — single/multi select for forms
+- `seller-media` / `useSellerMedia` — `GET|POST /seller/media`, metadata در DB (`media_assets`)
+- Upload مستقیم کتابخانه: `POST /seller/media` (multipart) — تصویر / ویدیو / سند
+- `TheSellerMediaLibrary` — grid/list، جستجو، فیلتر kind، pagination سرور، detail، bulk delete
+- `TheSellerMediaPicker` — single/multi select برای فرم‌ها
 - `ImageUpload` — «از کتابخانه» when `media.view`
 
 ## Permissions

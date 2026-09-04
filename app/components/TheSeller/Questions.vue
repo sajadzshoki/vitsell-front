@@ -3,7 +3,7 @@
     <div class="hidden lg:block">
       <TheSellerPageHeader
         :title="$t('پرسش و پاسخ')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('پرسش')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('پرسش')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -13,12 +13,28 @@
             size="sm"
             icon="i-tabler-download"
             class="cursor-pointer"
+            :loading="exporting"
             @click="exportCsv"
           >
             {{ $t('خروجی') }}
           </UButton>
         </template>
       </TheSellerPageHeader>
+    </div>
+
+    <div class="lg:hidden mb-4">
+      <UButton
+        type="button"
+        color="neutral"
+        variant="soft"
+        block
+        icon="i-tabler-download"
+        class="cursor-pointer"
+        :loading="exporting"
+        @click="exportCsv"
+      >
+        {{ $t('خروجی CSV') }}
+      </UButton>
     </div>
 
     <TheSellerListToolbar
@@ -33,7 +49,7 @@
     />
 
     <div
-      v-if="pending && !questions.length"
+      v-if="(loading || pending) && !questions.length"
       class="py-16 grid place-items-center"
     >
       <UIcon
@@ -43,9 +59,9 @@
     </div>
 
     <TheSellerEmptyState
-      v-else-if="!filtered.length"
+      v-else-if="!questions.length"
       icon="i-tabler-message-question"
-      :message="search.trim() || status !== 'all'
+      :message="hasActiveFilters
         ? $t('پرسشی با این فیلتر پیدا نشد')
         : $t('پرسشی برای نمایش نیست')"
     />
@@ -55,11 +71,22 @@
       class="space-y-3"
     >
       <TheSellerQuestionCard
-        v-for="item in filtered"
+        v-for="item in questions"
         :key="item.id"
         :question="item"
         @delete="openDelete"
       />
+
+      <div
+        v-if="pageCount > 1"
+        class="mt-5 flex justify-center"
+      >
+        <UPagination
+          v-model:page="page"
+          :total="listMeta.total"
+          :items-per-page="listMeta.pageSize || pageSize"
+        />
+      </div>
     </div>
 
     <UModal
@@ -108,48 +135,68 @@
 import type { SellerProductQuestion } from '~/data/seller-questions'
 import { downloadSellerCsv } from '~/data/seller-export'
 
+const pageSize = 10
+
 const { t } = useI18n()
 const toast = useAppToast()
+const route = useRoute()
 const {
   questions,
-  unansweredCount,
+  listMeta,
   pending,
-  ensureLoaded,
+  fetchList,
   deleteQuestion,
 } = useSellerQuestions()
-const { resolveProduct } = useSeller()
 const { can } = useSellerPermissions()
-const { search, status, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
+const loading = ref(true)
+const exporting = ref(false)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerProductQuestion | null>(null)
 const deleting = ref(false)
 
-await ensureLoaded({ force: true })
-
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه') },
-  { id: 'unanswered', label: t('بدون پاسخ'), count: unansweredCount.value },
-  { id: 'answered', label: t('پاسخ‌داده‌شده') },
-])
-
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return questions.value.filter((item) => {
-    if (status.value === 'unanswered' && item.answer) return false
-    if (status.value === 'answered' && !item.answer) return false
-    if (!q) return true
-    const product = resolveProduct(item.productId)
-    return (
-      item.question.includes(search.value.trim())
-      || item.name.includes(search.value.trim())
-      || product.title.toLowerCase().includes(q)
-      || item.productId.toLowerCase().includes(q)
-    )
-  })
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'unanswered', label: t('بدون پاسخ'), count: Number(c.unanswered) || 0 },
+    { id: 'answered', label: t('پاسخ‌داده‌شده'), count: Number(c.answered) || 0 },
+  ]
 })
+
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
+async function loadQuestions() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری پرسش‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 function openDelete(question: SellerProductQuestion) {
   if (!can('questions.delete')) return
@@ -169,25 +216,55 @@ async function confirmDelete() {
       return
     }
     toast.success(t('پرسش حذف شد'))
+    await loadQuestions()
   }
   finally {
     deleting.value = false
   }
 }
 
-function exportCsv() {
-  downloadSellerCsv(
-    `questions-${Date.now()}`,
-    ['id', 'productId', 'name', 'question', 'answered', 'date'],
-    filtered.value.map(q => [
-      q.id,
-      q.productId,
-      q.name,
-      q.question,
-      Boolean(q.answer),
-      q.date,
-    ]),
-  )
-  toast.success(t('فایل خروجی آماده شد'))
+async function exportCsv() {
+  exporting.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      all: true,
+      pageSize: 200,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('خروجی پرسش‌ها ناموفق بود')))
+      return
+    }
+    downloadSellerCsv(
+      `questions-${Date.now()}`,
+      ['id', 'productId', 'name', 'question', 'answered', 'date'],
+      questions.value.map(q => [
+        q.id,
+        q.productId,
+        q.name,
+        q.question,
+        Boolean(q.answer),
+        q.date,
+      ]),
+    )
+    toast.success(t('فایل خروجی آماده شد'))
+    await loadQuestions()
+  }
+  finally {
+    exporting.value = false
+  }
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadQuestions()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadQuestions()
+})
 </script>

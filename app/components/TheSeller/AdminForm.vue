@@ -49,6 +49,8 @@
           icon="i-tabler-phone"
           digits-only
           maxlength="11"
+          required
+          :error="errors.phone"
         />
         <UFormField :label="$t('وضعیت')">
           <USelect
@@ -58,6 +60,24 @@
             class="w-full"
           />
         </UFormField>
+        <TheFormInput
+          v-if="!isEdit"
+          v-model="form.password"
+          :label="$t('رمز عبور اولیه')"
+          type="password"
+          dir="ltr"
+          required
+          :error="errors.password"
+          icon="i-tabler-lock"
+        />
+        <TheFormInput
+          v-else
+          v-model="form.password"
+          :label="$t('رمز عبور جدید (اختیاری)')"
+          type="password"
+          dir="ltr"
+          icon="i-tabler-lock"
+        />
       </div>
 
       <div class="mt-4 max-w-sm">
@@ -68,7 +88,9 @@
       </div>
 
       <p class="text-xs text-muted mt-4 leading-6">
-        {{ $t('مدیریت رمز عبور از طریق حساب ادمین و احراز هویت سرور انجام می‌شود؛ رمز در این فرم ذخیره نمی‌شود.') }}
+        {{ isEdit
+          ? $t('برای تغییر رمز، فیلد رمز جدید را پر کنید؛ در غیر این صورت رمز فعلی حفظ می‌شود.')
+          : $t('ادمین با این شماره و رمز می‌تواند وارد پنل شود.') }}
       </p>
 
       <UFormField
@@ -135,12 +157,14 @@ const { createAdmin, updateAdmin, currentAdminUser, adminFullName } = useSellerA
 const { roles, ensureLoaded } = useSellerRoles()
 const { appendLog } = useSellerAudit()
 
-ensureLoaded()
+onMounted(() => {
+  void ensureLoaded({ force: true })
+})
 
 const isEdit = computed(() => Boolean(props.initial?.id))
 const saving = ref(false)
 const form = ref(props.initial ? toAdminForm(props.initial) : emptyAdminForm())
-const errors = ref<Partial<Record<'firstName' | 'lastName' | 'email' | 'roleIds', string>>>({})
+const errors = ref<Partial<Record<'firstName' | 'lastName' | 'email' | 'phone' | 'password' | 'roleIds', string>>>({})
 
 const activeRoles = computed(() => roles.value.filter(r => r.status === 'active'))
 const statusItems = [
@@ -173,6 +197,13 @@ function validate() {
   if (!form.value.firstName.trim()) next.firstName = t('نام الزامی است')
   if (!form.value.lastName.trim()) next.lastName = t('نام خانوادگی الزامی است')
   if (!form.value.email.trim()) next.email = t('ایمیل الزامی است')
+  if (!/^09\d{9}$/.test(form.value.phone.trim())) next.phone = t('شماره موبایل معتبر نیست')
+  if (!isEdit.value && (!form.value.password || form.value.password.length < 8)) {
+    next.password = t('رمز عبور حداقل ۸ کاراکتر')
+  }
+  if (isEdit.value && form.value.password && form.value.password.length < 8) {
+    next.password = t('رمز عبور حداقل ۸ کاراکتر')
+  }
   if (!form.value.roleIds.length) next.roleIds = t('حداقل یک نقش')
   errors.value = next
   return !Object.keys(next).length
@@ -186,10 +217,10 @@ async function onSave() {
   saving.value = true
   try {
     const result = isEdit.value
-      ? updateAdmin(props.initial!.id, form.value)
-      : createAdmin(form.value)
-    if (!result.ok) {
-      toast.error(t(result.error))
+      ? await updateAdmin(props.initial!.id, form.value)
+      : await createAdmin(form.value)
+    if (!result.ok || !result.admin) {
+      toast.error(t(result.error || 'ذخیره ناموفق بود'))
       return
     }
     const actor = currentAdminUser()

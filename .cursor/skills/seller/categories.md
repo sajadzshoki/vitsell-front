@@ -27,8 +27,7 @@ SeoMeta
 
 `CategorySchema` (`types/models.ts`) امروز:
 
-- `id`, `name`, `icon`, `image`, `text`, `subs`, `pageMeta`, `suggested`, `createdAt`, `updatedAt`
-- **هنوز `parentId` ندارد** — بک‌اند باید `parent_id` اضافه کند.
+- `id`, `name`, `icon`, `image`, `text`, `parentId`, `status`, `sortOrder`, `seo`, `subs`, `pageMeta`, `suggested`, `createdAt`, `updatedAt`
 
 ### مدل هدف (درخت)
 

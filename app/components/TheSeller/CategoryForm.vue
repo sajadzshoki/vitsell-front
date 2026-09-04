@@ -372,14 +372,15 @@
     </div>
 
     <div class="flex items-center gap-3 flex-wrap pb-2">
-      <UButton
-        type="button"
-        color="primary"
-        size="lg"
-        class="font-bold"
-        :loading="saving"
-        @click="onSave"
-      >
+          <UButton
+            type="button"
+            color="primary"
+            size="lg"
+            class="font-bold cursor-pointer"
+            :loading="saving"
+            :disabled="saving"
+            @click="onSave"
+          >
         {{ isEdit ? $t('ذخیره تغییرات') : $t('ثبت دسته‌بندی') }}
       </UButton>
       <UButton
@@ -403,6 +404,7 @@ import {
   emptySuggestedItem,
   resolveCategoryIconName,
   sellerCategoryStatusMeta,
+  SELLER_CATEGORY_ROOT_PARENT,
   toCategoryForm,
   type SellerCategory,
   type SellerCategoryFormValues,
@@ -430,9 +432,15 @@ void ensureAttrs()
 const isEdit = computed(() => Boolean(props.initial?.id))
 const saving = ref(false)
 
+function parentIdFromQuery() {
+  const raw = route.query.parentId
+  const value = Array.isArray(raw) ? raw[0] : raw
+  return String(value ?? '').trim()
+}
+
 function buildCreateForm(): SellerCategoryFormValues {
   const base = emptyCategoryForm()
-  const parentFromQuery = String(route.query.parentId ?? '').trim()
+  const parentFromQuery = parentIdFromQuery()
   if (parentFromQuery) base.parentId = parentFromQuery
   return base
 }
@@ -493,8 +501,17 @@ const statusItems = computed(() =>
 watch(
   () => props.initial,
   (value) => {
-    form.value = value ? toCategoryForm(value) : emptyCategoryForm()
+    form.value = value ? toCategoryForm(value) : buildCreateForm()
     errors.value = {}
+  },
+)
+
+/** Keep parent preselected when opening /new?parentId=… (incl. client navigations). */
+watch(
+  () => [isEdit.value, parentIdFromQuery()] as const,
+  ([editing, parentFromQuery]) => {
+    if (editing) return
+    form.value.parentId = parentFromQuery || SELLER_CATEGORY_ROOT_PARENT
   },
 )
 
@@ -519,6 +536,18 @@ function validate() {
   }
   if (!name) next.name = t('نام الزامی است')
   if (!icon) next.icon = t('آیکون الزامی است')
+
+  const parentId = form.value.parentId.trim()
+  if (
+    parentId
+    && parentId !== SELLER_CATEGORY_ROOT_PARENT
+    && categories.value.length
+    && !categories.value.some(c => c.id === parentId)
+  ) {
+    toast.error(t('دسته والد یافت نشد'))
+    errors.value = next
+    return false
+  }
 
   errors.value = next
   return !Object.keys(next).length

@@ -288,8 +288,8 @@ const { codes, ensureLoaded: ensurePromos } = useSellerPromotions()
 const { deals, ensureLoaded: ensureDeals } = useSellerDeals()
 const { banners, ensureLoaded: ensureBanners } = useSellerBanners()
 
-ensureDiscounts()
-ensureBanners()
+await ensureDiscounts()
+await ensureBanners()
 void ensurePromos()
 void ensureDeals()
 
@@ -386,12 +386,12 @@ async function onSave() {
   saving.value = true
   try {
     const result = isEdit.value
-      ? updateCampaign(props.initial!.id, form.value)
-      : createCampaign(form.value)
+      ? await updateCampaign(props.initial!.id, form.value)
+      : await createCampaign(form.value)
 
     if (!result.ok) {
       toast.error(t(result.error))
-      if (result.error.includes('تکراری') || result.error.includes('شناسه')) {
+      if (result.error.includes('تکراری') || result.error.includes('شناسه') || result.error.includes('اسلاگ')) {
         errors.value = { ...errors.value, id: t(result.error) }
       }
       return

@@ -12,7 +12,7 @@
       <TheSellerPageHeader
         :title="$t('انبارها')"
         :description="$t('مدیریت انبارهای فیزیکی و پیش‌فرض ارسال')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('انبار')}`"
+        :count-label="!loading ? `${warehousesMeta.total.toLocaleString('fa-IR')} ${$t('انبار')}` : undefined"
       >
         <template
           v-if="can('warehouses.create')"
@@ -56,13 +56,23 @@
       @clear="clearFilters"
     />
 
+    <div
+      v-if="loading && !warehouses.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!warehouses.length"
       icon="i-tabler-building-warehouse"
-      :message="warehouses.length === 0 ? $t('هنوز انباری ثبت نشده') : $t('انباری با این فیلتر پیدا نشد')"
+      :message="hasActiveFilters ? $t('انباری با این فیلتر پیدا نشد') : $t('هنوز انباری ثبت نشده')"
     >
       <template
-        v-if="warehouses.length === 0 && can('warehouses.create')"
+        v-if="!hasActiveFilters && can('warehouses.create')"
         #actions
       >
         <UButton
@@ -82,7 +92,7 @@
       class="space-y-3"
     >
       <div
-        v-for="warehouse in filtered"
+        v-for="warehouse in warehouses"
         :key="warehouse.id"
         class="bg-muted border border-muted rounded-2xl p-4"
       >
@@ -136,31 +146,62 @@
 </template>
 
 <script setup lang="ts">
+const { t } = useI18n()
+const toast = useAppToast()
+const route = useRoute()
 const { can } = useSellerPermissions()
-const { warehouses, ensureWarehouses } = useSellerInventory()
+const { warehouses, warehousesMeta, fetchWarehouses } = useSellerInventory()
 const { search, status, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
-ensureWarehouses()
+const loading = ref(true)
 
-const statusTabs = computed(() => [
-  { id: 'all', label: 'همه', count: warehouses.value.length },
-  { id: 'active', label: 'فعال', count: warehouses.value.filter(w => w.status === 'active').length },
-  { id: 'inactive', label: 'غیرفعال', count: warehouses.value.filter(w => w.status === 'inactive').length },
-])
+const statusTabs = computed(() => {
+  const c = warehousesMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: c.all },
+    { id: 'active', label: t('فعال'), count: c.active },
+    { id: 'inactive', label: t('غیرفعال'), count: c.inactive },
+  ]
+})
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return warehouses.value.filter((warehouse) => {
-    if (status.value !== 'all' && warehouse.status !== status.value) return false
-    if (!q) return true
-    return (
-      warehouse.name.toLowerCase().includes(q)
-      || warehouse.code.toLowerCase().includes(q)
-      || warehouse.city.toLowerCase().includes(q)
-      || warehouse.address.toLowerCase().includes(q)
-    )
-  })
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
+async function loadWarehouses() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchWarehouses({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      all: true,
+      pageSize: 200,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری انبارها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+watch(
+  () => route.query,
+  () => {
+    void loadWarehouses()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadWarehouses()
 })
 </script>

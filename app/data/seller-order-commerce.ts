@@ -216,9 +216,6 @@ export const sellerOrderFilterDefs = [
     type: 'select' as const,
     options: [
       { value: 'all', label: 'همه' },
-      { value: 'online', label: 'آنلاین' },
-      { value: 'cod', label: 'پرداخت در محل' },
-      { value: 'wallet', label: 'کیف پول' },
     ],
   },
   { key: 'amount', label: 'بازه مبلغ', type: 'numberRange' as const, minKey: 'amountMin', maxKey: 'amountMax' },

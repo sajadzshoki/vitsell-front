@@ -140,11 +140,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   moderate: [{ id: string, status: 'pending' | 'approved' | 'rejected' | 'hidden' }]
+  replied: []
 }>()
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { replyToReview, resolveProduct } = useSeller()
+const { resolveProduct } = useSeller()
+const { reply } = useSellerReviews()
 const { can } = useSellerPermissions()
 
 const product = computed(() => resolveProduct(props.review.productId))
@@ -163,13 +165,14 @@ async function onReply() {
   if (!text) return
   sending.value = true
   try {
-    const ok = await replyToReview(props.review.id, text)
-    if (!ok) {
-      toast.error(t('ثبت پاسخ ناموفق بود'))
+    const result = await reply(props.review.id, text)
+    if (!result.ok) {
+      toast.error(t(result.error))
       return
     }
     draft.value = ''
     toast.success(t('پاسخ ثبت شد'))
+    emit('replied')
   }
   finally {
     sending.value = false

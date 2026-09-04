@@ -97,7 +97,281 @@ export function useSeller() {
     })),
   )
 
-  type ListingApiItem = SellerListing & { product?: Product }
+  type ListingApiItem = SellerListing & {
+    product?: Product & {
+      featured?: boolean
+      published?: boolean
+      hasVariants?: boolean
+      sku?: string | null
+      lowStockThreshold?: number
+    }
+    createdAt?: string | null
+    updatedAt?: string | null
+  }
+
+  type SellerListingsQuery = {
+    q?: string
+    status?: string
+    category?: string
+    brand?: string
+    stock?: string
+    priceMin?: string | number
+    priceMax?: string | number
+    dateFrom?: string
+    dateTo?: string
+    hasDiscount?: boolean | string | number
+    hasVariants?: boolean | string | number
+    featured?: boolean | string | number
+    published?: boolean | string | number
+    sort?: string
+    page?: number | string
+    pageSize?: number | string
+    all?: boolean | string | number
+  }
+
+  type SellerListingsPage = {
+    items: ListingApiItem[]
+    total: number
+    page: number
+    pageSize: number
+    statusCounts: Record<string, number>
+  }
+
+  const listingsMeta = useState<Omit<SellerListingsPage, 'items'>>('seller-listings-meta', () => ({
+    total: 0,
+    page: 1,
+    pageSize: 10,
+    statusCounts: {
+      all: 0,
+      active: 0,
+      pending: 0,
+      inactive: 0,
+      out_of_stock: 0,
+    },
+  }))
+
+  type SellerOrdersQuery = {
+    q?: string
+    status?: string
+    payment?: string
+    shipping?: string
+    paymentMethod?: string
+    amountMin?: string | number
+    amountMax?: string | number
+    dateFrom?: string
+    dateTo?: string
+    hasDiscount?: boolean | string | number
+    hasRefund?: boolean | string | number
+    hasReturn?: boolean | string | number
+    needsTracking?: boolean | string | number
+    sort?: string
+    page?: number | string
+    pageSize?: number | string
+    all?: boolean | string | number
+  }
+
+  type SellerOrdersPage = {
+    items: SellerOrder[]
+    total: number
+    page: number
+    pageSize: number
+    statusCounts: Record<string, number>
+    paymentMethodOptions: string[]
+  }
+
+  const ordersMeta = useState<Omit<SellerOrdersPage, 'items'>>('seller-orders-meta', () => ({
+    total: 0,
+    page: 1,
+    pageSize: 10,
+    statusCounts: {
+      all: 0,
+      new: 0,
+      packing: 0,
+      shipped: 0,
+      delivered: 0,
+      returned: 0,
+      cancelled: 0,
+    },
+    paymentMethodOptions: [] as string[],
+  }))
+
+  /** Unfiltered status counts for sidebar / dashboard badges */
+  const ordersBadgeCounts = useState<Record<string, number>>('seller-orders-badge-counts', () => ({
+    all: 0,
+    new: 0,
+    packing: 0,
+    shipped: 0,
+    delivered: 0,
+    returned: 0,
+    cancelled: 0,
+  }))
+
+  function isOrdersBadgeSafeQuery(query: Record<string, string | number | boolean>) {
+    return !Object.keys(query).some(key =>
+      !['page', 'pageSize', 'sort', 'all', 'status'].includes(key),
+    )
+  }
+
+  function normalizeOrdersPage(result: unknown): SellerOrdersPage {
+    if (Array.isArray(result)) {
+      const items = result.map(o => toSellerOrder(o))
+      const statusCounts: Record<string, number> = {
+        all: items.length,
+        new: 0,
+        packing: 0,
+        shipped: 0,
+        delivered: 0,
+        returned: 0,
+        cancelled: 0,
+      }
+      for (const order of items) {
+        statusCounts[order.status] = (statusCounts[order.status] || 0) + 1
+      }
+      const paymentMethodOptions = [...new Set(items.map(o => o.paymentMethod).filter(Boolean))]
+      return {
+        items,
+        total: items.length,
+        page: 1,
+        pageSize: items.length,
+        statusCounts,
+        paymentMethodOptions,
+      }
+    }
+    const page = (result || {}) as Partial<SellerOrdersPage>
+    const items = Array.isArray(page.items) ? page.items.map(o => toSellerOrder(o)) : []
+    return {
+      items,
+      total: Number(page.total) || items.length,
+      page: Number(page.page) || 1,
+      pageSize: Number(page.pageSize) || items.length || 10,
+      statusCounts: {
+        all: Number(page.statusCounts?.all) || items.length,
+        new: Number(page.statusCounts?.new) || 0,
+        packing: Number(page.statusCounts?.packing) || 0,
+        shipped: Number(page.statusCounts?.shipped) || 0,
+        delivered: Number(page.statusCounts?.delivered) || 0,
+        returned: Number(page.statusCounts?.returned) || 0,
+        cancelled: Number(page.statusCounts?.cancelled) || 0,
+      },
+      paymentMethodOptions: Array.isArray(page.paymentMethodOptions)
+        ? page.paymentMethodOptions.map(String)
+        : [],
+    }
+  }
+
+  function buildOrdersQuery(input?: SellerOrdersQuery) {
+    const query: Record<string, string | number | boolean> = {}
+    if (!input) return query
+    if (input.q?.trim()) query.q = input.q.trim()
+    if (input.status && input.status !== 'all') query.status = input.status
+    if (input.payment && input.payment !== 'all') query.payment = input.payment
+    if (input.shipping && input.shipping !== 'all') query.shipping = input.shipping
+    if (input.paymentMethod && input.paymentMethod !== 'all') query.paymentMethod = input.paymentMethod
+    if (input.amountMin != null && input.amountMin !== '') query.amountMin = Number(input.amountMin)
+    if (input.amountMax != null && input.amountMax !== '') query.amountMax = Number(input.amountMax)
+    if (input.dateFrom?.trim()) query.dateFrom = input.dateFrom.trim().slice(0, 10)
+    if (input.dateTo?.trim()) query.dateTo = input.dateTo.trim().slice(0, 10)
+    if (input.hasDiscount === true || input.hasDiscount === 'true' || input.hasDiscount === 1) {
+      query.hasDiscount = true
+    }
+    if (input.hasRefund === true || input.hasRefund === 'true' || input.hasRefund === 1) {
+      query.hasRefund = true
+    }
+    if (input.hasReturn === true || input.hasReturn === 'true' || input.hasReturn === 1) {
+      query.hasReturn = true
+    }
+    if (input.needsTracking === true || input.needsTracking === 'true' || input.needsTracking === 1) {
+      query.needsTracking = true
+    }
+    if (input.sort) query.sort = String(input.sort)
+    if (input.all === true || input.all === 'true' || input.all === 1) {
+      query.all = true
+      query.pageSize = Number(input.pageSize) || 500
+    }
+    else {
+      if (input.page != null && input.page !== '') query.page = Number(input.page)
+      if (input.pageSize != null && input.pageSize !== '') query.pageSize = Number(input.pageSize)
+    }
+    return query
+  }
+
+  function normalizeListingsResponse(result: unknown): SellerListingsPage {
+    if (Array.isArray(result)) {
+      return {
+        items: result as ListingApiItem[],
+        total: result.length,
+        page: 1,
+        pageSize: result.length,
+        statusCounts: {
+          all: result.length,
+          active: 0,
+          pending: 0,
+          inactive: 0,
+          out_of_stock: 0,
+        },
+      }
+    }
+    const page = (result || {}) as Partial<SellerListingsPage>
+    return {
+      items: Array.isArray(page.items) ? page.items : [],
+      total: Number(page.total) || 0,
+      page: Number(page.page) || 1,
+      pageSize: Number(page.pageSize) || 10,
+      statusCounts: {
+        all: Number(page.statusCounts?.all) || 0,
+        active: Number(page.statusCounts?.active) || 0,
+        pending: Number(page.statusCounts?.pending) || 0,
+        inactive: Number(page.statusCounts?.inactive) || 0,
+        out_of_stock: Number(page.statusCounts?.out_of_stock) || 0,
+      },
+    }
+  }
+
+  function buildListingsQuery(input?: SellerListingsQuery) {
+    const booleanKeys = new Set([
+      'hasDiscount',
+      'hasVariants',
+      'featured',
+      'published',
+      'all',
+    ])
+    const params: Record<string, string | number | boolean> = {}
+    if (!input) {
+      params.all = true
+      params.pageSize = 500
+      return params
+    }
+    for (const [key, value] of Object.entries(input)) {
+      if (value == null || value === '' || value === 'all' || value === false) continue
+      if (booleanKeys.has(key)) {
+        if (value === true || value === 1 || value === '1') params[key] = true
+        continue
+      }
+      if (key === 'page' || key === 'pageSize' || key === 'priceMin' || key === 'priceMax') {
+        const n = Number(value)
+        if (Number.isFinite(n)) params[key] = n
+        continue
+      }
+      params[key] = value as string | number | boolean
+    }
+    if (!params.pageSize && !params.all) params.pageSize = 10
+    return params
+  }
+
+  function syncCommerceFromListing(item: ListingApiItem) {
+    if (!item.product) return
+    const { saveCommerce } = useSellerProductCommerce()
+    const patch: Record<string, unknown> = {
+      featured: Boolean(item.product.featured),
+      published: item.product.published !== false,
+      sku: item.product.sku || '',
+      lowStockThreshold: Number(item.product.lowStockThreshold) || sellerLowStockThreshold,
+    }
+    if (!item.product.hasVariants) {
+      patch.variants = []
+    }
+    saveCommerce(item.productId, patch as any)
+  }
 
   function normalizeShop(raw: Partial<SellerShop> | null | undefined): SellerShop {
     return {
@@ -141,7 +415,10 @@ export function useSeller() {
   function applyListings(items: ListingApiItem[]) {
     const products: Product[] = []
     listings.value = items.map((item) => {
-      if (item.product) products.push(item.product)
+      if (item.product) {
+        products.push(item.product)
+        syncCommerceFromListing(item)
+      }
       return {
         productId: item.productId,
         stock: item.stock,
@@ -159,21 +436,83 @@ export function useSeller() {
     await Promise.all(missing.map(id => fetchProduct(id)))
   }
 
-  async function fetchListings(options?: { force?: boolean }) {
-    if (listings.value.length && loaded.value && !options?.force) {
-      return { ok: true as const, error: null as null }
+  async function fetchListings(options?: {
+    force?: boolean
+    query?: SellerListingsQuery
+  }) {
+    const query = buildListingsQuery(options?.query)
+    const isPaged = !query.all
+
+    if (
+      !isPaged
+      && listings.value.length
+      && loaded.value
+      && !options?.force
+      && !options?.query
+    ) {
+      return {
+        ok: true as const,
+        error: null as null,
+        meta: listingsMeta.value,
+      }
     }
 
-    const { result, error } = await useGet<ListingApiItem[]>('/seller/listings', {
-      headers: { 'no-error': true },
-    })
-    if (error || !Array.isArray(result)) {
-      return { ok: false as const, error: error ?? { message: 'listings-fetch-failed' } }
+    const { result, error } = await useGet<SellerListingsPage | ListingApiItem[]>(
+      '/seller/listings',
+      {
+        headers: { 'no-error': true },
+        query,
+      },
+    )
+    if (error || result == null) {
+      return {
+        ok: false as const,
+        error: error ?? { message: 'listings-fetch-failed' },
+        meta: listingsMeta.value,
+      }
     }
 
-    applyListings(result)
+    const page = normalizeListingsResponse(result)
+    applyListings(page.items)
+    listingsMeta.value = {
+      total: page.total,
+      page: page.page,
+      pageSize: page.pageSize,
+      statusCounts: page.statusCounts,
+    }
     await hydrateProducts(listings.value.map(l => l.productId))
-    return { ok: true as const, error: null as null }
+    return { ok: true as const, error: null as null, meta: listingsMeta.value }
+  }
+
+  /** Fetch matching listings for export without replacing the paged UI list. */
+  async function fetchListingsExport(query?: SellerListingsQuery) {
+    const params = buildListingsQuery({
+      ...query,
+      all: true,
+      pageSize: 500,
+      page: undefined,
+    })
+    const { result, error } = await useGet<SellerListingsPage | ListingApiItem[]>(
+      '/seller/listings',
+      {
+        headers: { 'no-error': true },
+        query: params,
+      },
+    )
+    if (error || result == null) {
+      return {
+        ok: false as const,
+        error: error ?? { message: 'listings-export-failed' },
+        items: [] as ListingApiItem[],
+      }
+    }
+    const page = normalizeListingsResponse(result)
+    const products = page.items
+      .map(item => item.product)
+      .filter((p): p is NonNullable<typeof p> => Boolean(p))
+    if (products.length) remember(products)
+    await hydrateProducts(page.items.map(i => i.productId))
+    return { ok: true as const, error: null as null, items: page.items }
   }
 
   async function fetchSeller(options?: { force?: boolean }) {
@@ -199,9 +538,18 @@ export function useSeller() {
           salesRes,
         ] = await Promise.all([
           useGet<SellerShop>('/seller/shop', { headers: { 'no-error': true } }),
-          useGet<ListingApiItem[]>('/seller/listings', { headers: { 'no-error': true } }),
-          useGet<SellerOrder[]>('/seller/orders', { headers: { 'no-error': true } }),
-          useGet<SellerReview[]>('/seller/reviews', { headers: { 'no-error': true } }),
+          useGet<SellerListingsPage | ListingApiItem[]>('/seller/listings', {
+            headers: { 'no-error': true },
+            query: { all: true, pageSize: 500 },
+          }),
+          useGet<SellerOrdersPage | SellerOrder[]>('/seller/orders', {
+            headers: { 'no-error': true },
+            query: { all: true, pageSize: 500 },
+          }),
+          useGet<SellerReviewsPage | SellerReview[]>('/seller/reviews', {
+            headers: { 'no-error': true },
+            query: { all: true, pageSize: 200 },
+          }),
           useGet<SellerPayout[]>('/seller/payouts', { headers: { 'no-error': true } }),
           useGet<SellerSalesPoint[]>('/seller/sales', { headers: { 'no-error': true } }),
         ])
@@ -211,11 +559,31 @@ export function useSeller() {
           shop.value = { ...defaultSellerShop, ...shopRes.result }
           applySite(shop.value)
         }
-        if (Array.isArray(listingsRes.result)) applyListings(listingsRes.result)
-        if (Array.isArray(ordersRes.result)) {
-          orders.value = ordersRes.result.map(o => toSellerOrder(o))
+        if (Array.isArray(listingsRes.result) || (listingsRes.result as any)?.items) {
+          const page = normalizeListingsResponse(listingsRes.result)
+          applyListings(page.items)
+          listingsMeta.value = {
+            total: page.total,
+            page: page.page,
+            pageSize: page.pageSize,
+            statusCounts: page.statusCounts,
+          }
+        }
+        if (Array.isArray(ordersRes.result) || (ordersRes.result as any)?.items) {
+          const page = normalizeOrdersPage(ordersRes.result)
+          orders.value = page.items
+          ordersMeta.value = {
+            total: page.total,
+            page: page.page,
+            pageSize: page.pageSize,
+            statusCounts: page.statusCounts,
+            paymentMethodOptions: page.paymentMethodOptions,
+          }
         }
         if (Array.isArray(reviewsRes.result)) reviews.value = reviewsRes.result
+        else if (Array.isArray((reviewsRes.result as any)?.items)) {
+          reviews.value = (reviewsRes.result as any).items
+        }
         if (Array.isArray(payoutsRes.result)) {
           payouts.value = payoutsRes.result.map(p => toSellerPayout(p))
         }
@@ -307,13 +675,30 @@ export function useSeller() {
 
     if (!loaded.value) {
       const [ordersRes, reviewsRes] = await Promise.all([
-        useGet<SellerOrder[]>('/seller/orders', { headers: { 'no-error': true } }),
-        useGet<SellerReview[]>('/seller/reviews', { headers: { 'no-error': true } }),
+        useGet<SellerOrdersPage | SellerOrder[]>('/seller/orders', {
+          headers: { 'no-error': true },
+          query: { all: true, pageSize: 500 },
+        }),
+        useGet<SellerReview[] | { items: SellerReview[] }>('/seller/reviews', {
+          headers: { 'no-error': true },
+          query: { all: true, pageSize: 200 },
+        }),
       ])
-      if (Array.isArray(ordersRes.result)) {
-        orders.value = ordersRes.result.map(o => toSellerOrder(o))
+      if (Array.isArray(ordersRes.result) || (ordersRes.result as any)?.items) {
+        const page = normalizeOrdersPage(ordersRes.result)
+        orders.value = page.items
+        ordersMeta.value = {
+          total: page.total,
+          page: page.page,
+          pageSize: page.pageSize,
+          statusCounts: page.statusCounts,
+          paymentMethodOptions: page.paymentMethodOptions,
+        }
       }
       if (Array.isArray(reviewsRes.result)) reviews.value = reviewsRes.result
+      else if (Array.isArray((reviewsRes.result as any)?.items)) {
+        reviews.value = (reviewsRes.result as any).items
+      }
     }
 
     return listingRes
@@ -342,11 +727,53 @@ export function useSeller() {
     return true
   }
 
+  type ListingProductExtras = {
+    featured?: boolean
+    published?: boolean
+    hasVariants?: boolean
+    sku?: string | null
+    lowStockThreshold?: number
+  }
+
+  function buildListingProductPayload(
+    product: Product,
+    productId: string | undefined,
+    extras?: ListingProductExtras,
+  ) {
+    return {
+      id: productId || product.id,
+      title: product.title,
+      shortName: product.shortName,
+      brand: product.brand,
+      category: product.category,
+      categoryLabel: product.categoryLabel,
+      price: product.price,
+      oldPrice: product.oldPrice,
+      image: product.image,
+      imageDark: product.imageDark,
+      gallery: product.gallery,
+      colors: product.colors,
+      shortDesc: product.shortDesc,
+      description: product.description,
+      features: product.features,
+      specs: product.specs,
+      badge: product.badge,
+      inStock: product.inStock,
+      fastDelivery: product.fastDelivery,
+      featured: extras?.featured,
+      published: extras?.published,
+      hasVariants: extras?.hasVariants,
+      sku: extras?.sku,
+      lowStockThreshold: extras?.lowStockThreshold,
+    }
+  }
+
   async function updateListingProduct(
     productId: string,
     product: Product,
     stock: number,
     status?: SellerProductStatus,
+    extras?: ListingProductExtras,
   ) {
     const listing = getListing(productId)
     if (!listing) return false
@@ -357,10 +784,7 @@ export function useSeller() {
     const { result, error } = await usePatch<{ listing: SellerListing, product: Product }>(
       `/seller/listings/${encodeURIComponent(productId)}`,
       {
-        product: {
-          ...product,
-          id: productId,
-        },
+        product: buildListingProductPayload(product, productId, extras),
         stock,
         status: nextStatus,
       },
@@ -385,29 +809,16 @@ export function useSeller() {
     return updateListingProduct(productId, resolveProduct(productId), stock, status)
   }
 
-  async function addListingProduct(product: Product, stock: number, status: SellerProductStatus = 'pending') {
+  async function addListingProduct(
+    product: Product,
+    stock: number,
+    status: SellerProductStatus = 'pending',
+    extras?: ListingProductExtras,
+  ) {
     const { result, error } = await usePost<{ listing: SellerListing, product: Product }>(
       '/seller/listings',
       {
-        product: {
-          id: product.id,
-          title: product.title,
-          shortName: product.shortName,
-          brand: product.brand,
-          category: product.category,
-          categoryLabel: product.categoryLabel,
-          price: product.price,
-          oldPrice: product.oldPrice,
-          image: product.image,
-          imageDark: product.imageDark,
-          gallery: product.gallery,
-          colors: product.colors,
-          shortDesc: product.shortDesc,
-          specs: product.specs,
-          badge: product.badge,
-          inStock: product.inStock,
-          fastDelivery: product.fastDelivery,
-        },
+        product: buildListingProductPayload(product, product.id, extras),
         stock,
         status,
       },
@@ -424,6 +835,9 @@ export function useSeller() {
       status,
     }
     listings.value = [listing, ...listings.value.filter(l => l.productId !== listing.productId)]
+    if (result.product) {
+      syncCommerceFromListing({ ...listing, product: result.product as ListingApiItem['product'] })
+    }
     return listing.productId
   }
 
@@ -442,28 +856,83 @@ export function useSeller() {
     return orders.value.find(order => order.id === id) ?? null
   }
 
-  async function fetchOrders(options?: { force?: boolean, sort?: string }) {
-    if (orders.value.length && loaded.value && !options?.force) {
-      return { ok: true as const, error: null as null }
+  async function fetchOrders(options?: {
+    force?: boolean
+    query?: SellerOrdersQuery
+  }) {
+    const query = buildOrdersQuery(options?.query)
+    const isPaged = !query.all
+
+    if (
+      !isPaged
+      && orders.value.length
+      && loaded.value
+      && !options?.force
+      && !options?.query
+    ) {
+      return { ok: true as const, error: null as null, meta: ordersMeta.value }
     }
 
     pending.value = true
     try {
-      const query = options?.sort ? `?sort=${encodeURIComponent(options.sort)}` : ''
-      const { result, error } = await useGet<SellerOrder[]>(
-        `/seller/orders${query}`,
-        { headers: { 'no-error': true } },
+      const { result, error } = await useGet<SellerOrdersPage | SellerOrder[]>(
+        '/seller/orders',
+        { headers: { 'no-error': true }, query },
       )
-      if (error || !Array.isArray(result)) {
-        return { ok: false as const, error: error ?? { message: 'orders-fetch-failed' } }
+      if (error || result == null) {
+        return {
+          ok: false as const,
+          error: error ?? { message: 'orders-fetch-failed' },
+          meta: ordersMeta.value,
+        }
       }
-      orders.value = result.map(o => toSellerOrder(o))
+      const page = normalizeOrdersPage(result)
+      orders.value = page.items
+      ordersMeta.value = {
+        total: page.total,
+        page: page.page,
+        pageSize: page.pageSize,
+        statusCounts: page.statusCounts,
+        paymentMethodOptions: page.paymentMethodOptions,
+      }
+      const rawItems = Array.isArray(result)
+        ? result
+        : (Array.isArray((result as any)?.items) ? (result as any).items : [])
+      if (rawItems.length) {
+        const { saveCommerce } = useSellerOrderCommerce()
+        for (const raw of rawItems) {
+          if (!raw?.id) continue
+          if (raw.trackingCode != null || raw.carrier != null || raw.estimatedDelivery != null) {
+            saveCommerce(String(raw.id), {
+              trackingCode: String(raw.trackingCode ?? ''),
+              carrier: String(raw.carrier ?? ''),
+              estimatedDelivery: String(raw.estimatedDelivery ?? ''),
+              refundedAmount: Number(raw.refundedAmount) || 0,
+            })
+          }
+        }
+      }
       await hydrateProducts(orders.value.flatMap(o => o.items.map(i => i.productId)))
-      return { ok: true as const, error: null as null }
+      return { ok: true as const, error: null as null, meta: ordersMeta.value }
     }
     finally {
       pending.value = false
     }
+  }
+
+  async function fetchOrdersExport(query?: SellerOrdersQuery) {
+    const { result, error } = await useGet<SellerOrdersPage | SellerOrder[]>(
+      '/seller/orders',
+      {
+        headers: { 'no-error': true },
+        query: buildOrdersQuery({ ...query, all: true, pageSize: 500 }),
+      },
+    )
+    if (error || result == null) {
+      return { ok: false as const, items: [] as SellerOrder[], error: error ?? { message: 'orders-export-failed' } }
+    }
+    const page = normalizeOrdersPage(result)
+    return { ok: true as const, items: page.items, error: null as null }
   }
 
   async function fetchOrder(id: string, options?: { force?: boolean }) {
@@ -477,7 +946,7 @@ export function useSeller() {
       return { ok: true as const, order: cached, error: null as null }
     }
 
-    const { result, error } = await useGet<SellerOrder>(
+    const { result, error } = await useGet<any>(
       `/seller/orders/${encodeURIComponent(orderId)}`,
       { headers: { 'no-error': true } },
     )
@@ -491,12 +960,91 @@ export function useSeller() {
 
     const order = toSellerOrder(result)
     upsertOrder(order)
+    if (result.commerce) {
+      const { saveCommerce } = useSellerOrderCommerce()
+      saveCommerce(order.id, {
+        ...result.commerce,
+        refunds: Array.isArray(result.commerce.refunds) ? result.commerce.refunds : [],
+      })
+    }
     await hydrateProducts(order.items.map(i => i.productId))
-    return { ok: true as const, order, error: null as null }
+    return {
+      ok: true as const,
+      order,
+      error: null as null,
+      detail: result as Record<string, unknown>,
+    }
+  }
+
+  async function updateOrderTracking(
+    id: string,
+    payload: { trackingCode?: string, carrier?: string, estimatedDelivery?: string },
+  ) {
+    const { result, error } = await usePatch<any>(
+      `/seller/orders/${encodeURIComponent(id)}/tracking`,
+      payload,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return { ok: false as const, error: error ?? { message: 'tracking-failed' } }
+    }
+    const order = toSellerOrder(result)
+    upsertOrder(order)
+    if (result.commerce) {
+      const { saveCommerce } = useSellerOrderCommerce()
+      saveCommerce(order.id, result.commerce)
+    }
+    return { ok: true as const, order, detail: result }
+  }
+
+  async function addOrderNote(id: string, text: string, author?: string) {
+    const { result, error } = await usePost<any>(
+      `/seller/orders/${encodeURIComponent(id)}/notes`,
+      { text, author },
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return { ok: false as const, error: error ?? { message: 'note-failed' } }
+    }
+    const order = toSellerOrder(result)
+    upsertOrder(order)
+    if (result.commerce) {
+      const { saveCommerce } = useSellerOrderCommerce()
+      saveCommerce(order.id, result.commerce)
+    }
+    return { ok: true as const, order, detail: result }
+  }
+
+  async function createOrderRefund(
+    id: string,
+    payload: { amount: number, reason?: string, transactionId?: string, status?: string },
+  ) {
+    const { result, error } = await usePost<any>(
+      `/seller/orders/${encodeURIComponent(id)}/refunds`,
+      payload,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return {
+        ok: false as const,
+        error: error ?? { message: 'refund-failed' },
+        message:
+          error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+          || error?.data?.message
+          || 'بازپرداخت ناموفق بود',
+      }
+    }
+    const order = toSellerOrder(result)
+    upsertOrder(order)
+    if (result.commerce) {
+      const { saveCommerce } = useSellerOrderCommerce()
+      saveCommerce(order.id, result.commerce)
+    }
+    return { ok: true as const, order, detail: result }
   }
 
   async function setOrderStatus(id: string, status: SellerOrderStatus) {
-    const { result, error } = await usePatch<SellerOrder>(
+    const { result, error } = await usePatch<any>(
       `/seller/orders/${encodeURIComponent(id)}/status`,
       { status },
       { headers: { 'no-error': true } },
@@ -504,6 +1052,10 @@ export function useSeller() {
     if (error) return false
     if (result?.id) {
       upsertOrder(toSellerOrder(result))
+      if (result.commerce) {
+        const { saveCommerce } = useSellerOrderCommerce()
+        saveCommerce(result.id, result.commerce)
+      }
       return true
     }
     const current = getOrderById(id)
@@ -657,6 +1209,8 @@ export function useSeller() {
   return {
     shop,
     listings,
+    listingsMeta,
+    ordersMeta,
     orders,
     reviews,
     payouts,
@@ -681,7 +1235,11 @@ export function useSeller() {
     addListingProduct,
     getOrderById,
     fetchOrders,
+    fetchOrdersExport,
     fetchOrder,
+    updateOrderTracking,
+    addOrderNote,
+    createOrderRefund,
     advanceOrder,
     revertOrder,
     setOrderStatus,
@@ -692,5 +1250,6 @@ export function useSeller() {
     fetchFinance,
     fetchSeller,
     fetchListings,
+    fetchListingsExport,
   }
 }

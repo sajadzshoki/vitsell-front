@@ -1,6 +1,16 @@
 <template>
   <div
-    v-if="!brand"
+    v-if="loading && !brand"
+    class="py-16 grid place-items-center"
+  >
+    <UIcon
+      name="i-tabler-loader-2"
+      class="size-8 text-primary animate-spin"
+    />
+  </div>
+
+  <div
+    v-else-if="!brand"
     class="bg-default border border-muted rounded-2xl p-8 text-center"
   >
     <UIcon
@@ -304,7 +314,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const route = useRoute()
 const { can } = useSellerPermissions()
-const { getById, ensureLoaded } = useSellerBrands()
+const { getById, fetchBrand } = useSellerBrands()
 const { listings, resolveProduct, fetchListings } = useSeller()
 
 type TabId = 'summary' | 'products' | 'seo' | 'edit'
@@ -315,11 +325,27 @@ function tabFromQuery(raw: unknown): TabId {
   return validTabs.includes(value as TabId) ? (value as TabId) : 'summary'
 }
 
-ensureLoaded()
-void fetchListings()
-
+const loading = ref(true)
 const activeTab = ref<TabId>(tabFromQuery(route.query.tab))
 const brand = computed(() => getById(props.brandId))
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    await fetchBrand(props.brandId, { force: true })
+    void fetchListings({ force: true, query: { all: true, pageSize: 200 } })
+  }
+  finally {
+    loading.value = false
+  }
+})
+
+watch(
+  () => props.brandId,
+  (id) => {
+    if (id) void fetchBrand(id, { force: true })
+  },
+)
 
 const brandListings = computed(() => {
   const name = brand.value?.name
@@ -328,7 +354,10 @@ const brandListings = computed(() => {
 })
 
 const headerStats = computed(() => [
-  { label: 'محصول', value: brandListings.value.length.toLocaleString('fa-IR') },
+  {
+    label: 'محصول',
+    value: (brand.value?.productCount ?? brandListings.value.length).toLocaleString('fa-IR'),
+  },
   { label: 'ترتیب', value: (brand.value?.sortOrder ?? 0).toLocaleString('fa-IR') },
   {
     label: 'وضعیت',
@@ -342,7 +371,11 @@ const headerStats = computed(() => [
 
 const tabs = computed(() => [
   { id: 'summary' as const, label: 'خلاصه' },
-  { id: 'products' as const, label: 'محصولات', count: brandListings.value.length },
+  {
+    id: 'products' as const,
+    label: 'محصولات',
+    count: brand.value?.productCount ?? brandListings.value.length,
+  },
   { id: 'seo' as const, label: 'سئو' },
   ...(can('brands.update') ? [{ id: 'edit' as const, label: 'ویرایش' }] : []),
 ])

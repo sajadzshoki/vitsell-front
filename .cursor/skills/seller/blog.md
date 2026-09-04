@@ -9,7 +9,8 @@ description: Blog CRUD rules for the digishop seller (admin) panel.
 
 ## مدل
 
-منبع: `app/data/seller-blog.ts` · منطق: `app/composables/useBlog.ts`
+- منبع ادمین: `useSellerBlog` → `/seller/blog` (فیلتر/صفحه‌بندی سروری)
+- استورفرانت: `useBlog` → `/blog` (عمومی)
 
 | فیلد | توضیح |
 |---|---|
@@ -40,9 +41,10 @@ description: Blog CRUD rules for the digishop seller (admin) panel.
 
 ## قوانین
 
-- ادیتور: `UTextarea` → پاراگراف‌ها با خط خالی — **بدون TipTap**.
-- تصویر از `TheSellerImageUpload` / Media Library.
-- سئو با `TheSellerSeoFields`؛ عمومی با `useEntitySeo` + `BlogPosting` JSON-LD.
+- ادیتور: `TheSellerRichTextEditor` (Nuxt UI `UEditor` / TipTap، HTML) — تیتر H2–H4، فهرست، لینک؛ تصویر از Media Library با **alt اجباری**.
+- ذخیره: `content: string[]`؛ سند غنی به‌صورت یک آیتم HTML؛ پست‌های قدیمی همچنان پاراگراف‌های متنی.
+- تصویر کاور از `TheSellerImageUpload` / Media Library.
+- سئو با `TheSellerSeoFields`؛ عمومی: canonical خودکار، OG از کاور، `noindex` برای پیش‌نویس/پیش‌نمایش، `BlogPosting` + `BreadcrumbList`، sitemap تک‌پست.
 - فیلتر/بالک وضعیت در لیست؛ RBAC: `blog.*`, `blog_categories.*`, `blog_tags.*`.
 
 ## چک قبل از اتمام

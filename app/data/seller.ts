@@ -181,7 +181,9 @@ export const sellerOrderSortOptions: { id: SellerOrderSort, label: string }[] = 
   { id: 'amount_asc', label: 'کمترین مبلغ' },
 ]
 
-export const sellerOrdersPageSize = 5
+export const sellerOrdersPageSize = 10
+
+export type SellerReviewModeration = 'pending' | 'approved' | 'rejected' | 'hidden'
 
 export type SellerReview = {
   id: string
@@ -191,6 +193,7 @@ export type SellerReview = {
   text: string
   date: string
   reply?: string
+  moderation?: SellerReviewModeration
 }
 
 export type SellerPayoutStatus = 'paid' | 'pending'

@@ -519,8 +519,8 @@ async function onSave() {
   saving.value = true
   try {
     const result = isEdit.value
-      ? updateBanner(props.initial!.id, form.value)
-      : createBanner(form.value)
+      ? await updateBanner(props.initial!.id, form.value)
+      : await createBanner(form.value)
 
     if (!result.ok) {
       toast.error(t(result.error))

@@ -35,6 +35,10 @@ Frontend-first Marketing & Merchandising for the digishop seller panel.
 
 ## Backend used
 
+- Marketing hub: `GET /seller/marketing` (summary KPIs + coupon usage)
+- Automatic discounts: `/seller/discounts*`
+- Campaigns: `/seller/campaigns*`
+- Banners: `/seller/banners*`
 - Deals: `/seller/deals`
 - Discount codes: `/seller/discount-codes`
 - Content promos: `/seller/content-promos`
@@ -43,8 +47,7 @@ Frontend-first Marketing & Merchandising for the digishop seller panel.
 
 ## Gaps
 
-- Banner CRUD API missing (FE state + `bannersForPlacement` storefront bridge when admin seeded)
-- Coupon overlay fields (targeting, fixed amount, usage stats) FE until API accepts them
-- Automatic discounts & campaigns FE-only
+- Coupon overlay fields (targeting, fixed amount) FE until API accepts them
 - No fake CTR / stacking engine
 - Delivery receipts not claimed without API data
+- Storefront application of `store_discounts` / `store_campaigns` rules not wired yet (admin CRUD ready)

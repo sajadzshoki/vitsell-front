@@ -56,10 +56,10 @@ import { customerFullName } from '~/data/seller-customers'
 const { t } = useI18n()
 const toast = useAppToast()
 const { can } = useSellerPermissions()
-const { listings, orders } = useSeller()
+const { fetchListingsExport, fetchOrdersExport, resolveProduct } = useSeller()
 const { customers, ensureLoaded: ensureCustomers } = useSellerCustomers()
 
-ensureCustomers()
+void ensureCustomers()
 
 type ExportId = 'products' | 'orders' | 'customers'
 
@@ -79,7 +79,7 @@ const exportActions = computed(() => {
     list.push({
       id: 'orders',
       label: 'سفارش‌ها',
-      hint: 'خروجی سفارش‌های ثبت‌شده',
+      hint: 'خروجی Excel (CSV) از سفارش‌ها',
       icon: 'i-tabler-shopping-cart',
     })
   }
@@ -94,21 +94,69 @@ const exportActions = computed(() => {
   return list
 })
 
-function runExport(id: ExportId) {
+async function runExport(id: ExportId) {
   running.value = id
   try {
     if (id === 'products') {
+      const { ok, items } = await fetchListingsExport()
+      if (!ok) {
+        toast.error(t('خروجی محصولات ناموفق بود'))
+        return
+      }
       downloadSellerCsv(
         `products-${Date.now()}`,
-        ['productId', 'stock', 'sold', 'status'],
-        listings.value.map(l => [l.productId, l.stock, l.sold, l.status]),
+        ['id', 'title', 'brand', 'category', 'price', 'stock', 'sold', 'status'],
+        items.map((l) => {
+          const p = l.product ?? resolveProduct(l.productId)
+          return [
+            l.productId,
+            p.title,
+            p.brand,
+            p.categoryLabel || p.category,
+            p.price,
+            l.stock,
+            l.sold,
+            l.status,
+          ]
+        }),
       )
     }
     else if (id === 'orders') {
+      const { ok, items } = await fetchOrdersExport()
+      if (!ok) {
+        toast.error(t('خروجی سفارش‌ها ناموفق بود'))
+        return
+      }
       downloadSellerCsv(
         `orders-${Date.now()}`,
-        ['id', 'customer', 'phone', 'status', 'total', 'date'],
-        orders.value.map(o => [o.id, o.customerName, o.customerPhone, o.status, o.total, o.date]),
+        [
+          'id',
+          'customer',
+          'phone',
+          'city',
+          'status',
+          'total',
+          'paymentMethod',
+          'shippingMethod',
+          'date',
+          'dateKey',
+          'itemsCount',
+          'note',
+        ],
+        items.map(o => [
+          o.id,
+          o.customerName,
+          o.customerPhone,
+          o.city,
+          o.status,
+          o.total,
+          o.paymentMethod,
+          o.shippingMethod,
+          o.date,
+          o.dateKey,
+          o.items.length,
+          o.note || '',
+        ]),
       )
     }
     else {

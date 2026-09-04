@@ -3,7 +3,7 @@
     <div class="hidden lg:block">
       <TheSellerPageHeader
         :title="$t('مرجوعی‌ها')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('درخواست')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('درخواست')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -14,12 +14,31 @@
             size="sm"
             icon="i-tabler-download"
             class="cursor-pointer"
+            :loading="exporting"
             @click="exportCsv"
           >
             {{ $t('خروجی') }}
           </UButton>
         </template>
       </TheSellerPageHeader>
+    </div>
+
+    <div
+      v-if="can('returns.view')"
+      class="lg:hidden mb-4"
+    >
+      <UButton
+        type="button"
+        color="neutral"
+        variant="soft"
+        block
+        icon="i-tabler-download"
+        class="cursor-pointer"
+        :loading="exporting"
+        @click="exportCsv"
+      >
+        {{ $t('خروجی CSV') }}
+      </UButton>
     </div>
 
     <TheSellerListToolbar
@@ -32,10 +51,20 @@
       @clear="clearFilters"
     />
 
+    <div
+      v-if="(loading || pending) && !returns.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!returns.length"
       icon="i-tabler-arrow-back-up"
-      :message="$t('مرجوعی‌ای با این فیلتر پیدا نشد')"
+      :message="hasActiveFilters ? $t('مرجوعی‌ای با این فیلتر پیدا نشد') : $t('هنوز مرجوعی ثبت نشده')"
     />
 
     <div
@@ -43,7 +72,7 @@
       class="space-y-3"
     >
       <div
-        v-for="item in paged"
+        v-for="item in returns"
         :key="item.id"
         class="bg-muted border border-muted rounded-2xl p-4"
       >
@@ -52,11 +81,11 @@
             <div class="flex items-center gap-2 flex-wrap">
               <span class="font-medium text-highlighted num" dir="ltr">{{ item.id }}</span>
               <UBadge
-                :color="sellerReturnStatusMeta[item.status].color"
+                :color="sellerReturnStatusMeta[item.status]?.color || 'neutral'"
                 variant="subtle"
                 size="xs"
               >
-                {{ $t(sellerReturnStatusMeta[item.status].label) }}
+                {{ $t(sellerReturnStatusMeta[item.status]?.label || item.status) }}
               </UBadge>
             </div>
             <div class="text-[11px] text-muted mt-1">
@@ -72,6 +101,12 @@
             </div>
             <div class="text-xs text-toned mt-2">
               {{ item.reason }}
+            </div>
+            <div
+              v-if="item.adminNote"
+              class="text-[11px] text-muted mt-1"
+            >
+              {{ $t('یادداشت ادمین') }}: {{ item.adminNote }}
             </div>
             <div class="text-[11px] text-muted num mt-1" dir="ltr">
               {{ item.requestedAt.slice(0, 10) }}
@@ -105,8 +140,8 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
+        :total="listMeta.total"
+        :items-per-page="listMeta.pageSize || pageSize"
       />
     </div>
 
@@ -143,6 +178,7 @@
           <UButton
             color="primary"
             class="font-bold cursor-pointer"
+            :loading="saving"
             @click="confirmStatusChange"
           >
             {{ $t('تأیید') }}
@@ -161,19 +197,20 @@ import {
   type SellerReturnStatus,
 } from '~/data/seller-returns-refunds'
 
-const PAGE_SIZE = 10
+const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
+const route = useRoute()
 const { can } = useSellerPermissions()
-const { returns, ensureLoaded, setStatus } = useSellerReturns()
+const { returns, listMeta, pending, fetchList, setStatus } = useSellerReturns()
 const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
-ensureLoaded()
-
-const pageSize = PAGE_SIZE
+const loading = ref(true)
+const exporting = ref(false)
+const saving = ref(false)
 const confirmOpen = ref(false)
 const pendingItem = ref<SellerReturn | null>(null)
 const pendingStatus = ref<SellerReturnStatus | null>(null)
@@ -182,36 +219,20 @@ const pendingLabel = ref('')
 const canManage = computed(() => can('returns.manage'))
 
 const statusTabs = computed(() => {
-  const all = returns.value
+  const c = listMeta.value.statusCounts
   return [
-    { id: 'all', label: t('همه'), count: all.length },
-    { id: 'requested', label: t('درخواست‌شده'), count: all.filter(r => r.status === 'requested').length },
-    { id: 'approved', label: t('تأیید شده'), count: all.filter(r => r.status === 'approved').length },
-    { id: 'received', label: t('دریافت‌شده'), count: all.filter(r => r.status === 'received').length },
-    { id: 'completed', label: t('تکمیل‌شده'), count: all.filter(r => r.status === 'completed').length },
-    { id: 'rejected', label: t('رد شده'), count: all.filter(r => r.status === 'rejected').length },
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'requested', label: t('درخواست‌شده'), count: Number(c.requested) || 0 },
+    { id: 'approved', label: t('تأیید شده'), count: Number(c.approved) || 0 },
+    { id: 'received', label: t('دریافت‌شده'), count: Number(c.received) || 0 },
+    { id: 'completed', label: t('تکمیل‌شده'), count: Number(c.completed) || 0 },
+    { id: 'rejected', label: t('رد شده'), count: Number(c.rejected) || 0 },
   ]
 })
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return returns.value.filter((item) => {
-    if (status.value !== 'all' && item.status !== status.value) return false
-    if (!q) return true
-    return (
-      item.id.toLowerCase().includes(q)
-      || item.orderId.toLowerCase().includes(q)
-      || item.customerName.toLowerCase().includes(q)
-    )
-  })
-})
-
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
 
 const confirmTitle = computed(() => pendingLabel.value || 'تغییر وضعیت مرجوعی')
 
@@ -251,31 +272,97 @@ function openConfirm(item: SellerReturn, nextStatus: SellerReturnStatus, label: 
   confirmOpen.value = true
 }
 
-function confirmStatusChange() {
-  if (!pendingItem.value || !pendingStatus.value) return
-  const result = setStatus(pendingItem.value.id, pendingStatus.value)
-  confirmOpen.value = false
-  pendingItem.value = null
-  pendingStatus.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
-  }
-  toast.success(t('وضعیت مرجوعی به‌روزرسانی شد'))
-}
-
-function exportCsv() {
-  downloadSellerCsv(
-    'returns-export',
-    ['شناسه', 'سفارش', 'مشتری', 'وضعیت', 'دلیل', 'تاریخ'],
-    filtered.value.map(r => [
-      r.id,
-      r.orderId,
-      r.customerName,
-      sellerReturnStatusMeta[r.status].label,
-      r.reason,
-      r.requestedAt.slice(0, 10),
-    ]),
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
   )
 }
+
+async function loadReturns() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری مرجوعی‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+async function confirmStatusChange() {
+  if (!pendingItem.value || !pendingStatus.value) return
+  saving.value = true
+  try {
+    const result = await setStatus(pendingItem.value.id, pendingStatus.value)
+    confirmOpen.value = false
+    pendingItem.value = null
+    pendingStatus.value = null
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('وضعیت مرجوعی به‌روزرسانی شد'))
+    await loadReturns()
+  }
+  finally {
+    saving.value = false
+  }
+}
+
+async function exportCsv() {
+  exporting.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      all: true,
+      pageSize: 200,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('خروجی مرجوعی‌ها ناموفق بود')))
+      return
+    }
+    downloadSellerCsv(
+      `returns-${Date.now()}`,
+      ['شناسه', 'سفارش', 'مشتری', 'وضعیت', 'دلیل', 'یادداشت', 'تاریخ', 'اقلام'],
+      returns.value.map(r => [
+        r.id,
+        r.orderId,
+        r.customerName,
+        sellerReturnStatusMeta[r.status]?.label || r.status,
+        r.reason,
+        r.adminNote,
+        r.requestedAt.slice(0, 10),
+        r.items.length,
+      ]),
+    )
+    toast.success(t('فایل خروجی آماده شد'))
+    await loadReturns()
+  }
+  finally {
+    exporting.value = false
+  }
+}
+
+watch(
+  () => route.query,
+  () => {
+    void loadReturns()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadReturns()
+})
 </script>

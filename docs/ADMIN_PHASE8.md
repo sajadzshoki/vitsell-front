@@ -34,7 +34,8 @@ Completes the digishop Super Admin foundation (single-vendor site admin under `/
 
 ## Backend gaps
 
-- Staff admins/roles/abilities APIs; `/auth/me` abilities
-- Platform settings / navigation / import persistence APIs
+- ~~Staff admins/roles/abilities APIs; `/auth/me` abilities~~ ✅ (`/seller/admins`, `/seller/roles`, abilities in `/auth/me`)
+- ~~Platform settings~~ ✅ (`GET|PUT /seller/settings` via ContentBlock)
+- Platform navigation / import persistence APIs
 - Real integration health, 2FA, failed-login feed
-- Server-side audit immutability
+- Server-side audit immutability — `audit_logs` + `GET|POST /seller/audit` (append-only; no update/delete)

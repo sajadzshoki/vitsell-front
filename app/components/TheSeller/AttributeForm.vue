@@ -371,8 +371,8 @@ async function onSave() {
       slug: form.value.slug.trim().toLowerCase() || slugifyLatin(form.value.name),
     }
     const result = isEdit.value
-      ? updateAttribute(props.initial!.id, payload)
-      : createAttribute(payload)
+      ? await updateAttribute(props.initial!.id, payload)
+      : await createAttribute(payload)
 
     if (!result.ok) {
       toast.error(t(result.error))

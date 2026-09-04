@@ -22,7 +22,7 @@ type SellerProductQuestion = {
 ```
 
 منبع نوع: `app/data/seller-questions.ts`  
-منطق: `app/composables/useSellerQuestions.ts` → `GET /seller/questions`
+منطق: `app/composables/useSellerQuestions.ts` → `GET /seller/questions` (فیلتر سرور)
 
 الگوی UI نزدیک به نظرات فروشنده (`TheSellerReviews` / `TheSellerReviewCard`).
 
@@ -30,7 +30,8 @@ type SellerProductQuestion = {
 
 | اکشن | تابع | Endpoint |
 |---|---|---|
-| لیست | `ensureLoaded()` | `GET /seller/questions` |
+| لیست فیلترشده | `fetchList({ q, status, page, pageSize, all })` | `GET /seller/questions` |
+| badge / شمارش | `ensureLoaded()` | `GET /seller/questions?page=1&pageSize=1` → `statusCounts` |
 | پاسخ | `replyToQuestion(id, text)` | `POST /seller/questions/:id/reply` |
 | حذف پاسخ | `clearAnswer(id)` | `DELETE /seller/questions/:id/answer` |
 | تأیید خریدار | `setVerified(id, boolean)` | `PATCH /seller/questions/:id/verified` |
@@ -39,7 +40,8 @@ type SellerProductQuestion = {
 
 ## UI
 
-- فیلتر: همه / بدون پاسخ / پاسخ‌داده‌شده + جستجو
+- فیلتر سرور: همه / بدون پاسخ / پاسخ‌داده‌شده + جستجو + pagination
+- خروجی CSV با `all=true`
 - کارت: تصویر محصول، پرسش، پاسخ یا فرم پاسخ، اکشن‌ها
 - badge تعداد بدون پاسخ در Sidebar و MobileMenu (`ensureLoaded` در layout)
-- loading: مثل سفارش‌ها وقتی `pending && !questions.length`
+- loading: مثل نظرات وقتی `(loading \|\| pending) && !questions.length`

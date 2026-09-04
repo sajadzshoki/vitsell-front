@@ -3,7 +3,7 @@
     <div class="hidden lg:block">
       <TheSellerPageHeader
         :title="$t('محصولات فروشگاه')"
-        :count-label="!loading ? `${filtered.length.toLocaleString('fa-IR')} ${$t('کالا')}` : undefined"
+        :count-label="!loading ? `${listingsMeta.total.toLocaleString('fa-IR')} ${$t('کالا')}` : undefined"
       >
         <template #actions>
           <div class="flex items-center gap-2 flex-wrap">
@@ -15,6 +15,8 @@
               size="sm"
               icon="i-tabler-download"
               class="cursor-pointer"
+              :loading="exporting"
+              :disabled="exporting"
               @click="exportCsv"
             >
               {{ $t('خروجی') }}
@@ -52,6 +54,8 @@
         block
         icon="i-tabler-download"
         class="cursor-pointer"
+        :loading="exporting"
+        :disabled="exporting"
         @click="exportCsv"
       >
         {{ $t('خروجی CSV') }}
@@ -243,10 +247,10 @@
     <TheSellerEmptyState
       v-else-if="filtered.length === 0"
       icon="i-tabler-package"
-      :message="listings.length === 0 ? $t('هنوز محصولی ثبت نشده') : $t('محصولی با این فیلتر پیدا نشد')"
+      :message="!hasAnyFilters && listingsMeta.total === 0 ? $t('هنوز محصولی ثبت نشده') : $t('محصولی با این فیلتر پیدا نشد')"
     >
       <template
-        v-if="listings.length === 0 && can('products.create')"
+        v-if="!hasAnyFilters && listingsMeta.total === 0 && can('products.create')"
         #actions
       >
         <UButton
@@ -326,8 +330,8 @@
 </template>
 
 <script setup lang="ts">
-import { sellerLowStockThreshold, type SellerListing, type SellerProductStatus } from '~/data/seller'
 import { sellerProductFilterDefs } from '~/data/seller-filters'
+import { downloadSellerCsv } from '~/data/seller-export'
 
 const PAGE_SIZE = 10
 
@@ -335,14 +339,17 @@ const { t } = useI18n()
 const toast = useAppToast()
 const {
   listings,
+  listingsMeta,
   resolveProduct,
   fetchListings,
+  fetchListingsExport,
   setListingStatus,
 } = useSeller()
 const { can } = useSellerPermissions()
-const { getCommerce, saveCommerce } = useSellerProductCommerce()
+const { saveCommerce } = useSellerProductCommerce()
 const { brands, ensureLoaded: ensureBrands } = useSellerBrands()
 const { categories, ensureLoaded: ensureCategories } = useSellerCategories()
+const route = useRoute()
 
 const { search, status, sort, page, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
@@ -353,6 +360,7 @@ const filterDefs = computed(() => sellerProductFilterDefs)
 const filters = useSellerFilters(filterDefs)
 
 const loading = ref(true)
+const exporting = ref(false)
 const showAdvanced = ref(false)
 const applyingFilters = ref(false)
 const selectedIds = ref<string[]>([])
@@ -411,6 +419,28 @@ watch(showAdvanced, (open) => {
   if (open) syncDraftFromFilters()
 })
 
+function buildServerQuery() {
+  const fv = filters.values.value
+  return {
+    q: search.value.trim() || undefined,
+    status: status.value !== 'all' ? status.value : undefined,
+    category: filters.getString('category') || undefined,
+    brand: filters.getString('brand') || undefined,
+    stock: filters.getString('stock') || undefined,
+    priceMin: fv.priceMin ? Number(fv.priceMin) : undefined,
+    priceMax: fv.priceMax ? Number(fv.priceMax) : undefined,
+    dateFrom: String(fv.dateFrom || '') || undefined,
+    dateTo: String(fv.dateTo || '') || undefined,
+    hasDiscount: fv.hasDiscount === true ? true : undefined,
+    hasVariants: fv.hasVariants === true ? true : undefined,
+    featured: fv.featured === true ? true : undefined,
+    published: fv.published === true ? true : undefined,
+    sort: sort.value || 'newest',
+    page: page.value,
+    pageSize: PAGE_SIZE,
+  }
+}
+
 async function applyAdvancedFilters() {
   applyingFilters.value = true
   try {
@@ -442,11 +472,11 @@ ensureBrands()
 void ensureCategories()
 
 const statusTabs = computed(() => [
-  { id: 'all', label: t('همه') },
-  { id: 'active', label: t('فعال'), count: countBy('active') },
-  { id: 'pending', label: t('در انتظار'), count: countBy('pending') },
-  { id: 'inactive', label: t('غیرفعال'), count: countBy('inactive') },
-  { id: 'out_of_stock', label: t('ناموجود'), count: countBy('out_of_stock') },
+  { id: 'all', label: t('همه'), count: listingsMeta.value.statusCounts.all },
+  { id: 'active', label: t('فعال'), count: listingsMeta.value.statusCounts.active },
+  { id: 'pending', label: t('در انتظار'), count: listingsMeta.value.statusCounts.pending },
+  { id: 'inactive', label: t('غیرفعال'), count: listingsMeta.value.statusCounts.inactive },
+  { id: 'out_of_stock', label: t('ناموجود'), count: listingsMeta.value.statusCounts.out_of_stock },
 ])
 
 const sortItems = computed(() => [
@@ -527,82 +557,12 @@ function onStatusChange(id: string) {
   status.value = id
 }
 
-function countBy(id: SellerProductStatus) {
-  return listings.value.filter(item => item.status === id).length
-}
-
-function stockBucket(listing: SellerListing) {
-  const commerce = getCommerce(listing.productId)
-  const threshold = commerce.lowStockThreshold || sellerLowStockThreshold
-  if (listing.status === 'out_of_stock' || listing.stock <= 0) return 'out_of_stock'
-  if (listing.stock <= threshold) return 'low_stock'
-  return 'in_stock'
-}
-
-const filtered = computed(() => {
-  const q = search.value.trim()
-  const category = filters.getString('category')
-  const brand = filters.getString('brand')
-  const stock = filters.getString('stock')
-  const fv = filters.values.value
-  const priceMin = Number(fv.priceMin || 0) || 0
-  const priceMax = Number(fv.priceMax || 0) || 0
-  const dateFrom = String(fv.dateFrom || '')
-  const dateTo = String(fv.dateTo || '')
-  const hasDiscount = fv.hasDiscount === true
-  const hasVariants = fv.hasVariants === true
-  const featured = fv.featured === true
-  const published = fv.published === true
-
-  let rows = listings.value.filter((listing) => {
-    if (status.value !== 'all' && listing.status !== status.value) return false
-    const product = resolveProduct(listing.productId)
-    const commerce = getCommerce(listing.productId)
-
-    if (q) {
-      const hit = product.title.includes(q)
-        || product.brand.includes(q)
-        || listing.productId.includes(q)
-        || commerce.sku.includes(q)
-      if (!hit) return false
-    }
-    if (category && product.category !== category) return false
-    if (brand && product.brand !== brand) return false
-    if (stock && stockBucket(listing) !== stock) return false
-    if (priceMin && product.price < priceMin) return false
-    if (priceMax && product.price > priceMax) return false
-    if (hasDiscount && !(product.oldPrice && product.oldPrice > product.price)) return false
-    if (hasVariants && !commerce.variants.length) return false
-    if (featured && !commerce.featured) return false
-    if (published && !commerce.published) return false
-    // date range reserved for when listing.createdAt exists on API
-    if (dateFrom || dateTo) {
-      void dateFrom
-      void dateTo
-    }
-    return true
-  })
-
-  const sortKey = sort.value || 'newest'
-  rows = [...rows].sort((a, b) => {
-    const pa = resolveProduct(a.productId)
-    const pb = resolveProduct(b.productId)
-    if (sortKey === 'price_asc') return pa.price - pb.price
-    if (sortKey === 'price_desc') return pb.price - pa.price
-    if (sortKey === 'stock_asc') return a.stock - b.stock
-    if (sortKey === 'title') return pa.title.localeCompare(pb.title, 'fa')
-    return a.productId.localeCompare(b.productId)
-  })
-
-  return rows
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / PAGE_SIZE)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * PAGE_SIZE
-  return filtered.value.slice(start, start + PAGE_SIZE)
-})
+/** Server already filtered / sorted / paginated */
+const filtered = computed(() => listings.value)
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil((listingsMeta.value.total || 0) / PAGE_SIZE)),
+)
+const paged = computed(() => listings.value)
 
 const allPageSelected = computed(() =>
   paged.value.length > 0 && paged.value.every(l => selectedIds.value.includes(l.productId)),
@@ -664,36 +624,45 @@ async function runBulk() {
     toast.success(t('اقدام گروهی انجام شد'))
     selectedIds.value = []
     bulkAction.value = ''
+    await loadProducts()
   }
   finally {
     bulkRunning.value = false
   }
 }
 
-function exportCsv() {
-  const lines = [
-    ['id', 'title', 'brand', 'category', 'price', 'stock', 'status'].join(','),
-    ...filtered.value.map((listing) => {
-      const p = resolveProduct(listing.productId)
-      return [
-        listing.productId,
-        `"${p.title.replace(/"/g, '""')}"`,
-        p.brand,
-        p.category,
-        p.price,
-        listing.stock,
-        listing.status,
-      ].join(',')
-    }),
-  ]
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `products-${Date.now()}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-  toast.success(t('فایل خروجی آماده شد'))
+async function exportCsv() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const { page: _page, pageSize: _pageSize, ...filtersOnly } = buildServerQuery()
+    const { ok, error, items } = await fetchListingsExport(filtersOnly)
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('خروجی محصولات ناموفق بود')))
+      return
+    }
+    downloadSellerCsv(
+      `products-${Date.now()}`,
+      ['id', 'title', 'brand', 'category', 'price', 'stock', 'sold', 'status'],
+      items.map((listing) => {
+        const p = listing.product ?? resolveProduct(listing.productId)
+        return [
+          listing.productId,
+          p.title,
+          p.brand,
+          p.categoryLabel || p.category,
+          p.price,
+          listing.stock,
+          listing.sold,
+          listing.status,
+        ]
+      }),
+    )
+    toast.success(t('فایل خروجی آماده شد'))
+  }
+  finally {
+    exporting.value = false
+  }
 }
 
 function apiErrorMessage(error: any, fallback: string) {
@@ -704,7 +673,10 @@ function apiErrorMessage(error: any, fallback: string) {
 async function loadProducts() {
   loading.value = true
   try {
-    const { ok, error } = await fetchListings({ force: true })
+    const { ok, error } = await fetchListings({
+      force: true,
+      query: buildServerQuery(),
+    })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری محصولات ناموفق بود')))
     }
@@ -713,6 +685,14 @@ async function loadProducts() {
     loading.value = false
   }
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadProducts()
+  },
+  { deep: true },
+)
 
 onMounted(() => {
   loadProducts()

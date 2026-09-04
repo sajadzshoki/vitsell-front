@@ -3,7 +3,7 @@
     <div class="hidden lg:block">
       <TheSellerPageHeader
         :title="$t('بازپرداخت‌ها')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('رکورد')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('رکورد')}` : undefined"
       >
         <template #actions>
           <div class="flex items-center gap-2 flex-wrap">
@@ -15,6 +15,7 @@
               size="sm"
               icon="i-tabler-download"
               class="cursor-pointer"
+              :loading="exporting"
               @click="exportCsv"
             >
               {{ $t('خروجی') }}
@@ -26,7 +27,7 @@
               size="sm"
               icon="i-tabler-plus"
               class="cursor-pointer font-medium"
-              @click="createOpen = true"
+              @click="openCreate"
             >
               {{ $t('بازپرداخت جدید') }}
             </UButton>
@@ -43,9 +44,22 @@
         block
         icon="i-tabler-plus"
         class="cursor-pointer font-medium"
-        @click="createOpen = true"
+        @click="openCreate"
       >
         {{ $t('بازپرداخت جدید') }}
+      </UButton>
+      <UButton
+        v-if="canView"
+        type="button"
+        color="neutral"
+        variant="soft"
+        block
+        icon="i-tabler-download"
+        class="cursor-pointer"
+        :loading="exporting"
+        @click="exportCsv"
+      >
+        {{ $t('خروجی CSV') }}
       </UButton>
     </div>
 
@@ -59,10 +73,20 @@
       @clear="clearFilters"
     />
 
+    <div
+      v-if="(loading || pending) && !refunds.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!refunds.length"
       icon="i-tabler-receipt-refund"
-      :message="$t('بازپرداختی با این فیلتر پیدا نشد')"
+      :message="hasActiveFilters ? $t('بازپرداختی با این فیلتر پیدا نشد') : $t('هنوز بازپرداختی ثبت نشده')"
     />
 
     <div
@@ -70,7 +94,7 @@
       class="space-y-3"
     >
       <div
-        v-for="item in paged"
+        v-for="item in refunds"
         :key="item.id"
         class="bg-muted border border-muted rounded-2xl p-4"
       >
@@ -96,6 +120,12 @@
               >
                 {{ item.orderId }}
               </NuxtLink>
+            </div>
+            <div
+              v-if="item.reason"
+              class="text-xs text-toned mt-2"
+            >
+              {{ item.reason }}
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 text-xs">
               <div>
@@ -147,8 +177,8 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
+        :total="listMeta.total"
+        :items-per-page="listMeta.pageSize || pageSize"
       />
     </div>
 
@@ -169,6 +199,7 @@
               value-key="value"
               class="w-full"
               :placeholder="$t('انتخاب سفارش')"
+              :loading="ordersLoading"
               @update:model-value="onOrderSelect"
             />
           </UFormField>
@@ -182,7 +213,14 @@
             </div>
             <div>
               <span class="text-muted">{{ $t('قابل بازپرداخت') }}:</span>
-              <span class="num ms-1 text-primary">{{ formatPrice(maxRefundable) }}</span>
+              <span
+                v-if="refundMetaLoading"
+                class="ms-1 text-muted"
+              >…</span>
+              <span
+                v-else
+                class="num ms-1 text-primary"
+              >{{ formatPrice(maxRefundable) }}</span>
             </div>
           </div>
           <TheFormInput
@@ -217,6 +255,7 @@
           <UButton
             color="primary"
             class="font-bold cursor-pointer"
+            :loading="creating"
             @click="submitCreate"
           >
             {{ $t('ثبت') }}
@@ -243,6 +282,7 @@
           <UButton
             color="primary"
             class="font-bold cursor-pointer"
+            :loading="saving"
             @click="confirmStatusChange"
           >
             {{ $t('تأیید') }}
@@ -262,12 +302,22 @@ import {
   type SellerRefundStatus,
 } from '~/data/seller-returns-refunds'
 
-const PAGE_SIZE = 10
+const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
+const route = useRoute()
 const { can } = useSellerPermissions()
-const { refunds, ensureLoaded, createRefund, setStatus, refundableRemaining: calcRemaining } = useSellerRefunds()
+const {
+  refunds,
+  listMeta,
+  pending,
+  fetchList,
+  createRefund,
+  setStatus,
+  getOrderRefundable,
+  refundableRemaining: calcRemaining,
+} = useSellerRefunds()
 const { orders, fetchOrders } = useSeller()
 const { appendLog } = useSellerAudit()
 const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
@@ -275,16 +325,19 @@ const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQu
 })
 const auditActor = { id: 'admin', name: 'ادمین' }
 
-ensureLoaded()
-void fetchOrders()
-
-const pageSize = PAGE_SIZE
+const loading = ref(true)
+const exporting = ref(false)
+const creating = ref(false)
+const saving = ref(false)
+const ordersLoading = ref(false)
+const refundMetaLoading = ref(false)
 const createOpen = ref(false)
 const statusConfirmOpen = ref(false)
 const pendingRefund = ref<SellerRefund | null>(null)
 const pendingStatus = ref<SellerRefundStatus | null>(null)
 const statusConfirmTitle = ref('')
 const statusConfirmDescription = ref('')
+const maxRefundable = ref(0)
 
 const createForm = ref({
   orderId: '',
@@ -298,15 +351,19 @@ const canCreate = computed(() => can('refunds.create') || can('orders.refund'))
 const canManage = computed(() => can('refunds.manage') || can('orders.refund'))
 
 const statusTabs = computed(() => {
-  const all = refunds.value
+  const c = listMeta.value.statusCounts
   return [
-    { id: 'all', label: t('همه'), count: all.length },
-    { id: 'pending', label: t('در انتظار'), count: all.filter(r => r.status === 'pending').length },
-    { id: 'processing', label: t('در حال پردازش'), count: all.filter(r => r.status === 'processing').length },
-    { id: 'completed', label: t('انجام‌شده'), count: all.filter(r => r.status === 'completed').length },
-    { id: 'failed', label: t('ناموفق'), count: all.filter(r => r.status === 'failed').length },
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'pending', label: t('در انتظار'), count: Number(c.pending) || 0 },
+    { id: 'processing', label: t('در حال پردازش'), count: Number(c.processing) || 0 },
+    { id: 'completed', label: t('انجام‌شده'), count: Number(c.completed) || 0 },
+    { id: 'failed', label: t('ناموفق'), count: Number(c.failed) || 0 },
   ]
 })
+
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
 
 const orderItems = computed(() =>
   orders.value.map(o => ({
@@ -318,38 +375,6 @@ const orderItems = computed(() =>
 const selectedOrder = computed(() =>
   orders.value.find(o => o.id === createForm.value.orderId) ?? null,
 )
-
-const maxRefundable = computed(() => {
-  const order = selectedOrder.value
-  if (!order) return 0
-  const completedRefunded = refunds.value
-    .filter(r => r.orderId === order.id && r.status === 'completed')
-    .reduce((sum, r) => sum + r.amount, 0)
-  const pendingAmount = refunds.value
-    .filter(r => r.orderId === order.id && (r.status === 'pending' || r.status === 'processing'))
-    .reduce((sum, r) => sum + r.amount, 0)
-  return calcRemaining(order.total, completedRefunded + pendingAmount)
-})
-
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return refunds.value.filter((item) => {
-    if (status.value !== 'all' && item.status !== status.value) return false
-    if (!q) return true
-    return (
-      item.id.toLowerCase().includes(q)
-      || item.orderId.toLowerCase().includes(q)
-      || item.customerName.toLowerCase().includes(q)
-    )
-  })
-})
-
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
 
 type RefundAction = {
   status: SellerRefundStatus
@@ -375,10 +400,13 @@ function availableActions(item: SellerRefund): RefundAction[] {
   }
 }
 
-function onOrderSelect() {
-  if (selectedOrder.value && !createForm.value.amount) {
-    createForm.value.amount = String(maxRefundable.value || selectedOrder.value.total)
-  }
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
 }
 
 function rowRemaining(item: SellerRefund) {
@@ -388,59 +416,107 @@ function rowRemaining(item: SellerRefund) {
   return calcRemaining(item.orderTotal, used)
 }
 
-function submitCreate() {
+async function loadRefunds() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری بازپرداخت‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+async function openCreate() {
+  createOpen.value = true
+  if (!orders.value.length) {
+    ordersLoading.value = true
+    try {
+      await fetchOrders({ force: true, query: { all: true, pageSize: 200 } })
+    }
+    finally {
+      ordersLoading.value = false
+    }
+  }
+}
+
+async function onOrderSelect() {
+  const order = selectedOrder.value
+  maxRefundable.value = 0
+  if (!order) return
+  refundMetaLoading.value = true
+  try {
+    const meta = await getOrderRefundable(order.id, order.total)
+    maxRefundable.value = meta.remaining
+    if (!createForm.value.amount) {
+      createForm.value.amount = String(meta.remaining || order.total)
+    }
+  }
+  finally {
+    refundMetaLoading.value = false
+  }
+}
+
+async function submitCreate() {
   const order = selectedOrder.value
   if (!order) {
     toast.error(t('سفارش را انتخاب کنید'))
     return
   }
   const amount = Number(createForm.value.amount.replace(/\D/g, ''))
-  const completedRefunded = refunds.value
-    .filter(r => r.orderId === order.id && r.status === 'completed')
-    .reduce((sum, r) => sum + r.amount, 0)
-  const pendingAmount = refunds.value
-    .filter(r => r.orderId === order.id && (r.status === 'pending' || r.status === 'processing'))
-    .reduce((sum, r) => sum + r.amount, 0)
-  const alreadyRefunded = completedRefunded + pendingAmount
-  const remaining = calcRemaining(order.total, alreadyRefunded)
-
-  if (amount <= 0 || amount > remaining) {
+  const reason = createForm.value.reason.trim()
+  if (!reason) {
+    toast.error(t('دلیل را وارد کنید'))
+    return
+  }
+  if (amount <= 0 || amount > maxRefundable.value) {
     toast.error(t('مبلغ بازپرداخت نامعتبر است'))
     return
   }
 
-  const result = createRefund({
-    orderId: order.id,
-    returnId: null,
-    customerName: order.customerName,
-    amount,
-    orderTotal: order.total,
-    alreadyRefunded: completedRefunded,
-    reason: createForm.value.reason.trim(),
-    transactionId: '',
-    items: createForm.value.itemsNote.trim()
-      ? [{ productId: '', productTitle: createForm.value.itemsNote.trim(), qty: 1, amount }]
-      : [],
-  })
+  creating.value = true
+  try {
+    const result = await createRefund({
+      orderId: order.id,
+      returnId: null,
+      amount,
+      reason,
+      items: createForm.value.itemsNote.trim()
+        ? [{ productId: '', productTitle: createForm.value.itemsNote.trim(), qty: 1, amount }]
+        : [],
+    })
 
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+
+    appendLog({
+      actorId: auditActor.id,
+      actorName: auditActor.name,
+      action: 'create',
+      entity: 'refund',
+      entityId: result.refund?.id || order.id,
+      summary: 'ثبت بازپرداخت',
+      newValue: String(amount),
+    })
+
+    createOpen.value = false
+    createForm.value = { orderId: '', amount: '', reason: '', itemsNote: '' }
+    maxRefundable.value = 0
+    toast.success(t('بازپرداخت ثبت شد'))
+    await loadRefunds()
   }
-
-  appendLog({
-    actorId: auditActor.id,
-    actorName: auditActor.name,
-    action: 'create',
-    entity: 'refund',
-    entityId: result.refund?.id || order.id,
-    summary: 'ثبت بازپرداخت',
-    newValue: String(amount),
-  })
-
-  createOpen.value = false
-  createForm.value = { orderId: '', amount: '', reason: '', itemsNote: '' }
-  toast.success(t('بازپرداخت ثبت شد'))
+  finally {
+    creating.value = false
+  }
 }
 
 function openStatusConfirm(item: SellerRefund, nextStatus: SellerRefundStatus, label: string) {
@@ -451,49 +527,85 @@ function openStatusConfirm(item: SellerRefund, nextStatus: SellerRefundStatus, l
   statusConfirmOpen.value = true
 }
 
-function confirmStatusChange() {
+async function confirmStatusChange() {
   if (!pendingRefund.value || !pendingStatus.value) return
   const prevStatus = pendingRefund.value.status
   const nextStatus = pendingStatus.value
   const refundId = pendingRefund.value.id
-  const txId = nextStatus === 'completed'
-    ? `TX-${Date.now().toString().slice(-6)}`
-    : undefined
-  const result = setStatus(refundId, nextStatus, txId)
-  statusConfirmOpen.value = false
-  pendingRefund.value = null
-  pendingStatus.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  saving.value = true
+  try {
+    const result = await setStatus(refundId, nextStatus)
+    statusConfirmOpen.value = false
+    pendingRefund.value = null
+    pendingStatus.value = null
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    appendLog({
+      actorId: auditActor.id,
+      actorName: auditActor.name,
+      action: 'status_change',
+      entity: 'refund',
+      entityId: refundId,
+      summary: `وضعیت بازپرداخت به «${sellerRefundStatusMeta[nextStatus].label}» تغییر کرد`,
+      previousValue: prevStatus,
+      newValue: nextStatus,
+    })
+    toast.success(t('وضعیت بازپرداخت به‌روزرسانی شد'))
+    await loadRefunds()
   }
-  appendLog({
-    actorId: auditActor.id,
-    actorName: auditActor.name,
-    action: 'status_change',
-    entity: 'refund',
-    entityId: refundId,
-    summary: `وضعیت بازپرداخت به «${sellerRefundStatusMeta[nextStatus].label}» تغییر کرد`,
-    previousValue: prevStatus,
-    newValue: nextStatus,
-  })
-  toast.success(t('وضعیت بازپرداخت به‌روزرسانی شد'))
+  finally {
+    saving.value = false
+  }
 }
 
-function exportCsv() {
-  downloadSellerCsv(
-    'refunds-export',
-    ['شناسه', 'سفارش', 'مشتری', 'وضعیت', 'مبلغ', 'مجموع سفارش', 'بازپرداخت‌شده', 'تاریخ'],
-    filtered.value.map(r => [
-      r.id,
-      r.orderId,
-      r.customerName,
-      sellerRefundStatusMeta[r.status].label,
-      r.amount,
-      r.orderTotal,
-      r.alreadyRefunded,
-      r.createdAt.slice(0, 10),
-    ]),
-  )
+async function exportCsv() {
+  exporting.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      all: true,
+      pageSize: 200,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('خروجی بازپرداخت‌ها ناموفق بود')))
+      return
+    }
+    downloadSellerCsv(
+      `refunds-${Date.now()}`,
+      ['شناسه', 'سفارش', 'مشتری', 'وضعیت', 'مبلغ', 'مجموع سفارش', 'بازپرداخت‌شده', 'دلیل', 'تراکنش', 'تاریخ'],
+      refunds.value.map(r => [
+        r.id,
+        r.orderId,
+        r.customerName,
+        sellerRefundStatusMeta[r.status].label,
+        r.amount,
+        r.orderTotal,
+        r.alreadyRefunded,
+        r.reason,
+        r.transactionId,
+        r.createdAt.slice(0, 10),
+      ]),
+    )
+    toast.success(t('فایل خروجی آماده شد'))
+    await loadRefunds()
+  }
+  finally {
+    exporting.value = false
+  }
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadRefunds()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadRefunds()
+})
 </script>

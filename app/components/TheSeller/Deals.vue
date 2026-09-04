@@ -1,23 +1,23 @@
 <template>
   <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-    <div class="hidden lg:flex items-center justify-between mb-5 gap-3">
-      <h2 class="font-bold text-highlighted">
-        {{ $t('شگفت‌انگیزها') }}
-      </h2>
-      <div class="flex items-center gap-3">
-        <div class="text-xs text-muted num">
-          {{ filtered.length.toLocaleString('fa-IR') }} {{ $t('مورد') }}
-        </div>
-        <UButton
-          to="/seller/deals/new"
-          color="primary"
-          size="sm"
-          icon="i-tabler-plus"
-          class="font-medium cursor-pointer"
-        >
-          {{ $t('افزودن شگفت‌انگیز') }}
-        </UButton>
-      </div>
+    <div class="hidden lg:block">
+      <TheSellerPageHeader
+        :title="$t('شگفت‌انگیزها')"
+        :description="$t('مدیریت پیشنهادهای شگفت‌انگیز و زمان‌بندی')"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('مورد')}` : undefined"
+      >
+        <template #actions>
+          <UButton
+            to="/seller/deals/new"
+            color="primary"
+            size="sm"
+            icon="i-tabler-plus"
+            class="font-medium cursor-pointer"
+          >
+            {{ $t('افزودن شگفت‌انگیز') }}
+          </UButton>
+        </template>
+      </TheSellerPageHeader>
     </div>
 
     <div class="lg:hidden mb-4">
@@ -32,27 +32,16 @@
       </UButton>
     </div>
 
-    <div class="flex flex-col sm:(flex-row items-center) gap-3 mb-4">
-      <TheFormInput
-        v-model="query"
-        icon="i-tabler-search"
-        :placeholder="$t('جستجوی محصول، نام یا شناسه')"
-        class="flex-1 w-full"
-      />
-      <div class="flex items-center gap-2 overflow-x-auto scrollbar-none w-full sm:w-auto">
-        <UButton
-          v-for="tab in statusTabs"
-          :key="tab.id"
-          :color="statusFilter === tab.id ? 'primary' : 'neutral'"
-          :variant="statusFilter === tab.id ? 'soft' : 'ghost'"
-          size="sm"
-          class="shrink-0 cursor-pointer"
-          @click="statusFilter = tab.id"
-        >
-          {{ $t(tab.label) }}
-        </UButton>
-      </div>
-    </div>
+    <TheSellerListToolbar
+      v-model:search="search"
+      :status="status"
+      :tabs="statusTabs"
+      :search-placeholder="$t('جستجوی محصول، نام یا شناسه')"
+      :has-active="hasActiveFilters"
+      :clear-label="$t('پاک کردن فیلترها')"
+      @update:status="status = $event"
+      @clear="clearAllFilters"
+    />
 
     <div
       v-if="selectedIds.length"
@@ -96,7 +85,7 @@
     </div>
 
     <div
-      v-if="pending && !deals.length"
+      v-if="(loading || pending) && !deals.length"
       class="py-16 grid place-items-center"
     >
       <UIcon
@@ -106,14 +95,14 @@
     </div>
 
     <TheSellerEmptyState
-      v-else-if="!filtered.length"
+      v-else-if="!deals.length"
       icon="i-tabler-bolt"
-      :message="query.trim() || statusFilter !== 'all'
+      :message="hasActiveFilters
         ? $t('موردی با این فیلتر پیدا نشد')
         : $t('هنوز شگفت‌انگیزی ثبت نشده است')"
     >
       <template
-        v-if="!query.trim() && statusFilter === 'all'"
+        v-if="!hasActiveFilters"
         #actions
       >
         <UButton
@@ -133,7 +122,7 @@
       class="space-y-3"
     >
       <div
-        v-for="deal in filtered"
+        v-for="deal in deals"
         :key="deal.id"
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
@@ -165,9 +154,12 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-2 flex-wrap">
               <div class="min-w-0">
-                <div class="text-sm font-medium text-highlighted line-clamp-2">
+                <NuxtLink
+                  :to="`/seller/deals/${deal.id}`"
+                  class="text-sm font-medium text-highlighted line-clamp-2 block hover:text-primary transition cursor-pointer"
+                >
                   {{ deal.name || productOf(deal)?.title || deal.productId }}
-                </div>
+                </NuxtLink>
                 <div
                   class="text-[11px] text-muted mt-0.5 num"
                   dir="ltr"
@@ -256,6 +248,17 @@
           </div>
         </div>
       </div>
+
+      <div
+        v-if="pageCount > 1"
+        class="mt-5 flex justify-center"
+      >
+        <UPagination
+          v-model:page="page"
+          :total="listMeta.total"
+          :items-per-page="listMeta.pageSize || pageSize"
+        />
+      </div>
     </div>
 
     <UModal
@@ -289,6 +292,7 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
+            :disabled="deleting"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
@@ -316,18 +320,30 @@ import {
 import {
   deriveScheduleStatus,
   sellerScheduleStatusMeta,
-  type SellerScheduleStatus,
 } from '~/data/seller-marketing-shared'
 import { formatPrice } from '~/data/products'
 
+const pageSize = 10
+
 const { t } = useI18n()
 const toast = useAppToast()
-const { deals, pending, ensureLoaded, deleteDeal, setActive, setActiveMany } = useSellerDeals()
+const route = useRoute()
+const {
+  deals,
+  listMeta,
+  pending,
+  fetchList,
+  deleteDeal,
+  setActive,
+  setActiveMany,
+} = useSellerDeals()
 const { resolveProduct, fetchSeller } = useSeller()
 const { fetchProducts, getCachedProduct } = useProducts()
+const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+  defaultStatus: 'all',
+})
 
-const query = ref('')
-const statusFilter = ref<'all' | SellerScheduleStatus>('all')
+const loading = ref(true)
 const selectedIds = ref<string[]>([])
 const bulkRunning = ref(false)
 const deleteOpen = ref(false)
@@ -335,51 +351,64 @@ const pendingDelete = ref<SellerAmazingDeal | null>(null)
 const deleting = ref(false)
 const togglingId = ref<string | null>(null)
 
-const statusTabs = [
-  { id: 'all' as const, label: 'همه' },
-  { id: 'active' as const, label: 'فعال' },
-  { id: 'scheduled' as const, label: 'زمان‌بندی‌شده' },
-  { id: 'paused' as const, label: 'متوقف' },
-  { id: 'expired' as const, label: 'منقضی' },
-]
+async function clearAllFilters() {
+  selectedIds.value = []
+  await clearFilters()
+}
 
-await Promise.all([
-  ensureLoaded({ force: true }),
-  fetchSeller(),
-  fetchProducts({ pageSize: 100 }),
-])
-
-const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  return deals.value.filter((deal) => {
-    const status = deriveScheduleStatus({
-      startsAt: deal.startsAt,
-      endsAt: deal.endsAt,
-      active: deal.active,
-    })
-    if (statusFilter.value !== 'all' && status !== statusFilter.value) return false
-    if (!q) return true
-    const product = productOf(deal)
-    return (
-      deal.id.toLowerCase().includes(q)
-      || deal.productId.toLowerCase().includes(q)
-      || (deal.name || '').toLowerCase().includes(q)
-      || (product?.title.toLowerCase().includes(q) ?? false)
-    )
-  })
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'active', label: t('فعال'), count: Number(c.active) || 0 },
+    { id: 'scheduled', label: t('زمان‌بندی‌شده'), count: Number(c.scheduled) || 0 },
+    { id: 'paused', label: t('متوقف'), count: Number(c.paused) || 0 },
+    { id: 'expired', label: t('منقضی'), count: Number(c.expired) || 0 },
+  ]
 })
 
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
 function scheduleBadge(deal: SellerAmazingDeal) {
-  const status = deriveScheduleStatus({
+  const key = deriveScheduleStatus({
     startsAt: deal.startsAt,
     endsAt: deal.endsAt,
     active: deal.active,
   })
-  return sellerScheduleStatusMeta[status]
+  return sellerScheduleStatusMeta[key]
 }
 
 function productOf(deal: SellerAmazingDeal) {
   return getCachedProduct(deal.productId) || resolveProduct(deal.productId)
+}
+
+async function loadList() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری شگفت‌انگیزها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
 }
 
 function toggleSelect(id: string, on: boolean) {
@@ -397,6 +426,7 @@ async function runBulk(active: boolean) {
     await setActiveMany(selectedIds.value, active)
     toast.success(active ? t('شگفت‌انگیزها فعال شدند') : t('شگفت‌انگیزها غیرفعال شدند'))
     selectedIds.value = []
+    await loadList()
   }
   finally {
     bulkRunning.value = false
@@ -412,6 +442,7 @@ async function toggleActive(deal: SellerAmazingDeal) {
       return
     }
     toast.success(deal.active ? t('شگفت‌انگیز غیرفعال شد') : t('شگفت‌انگیز فعال شد'))
+    await loadList()
   }
   finally {
     togglingId.value = null
@@ -435,9 +466,26 @@ async function confirmDelete() {
       return
     }
     toast.success(t('شگفت‌انگیز حذف شد'))
+    await loadList()
   }
   finally {
     deleting.value = false
   }
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadList()
+  },
+  { deep: true },
+)
+
+onMounted(async () => {
+  await Promise.all([
+    fetchSeller(),
+    fetchProducts({ pageSize: 100 }),
+  ])
+  void loadList()
+})
 </script>

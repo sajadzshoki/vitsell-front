@@ -18,7 +18,7 @@ function clonePosts(list: SellerBlogPost[]): SellerBlogPost[] {
   return JSON.parse(JSON.stringify(list)) as SellerBlogPost[]
 }
 
-function fromApiPost(post: StaticBlogPost, base?: SellerBlogPost): SellerBlogPost {
+function fromApiPost(post: StaticBlogPost & Record<string, any>, base?: SellerBlogPost): SellerBlogPost {
   const content = Array.isArray(post.content)
     ? post.content
     : typeof post.content === 'string'
@@ -42,21 +42,31 @@ function fromApiPost(post: StaticBlogPost, base?: SellerBlogPost): SellerBlogPos
     active: post.active !== false,
   })
 
+  const status = (['draft', 'scheduled', 'published', 'archived'].includes(post.status)
+    ? post.status
+    : (base?.status ?? normalized.status)) as SellerBlogStatus
+
   return {
     ...normalized,
     popular: post.popular ?? base?.popular ?? normalized.popular,
     engagement: post.engagement ?? base?.engagement ?? normalized.engagement,
     active: post.active !== false,
-    createdAt: base?.createdAt ?? normalized.createdAt,
-    updatedAt: base?.updatedAt ?? normalized.updatedAt,
-    status: base?.status ?? normalized.status,
-    publishedAt: base?.publishedAt ?? normalized.publishedAt,
-    scheduledAt: base?.scheduledAt ?? normalized.scheduledAt,
-    featured: base?.featured ?? normalized.featured,
-    imageAlt: base?.imageAlt ?? normalized.imageAlt,
-    tags: base?.tags ?? normalized.tags,
-    relatedPostIds: base?.relatedPostIds ?? normalized.relatedPostIds,
-    seo: base?.seo ?? normalized.seo,
+    createdAt: post.createdAt ? String(post.createdAt) : (base?.createdAt ?? normalized.createdAt),
+    updatedAt: post.updatedAt ? String(post.updatedAt) : (base?.updatedAt ?? normalized.updatedAt),
+    status,
+    publishedAt: post.publishedAt != null
+      ? String(post.publishedAt)
+      : (base?.publishedAt ?? normalized.publishedAt),
+    scheduledAt: post.scheduledAt != null
+      ? String(post.scheduledAt)
+      : (base?.scheduledAt ?? normalized.scheduledAt),
+    featured: Boolean(post.featured ?? post.popular ?? base?.featured ?? normalized.featured),
+    imageAlt: String(post.imageAlt || base?.imageAlt || normalized.imageAlt || post.title || ''),
+    tags: Array.isArray(post.tags) ? post.tags.map(String) : (base?.tags ?? normalized.tags),
+    relatedPostIds: Array.isArray(post.relatedPostIds)
+      ? post.relatedPostIds.map(String)
+      : (base?.relatedPostIds ?? normalized.relatedPostIds),
+    seo: post.seo ? { ...normalized.seo, ...post.seo } : (base?.seo ?? normalized.seo),
   }
 }
 
@@ -125,6 +135,28 @@ export function useBlog() {
     if (!post) return undefined
     if (allowPreview || isBlogPostPubliclyVisible(post)) return post
     return undefined
+  }
+
+  /** پیش‌نمایش ادمین: از /seller/blog/:id (پیش‌نویس‌ها هم برمی‌گردند) */
+  async function fetchPreviewById(id: string) {
+    const key = id.trim()
+    if (!key) return null
+
+    const { result, error } = await useGet<any>(
+      `/seller/blog/${encodeURIComponent(key)}`,
+      { headers: { 'no-error': true }, server: false },
+    )
+    if (error || !result?.id) return null
+
+    const post = fromApiPost(result)
+    const index = items.value.findIndex(p => p.id === post.id)
+    if (index === -1) items.value = [post, ...items.value]
+    else {
+      const copy = [...items.value]
+      copy[index] = post
+      items.value = copy
+    }
+    return post
   }
 
   function createPost(form: SellerBlogFormValues) {
@@ -246,6 +278,7 @@ export function useBlog() {
     getById,
     getPublishedById,
     getByIdForPreview,
+    fetchPreviewById,
     createPost,
     updatePost,
     deletePost,

@@ -4,7 +4,7 @@
       <TheSellerPageHeader
         :title="$t('وبلاگ')"
         :description="$t('مدیریت مطالب، دسته‌ها و برچسب‌های وبلاگ')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('مطلب')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('مطلب')}` : undefined"
       >
         <template #actions>
           <div class="flex items-center gap-2 flex-wrap">
@@ -155,8 +155,18 @@
       </UButton>
     </div>
 
+    <div
+      v-if="loading"
+      class="py-16 flex justify-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!posts.length"
       icon="i-tabler-news-off"
       :message="hasActiveFilters || authorFilter !== 'all' || categoryFilter !== 'all' || featuredOnly
         ? $t('مطلبی با این فیلتر پیدا نشد')
@@ -195,7 +205,7 @@
       </div>
 
       <div
-        v-for="post in paged"
+        v-for="post in posts"
         :key="post.id"
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
@@ -351,15 +361,15 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
+        :total="listMeta.total"
+        :items-per-page="listMeta.pageSize || pageSize"
       />
     </div>
 
     <UModal
       v-model:open="deleteOpen"
       :title="bulkDeleteMode ? $t('حذف گروهی') : $t('حذف مطلب')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود و قابل بازگشت نیست.')"
+      :description="$t('این عمل قابل بازگشت نیست.')"
     >
       <template #body>
         <div
@@ -389,6 +399,7 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
+            :disabled="deleting"
             @click="closeDelete"
           >
             {{ $t('انصراف') }}
@@ -396,6 +407,7 @@
           <UButton
             color="error"
             class="font-bold cursor-pointer"
+            :loading="deleting"
             @click="onDeleteConfirm"
           >
             {{ $t('حذف') }}
@@ -408,23 +420,29 @@
 
 <script setup lang="ts">
 import {
-  collectBlogCategories,
   sellerBlogStatusMeta,
   type SellerBlogPost,
   type SellerBlogStatus,
 } from '~/data/seller-blog'
 
+const pageSize = 10
+
 const { t } = useI18n()
 const toast = useAppToast()
 const { can } = useSellerPermissions()
-const { posts, ensureSeeded, deletePost, setStatus } = useBlog()
+const {
+  posts,
+  listMeta,
+  pending,
+  fetchList,
+  deletePost,
+  setStatus,
+} = useSellerBlog()
 const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
-ensureSeeded()
-
-const pageSize = 10
+const loading = ref(true)
 const authorFilter = ref('all')
 const categoryFilter = ref('all')
 const featuredOnly = ref(false)
@@ -434,6 +452,7 @@ const bulkDeleteMode = ref(false)
 const selectedIds = ref<string[]>([])
 const bulkAction = ref('')
 const bulkRunning = ref(false)
+const deleting = ref(false)
 
 const canBulk = computed(() => can('blog.publish') || can('blog.delete'))
 
@@ -449,66 +468,76 @@ const bulkActionItems = computed(() => {
   return items
 })
 
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه'), count: posts.value.length },
-  ...((Object.keys(sellerBlogStatusMeta) as SellerBlogStatus[]).map(id => ({
-    id,
-    label: t(sellerBlogStatusMeta[id].label),
-    count: posts.value.filter(p => p.status === id).length,
-  }))),
-])
-
-const authorItems = computed(() => {
-  const authors = [...new Set(posts.value.map(p => p.author).filter(Boolean))]
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
   return [
-    { value: 'all', label: t('همه نویسنده‌ها') },
-    ...authors.map(a => ({ value: a, label: a })),
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    ...(Object.keys(sellerBlogStatusMeta) as SellerBlogStatus[]).map(id => ({
+      id,
+      label: t(sellerBlogStatusMeta[id].label),
+      count: Number(c[id]) || 0,
+    })),
   ]
 })
 
-const categoryItems = computed(() => [
-  { value: 'all', label: t('همه دسته‌ها') },
-  ...collectBlogCategories(posts.value).map(id => ({ value: id, label: id })),
+const authorItems = computed(() => [
+  { value: 'all', label: t('همه نویسنده‌ها') },
+  ...listMeta.value.authors.map(a => ({ value: a, label: a })),
 ])
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return posts.value.filter((post) => {
-    if (status.value !== 'all' && post.status !== status.value) return false
-    if (authorFilter.value !== 'all' && post.author !== authorFilter.value) return false
-    if (categoryFilter.value !== 'all' && post.category !== categoryFilter.value) return false
-    if (featuredOnly.value && !post.featured) return false
-    if (!q) return true
-    return (
-      post.title.toLowerCase().includes(q)
-      || post.category.toLowerCase().includes(q)
-      || post.author.toLowerCase().includes(q)
-      || post.id.toLowerCase().includes(q)
-      || post.tags.some(tag => tag.toLowerCase().includes(q))
-    )
-  })
-})
+const categoryItems = computed(() => [
+  { value: 'all', label: t('همه دسته‌ها') },
+  ...listMeta.value.categories.map(id => ({ value: id, label: id })),
+])
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
 
 const allPageSelected = computed(() =>
-  paged.value.length > 0 && paged.value.every(p => selectedIds.value.includes(p.id)),
+  posts.value.length > 0 && posts.value.every(p => selectedIds.value.includes(p.id)),
 )
 
 const somePageSelected = computed(() =>
-  paged.value.some(p => selectedIds.value.includes(p.id)),
+  posts.value.some(p => selectedIds.value.includes(p.id)),
 )
 
-function clearAll() {
-  clearFilters()
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
+async function loadList() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value,
+      category: categoryFilter.value,
+      author: authorFilter.value,
+      featured: featuredOnly.value || undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(t(apiErrorMessage(error, 'بارگذاری مطالب ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+async function clearAll() {
+  selectedIds.value = []
   authorFilter.value = 'all'
   categoryFilter.value = 'all'
   featuredOnly.value = false
+  await clearFilters()
 }
 
 function toggleSelect(id: string, on: boolean) {
@@ -521,18 +550,19 @@ function toggleSelect(id: string, on: boolean) {
 }
 
 function toggleSelectPage(on: boolean) {
-  const ids = paged.value.map(p => p.id)
+  const ids = posts.value.map(p => p.id)
   if (on) selectedIds.value = [...new Set([...selectedIds.value, ...ids])]
   else selectedIds.value = selectedIds.value.filter(id => !ids.includes(id))
 }
 
-function onSetStatus(id: string, next: SellerBlogStatus) {
-  const result = setStatus(id, next)
+async function onSetStatus(id: string, next: SellerBlogStatus) {
+  const result = await setStatus(id, next)
   if (!result.ok) {
-    toast.error(t(result.error))
+    toast.error(t(result.error || 'تغییر وضعیت ناموفق بود'))
     return
   }
   toast.success(t(sellerBlogStatusMeta[next].label))
+  await loadList()
 }
 
 async function runBulk() {
@@ -547,11 +577,12 @@ async function runBulk() {
   try {
     const next: SellerBlogStatus = bulkAction.value === 'publish' ? 'published' : 'archived'
     for (const id of selectedIds.value) {
-      setStatus(id, next)
+      await setStatus(id, next)
     }
     toast.success(t('مطالب به‌روزرسانی شدند'))
     selectedIds.value = []
     bulkAction.value = ''
+    await loadList()
   }
   finally {
     bulkRunning.value = false
@@ -570,24 +601,43 @@ function closeDelete() {
   bulkDeleteMode.value = false
 }
 
-function onDeleteConfirm() {
-  if (bulkDeleteMode.value) {
-    for (const id of selectedIds.value) {
-      deletePost(id)
+async function onDeleteConfirm() {
+  deleting.value = true
+  try {
+    if (bulkDeleteMode.value) {
+      for (const id of selectedIds.value) {
+        await deletePost(id)
+      }
+      toast.success(t('مطالب حذف شدند'))
+      selectedIds.value = []
+      bulkAction.value = ''
+      closeDelete()
+      await loadList()
+      return
     }
-    toast.success(t('مطالب حذف شدند'))
-    selectedIds.value = []
-    bulkAction.value = ''
+    if (!pendingDelete.value) return
+    const result = await deletePost(pendingDelete.value.id)
     closeDelete()
-    return
+    if (!result.ok) {
+      toast.error(t(result.error || 'حذف ناموفق بود'))
+      return
+    }
+    toast.success(t('مطلب حذف شد'))
+    await loadList()
   }
-  if (!pendingDelete.value) return
-  const result = deletePost(pendingDelete.value.id)
-  closeDelete()
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  finally {
+    deleting.value = false
   }
-  toast.success(t('مطلب حذف شد'))
 }
+
+watch(
+  [search, status, page, authorFilter, categoryFilter, featuredOnly],
+  () => {
+    void loadList()
+  },
+)
+
+onMounted(() => {
+  void loadList()
+})
 </script>

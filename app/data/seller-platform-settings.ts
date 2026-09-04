@@ -1,4 +1,4 @@
-/** Platform configuration prefs — FE session until settings API exists. Shop identity stays on /seller/shop API. */
+/** Platform configuration prefs — persisted via GET|PUT /seller/settings. Shop identity stays on /seller/shop. */
 
 export type SellerPlatformSettings = {
   // Localization

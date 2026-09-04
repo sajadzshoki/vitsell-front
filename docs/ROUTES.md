@@ -230,32 +230,104 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET` | `/seller/footer` | محتوای فوتر |
 | `PUT` | `/seller/footer` | به‌روزرسانی فوتر |
 | `GET` | `/seller/listings` | لیست محصولات پنل |
+| `GET` | `/seller/listings/:productId` | جزئیات یک آگهی |
 | `POST` | `/seller/listings` | افزودن محصول |
-| `PATCH` | `/seller/listings/:productId` | تغییر وضعیت محصول |
-| `GET` | `/seller/orders` | سفارش‌ها |
-| `GET` | `/seller/orders/:id` | جزئیات سفارش |
+| `PATCH` | `/seller/listings/:productId` | ویرایش محصول / وضعیت / موجودی |
+| `DELETE` | `/seller/listings/:productId` | حذف آگهی |
+| `GET` | `/seller/orders` | فیلتر: `q` `status` `payment` `shipping` `paymentMethod` `amountMin/Max` `dateFrom/To` `hasDiscount/Refund/Return` `needsTracking` `sort` `page` |
+| `GET` | `/seller/orders/:id` | جزئیات + commerce + فاکتور + پرداخت |
 | `PATCH` | `/seller/orders/:id/status` | تغییر وضعیت سفارش |
-| `GET` | `/seller/reviews` | نظرات |
+| `PATCH` | `/seller/orders/:id/tracking` | کد پیگیری / حامل |
+| `POST` | `/seller/orders/:id/notes` | یادداشت داخلی |
+| `POST` | `/seller/orders/:id/refunds` | ثبت بازپرداخت |
+| `GET\|POST` | `/seller/returns` | فیلتر: `q` `status` `page` — ایجاد مرجوعی |
+| `GET` | `/seller/returns/:id` | جزئیات مرجوعی |
+| `PATCH` | `/seller/returns/:id/status` | تغییر وضعیت مرجوعی |
+| `GET\|POST` | `/seller/refunds` | فیلتر: `q` `status` `page` `pageSize` `all` — ایجاد بازپرداخت |
+| `GET` | `/seller/refunds/:id` | جزئیات بازپرداخت |
+| `PATCH` | `/seller/refunds/:id/status` | تغییر وضعیت بازپرداخت |
+| `GET` | `/seller/shipping` | لیست روش‌های ارسال |
+| `GET\|PATCH` | `/seller/shipping/:id` | جزئیات / به‌روزرسانی روش ارسال |
+| `GET` | `/seller/customers` | فیلتر: `q` `status` `hasOrders` `spendMin/Max` `sort` `page` |
+| `POST` | `/seller/customers/bulk-status` | تغییر وضعیت گروهی |
+| `GET\|PATCH` | `/seller/customers/:id` | جزئیات / ویرایش مشتری |
+| `PATCH` | `/seller/customers/:id/status` | تغییر وضعیت مشتری |
+| `GET` | `/seller/reviews` | فیلتر: `q` `status` `rating` `page` — لیست نظرات |
+| `POST` | `/seller/reviews/bulk-moderation` | مودریشن گروهی |
 | `POST` | `/seller/reviews/:id/reply` | پاسخ به نظر |
-| `GET` | `/seller/questions` | پرسش‌های محصولات |
-| `POST` | `/seller/questions/:id/reply` | پاسخ به پرسش |
+| `PATCH` | `/seller/reviews/:id/moderation` | تغییر وضعیت مودریشن |
+| `GET` | `/seller/questions` | فیلتر: `q` `status`(`all`/`unanswered`/`answered`) `page` `pageSize` `all` |
+| `GET` | `/seller/questions/:id` | جزئیات پرسش |
+| `POST` | `/seller/questions/:id/reply` | پاسخ به پرسش — `{ text, author? }` |
 | `DELETE` | `/seller/questions/:id/answer` | حذف پاسخ |
-| `PATCH` | `/seller/questions/:id/verified` | تأیید خریدار |
+| `PATCH` | `/seller/questions/:id/verified` | تأیید خریدار — `{ verified }` |
 | `DELETE` | `/seller/questions/:id` | حذف پرسش |
 | `GET` | `/seller/payouts` | پرداخت‌ها / تسویه |
 | `POST` | `/seller/payouts` | درخواست تسویه |
 | `GET` | `/seller/sales` | فروش‌ها |
-| `GET\|POST` | `/seller/categories` | دسته‌بندی‌ها |
+| `GET\|POST` | `/seller/categories` | لیست (فیلتر: `q`, `status`, `parentId`) / ایجاد |
 | `GET\|PUT\|DELETE` | `/seller/categories/:id` | جزئیات / ویرایش / حذف دسته |
-| `GET\|POST` | `/seller/deals` | شگفت‌انگیزها |
+| `GET\|POST` | `/seller/brands` | لیست برند (فیلتر: `q`, `status`, `page`) / ایجاد |
+| `GET\|PUT\|DELETE` | `/seller/brands/:id` | جزئیات / ویرایش / حذف برند |
+| `PATCH` | `/seller/brands/:id/status` | تغییر وضعیت برند |
+| `GET\|POST` | `/seller/attributes` | لیست ویژگی (فیلتر: `q`, `status`, `type`, `trait`) / ایجاد |
+| `GET\|PUT\|DELETE` | `/seller/attributes/:id` | جزئیات / ویرایش / حذف ویژگی |
+| `PATCH` | `/seller/attributes/:id/status` | تغییر وضعیت ویژگی |
+| `GET\|POST` | `/seller/warehouses` | لیست انبار (فیلتر: `q`, `status`, `page`, `all`) / ایجاد |
+| `GET\|PUT\|DELETE` | `/seller/warehouses/:id` | جزئیات / ویرایش / حذف انبار |
+| `GET` | `/seller/inventory` | موجودی (فیلتر: `q`, `status`, `warehouse`, `category`, `brand`, `page`) |
+| `PATCH` | `/seller/inventory/:productId` | تنظیم موجودی + ثبت گردش |
+| `GET\|POST` | `/seller/stock-movements` | گردش موجودی (فیلتر: `q`, `type`, `warehouseId`, `page`) / ثبت دستی |
+| `GET` | `/seller/marketing` | خلاصه داشبورد بازاریابی — `from` `to` |
+| `GET\|POST` | `/seller/discounts` | لیست/ایجاد تخفیف خودکار — فیلتر: `q` `status` `type` `page` |
+| `POST` | `/seller/discounts/bulk-status` | تغییر وضعیت گروهی |
+| `POST` | `/seller/discounts/bulk-delete` | حذف گروهی |
+| `GET\|PUT\|DELETE` | `/seller/discounts/:id` | جزئیات / ویرایش / حذف |
+| `PATCH` | `/seller/discounts/:id/status` | فعال/غیرفعال |
+| `GET\|POST` | `/seller/campaigns` | لیست/ایجاد کمپین — فیلتر: `q` `status` `page` |
+| `POST` | `/seller/campaigns/bulk-status` | تغییر وضعیت گروهی |
+| `POST` | `/seller/campaigns/bulk-delete` | حذف گروهی |
+| `GET\|PUT\|DELETE` | `/seller/campaigns/:id` | جزئیات / ویرایش / حذف |
+| `PATCH` | `/seller/campaigns/:id/status` | draft/active/paused/archived |
+| `GET\|POST` | `/seller/banners` | لیست / ایجاد بنر — فیلتر: `q` `status` `placement` `page` |
+| `GET\|PUT\|DELETE` | `/seller/banners/:id` | جزئیات / ویرایش / حذف بنر |
+| `PATCH` | `/seller/banners/:id/active` | فعال/غیرفعال بنر |
+| `GET\|POST` | `/seller/deals` | شگفت‌انگیزها — فیلتر: `q` `status` `page` |
 | `GET\|PUT\|DELETE` | `/seller/deals/:id` | جزئیات / ویرایش / حذف شگفت‌انگیز |
 | `PATCH` | `/seller/deals/:id/active` | فعال/غیرفعال شگفت‌انگیز |
-| `GET\|POST` | `/seller/discount-codes` | کدهای تخفیف |
-| `GET\|PUT\|DELETE` | `/seller/discount-codes/:code` | جزئیات / ویرایش / حذف کد |
-| `PATCH` | `/seller/discount-codes/:code/active` | فعال/غیرفعال کد |
-| `GET\|POST` | `/seller/content-promos` | پروموهای محتوایی |
+| `GET\|POST` | `/seller/discount-codes` | کوپن‌ها — فیلتر: `q` `status` `page` |
+| `GET\|PUT\|DELETE` | `/seller/discount-codes/:code` | جزئیات / ویرایش / حذف کوپن |
+| `PATCH` | `/seller/discount-codes/:code/active` | فعال/غیرفعال کوپن |
+| `GET\|POST` | `/seller/content-promos` | پروموی محتوایی — فیلتر: `q` `status` `page` |
 | `GET\|PUT\|DELETE` | `/seller/content-promos/:id` | جزئیات / ویرایش / حذف پرومو |
 | `PATCH` | `/seller/content-promos/:id/active` | فعال/غیرفعال پرومو |
+| `GET` | `/seller/notifications` | اعلان‌ها — فیلتر: `q` `status` `type` `page` |
+| `GET` | `/seller/notifications/:id` | جزئیات اعلان |
+| `GET` | `/seller/notification-users` | کاربران هدف اعلان |
+| `POST` | `/seller/notifications/preview` | پیش‌نمایش مخاطبان |
+| `POST` | `/seller/notifications` | ایجاد / ارسال اعلان |
+| `PATCH` | `/seller/notifications/:id/cancel` | لغو زمان‌بندی |
+| `DELETE` | `/seller/notifications/:id` | حذف اعلان |
+| `GET\|POST` | `/seller/blog` | مطالب وبلاگ — فیلتر: `q` `status` `category` `author` `featured` `page` |
+| `GET\|PUT\|DELETE` | `/seller/blog/:id` | جزئیات / ویرایش / حذف مطلب |
+| `PATCH` | `/seller/blog/:id/status` | draft/scheduled/published/archived |
+| `GET\|POST` | `/seller/pages` | صفحات ثابت — فیلتر: `q` `status` `page` |
+| `GET\|PUT\|DELETE` | `/seller/pages/:id` | جزئیات / ویرایش / حذف صفحه |
+| `PATCH` | `/seller/pages/:id/status` | draft/published/archived |
+| `GET\|PUT` | `/seller/about` | صفحه درباره ما (خواندن / ذخیره) |
+| `GET\|PUT` | `/seller/settings` | تنظیمات پلتفرم (برندینگ، تجارت، اعلان‌ها، …) |
+| `GET\|POST` | `/seller/media` | کتابخانه رسانه — فیلتر: `q` `kind` `page`؛ POST multipart |
+| `POST` | `/seller/media/register` | ثبت URL در کتابخانه |
+| `POST` | `/seller/media/bulk-delete` | حذف گروهی |
+| `GET\|PUT\|DELETE` | `/seller/media/:id` | جزئیات / متادیتا / حذف |
+| `GET\|POST` | `/seller/admins` | کاربران ادمین — فیلتر: `q` `status` `roleId` `page` |
+| `GET\|PUT\|DELETE` | `/seller/admins/:id` | جزئیات / ویرایش / غیرفعال‌سازی |
+| `PATCH` | `/seller/admins/:id/status` | active/inactive/suspended |
+| `GET\|POST` | `/seller/roles` | نقش‌ها — فیلتر: `q` `status` |
+| `GET\|PUT\|DELETE` | `/seller/roles/:id` | جزئیات / ویرایش / حذف نقش |
+| `GET` | `/seller/permissions` | کاتالوگ دسترسی‌ها |
+| `GET` | `/seller/system` | نمای سیستم (آمار ادمین/محتوا/یکپارچه‌سازی) |
+| `GET\|POST` | `/seller/audit` | لاگ حسابرسی — فیلتر: `q` `action` `entity` `actorId` `mode` `dateFrom` `dateTo` `page`؛ POST فقط افزودن |
 
 ادمین: حساب `role=admin` دستی ساخته می‌شود (سید خودکار نمی‌سازد).
 

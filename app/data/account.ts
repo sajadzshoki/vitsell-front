@@ -36,8 +36,15 @@ export type AccountProfile = {
   phone: string
   birth: string
   gender: string
+  avatar?: string
   hasPassword?: boolean
   role?: 'customer' | 'seller' | 'admin'
+  /** Staff admin id (users.id) when role=admin */
+  adminId?: string
+  adminStatus?: 'active' | 'inactive' | 'suspended'
+  roleIds?: string[]
+  abilities?: string[]
+  primaryRoleKey?: string | null
 }
 
 export const defaultProfile: AccountProfile = {

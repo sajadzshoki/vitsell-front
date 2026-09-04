@@ -167,9 +167,11 @@ const { currentAdminUser, ensureLoaded, updateAdmin } = useSellerAdmins()
 const { getById, roles, ensureLoaded: ensureRoles } = useSellerRoles()
 const { logs, ensureLoaded: ensureAudit } = useSellerAudit()
 
-ensureLoaded()
-ensureRoles()
-ensureAudit()
+onMounted(() => {
+  void ensureLoaded({ force: true })
+  void ensureRoles({ force: true })
+  void ensureAudit({ force: true })
+})
 
 const current = computed(() => currentAdminUser())
 
@@ -178,7 +180,7 @@ const avatarModel = computed({
   set: (value: string) => {
     const admin = current.value
     if (!admin) return
-    updateAdmin(admin.id, {
+    void updateAdmin(admin.id, {
       ...toAdminForm(admin),
       avatar: value.trim() || null,
     })

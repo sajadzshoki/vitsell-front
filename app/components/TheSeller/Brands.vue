@@ -4,7 +4,7 @@
       <TheSellerPageHeader
         :title="$t('برندها')"
         :description="$t('مدیریت برندهای محصول — نام، لوگو و وضعیت نمایش')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('برند')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('برند')}` : undefined"
       >
         <template #actions>
           <div class="flex items-center gap-2 flex-wrap">
@@ -107,8 +107,18 @@
       </UButton>
     </div>
 
+    <div
+      v-if="(loading || pending) && !brands.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!brands.length"
       icon="i-tabler-trademark"
       :message="hasActiveFilters ? $t('برندی با این فیلتر پیدا نشد') : $t('هنوز برندی ثبت نشده است')"
     >
@@ -206,7 +216,7 @@
 
             <div class="mt-2 flex items-center gap-1.5 flex-wrap">
               <span class="text-[11px] text-muted num">
-                {{ productCountFor(brand.name).toLocaleString('fa-IR') }} {{ $t('محصول') }}
+                {{ productCountFor(brand).toLocaleString('fa-IR') }} {{ $t('محصول') }}
               </span>
             </div>
 
@@ -257,7 +267,7 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
+        :total="listMeta.total"
         :items-per-page="pageSize"
       />
     </div>
@@ -265,7 +275,7 @@
     <UModal
       v-model:open="deleteOpen"
       :title="$t('حذف برند')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود و قابل بازگشت نیست.')"
+      :description="$t('در صورت داشتن محصول وابسته، حذف انجام نمی‌شود.')"
     >
       <template #body>
         <div
@@ -298,6 +308,7 @@
           <UButton
             color="error"
             class="font-bold cursor-pointer"
+            :loading="deleting"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -314,19 +325,25 @@ import type { SellerBrand } from '~/data/seller-brands'
 
 const { t } = useI18n()
 const toast = useAppToast()
+const route = useRoute()
 const { can } = useSellerPermissions()
-const { brands, ensureLoaded, deleteBrand, setStatus } = useSellerBrands()
-const { listings, resolveProduct, fetchListings } = useSeller()
+const {
+  brands,
+  listMeta,
+  pending,
+  fetchList,
+  deleteBrand,
+  setStatus,
+} = useSellerBrands()
 const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
-ensureLoaded()
-void fetchListings()
-
 const pageSize = 10
+const loading = ref(true)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerBrand | null>(null)
+const deleting = ref(false)
 const selectedIds = ref<string[]>([])
 const bulkAction = ref('')
 const bulkRunning = ref(false)
@@ -338,46 +355,24 @@ const bulkActionItems = computed(() => [
   { value: 'deactivate', label: t('غیرفعال‌سازی') },
 ])
 
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه'), count: brands.value.length },
-  { id: 'active', label: t('فعال'), count: brands.value.filter(b => b.status === 'active').length },
-  { id: 'inactive', label: t('غیرفعال'), count: brands.value.filter(b => b.status === 'inactive').length },
-])
-
-const productCountByName = computed(() => {
-  const map = new Map<string, number>()
-  for (const listing of listings.value) {
-    const name = resolveProduct(listing.productId).brand
-    if (!name) continue
-    map.set(name, (map.get(name) ?? 0) + 1)
-  }
-  return map
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: c.all },
+    { id: 'active', label: t('فعال'), count: c.active },
+    { id: 'inactive', label: t('غیرفعال'), count: c.inactive },
+  ]
 })
 
-function productCountFor(name: string) {
-  return productCountByName.value.get(name) ?? 0
+function productCountFor(brand: SellerBrand) {
+  return Number(brand.productCount) || 0
 }
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return brands.value.filter((brand) => {
-    if (status.value !== 'all' && brand.status !== status.value) return false
-    if (!q) return true
-    return (
-      brand.name.toLowerCase().includes(q)
-      || brand.slug.toLowerCase().includes(q)
-      || brand.id.toLowerCase().includes(q)
-      || brand.description.includes(search.value.trim())
-    )
-  })
-})
-
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
+/** Server already filtered + paged */
+const paged = computed(() => brands.value)
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
 
 const allPageSelected = computed(() =>
   paged.value.length > 0 && paged.value.every(b => selectedIds.value.includes(b.id)),
@@ -402,17 +397,48 @@ function toggleSelectPage(on: boolean) {
   else selectedIds.value = selectedIds.value.filter(id => !ids.includes(id))
 }
 
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
+async function loadBrands() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      force: true,
+      query: {
+        q: search.value || undefined,
+        status: status.value || undefined,
+        page: page.value,
+        pageSize,
+      },
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری برندها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
 async function runBulk() {
   if (!bulkAction.value || !selectedIds.value.length) return
   bulkRunning.value = true
   try {
     const target = bulkAction.value === 'activate' ? 'active' : 'inactive'
     for (const id of selectedIds.value) {
-      setStatus(id, target)
+      await setStatus(id, target)
     }
     toast.success(t('برندها به‌روزرسانی شدند'))
     selectedIds.value = []
     bulkAction.value = ''
+    await loadBrands()
   }
   finally {
     bulkRunning.value = false
@@ -424,25 +450,32 @@ function openDelete(brand: SellerBrand) {
   deleteOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDelete.value) return
-  const result = deleteBrand(pendingDelete.value.id)
-  deleteOpen.value = false
-  pendingDelete.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  deleting.value = true
+  try {
+    const result = await deleteBrand(pendingDelete.value.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('برند حذف شد'))
+    await loadBrands()
   }
-  toast.success(t('برند حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
 
 function exportCsv() {
-  const rows = filtered.value.map((brand) => [
+  const rows = brands.value.map(brand => [
     brand.id,
     brand.name,
     brand.slug,
     brand.status === 'active' ? t('فعال') : t('غیرفعال'),
-    productCountFor(brand.name),
+    productCountFor(brand),
     brand.sortOrder,
     brand.description,
     brand.createdAt.slice(0, 10),
@@ -452,5 +485,18 @@ function exportCsv() {
     ['شناسه', 'نام', 'اسلاگ', 'وضعیت', 'تعداد محصول', 'ترتیب', 'توضیحات', 'تاریخ ایجاد'],
     rows,
   )
+  toast.success(t('فایل خروجی آماده شد'))
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadBrands()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadBrands()
+})
 </script>

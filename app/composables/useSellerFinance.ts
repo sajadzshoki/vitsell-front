@@ -217,8 +217,8 @@ export function useSellerFinance() {
     if (loaded.value && !force) return
     loading.value = true
     try {
-      ensureRefunds()
       await Promise.all([
+        ensureRefunds(),
         fetchOrders({ force }),
         fetchFinance({ force }),
       ])

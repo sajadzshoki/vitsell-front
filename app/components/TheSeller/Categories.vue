@@ -4,7 +4,7 @@
       <TheSellerPageHeader
         :title="$t('دسته‌بندی‌ها')"
         :description="$t('درخت چندسطحی — هر دسته موجودیت مستقل با انتخاب والد در فرم')"
-        :count-label="`${visibleRows.length.toLocaleString('fa-IR')} ${$t('دسته')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('دسته')}` : undefined"
       >
         <template #actions>
           <div class="flex items-center gap-2 flex-wrap">
@@ -178,7 +178,7 @@
     </div>
 
     <div
-      v-if="pending && !categories.length"
+      v-if="(loading || pending) && !listItems.length"
       class="py-16 grid place-items-center"
     >
       <UIcon
@@ -454,82 +454,88 @@ import { downloadSellerCsv } from '~/data/seller-export'
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { categories, pending, ensureLoaded, deleteCategory, updateCategory } = useSellerCategories()
-const { listings, resolveProduct, fetchListings } = useSeller()
+const route = useRoute()
+const {
+  listItems,
+  listMeta,
+  pending,
+  fetchList,
+  deleteCategory,
+  updateCategory,
+  getById,
+} = useSellerCategories()
 const { attributes, ensureLoaded: ensureAttrs } = useSellerAttributes()
 const { can } = useSellerPermissions()
-const { search, status, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { search, status, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
 const viewMode = ref<'tree' | 'flat'>('tree')
 /** Collapsed parent ids — Record is more reliably reactive than Set in templates */
 const collapsedMap = ref<Record<string, true>>({})
-const parentFilter = ref('all')
 const selectedIds = ref<string[]>([])
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerCategoryTreeRow | null>(null)
 const deleting = ref(false)
+const loading = ref(true)
 
-await ensureLoaded({ force: true })
+const parentFilter = computed({
+  get: () => String(route.query.parentId ?? 'all'),
+  set: (value: string) => {
+    const next = !value || value === 'all' ? undefined : value
+    void patchQuery({ parentId: next })
+  },
+})
+
 ensureAttrs()
-void fetchListings()
 
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه') },
-  { id: 'active', label: t('فعال') },
-  { id: 'inactive', label: t('غیرفعال') },
-])
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: `${t('همه')} (${c.all.toLocaleString('fa-IR')})` },
+    { id: 'active', label: `${t('فعال')} (${c.active.toLocaleString('fa-IR')})` },
+    { id: 'inactive', label: `${t('غیرفعال')} (${c.inactive.toLocaleString('fa-IR')})` },
+  ]
+})
 
-const treeRows = computed(() => flattenCategoryTree(categories.value))
+const treeRows = computed(() => {
+  const rows = flattenCategoryTree(listItems.value)
+  // Prefer server childCount / parentName when present on list items
+  const byId = new Map(listItems.value.map(c => [c.id, c]))
+  return rows.map((row) => {
+    const raw = byId.get(row.id)
+    return {
+      ...row,
+      childCount: raw?.childCount ?? row.childCount,
+      parentName: raw?.parentName ?? row.parentName,
+      productCount: Number(raw?.productCount) || 0,
+    }
+  })
+})
 
 const hasHierarchy = computed(() =>
-  categories.value.some(c => Boolean(c.parentId))
+  listItems.value.some(c => Boolean(c.parentId))
   || treeRows.value.some(r => r.childCount > 0),
 )
 
 const parentFilterItems = computed(() => [
   { value: 'all', label: t('همه والدین') },
   { value: '__root__', label: t('فقط ریشه‌ها') },
-  ...categories.value.map(c => ({ value: c.id, label: c.name })),
+  ...listMeta.value.parentOptions.map(c => ({ value: c.id, label: c.name })),
 ])
 
-const productCountMap = computed(() => {
-  const map = new Map<string, number>()
-  for (const listing of listings.value) {
-    const cat = resolveProduct(listing.productId).category
-    if (!cat) continue
-    map.set(cat, (map.get(cat) || 0) + 1)
-  }
-  return map
-})
-
 function productCount(id: string) {
-  return productCountMap.value.get(id) || 0
+  const row = treeRows.value.find(r => r.id === id)
+  if (row && 'productCount' in row) return Number((row as any).productCount) || 0
+  return Number(listItems.value.find(c => c.id === id)?.productCount) || 0
 }
 
 function attrCount(id: string) {
   return attributes.value.filter(a => a.categoryIds.includes(id)).length
 }
 
-const filteredRows = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return treeRows.value.filter((row) => {
-    if (status.value !== 'all' && row.status !== status.value) return false
-    if (parentFilter.value === '__root__' && row.parentId) return false
-    if (
-      parentFilter.value
-      && parentFilter.value !== 'all'
-      && parentFilter.value !== '__root__'
-      && row.parentId !== parentFilter.value
-    ) return false
-    if (!q) return true
-    return row.name.includes(search.value.trim())
-      || row.id.toLowerCase().includes(q)
-      || row.icon.toLowerCase().includes(q)
-      || (row.parentName?.includes(search.value.trim()) ?? false)
-  })
-})
+/** Server already filtered — tree/flat only reshapes rows */
+const filteredRows = computed(() => treeRows.value)
 
 function hasVisibleChildren(id: string) {
   return filteredRows.value.some(r => r.parentId === id)
@@ -548,11 +554,10 @@ function isCollapsed(id: string) {
 }
 
 const visibleRows = computed(() => {
-  // Flat + search: no collapse; flat sorts by name for a clear difference from tree
   if (viewMode.value === 'flat') {
     return [...filteredRows.value].sort((a, b) => a.name.localeCompare(b.name, 'fa'))
   }
-  if (search.value.trim()) {
+  if (search.value.trim() || (parentFilter.value && parentFilter.value !== 'all')) {
     return filteredRows.value
   }
   const hidden = new Set<string>()
@@ -596,14 +601,39 @@ function toggleSelect(id: string, on: boolean) {
 }
 
 async function clearAll() {
-  parentFilter.value = 'all'
   selectedIds.value = []
   await clearFilters()
+  await patchQuery({ parentId: undefined })
+}
+
+function apiErrorMessage(error: any, fallback: string) {
+  const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+  return fromFields || error?.data?.message || error?.message || fallback
+}
+
+async function loadCategories() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      force: true,
+      query: {
+        q: search.value || undefined,
+        status: status.value || undefined,
+        parentId: parentFilter.value || undefined,
+      },
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری دسته‌بندی‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
 }
 
 async function bulkStatus(next: SellerCategoryStatus) {
   for (const id of selectedIds.value) {
-    const cat = categories.value.find(c => c.id === id)
+    const cat = getById(id) || listItems.value.find(c => c.id === id)
     if (!cat) continue
     const form = toCategoryForm(cat)
     form.status = next
@@ -611,6 +641,7 @@ async function bulkStatus(next: SellerCategoryStatus) {
   }
   selectedIds.value = []
   toast.success(t('وضعیت دسته‌ها به‌روز شد'))
+  await loadCategories()
 }
 
 function openDelete(row: SellerCategoryTreeRow) {
@@ -630,6 +661,7 @@ async function confirmDelete() {
       return
     }
     toast.success(t('دسته‌بندی حذف شد'))
+    await loadCategories()
   }
   finally {
     deleting.value = false
@@ -653,4 +685,16 @@ function exportCsv() {
   )
   toast.success(t('فایل خروجی آماده شد'))
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadCategories()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadCategories()
+})
 </script>

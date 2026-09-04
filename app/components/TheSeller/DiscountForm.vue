@@ -279,8 +279,8 @@ async function onSave() {
   saving.value = true
   try {
     const result = isEdit.value
-      ? updateDiscount(props.initial!.id, form.value)
-      : createDiscount(form.value)
+      ? await updateDiscount(props.initial!.id, form.value)
+      : await createDiscount(form.value)
 
     if (!result.ok) {
       toast.error(t(result.error))

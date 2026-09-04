@@ -174,8 +174,8 @@ async function submit() {
   saving.value = true
   try {
     const result = isEdit.value && props.initial
-      ? updateWarehouse(props.initial.id, form.value)
-      : createWarehouse(form.value)
+      ? await updateWarehouse(props.initial.id, form.value)
+      : await createWarehouse(form.value)
 
     if (!result.ok) {
       toast.error(result.error)

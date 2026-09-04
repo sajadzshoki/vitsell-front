@@ -2,21 +2,26 @@ import { emptyOrderCommerce, type SellerOrderCommerce, type SellerOrderInternalN
 import type { SellerOrder } from '~/data/seller'
 
 export function useSellerOrderCommerce() {
-  const map = useState<Record<string, SellerOrderCommerce>>('seller-order-commerce', () => ({}))
+  const map = useState<Record<string, SellerOrderCommerce & { refunds?: any[] }>>('seller-order-commerce', () => ({}))
 
-  function getCommerce(order: SellerOrder): SellerOrderCommerce {
+  function getCommerce(order: SellerOrder): SellerOrderCommerce & { refunds?: any[] } {
     if (!map.value[order.id]) {
       return emptyOrderCommerce(order)
     }
     const stored = map.value[order.id]!
+    const fallback = emptyOrderCommerce(order)
     return {
+      ...fallback,
       ...stored,
-      shippingStatus: stored.shippingStatus || emptyOrderCommerce(order).shippingStatus,
-      timeline: stored.timeline?.length ? stored.timeline : emptyOrderCommerce(order).timeline,
+      shippingStatus: stored.shippingStatus || fallback.shippingStatus,
+      paymentStatus: stored.paymentStatus || fallback.paymentStatus,
+      timeline: stored.timeline?.length ? stored.timeline : fallback.timeline,
+      internalNotes: stored.internalNotes ?? fallback.internalNotes,
+      refunds: Array.isArray(stored.refunds) ? stored.refunds : [],
     }
   }
 
-  function saveCommerce(orderId: string, patch: Partial<SellerOrderCommerce>) {
+  function saveCommerce(orderId: string, patch: Partial<SellerOrderCommerce> & { refunds?: any[] }) {
     const previous = map.value[orderId]
     const base = previous ?? emptyOrderCommerce({
       id: orderId,
@@ -32,21 +37,21 @@ export function useSellerOrderCommerce() {
       shippingMethod: '',
       paymentMethod: '',
     })
-    const next: SellerOrderCommerce = {
+    const next: SellerOrderCommerce & { refunds?: any[] } = {
       ...base,
       ...patch,
       orderId,
-      timeline: patch.timeline ? [...patch.timeline] : [...base.timeline],
-      internalNotes: patch.internalNotes ? [...patch.internalNotes] : [...base.internalNotes],
+      timeline: patch.timeline ? [...patch.timeline] : [...(base.timeline || [])],
+      internalNotes: patch.internalNotes ? [...patch.internalNotes] : [...(base.internalNotes || [])],
+      refunds: patch.refunds ? [...patch.refunds] : [...((base as any).refunds || [])],
     }
     map.value = { ...map.value, [orderId]: next }
     return next
   }
 
   function addInternalNote(orderId: string, text: string, author: string) {
-    const orderStub = { id: orderId } as SellerOrder
     const current = map.value[orderId] ?? emptyOrderCommerce({
-      ...orderStub,
+      id: orderId,
       date: new Date().toLocaleDateString('fa-IR'),
       dateKey: '',
       status: 'new',

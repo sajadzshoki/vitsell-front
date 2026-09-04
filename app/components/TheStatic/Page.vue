@@ -86,14 +86,24 @@
 
               <div
                 v-if="section.type === 'paragraphs'"
-                class="flex flex-col gap-3 text-sm text-toned leading-7"
+                class="text-sm text-toned leading-7"
               >
-                <p
-                  v-for="(paragraph, pIndex) in section.items"
-                  :key="pIndex"
+                <div
+                  v-if="isRichParagraphs(section.items)"
+                  class="blog-prose"
+                  v-html="safeParagraphHtml(section.items)"
+                />
+                <div
+                  v-else
+                  class="flex flex-col gap-3"
                 >
-                  {{ $t(paragraph) }}
-                </p>
+                  <p
+                    v-for="(paragraph, pIndex) in section.items"
+                    :key="pIndex"
+                  >
+                    {{ $t(paragraph) }}
+                  </p>
+                </div>
               </div>
 
               <ul
@@ -246,6 +256,11 @@
 <script setup lang="ts">
 import type { StaticPage, StaticPageId } from '~/data/static-pages'
 import { getBlogPostPath, staticPagePaths } from '~/data/static-pages'
+import {
+  contentToHtml,
+  isRichBlogContent,
+  sanitizeBlogHtml,
+} from '~/data/seller-blog'
 import { faqPageJsonLd } from '~/composables/useJsonLd'
 
 const props = defineProps<{
@@ -255,6 +270,14 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useAppToast()
 const { fetchStaticPage, getPage } = useStaticPages()
+
+function isRichParagraphs(items: string[]) {
+  return isRichBlogContent(items)
+}
+
+function safeParagraphHtml(items: string[]) {
+  return sanitizeBlogHtml(contentToHtml(items))
+}
 
 const { data: page, pending } = await useAsyncData<StaticPage | null>(
   `static-page-${props.pageId}`,

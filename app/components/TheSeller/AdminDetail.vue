@@ -1,6 +1,16 @@
 <template>
   <div
-    v-if="!admin"
+    v-if="loading"
+    class="py-16 grid place-items-center"
+  >
+    <UIcon
+      name="i-tabler-loader-2"
+      class="size-8 text-primary animate-spin"
+    />
+  </div>
+
+  <div
+    v-else-if="!admin"
     class="py-16"
   >
     <TheSellerEmptyState
@@ -210,14 +220,16 @@ const route = useRoute()
 const { t } = useI18n()
 const toast = useAppToast()
 const { can } = useSellerPermissions()
-const { getById, setAdminStatus, ensureLoaded, currentAdminUser } = useSellerAdmins()
+const {
+  getById,
+  setAdminStatus,
+  fetchById,
+  currentAdminUser,
+} = useSellerAdmins()
 const { getById: getRole, permissionsForRoleIds, ensureLoaded: ensureRoles } = useSellerRoles()
 const { logs, ensureLoaded: ensureAudit, appendLog } = useSellerAudit()
 
-ensureLoaded()
-ensureRoles()
-ensureAudit()
-
+const loading = ref(true)
 const showEdit = ref(route.query.tab === 'edit')
 const admin = computed(() => getById(props.adminId))
 const permissions = computed(() =>
@@ -227,14 +239,26 @@ const adminLogs = computed(() =>
   logs.value.filter(l => l.actorId === props.adminId).slice(0, 8),
 )
 
+onMounted(async () => {
+  loading.value = true
+  try {
+    await ensureRoles({ force: true })
+    void ensureAudit({ force: true })
+    await fetchById(props.adminId, { force: true })
+  }
+  finally {
+    loading.value = false
+  }
+})
+
 function roleName(id: string) {
   return getRole(id)?.name || id
 }
 
-function onDeactivate() {
-  const result = setAdminStatus(props.adminId, 'inactive')
+async function onDeactivate() {
+  const result = await setAdminStatus(props.adminId, 'inactive')
   if (!result.ok) {
-    toast.error(t(result.error))
+    toast.error(t(result.error || 'عملیات ناموفق بود'))
     return
   }
   const actor = currentAdminUser()
@@ -251,19 +275,19 @@ function onDeactivate() {
   toast.success(t('ادمین غیرفعال شد'))
 }
 
-function onActivate() {
-  const result = setAdminStatus(props.adminId, 'active')
+async function onActivate() {
+  const result = await setAdminStatus(props.adminId, 'active')
   if (!result.ok) {
-    toast.error(t(result.error))
+    toast.error(t(result.error || 'عملیات ناموفق بود'))
     return
   }
   toast.success(t('ادمین فعال شد'))
 }
 
-function onSuspend() {
-  const result = setAdminStatus(props.adminId, 'suspended')
+async function onSuspend() {
+  const result = await setAdminStatus(props.adminId, 'suspended')
   if (!result.ok) {
-    toast.error(t(result.error))
+    toast.error(t(result.error || 'عملیات ناموفق بود'))
     return
   }
   const actor = currentAdminUser()

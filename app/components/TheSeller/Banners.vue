@@ -1,23 +1,23 @@
 <template>
   <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-    <div class="hidden lg:flex items-center justify-between mb-5 gap-3">
-      <h2 class="font-bold text-highlighted">
-        {{ $t('بنرها') }}
-      </h2>
-      <div class="flex items-center gap-3">
-        <div class="text-xs text-muted num">
-          {{ filtered.length.toLocaleString('fa-IR') }} {{ $t('بنر') }}
-        </div>
-        <UButton
-          to="/seller/banners/new"
-          color="primary"
-          size="sm"
-          icon="i-tabler-plus"
-          class="font-medium cursor-pointer"
-        >
-          {{ $t('افزودن بنر') }}
-        </UButton>
-      </div>
+    <div class="hidden lg:block">
+      <TheSellerPageHeader
+        :title="$t('بنرها')"
+        :description="$t('مدیریت بنرهای صفحه اصلی و دسته‌ها')"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('بنر')}` : undefined"
+      >
+        <template #actions>
+          <UButton
+            to="/seller/banners/new"
+            color="primary"
+            size="sm"
+            icon="i-tabler-plus"
+            class="font-medium cursor-pointer"
+          >
+            {{ $t('افزودن بنر') }}
+          </UButton>
+        </template>
+      </TheSellerPageHeader>
     </div>
 
     <div class="lg:hidden mb-4">
@@ -32,34 +32,27 @@
       </UButton>
     </div>
 
-    <div class="flex flex-col sm:(flex-row items-center) gap-3 mb-4">
-      <TheFormInput
-        v-model="query"
-        icon="i-tabler-search"
-        :placeholder="$t('جستجوی عنوان، شناسه یا لینک')"
-        class="flex-1 w-full"
-      />
-      <USelect
-        v-model="placementFilter"
-        :items="placementFilterItems"
-        value-key="value"
-        class="w-full sm:w-56"
-      />
-    </div>
-
-    <div class="flex items-center gap-2 overflow-x-auto scrollbar-none mb-4">
-      <UButton
-        v-for="tab in scheduleTabs"
-        :key="tab.id"
-        :color="scheduleFilter === tab.id ? 'primary' : 'neutral'"
-        :variant="scheduleFilter === tab.id ? 'soft' : 'ghost'"
-        size="sm"
-        class="shrink-0 cursor-pointer"
-        @click="scheduleFilter = tab.id"
-      >
-        {{ $t(tab.label) }}
-      </UButton>
-    </div>
+    <TheSellerListToolbar
+      v-model:search="search"
+      :status="status"
+      :tabs="statusTabs"
+      :search-placeholder="$t('جستجوی عنوان، شناسه یا لینک')"
+      :has-active="hasActiveFilters || placementFilter !== 'all'"
+      :clear-label="$t('پاک کردن فیلترها')"
+      @update:status="status = $event"
+      @clear="clearAllFilters"
+    >
+      <template #extra>
+        <USelect
+          :model-value="placementFilter"
+          :items="placementFilterItems"
+          value-key="value"
+          class="w-full sm:w-56"
+          :placeholder="$t('جایگاه')"
+          @update:model-value="setPlacement(String($event ?? 'all'))"
+        />
+      </template>
+    </TheSellerListToolbar>
 
     <div
       v-if="selectedIds.length"
@@ -102,16 +95,26 @@
       </UButton>
     </div>
 
+    <div
+      v-if="(loading || pending) && !banners.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!banners.length"
       icon="i-tabler-photo"
-      :title="query.trim() || placementFilter !== 'all' || scheduleFilter !== 'all' ? $t('نتیجه‌ای نیست') : $t('هنوز بنری نیست')"
-      :message="query.trim() || placementFilter !== 'all' || scheduleFilter !== 'all'
+      :title="hasActiveFilters || placementFilter !== 'all' ? $t('نتیجه‌ای نیست') : $t('هنوز بنری نیست')"
+      :message="hasActiveFilters || placementFilter !== 'all'
         ? $t('بنری با این فیلتر پیدا نشد')
         : $t('هنوز بنری ثبت نشده است')"
     >
       <template
-        v-if="!query.trim() && placementFilter === 'all' && scheduleFilter === 'all'"
+        v-if="!hasActiveFilters && placementFilter === 'all'"
         #actions
       >
         <UButton
@@ -131,7 +134,7 @@
       class="space-y-3"
     >
       <div
-        v-for="banner in filtered"
+        v-for="banner in banners"
         :key="banner.id"
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
@@ -163,9 +166,12 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-2 flex-wrap">
               <div class="min-w-0">
-                <div class="text-sm font-medium text-highlighted truncate">
+                <NuxtLink
+                  :to="`/seller/banners/${banner.id}`"
+                  class="text-sm font-medium text-highlighted truncate block hover:text-primary transition cursor-pointer"
+                >
                   {{ banner.title || banner.internalName || banner.id }}
-                </div>
+                </NuxtLink>
                 <div
                   class="text-[11px] text-muted mt-0.5 truncate num"
                   dir="ltr"
@@ -248,12 +254,23 @@
           </div>
         </div>
       </div>
+
+      <div
+        v-if="pageCount > 1"
+        class="mt-5 flex justify-center"
+      >
+        <UPagination
+          v-model:page="page"
+          :total="listMeta.total"
+          :items-per-page="listMeta.pageSize || pageSize"
+        />
+      </div>
     </div>
 
     <UModal
       v-model:open="deleteOpen"
       :title="$t('حذف بنر')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود و قابل بازگشت نیست.')"
+      :description="$t('در صورت تأیید، این بنر از سرور حذف می‌شود.')"
     >
       <template #body>
         <div
@@ -281,6 +298,7 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
+            :disabled="deleting"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
@@ -288,6 +306,7 @@
           <UButton
             color="error"
             class="font-bold cursor-pointer"
+            :loading="deleting"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -308,29 +327,35 @@ import {
 import {
   deriveScheduleStatus,
   sellerScheduleStatusMeta,
-  type SellerScheduleStatus,
 } from '~/data/seller-marketing-shared'
+
+const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { banners, ensureLoaded, deleteBanner, setActive, setActiveMany } = useSellerBanners()
+const route = useRoute()
+const {
+  banners,
+  listMeta,
+  pending,
+  fetchList,
+  deleteBanner,
+  setActive,
+  setActiveMany,
+} = useSellerBanners()
 const { categories, fetchCategories, getCategoryById } = useCategories()
+const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+  defaultStatus: 'all',
+})
 
-const query = ref('')
-const placementFilter = ref<'all' | SellerBannerPlacement>('all')
-const scheduleFilter = ref<'all' | SellerScheduleStatus>('all')
+const loading = ref(true)
 const selectedIds = ref<string[]>([])
 const bulkRunning = ref(false)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerBanner | null>(null)
+const deleting = ref(false)
 
-const scheduleTabs = [
-  { id: 'all' as const, label: 'همه وضعیت‌ها' },
-  { id: 'active' as const, label: 'فعال' },
-  { id: 'scheduled' as const, label: 'زمان‌بندی‌شده' },
-  { id: 'paused' as const, label: 'متوقف' },
-  { id: 'expired' as const, label: 'منقضی' },
-]
+const placementFilter = computed(() => String(route.query.placement ?? 'all'))
 
 const placementFilterItems = computed(() => [
   { label: t('همه جایگاه‌ها'), value: 'all' },
@@ -340,39 +365,37 @@ const placementFilterItems = computed(() => [
   })),
 ])
 
-ensureLoaded()
-await fetchCategories({ withCounts: false })
-
-const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  return banners.value.filter((banner) => {
-    if (placementFilter.value !== 'all' && banner.placement !== placementFilter.value) return false
-    const status = deriveScheduleStatus({
-      startsAt: banner.startsAt,
-      endsAt: banner.endsAt,
-      active: banner.active,
-    })
-    if (scheduleFilter.value !== 'all' && status !== scheduleFilter.value) return false
-    if (!q) return true
-    const categoryName = categoryLabel(banner.categoryId).toLowerCase()
-    return (
-      banner.id.toLowerCase().includes(q)
-      || banner.link.toLowerCase().includes(q)
-      || (banner.title || '').toLowerCase().includes(q)
-      || (banner.internalName || '').toLowerCase().includes(q)
-      || (banner.categoryId ?? '').toLowerCase().includes(q)
-      || categoryName.includes(q)
-    )
-  })
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'active', label: t('فعال'), count: Number(c.active) || 0 },
+    { id: 'scheduled', label: t('زمان‌بندی‌شده'), count: Number(c.scheduled) || 0 },
+    { id: 'paused', label: t('متوقف'), count: Number(c.paused) || 0 },
+    { id: 'expired', label: t('منقضی'), count: Number(c.expired) || 0 },
+  ]
 })
 
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
 function scheduleBadge(banner: SellerBanner) {
-  const status = deriveScheduleStatus({
+  const key = deriveScheduleStatus({
     startsAt: banner.startsAt,
     endsAt: banner.endsAt,
     active: banner.active,
   })
-  return sellerScheduleStatusMeta[status]
+  return sellerScheduleStatusMeta[key]
 }
 
 function categoryLabel(categoryId: string | null) {
@@ -380,6 +403,38 @@ function categoryLabel(categoryId: string | null) {
   return getCategoryById(categoryId)?.name
     || categories.value.find(c => c.id === categoryId)?.name
     || categoryId
+}
+
+async function setPlacement(value: string) {
+  await patchQuery({
+    placement: value && value !== 'all' ? value : undefined,
+    page: undefined,
+  })
+}
+
+async function clearAllFilters() {
+  selectedIds.value = []
+  await clearFilters()
+  await patchQuery({ placement: undefined })
+}
+
+async function loadList() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      placement: placementFilter.value !== 'all' ? placementFilter.value : undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری بنرها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
 }
 
 function toggleSelect(id: string, on: boolean) {
@@ -390,26 +445,28 @@ function toggleSelect(id: string, on: boolean) {
   selectedIds.value = selectedIds.value.filter(x => x !== id)
 }
 
-function runBulk(active: boolean) {
+async function runBulk(active: boolean) {
   if (!selectedIds.value.length) return
   bulkRunning.value = true
   try {
-    setActiveMany(selectedIds.value, active)
+    await setActiveMany(selectedIds.value, active)
     toast.success(active ? t('بنرها فعال شدند') : t('بنرها غیرفعال شدند'))
     selectedIds.value = []
+    await loadList()
   }
   finally {
     bulkRunning.value = false
   }
 }
 
-function toggleActive(banner: SellerBanner) {
-  const result = setActive(banner.id, !banner.active)
+async function toggleActive(banner: SellerBanner) {
+  const result = await setActive(banner.id, !banner.active)
   if (!result.ok) {
     toast.error(t(result.error))
     return
   }
-  toast.success(banner.active ? t('بنر غیرفعال شد') : t('بنر فعال شد'))
+  toast.success(result.banner.active ? t('بنر فعال شد') : t('بنر غیرفعال شد'))
+  await loadList()
 }
 
 function openDelete(banner: SellerBanner) {
@@ -417,15 +474,35 @@ function openDelete(banner: SellerBanner) {
   deleteOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDelete.value) return
-  const result = deleteBanner(pendingDelete.value.id)
-  deleteOpen.value = false
-  pendingDelete.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  deleting.value = true
+  try {
+    const result = await deleteBanner(pendingDelete.value.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('بنر حذف شد'))
+    await loadList()
   }
-  toast.success(t('بنر حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadList()
+  },
+  { deep: true },
+)
+
+onMounted(async () => {
+  await fetchCategories({ withCounts: false })
+  void loadList()
+})
 </script>

@@ -88,14 +88,14 @@
           />
           <UFormField
             :label="$t('متن داستان')"
-            :help="$t('هر پاراگراف را با یک خط خالی جدا کنید')"
+            :help="$t('از تیتر، فهرست و لینک برای محتوای بهتر استفاده کنید')"
             :error="errors.storyText"
             required
           >
-            <UTextarea
+            <TheSellerRichTextEditor
               v-model="form.storyText"
-              :rows="8"
-              class="w-full"
+              :placeholder="$t('داستان برند را بنویسید…')"
+              :error="errors.storyText"
             />
           </UFormField>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -112,10 +112,10 @@
               required
               :error="errors.mission"
             >
-              <UTextarea
+              <TheSellerRichTextEditor
                 v-model="form.mission"
-                :rows="3"
-                class="w-full"
+                :placeholder="$t('ماموریت را بنویسید…')"
+                :error="errors.mission"
               />
             </UFormField>
             <UFormField
@@ -123,10 +123,10 @@
               required
               :error="errors.vision"
             >
-              <UTextarea
+              <TheSellerRichTextEditor
                 v-model="form.vision"
-                :rows="3"
-                class="w-full"
+                :placeholder="$t('چشم‌انداز را بنویسید…')"
+                :error="errors.vision"
               />
             </UFormField>
           </div>
@@ -452,8 +452,9 @@
           color="neutral"
           variant="ghost"
           size="lg"
-          to="/about"
+          :to="aboutViewHref"
           target="_blank"
+          external
           class="cursor-pointer"
         >
           {{ $t('مشاهده صفحه') }}
@@ -465,6 +466,7 @@
 
 <script setup lang="ts">
 import {
+  buildDefaultAboutPage,
   cloneAboutPage,
   defaultAboutSectionVisibility,
   emptyAboutMilestone,
@@ -474,6 +476,11 @@ import {
   type AboutPagePayload,
   type AboutSectionVisibility,
 } from '~/data/about'
+import {
+  contentToHtml,
+  isEmptyHtml,
+  textToContent,
+} from '~/data/seller-blog'
 import { emptySeoMeta, type SeoMeta } from '~/data/seo'
 
 type AboutFormState = {
@@ -501,11 +508,17 @@ type AboutFormState = {
 const { t } = useI18n()
 const toast = useAppToast()
 const { can } = useSellerPermissions()
-const { about, ensureSeeded, updateAbout, resetToDefaults } = useAbout()
+const { about, fetchAdmin, saveAbout, resetToDefaults } = useAbout()
+const { isAdminApp, storeUrl } = useAppMode()
+
+const aboutViewHref = computed(() => {
+  if (!isAdminApp) return '/about'
+  return `${storeUrl.replace(/\/+$/, '')}/about`
+})
 
 const ready = ref(false)
 const saving = ref(false)
-const form = ref<AboutFormState>(payloadToForm(buildInitial()))
+const form = ref<AboutFormState>(payloadToForm(buildDefaultAboutPage()))
 const errors = ref<Partial<Record<'title' | 'subtitle' | 'heroImage' | 'storyText' | 'mission' | 'vision', string>>>({})
 
 const sectionVisibilityItems: { key: keyof AboutSectionVisibility, label: string }[] = [
@@ -518,10 +531,6 @@ const sectionVisibilityItems: { key: keyof AboutSectionVisibility, label: string
   { key: 'cta', label: 'دعوت به اقدام' },
 ]
 
-function buildInitial() {
-  return cloneAboutPage(about.value)
-}
-
 function payloadToForm(payload: AboutPagePayload): AboutFormState {
   return {
     title: payload.title,
@@ -529,11 +538,11 @@ function payloadToForm(payload: AboutPagePayload): AboutFormState {
     eyebrow: payload.eyebrow,
     heroImage: payload.heroImage,
     storyTitle: payload.storyTitle,
-    storyText: payload.story.join('\n\n'),
+    storyText: contentToHtml(payload.story),
     missionTitle: payload.missionTitle,
-    mission: payload.mission,
+    mission: contentToHtml([payload.mission].filter(Boolean)),
     visionTitle: payload.visionTitle,
-    vision: payload.vision,
+    vision: contentToHtml([payload.vision].filter(Boolean)),
     stats: cloneAboutPage(payload).stats,
     values: cloneAboutPage(payload).values,
     milestones: cloneAboutPage(payload).milestones,
@@ -547,20 +556,19 @@ function payloadToForm(payload: AboutPagePayload): AboutFormState {
 }
 
 function formToPayload(state: AboutFormState): AboutPagePayload {
+  const missionHtml = textToContent(state.mission)
+  const visionHtml = textToContent(state.vision)
   return {
     title: state.title.trim(),
     subtitle: state.subtitle.trim(),
     eyebrow: state.eyebrow.trim(),
     heroImage: state.heroImage.trim(),
     storyTitle: state.storyTitle.trim(),
-    story: state.storyText
-      .split(/\n\s*\n/)
-      .map(p => p.trim())
-      .filter(Boolean),
+    story: textToContent(state.storyText),
     missionTitle: state.missionTitle.trim(),
-    mission: state.mission.trim(),
+    mission: missionHtml.length === 1 ? missionHtml[0]! : missionHtml.join(''),
     visionTitle: state.visionTitle.trim(),
-    vision: state.vision.trim(),
+    vision: visionHtml.length === 1 ? visionHtml[0]! : visionHtml.join(''),
     stats: state.stats
       .map(s => ({
         ...s,
@@ -609,10 +617,19 @@ function formToPayload(state: AboutFormState): AboutPagePayload {
   }
 }
 
-onMounted(() => {
-  ensureSeeded()
-  form.value = payloadToForm(about.value)
-  ready.value = true
+onMounted(async () => {
+  try {
+    const { ok, error } = await fetchAdmin({ force: true })
+    if (!ok) {
+      toast.error(t(error?.message || 'بارگذاری درباره ما ناموفق بود'))
+    }
+    form.value = payloadToForm(about.value)
+    ready.value = true
+  }
+  catch {
+    form.value = payloadToForm(buildDefaultAboutPage())
+    ready.value = true
+  }
 })
 
 function validate() {
@@ -620,14 +637,14 @@ function validate() {
   if (!form.value.title.trim()) next.title = t('عنوان الزامی است')
   if (!form.value.subtitle.trim()) next.subtitle = t('زیرعنوان الزامی است')
   if (!form.value.heroImage.trim()) next.heroImage = t('تصویر هیرو الزامی است')
-  if (!form.value.storyText.trim()) next.storyText = t('متن داستان الزامی است')
-  if (!form.value.mission.trim()) next.mission = t('ماموریت الزامی است')
-  if (!form.value.vision.trim()) next.vision = t('چشم‌انداز الزامی است')
+  if (isEmptyHtml(form.value.storyText)) next.storyText = t('متن داستان الزامی است')
+  if (isEmptyHtml(form.value.mission)) next.mission = t('ماموریت الزامی است')
+  if (isEmptyHtml(form.value.vision)) next.vision = t('چشم‌انداز الزامی است')
   errors.value = next
   return !Object.keys(next).length
 }
 
-function onSave() {
+async function onSave() {
   if (!can('about.update')) {
     toast.error(t('دسترسی ندارید'))
     return
@@ -638,7 +655,12 @@ function onSave() {
   }
   saving.value = true
   try {
-    updateAbout(formToPayload(form.value))
+    const result = await saveAbout(formToPayload(form.value))
+    if (!result.ok) {
+      toast.error(t(result.error || 'ذخیره ناموفق بود'))
+      return
+    }
+    form.value = payloadToForm(about.value)
     toast.success(t('صفحه درباره ما ذخیره شد'))
   }
   finally {
@@ -646,10 +668,15 @@ function onSave() {
   }
 }
 
-function onReset() {
+async function onReset() {
   resetToDefaults()
   form.value = payloadToForm(about.value)
   errors.value = {}
-  toast.success(t('به محتوای پیش‌فرض برگشت'))
+  const result = await saveAbout(formToPayload(form.value))
+  if (!result.ok) {
+    toast.error(t(result.error || 'بازنشانی ناموفق بود'))
+    return
+  }
+  toast.success(t('به محتوای پیش‌فرض برگشت و ذخیره شد'))
 }
 </script>

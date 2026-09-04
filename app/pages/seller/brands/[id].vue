@@ -5,17 +5,19 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const route = useRoute()
-const { ensureLoaded, getById } = useSellerBrands()
+const { fetchBrand, getById } = useSellerBrands()
 
 definePageMeta({
   layout: 'seller',
   middleware: ['auth', 'admin'],
 })
 
-ensureLoaded()
-
 const brandId = computed(() => String(route.params.id ?? ''))
 const brand = computed(() => getById(brandId.value) ?? null)
+
+onMounted(() => {
+  if (brandId.value) void fetchBrand(brandId.value, { force: true })
+})
 
 useSeoMeta({
   title: () => brand.value

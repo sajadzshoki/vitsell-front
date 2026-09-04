@@ -110,7 +110,22 @@ export class CartItemSchema extends BaseModel {
 }
 
 export class CategorySchema extends BaseModel {
-  static $columns = ['createdAt', 'icon', 'image', 'id', 'name', 'pageMeta', 'subs', 'suggested', 'text', 'updatedAt'] as const
+  static $columns = [
+    'createdAt',
+    'icon',
+    'image',
+    'id',
+    'name',
+    'pageMeta',
+    'parentId',
+    'seo',
+    'sortOrder',
+    'status',
+    'subs',
+    'suggested',
+    'text',
+    'updatedAt',
+  ] as const
   $columns = CategorySchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -124,6 +139,16 @@ export class CategorySchema extends BaseModel {
   declare name: string
   @column()
   declare pageMeta: any | null
+  /** Tree parent — null = root category */
+  @column()
+  declare parentId: string | null
+  /** Indexable SEO meta (Open Graph / robots) — separate from pageMeta.seo body */
+  @column()
+  declare seo: any | null
+  @column()
+  declare sortOrder: number
+  @column()
+  declare status: string
   /**
    * Subcategory groups for MegaMenu / Search chips.
    * Shape: `{ name: string, items: string[], image?: string }[]`

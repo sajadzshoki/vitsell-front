@@ -4,7 +4,7 @@
       <TheSellerPageHeader
         :title="$t('کاربران ادمین')"
         :description="$t('مدیریت حساب‌های کارکنان پنل — جدا از مشتریان فروشگاه')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('نفر')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('نفر')}` : undefined"
       >
         <template
           v-if="can('admins.create')"
@@ -48,8 +48,18 @@
       @clear="clearFilters"
     />
 
+    <div
+      v-if="loading && !admins.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!admins.length"
       icon="i-tabler-user-shield"
       :message="$t('ادمینی با این فیلتر پیدا نشد')"
     />
@@ -59,7 +69,7 @@
       class="space-y-3"
     >
       <div
-        v-for="admin in paged"
+        v-for="admin in admins"
         :key="admin.id"
         class="bg-muted border border-muted rounded-2xl p-4"
       >
@@ -68,7 +78,10 @@
             <div class="font-medium text-highlighted">
               {{ adminFullName(admin) }}
             </div>
-            <div class="text-[11px] text-muted mt-1 num" dir="ltr">
+            <div
+              class="text-[11px] text-muted mt-1 num"
+              dir="ltr"
+            >
               {{ admin.email }}
               <span v-if="admin.phone"> · {{ admin.phone }}</span>
             </div>
@@ -124,8 +137,8 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
+        :total="listMeta.total"
+        :items-per-page="listMeta.pageSize || pageSize"
       />
     </div>
   </div>
@@ -134,45 +147,67 @@
 <script setup lang="ts">
 import { adminFullName, sellerAdminStatusMeta } from '~/data/seller-admins'
 
+const { t } = useI18n()
+const toast = useAppToast()
 const { can } = useSellerPermissions()
-const { admins, ensureLoaded } = useSellerAdmins()
+const { admins, listMeta, fetchList } = useSellerAdmins()
 const { getById: getRole, ensureLoaded: ensureRoles } = useSellerRoles()
 const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
-ensureLoaded()
-ensureRoles()
-
 const pageSize = 8
-const statusTabs = computed(() => [
-  { id: 'all', label: 'همه', count: admins.value.length },
-  { id: 'active', label: 'فعال', count: admins.value.filter(a => a.status === 'active').length },
-  { id: 'inactive', label: 'غیرفعال', count: admins.value.filter(a => a.status === 'inactive').length },
-  { id: 'suspended', label: 'معلق', count: admins.value.filter(a => a.status === 'suspended').length },
-])
+const loading = ref(false)
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return admins.value.filter((admin) => {
-    if (status.value !== 'all' && admin.status !== status.value) return false
-    if (!q) return true
-    return (
-      adminFullName(admin).toLowerCase().includes(q)
-      || admin.email.toLowerCase().includes(q)
-      || admin.phone.includes(q)
-    )
-  })
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: 'همه', count: Number(c.all) || 0 },
+    { id: 'active', label: 'فعال', count: Number(c.active) || 0 },
+    { id: 'inactive', label: 'غیرفعال', count: Number(c.inactive) || 0 },
+    { id: 'suspended', label: 'معلق', count: Number(c.suspended) || 0 },
+  ]
 })
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
 
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
+async function loadList() {
+  loading.value = true
+  try {
+    await ensureRoles({ force: true })
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(t(
+        (error as any)?.data?.errors?.[0]?.message
+        || (error as any)?.message
+        || 'بارگذاری ادمین‌ها ناموفق بود',
+      ))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 function roleName(roleId: string) {
   return getRole(roleId)?.name || roleId
 }
+
+watch(
+  [search, status, page],
+  () => {
+    void loadList()
+  },
+)
+
+onMounted(() => {
+  void loadList()
+})
 </script>

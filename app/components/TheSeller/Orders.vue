@@ -3,7 +3,7 @@
     <div class="hidden lg:block">
       <TheSellerPageHeader
         :title="$t('سفارش‌های فروشگاه')"
-        :count-label="!pending ? `${filtered.length.toLocaleString('fa-IR')} ${$t('سفارش')}` : undefined"
+        :count-label="!loading ? `${ordersMeta.total.toLocaleString('fa-IR')} ${$t('سفارش')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -14,15 +14,19 @@
             size="sm"
             icon="i-tabler-download"
             class="cursor-pointer"
+            :loading="exporting"
             @click="exportCsv"
           >
-            {{ $t('خروجی') }}
+            {{ $t('خروجی Excel') }}
           </UButton>
         </template>
       </TheSellerPageHeader>
     </div>
 
-    <div class="lg:hidden mb-4">
+    <div
+      v-if="can('orders.export') || can('orders.view')"
+      class="lg:hidden mb-4"
+    >
       <UButton
         type="button"
         color="neutral"
@@ -30,9 +34,10 @@
         block
         icon="i-tabler-download"
         class="cursor-pointer"
+        :loading="exporting"
         @click="exportCsv"
       >
-        {{ $t('خروجی CSV') }}
+        {{ $t('خروجی Excel (CSV)') }}
       </UButton>
     </div>
 
@@ -113,6 +118,20 @@
         digits-only
         @update:model-value="filters.setFilter('amountMax', $event || null)"
       />
+      <TheFormInput
+        :model-value="String(filters.values.dateFrom || '')"
+        :label="$t('از تاریخ')"
+        type="date"
+        dir="ltr"
+        @update:model-value="filters.setFilter('dateFrom', $event || null)"
+      />
+      <TheFormInput
+        :model-value="String(filters.values.dateTo || '')"
+        :label="$t('تا تاریخ')"
+        type="date"
+        dir="ltr"
+        @update:model-value="filters.setFilter('dateTo', $event || null)"
+      />
       <div class="flex flex-col gap-2 justify-end">
         <UCheckbox
           :model-value="filters.values.hasDiscount === true"
@@ -170,7 +189,7 @@
     </div>
 
     <div
-      v-if="pending && !orders.length"
+      v-if="(loading || pending) && !orders.length"
       class="py-16 grid place-items-center"
     >
       <UIcon
@@ -180,7 +199,7 @@
     </div>
 
     <TheSellerEmptyState
-      v-else-if="filtered.length === 0"
+      v-else-if="!orders.length"
       icon="i-tabler-shopping-bag"
       :message="emptyMessage"
     />
@@ -197,7 +216,7 @@
 
       <div class="space-y-3">
         <div
-          v-for="order in pageItems"
+          v-for="order in orders"
           :key="order.id"
           class="relative"
         >
@@ -214,7 +233,7 @@
       </div>
 
       <div
-        v-if="showPagination"
+        v-if="totalPages > 1"
         class="mt-6 flex flex-col sm:(flex-row items-center justify-between) gap-3"
       >
         <div class="text-xs text-muted num text-center sm:text-start">
@@ -225,8 +244,8 @@
         </div>
         <UPagination
           :page="page"
-          :total="filtered.length"
-          :items-per-page="pageSize"
+          :total="ordersMeta.total"
+          :items-per-page="ordersMeta.pageSize || pageSize"
           :sibling-count="1"
           show-edges
           color="neutral"
@@ -242,7 +261,6 @@
 import {
   sellerOrderSortOptions,
   sellerOrdersPageSize,
-  type SellerOrderSort,
   type SellerOrderStatus,
 } from '~/data/seller'
 import { sellerOrderFilterDefs } from '~/data/seller-order-commerce'
@@ -250,8 +268,15 @@ import { downloadSellerCsv } from '~/data/seller-export'
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { orders, pending, fetchOrders, setOrderStatus } = useSeller()
-const { getCommerce } = useSellerOrderCommerce()
+const route = useRoute()
+const {
+  orders,
+  ordersMeta,
+  pending,
+  fetchOrders,
+  fetchOrdersExport,
+  setOrderStatus,
+} = useSeller()
 const { can } = useSellerPermissions()
 
 const { search, status, sort, page, clearFilters } = useSellerListQuery({
@@ -264,17 +289,22 @@ const showAdvanced = ref(false)
 const selectedIds = ref<string[]>([])
 const bulkAction = ref('')
 const bulkRunning = ref(false)
+const loading = ref(true)
+const exporting = ref(false)
 const pageSize = sellerOrdersPageSize
 
-const statusTabs = computed(() => [
-  { id: 'all', label: t('همه') },
-  { id: 'new', label: t('جدید'), count: countBy('new') },
-  { id: 'packing', label: t('آماده‌سازی'), count: countBy('packing') },
-  { id: 'shipped', label: t('ارسال شده'), count: countBy('shipped') },
-  { id: 'delivered', label: t('تحویل شده'), count: countBy('delivered') },
-  { id: 'returned', label: t('مرجوعی'), count: countBy('returned') },
-  { id: 'cancelled', label: t('لغو شده'), count: countBy('cancelled') },
-])
+const statusTabs = computed(() => {
+  const c = ordersMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: c.all },
+    { id: 'new', label: t('جدید'), count: c.new },
+    { id: 'packing', label: t('آماده‌سازی'), count: c.packing },
+    { id: 'shipped', label: t('ارسال شده'), count: c.shipped },
+    { id: 'delivered', label: t('تحویل شده'), count: c.delivered },
+    { id: 'returned', label: t('مرجوعی'), count: c.returned },
+    { id: 'cancelled', label: t('لغو شده'), count: c.cancelled },
+  ]
+})
 
 const sortItems = computed(() =>
   sellerOrderSortOptions.map(option => ({
@@ -299,9 +329,9 @@ const shippingFilterItems = computed(() =>
 
 const paymentMethodItems = computed(() => [
   { value: 'all', label: t('همه') },
-  ...[...new Set(orders.value.map(o => o.paymentMethod).filter(Boolean))].map(m => ({
+  ...ordersMeta.value.paymentMethodOptions.map(m => ({
     value: m,
-    label: t(m),
+    label: m,
   })),
 ])
 
@@ -324,10 +354,6 @@ const bulkItems = computed(() => {
   return items
 })
 
-function countBy(id: SellerOrderStatus) {
-  return orders.value.filter(order => order.status === id).length
-}
-
 const hasAnyFilters = computed(() =>
   Boolean(search.value)
   || (status.value && status.value !== 'all')
@@ -335,76 +361,66 @@ const hasAnyFilters = computed(() =>
   || (sort.value && sort.value !== 'newest'),
 )
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  const payment = filters.getString('payment')
-  const shipping = filters.getString('shipping')
-  const paymentMethod = filters.getString('paymentMethod')
-  const amountMin = Number(filters.values.amountMin || 0) || 0
-  const amountMax = Number(filters.values.amountMax || 0) || 0
-  const hasDiscount = filters.values.hasDiscount === true
-  const hasRefund = filters.values.hasRefund === true
-  const hasReturn = filters.values.hasReturn === true
-
-  let list = orders.value.filter((order) => {
-    if (status.value !== 'all' && order.status !== status.value) return false
-    const commerce = getCommerce(order)
-    if (payment && commerce.paymentStatus !== payment) return false
-    if (shipping && commerce.shippingStatus !== shipping) return false
-    if (paymentMethod && order.paymentMethod !== paymentMethod) return false
-    if (amountMin && order.total < amountMin) return false
-    if (amountMax && order.total > amountMax) return false
-    if (hasDiscount && !(commerce.discountAmount > 0)) return false
-    if (hasRefund && commerce.refundStatus === 'none') return false
-    if (hasReturn && commerce.returnStatus === 'none' && order.status !== 'returned') return false
-    if (!q) return true
-    const skuHit = order.items.some(i => i.productId.toLowerCase().includes(q))
-    return (
-      order.id.toLowerCase().includes(q)
-      || order.customerName.toLowerCase().includes(q)
-      || order.customerPhone.includes(q)
-      || order.city.toLowerCase().includes(q)
-      || commerce.customerEmail.toLowerCase().includes(q)
-      || skuHit
-    )
-  })
-
-  const sortKey = (sort.value || 'newest') as SellerOrderSort
-  list = [...list].sort((a, b) => {
-    switch (sortKey) {
-      case 'oldest':
-        return a.dateKey.localeCompare(b.dateKey)
-      case 'amount_desc':
-        return b.total - a.total
-      case 'amount_asc':
-        return a.total - b.total
-      case 'newest':
-      default:
-        return b.dateKey.localeCompare(a.dateKey)
-    }
-  })
-
-  return list
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-const showPagination = computed(() => filtered.value.length > pageSize)
-const pageItems = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil((ordersMeta.value.total || 0) / (ordersMeta.value.pageSize || pageSize))),
+)
 
 const allPageSelected = computed(() =>
-  pageItems.value.length > 0 && pageItems.value.every(o => selectedIds.value.includes(o.id)),
+  orders.value.length > 0 && orders.value.every(o => selectedIds.value.includes(o.id)),
 )
 const somePageSelected = computed(() =>
-  pageItems.value.some(o => selectedIds.value.includes(o.id)),
+  orders.value.some(o => selectedIds.value.includes(o.id)),
 )
 
 const emptyMessage = computed(() => {
-  if (search.value.trim() || hasAnyFilters.value) return t('سفارشی با این فیلتر پیدا نشد')
+  if (hasAnyFilters.value) return t('سفارشی با این فیلتر پیدا نشد')
   return t('هنوز سفارشی برای فروشگاه ثبت نشده')
 })
+
+function currentQuery() {
+  return {
+    q: search.value || undefined,
+    status: status.value || undefined,
+    sort: sort.value || 'newest',
+    payment: filters.getString('payment') || undefined,
+    shipping: filters.getString('shipping') || undefined,
+    paymentMethod: filters.getString('paymentMethod') || undefined,
+    amountMin: filters.values.amountMin ? Number(filters.values.amountMin) : undefined,
+    amountMax: filters.values.amountMax ? Number(filters.values.amountMax) : undefined,
+    dateFrom: filters.values.dateFrom ? String(filters.values.dateFrom) : undefined,
+    dateTo: filters.values.dateTo ? String(filters.values.dateTo) : undefined,
+    hasDiscount: filters.values.hasDiscount === true ? true : undefined,
+    hasRefund: filters.values.hasRefund === true ? true : undefined,
+    hasReturn: filters.values.hasReturn === true ? true : undefined,
+    page: page.value,
+    pageSize,
+  }
+}
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
+async function loadOrders() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchOrders({
+      force: true,
+      query: currentQuery(),
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری سفارش‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 function toggleSelect(id: string, on: boolean) {
   if (on) {
@@ -416,7 +432,7 @@ function toggleSelect(id: string, on: boolean) {
 }
 
 function toggleSelectPage(on: boolean) {
-  const ids = pageItems.value.map(o => o.id)
+  const ids = orders.value.map(o => o.id)
   if (on) selectedIds.value = [...new Set([...selectedIds.value, ...ids])]
   else selectedIds.value = selectedIds.value.filter(id => !ids.includes(id))
 }
@@ -449,41 +465,68 @@ async function runBulk() {
     toast.success(t('اقدام گروهی انجام شد'))
     selectedIds.value = []
     bulkAction.value = ''
+    await loadOrders()
   }
   finally {
     bulkRunning.value = false
   }
 }
 
-function exportCsv() {
-  downloadSellerCsv(
-    `orders-${Date.now()}`,
-    ['id', 'customer', 'phone', 'status', 'total', 'paymentMethod', 'shippingMethod', 'date'],
-    filtered.value.map(o => [
-      o.id,
-      o.customerName,
-      o.customerPhone,
-      o.status,
-      o.total,
-      o.paymentMethod,
-      o.shippingMethod,
-      o.date,
-    ]),
-  )
-  toast.success(t('فایل خروجی آماده شد'))
+async function exportCsv() {
+  exporting.value = true
+  try {
+    const { ok, items, error } = await fetchOrdersExport(currentQuery())
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('خروجی سفارش‌ها ناموفق بود')))
+      return
+    }
+    downloadSellerCsv(
+      `orders-${Date.now()}`,
+      [
+        'id',
+        'customer',
+        'phone',
+        'city',
+        'status',
+        'total',
+        'paymentMethod',
+        'shippingMethod',
+        'date',
+        'dateKey',
+        'itemsCount',
+        'note',
+      ],
+      items.map(o => [
+        o.id,
+        o.customerName,
+        o.customerPhone,
+        o.city,
+        o.status,
+        o.total,
+        o.paymentMethod,
+        o.shippingMethod,
+        o.date,
+        o.dateKey,
+        o.items.length,
+        o.note || '',
+      ]),
+    )
+    toast.success(t('فایل خروجی Excel آماده شد'))
+  }
+  finally {
+    exporting.value = false
+  }
 }
 
-watch(filtered, () => {
-  if (page.value > totalPages.value) page.value = totalPages.value
+watch(
+  () => [route.query, filters.values],
+  () => {
+    void loadOrders()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadOrders()
 })
-
-const { ok, error } = await fetchOrders({ force: true })
-if (!ok) {
-  toast.error(
-    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
-      || error?.data?.message
-      || error?.message
-      || t('بارگذاری سفارش‌ها ناموفق بود'),
-  )
-}
 </script>

@@ -4,7 +4,7 @@
       <TheSellerPageHeader
         :title="$t('کمپین‌ها')"
         :description="$t('کمپین‌های بازاریابی ترکیبی — بنر، تخفیف، کوپن و شگفت‌انگیز')"
-        :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('کمپین')}`"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('کمپین')}` : undefined"
       >
         <template #actions>
           <UButton
@@ -40,6 +40,7 @@
       :tabs="statusTabs"
       :search-placeholder="$t('جستجوی نام، شناسه یا اسلاگ')"
       :has-active="hasActiveFilters"
+      :clear-label="$t('پاک کردن فیلترها')"
       @update:status="status = $event"
       @clear="clearFilters"
     />
@@ -81,8 +82,18 @@
       </UButton>
     </div>
 
+    <div
+      v-if="(loading || pending) && !campaigns.length"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!campaigns.length"
       icon="i-tabler-speakerphone"
       :message="hasActiveFilters
         ? $t('کمپینی با این فیلتر پیدا نشد')
@@ -121,7 +132,7 @@
       </div>
 
       <div
-        v-for="campaign in paged"
+        v-for="campaign in campaigns"
         :key="campaign.id"
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
@@ -256,23 +267,23 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
-      />
+      <div
+        v-if="pageCount > 1"
+        class="mt-5 flex justify-center"
+      >
+        <UPagination
+          v-model:page="page"
+          :total="listMeta.total"
+          :items-per-page="listMeta.pageSize || pageSize"
+        />
+      </div>
     </div>
 
     <UModal
       v-model:open="deleteOpen"
       :title="$t('حذف کمپین')"
-      :description="$t('این عمل فقط در نشست فعلی فرانت اعمال می‌شود و قابل بازگشت نیست.')"
+      :description="$t('این کمپین برای همیشه حذف می‌شود.')"
     >
       <template #body>
         <div
@@ -298,6 +309,7 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
+            :disabled="deleting"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
@@ -305,6 +317,7 @@
           <UButton
             color="error"
             class="font-bold cursor-pointer"
+            :loading="deleting"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -321,21 +334,34 @@ import { sellerPermissionCatalog } from '~/data/seller-permissions'
 import type { SellerCampaign, SellerCampaignManualStatus } from '~/data/seller-campaigns'
 import { sellerScheduleStatusMeta } from '~/data/seller-marketing-shared'
 
+const pageSize = 10
+
 const { t } = useI18n()
 const toast = useAppToast()
+const route = useRoute()
 const { can, canAny } = useSellerPermissions()
 const {
   campaigns,
-  ensureLoaded,
+  listMeta,
+  pending,
+  fetchList,
   deleteCampaign,
   setManualStatus,
+  bulkSetStatus,
+  bulkDelete,
   campaignLifecycle,
 } = useSellerCampaigns()
 const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
 })
 
-ensureLoaded()
+const loading = ref(true)
+const deleteOpen = ref(false)
+const pendingDelete = ref<SellerCampaign | null>(null)
+const deleting = ref(false)
+const selectedIds = ref<string[]>([])
+const bulkAction = ref('')
+const bulkRunning = ref(false)
 
 function canPerm(key: string) {
   const known = sellerPermissionCatalog.some(p => p.key === key)
@@ -343,12 +369,14 @@ function canPerm(key: string) {
   return can(key as SellerPermission)
 }
 
-const pageSize = 10
-const deleteOpen = ref(false)
-const pendingDelete = ref<SellerCampaign | null>(null)
-const selectedIds = ref<string[]>([])
-const bulkAction = ref('')
-const bulkRunning = ref(false)
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
 
 const canBulk = computed(() => {
   if (!sellerPermissionCatalog.some(p => p.key === 'campaigns.update' || p.key === 'campaigns.delete')) {
@@ -373,55 +401,49 @@ const bulkActionItems = computed(() => {
 })
 
 const statusTabs = computed(() => {
-  const list = campaigns.value
+  const c = listMeta.value.statusCounts
   return [
-    { id: 'all', label: t('همه'), count: list.length },
-    { id: 'active', label: t('فعال'), count: list.filter(c => campaignLifecycle(c) === 'active').length },
-    { id: 'draft', label: t('پیش‌نویس'), count: list.filter(c => c.manualStatus === 'draft').length },
-    { id: 'paused', label: t('متوقف'), count: list.filter(c => c.manualStatus === 'paused').length },
-    { id: 'archived', label: t('بایگانی'), count: list.filter(c => c.manualStatus === 'archived').length },
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'active', label: t('فعال'), count: Number(c.active) || 0 },
+    { id: 'draft', label: t('پیش‌نویس'), count: Number(c.draft) || 0 },
+    { id: 'paused', label: t('متوقف'), count: Number(c.paused) || 0 },
+    { id: 'archived', label: t('بایگانی'), count: Number(c.archived) || 0 },
   ]
 })
+
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
 
 function lifecycleMeta(campaign: SellerCampaign) {
   return sellerScheduleStatusMeta[campaignLifecycle(campaign)]
 }
 
-const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return campaigns.value.filter((campaign) => {
-    if (status.value !== 'all') {
-      if (status.value === 'active' || status.value === 'scheduled' || status.value === 'expired') {
-        if (campaignLifecycle(campaign) !== status.value) return false
-      }
-      else if (campaign.manualStatus !== status.value) {
-        return false
-      }
-    }
-    if (!q) return true
-    return (
-      campaign.name.toLowerCase().includes(q)
-      || campaign.id.toLowerCase().includes(q)
-      || campaign.slug.toLowerCase().includes(q)
-      || campaign.description.includes(search.value.trim())
-    )
-  })
-})
-
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
-
 const allPageSelected = computed(() =>
-  paged.value.length > 0 && paged.value.every(c => selectedIds.value.includes(c.id)),
+  campaigns.value.length > 0 && campaigns.value.every(c => selectedIds.value.includes(c.id)),
 )
 
 const somePageSelected = computed(() =>
-  paged.value.some(c => selectedIds.value.includes(c.id)),
+  campaigns.value.some(c => selectedIds.value.includes(c.id)),
 )
+
+async function loadCampaigns() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری کمپین‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 function toggleSelect(id: string, on: boolean) {
   if (on) {
@@ -433,18 +455,19 @@ function toggleSelect(id: string, on: boolean) {
 }
 
 function toggleSelectPage(on: boolean) {
-  const ids = paged.value.map(c => c.id)
+  const ids = campaigns.value.map(c => c.id)
   if (on) selectedIds.value = [...new Set([...selectedIds.value, ...ids])]
   else selectedIds.value = selectedIds.value.filter(id => !ids.includes(id))
 }
 
-function setStatus(id: string, manualStatus: SellerCampaignManualStatus) {
-  const result = setManualStatus(id, manualStatus)
+async function setStatus(id: string, manualStatus: SellerCampaignManualStatus) {
+  const result = await setManualStatus(id, manualStatus)
   if (!result.ok) {
     toast.error(t(result.error))
     return
   }
   toast.success(t('کمپین به‌روزرسانی شد'))
+  await loadCampaigns()
 }
 
 async function runBulk() {
@@ -452,7 +475,11 @@ async function runBulk() {
   bulkRunning.value = true
   try {
     if (bulkAction.value === 'delete') {
-      for (const id of selectedIds.value) deleteCampaign(id)
+      const result = await bulkDelete(selectedIds.value)
+      if (!result.ok) {
+        toast.error(t(result.error))
+        return
+      }
       toast.success(t('کمپین‌ها حذف شدند'))
     }
     else {
@@ -463,12 +490,17 @@ async function runBulk() {
       }
       const target = map[bulkAction.value]
       if (target) {
-        for (const id of selectedIds.value) setManualStatus(id, target)
+        const result = await bulkSetStatus(selectedIds.value, target)
+        if (!result.ok) {
+          toast.error(t(result.error))
+          return
+        }
         toast.success(t('کمپین‌ها به‌روزرسانی شدند'))
       }
     }
     selectedIds.value = []
     bulkAction.value = ''
+    await loadCampaigns()
   }
   finally {
     bulkRunning.value = false
@@ -480,15 +512,34 @@ function openDelete(campaign: SellerCampaign) {
   deleteOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDelete.value) return
-  const result = deleteCampaign(pendingDelete.value.id)
-  deleteOpen.value = false
-  pendingDelete.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  deleting.value = true
+  try {
+    const result = await deleteCampaign(pendingDelete.value.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('کمپین حذف شد'))
+    await loadCampaigns()
   }
-  toast.success(t('کمپین حذف شد'))
+  finally {
+    deleting.value = false
+  }
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadCampaigns()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadCampaigns()
+})
 </script>

@@ -16,6 +16,22 @@ type ApiProductQuestion = {
   } | null
 }
 
+export type SellerQuestionsQuery = {
+  q?: string
+  status?: string
+  page?: number
+  pageSize?: number
+  all?: boolean
+}
+
+export type SellerQuestionsPage = {
+  items: ApiProductQuestion[]
+  total: number
+  page: number
+  pageSize: number
+  statusCounts: Record<string, number>
+}
+
 function toSellerQuestion(
   q: ApiProductQuestion,
   fallbackProductId = '',
@@ -41,12 +57,23 @@ function apiErrorMessage(error: any, fallback: string) {
   return (
     error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
     || error?.data?.message
+    || error?.message
     || fallback
   )
 }
 
 export function useSellerQuestions() {
   const items = useState<SellerProductQuestion[]>('seller-product-questions', () => [])
+  const listMeta = useState('seller-product-questions-meta', () => ({
+    total: 0,
+    page: 1,
+    pageSize: 10,
+    statusCounts: {
+      all: 0,
+      unanswered: 0,
+      answered: 0,
+    } as Record<string, number>,
+  }))
   const seeded = useState('seller-product-questions-seeded', () => false)
   const pending = useState('seller-product-questions-pending', () => false)
   const inFlight = useState<Promise<void> | null>('seller-product-questions-inflight', () => null)
@@ -56,7 +83,8 @@ export function useSellerQuestions() {
   const questions = computed(() => items.value)
 
   const unansweredCount = computed(
-    () => items.value.filter(q => !q.answer).length,
+    () => Number(listMeta.value.statusCounts.unanswered)
+      || items.value.filter(q => !q.answer).length,
   )
 
   function upsert(question: SellerProductQuestion) {
@@ -85,6 +113,79 @@ export function useSellerQuestions() {
     )
   }
 
+  function applyPageResult(result: SellerQuestionsPage | ApiProductQuestion[], replaceItems: boolean) {
+    if (Array.isArray(result)) {
+      if (replaceItems) {
+        items.value = result.map(q => toSellerQuestion(q))
+      }
+      listMeta.value = {
+        total: result.length,
+        page: 1,
+        pageSize: result.length,
+        statusCounts: {
+          all: result.length,
+          unanswered: result.filter(q => !q.answer).length,
+          answered: result.filter(q => Boolean(q.answer)).length,
+        },
+      }
+      return
+    }
+
+    if (replaceItems) {
+      items.value = Array.isArray(result.items)
+        ? result.items.map(q => toSellerQuestion(q))
+        : []
+    }
+    listMeta.value = {
+      total: Number(result.total) || (replaceItems ? items.value.length : listMeta.value.total),
+      page: Number(result.page) || 1,
+      pageSize: Number(result.pageSize) || 10,
+      statusCounts: result.statusCounts || {
+        all: replaceItems ? items.value.length : listMeta.value.statusCounts.all,
+        unanswered: replaceItems
+          ? items.value.filter(q => !q.answer).length
+          : listMeta.value.statusCounts.unanswered,
+        answered: replaceItems
+          ? items.value.filter(q => Boolean(q.answer)).length
+          : listMeta.value.statusCounts.answered,
+      },
+    }
+  }
+
+  async function fetchList(query?: SellerQuestionsQuery) {
+    pending.value = true
+    try {
+      const params: Record<string, string | number | boolean> = {}
+      if (query?.q?.trim()) params.q = query.q.trim()
+      if (query?.status && query.status !== 'all') params.status = query.status
+      if (query?.all) {
+        params.all = true
+        params.pageSize = query.pageSize || 200
+      }
+      else {
+        if (query?.page != null) params.page = query.page
+        params.pageSize = query?.pageSize || 10
+      }
+
+      const { result, error } = await useGet<SellerQuestionsPage | ApiProductQuestion[]>(
+        '/seller/questions',
+        { query: params, headers: { 'no-error': true }, server: false },
+      )
+
+      if (error || result == null) {
+        return { ok: false as const, error: error ?? { message: 'questions-fetch-failed' } }
+      }
+
+      applyPageResult(result, true)
+      seeded.value = true
+      await hydrateProducts(items.value.map(q => q.productId))
+      return { ok: true as const, error: null as null }
+    }
+    finally {
+      pending.value = false
+    }
+  }
+
   async function ensureLoaded(options?: { force?: boolean }) {
     if (seeded.value && !options?.force) {
       return { ok: true as const, error: null as null }
@@ -96,20 +197,27 @@ export function useSellerQuestions() {
 
     pending.value = true
     const run = (async () => {
-      const { result, error } = await useGet<ApiProductQuestion[]>(
+      const { result, error } = await useGet<SellerQuestionsPage | ApiProductQuestion[]>(
         '/seller/questions',
-        { headers: { 'no-error': true }, server: false },
+        {
+          query: { page: 1, pageSize: 1 },
+          headers: { 'no-error': true },
+          server: false,
+        },
       )
 
-      if (error || !Array.isArray(result)) {
-        items.value = []
+      if (error || result == null) {
         seeded.value = true
         return
       }
 
-      items.value = result.map(q => toSellerQuestion(q))
+      // Badge/count hydrate: keep an existing list page intact unless empty/forced
+      const replaceItems = options?.force || !items.value.length
+      applyPageResult(result, replaceItems)
       seeded.value = true
-      await hydrateProducts(items.value.map(q => q.productId))
+      if (replaceItems) {
+        await hydrateProducts(items.value.map(q => q.productId))
+      }
     })()
 
     inFlight.value = run
@@ -228,9 +336,11 @@ export function useSellerQuestions() {
   return {
     questions,
     items,
+    listMeta,
     unansweredCount,
     seeded,
     pending,
+    fetchList,
     ensureLoaded,
     fetchForProduct,
     getById,

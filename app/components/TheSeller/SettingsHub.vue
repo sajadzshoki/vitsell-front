@@ -2,7 +2,7 @@
   <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 space-y-5">
     <TheSellerPageHeader
       :title="$t('تنظیمات پلتفرم')"
-      :description="$t('پیکربندی فروشگاه، هویت بصری و ترجیحات فرانت تا آماده‌شدن API')"
+      :description="$t('پیکربندی فروشگاه، هویت بصری و ترجیحات پلتفرم')"
     >
       <template
         v-if="canSave && dirty"
@@ -39,7 +39,7 @@
       v-if="isPrefTab"
       class="text-[11px] text-muted leading-5"
     >
-      {{ $t('این بخش ترجیح فرانت است تا API تنظیمات آماده شود.') }}
+      {{ $t('این بخش در سرور ذخیره می‌شود و روی رفتار فروشگاه اثر می‌گذارد.') }}
     </p>
 
     <!-- general -->
@@ -48,7 +48,7 @@
       class="space-y-4"
     >
       <div
-        v-if="shopPending"
+        v-if="bootPending"
         class="py-10 grid place-items-center"
       >
         <UIcon
@@ -430,12 +430,18 @@ const toast = useAppToast()
 const route = useRoute()
 const router = useRouter()
 const { can } = useSellerPermissions()
-const { settings, ensureLoaded, updateSettings } = useSellerPlatformSettings()
+const { settings, pending: settingsPending, fetchSettings, updateSettings } = useSellerPlatformSettings()
 const { shop, pending: shopPending, fetchShop, updateShop } = useSeller()
 const { currentAdminUser } = useSellerAdmins()
+const { overview, fetchOverview } = useSellerSystem()
 
-ensureLoaded()
-await fetchShop({ force: false })
+const bootPending = computed(() => shopPending.value || settingsPending.value)
+
+await Promise.all([
+  fetchShop({ force: false }),
+  fetchSettings({ force: true }),
+])
+void fetchOverview({ force: false })
 
 const canSave = computed(() => can('settings.update'))
 const saving = ref(false)
@@ -508,11 +514,35 @@ const notifyFields = [
   { key: 'notifyCustomerMarketing' as const, label: 'اعلان بازاریابی به مشتری' },
 ]
 
-const integrationCards = [
-  { id: 'zarinpal', title: 'زرین‌پال', note: 'وضعیت واقعی از درگاه‌های مالی', status: 'زنده', color: 'info' as const },
-  { id: 'sms', title: 'پیامک', note: 'سرویس پیامک هنوز متصل نشده', status: 'پیکربندی نشده', color: 'neutral' as const },
-  { id: 'email', title: 'ایمیل', note: 'ارسال تراکنشی پیکربندی نشده', status: 'پیکربندی نشده', color: 'neutral' as const },
-]
+const integrationCards = computed(() => {
+  const fromApi = overview.value.integrations
+  if (fromApi.length) {
+    return fromApi.map((item) => {
+      let color: 'success' | 'info' | 'neutral' = 'neutral'
+      let status = 'پیکربندی نشده'
+      if (item.status === 'live') {
+        color = 'success'
+        status = 'زنده'
+      }
+      else if (item.status === 'sandbox' || item.status === 'mock') {
+        color = 'info'
+        status = item.status === 'sandbox' ? 'سندباکس' : 'mock'
+      }
+      return {
+        id: item.id,
+        title: item.label,
+        note: item.hint || '',
+        status,
+        color,
+      }
+    })
+  }
+  return [
+    { id: 'zarinpal', title: 'زرین‌پال', note: 'وضعیت واقعی از درگاه‌های مالی', status: 'زنده', color: 'info' as const },
+    { id: 'sms', title: 'پیامک', note: 'سرویس پیامک هنوز متصل نشده', status: 'پیکربندی نشده', color: 'neutral' as const },
+    { id: 'email', title: 'ایمیل', note: 'ارسال تراکنشی پیکربندی نشده', status: 'پیکربندی نشده', color: 'neutral' as const },
+  ]
+})
 
 function resetDraft() {
   shopForm.value = { ...shop.value }
@@ -538,7 +568,12 @@ async function onSave() {
       shopForm.value = { ...result }
     }
 
-    updateSettings({ ...platform.value }, actorPayload)
+    const platformResult = await updateSettings({ ...platform.value }, actorPayload)
+    if (!platformResult.ok) {
+      toast.error(t(platformResult.error || 'ذخیره تنظیمات پلتفرم ناموفق بود'))
+      return
+    }
+    platform.value = { ...platformResult.settings }
     snapshot.value = serialize()
     toast.success(t('تنظیمات ذخیره شد'))
   }

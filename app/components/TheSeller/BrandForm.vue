@@ -196,8 +196,8 @@ async function onSave() {
       slug: form.value.slug.trim().toLowerCase() || slugifyLatin(form.value.name),
     }
     const result = isEdit.value
-      ? updateBrand(props.initial!.id, payload)
-      : createBrand(payload)
+      ? await updateBrand(props.initial!.id, payload)
+      : await createBrand(payload)
 
     if (!result.ok) {
       toast.error(t(result.error))

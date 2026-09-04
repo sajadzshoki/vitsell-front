@@ -76,12 +76,19 @@
           {{ $t(about.storyTitle) }}
         </h2>
         <div class="flex flex-col gap-4 text-sm md:text-base text-toned leading-8">
-          <p
-            v-for="(paragraph, index) in about.story"
-            :key="index"
-          >
-            {{ $t(paragraph) }}
-          </p>
+          <div
+            v-if="isRichStory"
+            class="blog-prose"
+            v-html="safeStoryHtml"
+          />
+          <template v-else>
+            <p
+              v-for="(paragraph, index) in about.story"
+              :key="index"
+            >
+              {{ $t(paragraph) }}
+            </p>
+          </template>
         </div>
       </div>
 
@@ -96,7 +103,15 @@
               {{ $t(about.missionTitle) }}
             </h3>
           </div>
-          <p class="text-sm text-toned leading-7">
+          <div
+            v-if="isRichMission"
+            class="blog-prose text-sm text-toned leading-7"
+            v-html="safeMissionHtml"
+          />
+          <p
+            v-else
+            class="text-sm text-toned leading-7"
+          >
             {{ $t(about.mission) }}
           </p>
         </div>
@@ -110,7 +125,15 @@
               {{ $t(about.visionTitle) }}
             </h3>
           </div>
-          <p class="text-sm text-toned leading-7">
+          <div
+            v-if="isRichVision"
+            class="blog-prose text-sm text-toned leading-7"
+            v-html="safeVisionHtml"
+          />
+          <p
+            v-else
+            class="text-sm text-toned leading-7"
+          >
             {{ $t(about.vision) }}
           </p>
         </div>
@@ -284,6 +307,12 @@ import {
   defaultAboutSectionVisibility,
   type AboutSectionVisibility,
 } from '~/data/about'
+import {
+  contentToHtml,
+  isRichBlogContent,
+  looksLikeHtml,
+  sanitizeBlogHtml,
+} from '~/data/seller-blog'
 
 const props = defineProps<{
   sectionVisibility?: AboutSectionVisibility | null
@@ -298,4 +327,19 @@ const visibility = computed<AboutSectionVisibility>(() => ({
   ...(about.value.sectionVisibility || {}),
   ...(props.sectionVisibility || {}),
 }))
+
+const isRichStory = computed(() => isRichBlogContent(about.value.story || []))
+const safeStoryHtml = computed(() =>
+  sanitizeBlogHtml(contentToHtml(about.value.story || [])),
+)
+
+const isRichMission = computed(() => looksLikeHtml(about.value.mission || ''))
+const safeMissionHtml = computed(() =>
+  sanitizeBlogHtml(contentToHtml([about.value.mission].filter(Boolean))),
+)
+
+const isRichVision = computed(() => looksLikeHtml(about.value.vision || ''))
+const safeVisionHtml = computed(() =>
+  sanitizeBlogHtml(contentToHtml([about.value.vision].filter(Boolean))),
+)
 </script>

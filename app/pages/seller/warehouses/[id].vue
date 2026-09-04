@@ -1,7 +1,17 @@
 <template>
   <div>
     <div
-      v-if="!warehouse"
+      v-if="loading"
+      class="py-16 grid place-items-center"
+    >
+      <UIcon
+        name="i-tabler-loader-2"
+        class="size-8 text-primary animate-spin"
+      />
+    </div>
+
+    <div
+      v-else-if="!warehouse"
       class="bg-default border border-muted rounded-2xl p-8 text-center"
     >
       <UIcon
@@ -28,19 +38,40 @@
 </template>
 
 <script setup lang="ts">
+import type { SellerWarehouse } from '~/data/seller-inventory'
+
 const { t } = useI18n()
 const route = useRoute()
-const { ensureWarehouses, getWarehouse } = useSellerInventory()
+const { fetchWarehouse } = useSellerInventory()
 
 definePageMeta({
   layout: 'seller',
   middleware: ['auth', 'admin'],
 })
 
-ensureWarehouses()
+const loading = ref(true)
+const warehouse = ref<SellerWarehouse | null>(null)
 
 const warehouseId = computed(() => String(route.params.id ?? ''))
-const warehouse = computed(() => getWarehouse(warehouseId.value) ?? null)
+
+async function load() {
+  loading.value = true
+  try {
+    const result = await fetchWarehouse(warehouseId.value, { force: true })
+    warehouse.value = result.warehouse
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+watch(warehouseId, () => {
+  void load()
+})
+
+onMounted(() => {
+  void load()
+})
 
 useSeoMeta({
   title: () => warehouse.value

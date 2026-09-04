@@ -92,7 +92,15 @@
           {{ $t(post.excerpt) }}
         </p>
 
-        <div class="flex flex-col gap-4 text-sm md:text-base text-toned leading-8">
+        <div
+          v-if="isRichContent"
+          class="blog-prose text-sm md:text-base text-toned leading-8"
+          v-html="safeHtml"
+        />
+        <div
+          v-else
+          class="flex flex-col gap-4 text-sm md:text-base text-toned leading-8"
+        >
           <p
             v-for="(paragraph, index) in post.content"
             :key="index"
@@ -179,6 +187,11 @@
 <script setup lang="ts">
 import { getCategoryById, toSearchRoute } from '~/data/categories'
 import {
+  contentToHtml,
+  isRichBlogContent,
+  sanitizeBlogHtml,
+} from '~/data/seller-blog'
+import {
   staticPagePaths,
   type StaticBlogPost,
 } from '~/data/static-pages'
@@ -191,6 +204,12 @@ const props = defineProps<{
 const blogIndexPath = staticPagePaths.blog
 
 const morePosts = computed(() => props.morePosts ?? [])
+
+const isRichContent = computed(() => isRichBlogContent(props.post.content ?? []))
+
+const safeHtml = computed(() =>
+  sanitizeBlogHtml(contentToHtml(props.post.content ?? [])),
+)
 
 const categoryLinks = computed(() =>
   (props.post.relatedCategories ?? [])

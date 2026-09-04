@@ -1,6 +1,16 @@
 <template>
   <div
-    v-if="!customer"
+    v-if="loading"
+    class="py-16 grid place-items-center"
+  >
+    <UIcon
+      name="i-tabler-loader-2"
+      class="size-8 text-primary animate-spin"
+    />
+  </div>
+
+  <div
+    v-else-if="!customer"
     class="py-16"
   >
     <TheSellerEmptyState
@@ -44,7 +54,7 @@
             {{ customerFullName(customer) }}
           </h2>
           <p class="text-xs text-muted mt-1 num" dir="ltr">
-            {{ customer.email }}
+            {{ customer.email || '—' }}
             <span v-if="customer.phone"> · {{ customer.phone }}</span>
           </p>
           <div class="flex gap-1.5 mt-3 flex-wrap">
@@ -54,6 +64,9 @@
             >
               {{ $t(sellerCustomerStatusMeta[customer.status].label) }}
             </UBadge>
+            <span class="text-[11px] text-muted num" dir="ltr">
+              #{{ customer.id }}
+            </span>
           </div>
         </div>
         <div class="flex gap-2 flex-wrap">
@@ -270,6 +283,7 @@
             type="submit"
             color="primary"
             class="cursor-pointer"
+            :loading="saving"
           >
             {{ $t('ذخیره') }}
           </UButton>
@@ -388,6 +402,7 @@
           <UButton
             :color="pendingAction === 'block' ? 'error' : 'primary'"
             class="font-bold cursor-pointer"
+            :loading="saving"
             @click="confirmAction"
           >
             {{ $t('تأیید') }}
@@ -407,6 +422,7 @@ import {
   type SellerCustomerStatus,
 } from '~/data/seller-customers'
 import { formatPrice } from '~/data/products'
+import type { SellerCustomerDetail } from '~/composables/useSellerCustomers'
 
 const props = defineProps<{
   customerId: string
@@ -416,12 +432,11 @@ const route = useRoute()
 const { t } = useI18n()
 const toast = useAppToast()
 const { can } = useSellerPermissions()
-const { getById, ensureLoaded, updateCustomer, setStatus, customerFullName: fullName } = useSellerCustomers()
-const { orders, fetchOrders } = useSeller()
+const { fetchOne, updateCustomer, setStatus, customerFullName: fullName } = useSellerCustomers()
 
-ensureLoaded()
-void fetchOrders()
-
+const loading = ref(true)
+const saving = ref(false)
+const customer = ref<SellerCustomerDetail | null>(null)
 const showEdit = ref(route.query.tab === 'edit')
 const confirmOpen = ref(false)
 const pendingAction = ref<'activate' | 'deactivate' | 'block' | null>(null)
@@ -433,11 +448,7 @@ const form = ref<SellerCustomerFormValues>({
   status: 'active',
 })
 
-const customer = computed(() => getById(props.customerId))
-
-watch(customer, (c) => {
-  if (c) form.value = toCustomerForm(c)
-}, { immediate: true })
+const relatedOrders = computed(() => customer.value?.recentOrders?.slice(0, 10) || [])
 
 const statusItems = computed(() =>
   (['active', 'inactive', 'blocked'] as SellerCustomerStatus[]).map(value => ({
@@ -445,16 +456,6 @@ const statusItems = computed(() =>
     value,
   })),
 )
-
-const relatedOrders = computed(() => {
-  const c = customer.value
-  if (!c) return []
-  const name = fullName(c).trim()
-  return orders.value.filter(order =>
-    order.customerPhone === c.phone
-    || order.customerName.trim() === name,
-  ).slice(0, 10)
-})
 
 const confirmTitle = computed(() => {
   if (pendingAction.value === 'activate') return 'فعال‌سازی مشتری'
@@ -476,36 +477,87 @@ function openConfirm(action: 'activate' | 'deactivate' | 'block') {
   confirmOpen.value = true
 }
 
-function confirmAction() {
+async function loadCustomer() {
+  loading.value = true
+  try {
+    const result = await fetchOne(props.customerId)
+    if (!result.ok || !result.customer) {
+      customer.value = null
+      if (result.error) toast.error(t(result.error))
+      return
+    }
+    customer.value = result.customer
+    form.value = toCustomerForm(result.customer)
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+async function confirmAction() {
   const action = pendingAction.value
-  if (!action) return
+  if (!action || !customer.value) return
   const status: SellerCustomerStatus =
     action === 'activate' ? 'active'
       : action === 'deactivate' ? 'inactive'
         : 'blocked'
-  const result = setStatus(props.customerId, status)
-  confirmOpen.value = false
-  pendingAction.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  saving.value = true
+  try {
+    const result = await setStatus(customer.value.id, status)
+    confirmOpen.value = false
+    pendingAction.value = null
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    customer.value = {
+      ...result.customer,
+      recentOrders: customer.value.recentOrders,
+    }
+    form.value = toCustomerForm(customer.value)
+    toast.success(t('وضعیت مشتری به‌روزرسانی شد'))
   }
-  toast.success(t('وضعیت مشتری به‌روزرسانی شد'))
+  finally {
+    saving.value = false
+  }
 }
 
 function resetForm() {
-  const c = customer.value
-  if (c) form.value = toCustomerForm(c)
+  if (customer.value) form.value = toCustomerForm(customer.value)
   showEdit.value = false
 }
 
-function saveEdit() {
-  const result = updateCustomer(props.customerId, form.value)
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+async function saveEdit() {
+  if (!customer.value) return
+  saving.value = true
+  try {
+    const result = await updateCustomer(customer.value.id, form.value)
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    customer.value = {
+      ...result.customer,
+      recentOrders: Array.isArray(result.customer.recentOrders)
+        ? result.customer.recentOrders
+        : customer.value.recentOrders,
+    }
+    showEdit.value = false
+    toast.success(t('اطلاعات مشتری ذخیره شد'))
   }
-  toast.success(t('اطلاعات مشتری ذخیره شد'))
-  showEdit.value = false
+  finally {
+    saving.value = false
+  }
 }
+
+watch(
+  () => props.customerId,
+  () => {
+    void loadCustomer()
+  },
+)
+
+onMounted(() => {
+  void loadCustomer()
+})
 </script>

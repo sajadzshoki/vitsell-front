@@ -34,7 +34,7 @@ const { admins, ensureLoaded: ensureAdmins } = useSellerAdmins()
 const searchTerm = ref('')
 const recentSearches = useState<RecentItem[]>('seller-command-recent-v2', () => [])
 
-ensureCustomers()
+void ensureCustomers()
 ensureAdmins()
 
 function pushRecent(label: string, to: string) {

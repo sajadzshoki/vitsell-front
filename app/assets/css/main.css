@@ -252,3 +252,67 @@ a.bg-primary,
 button.bg-primary {
   color: var(--ui-text-inverted);
 }
+
+/* Rich HTML body (blog posts + static page paragraphs) */
+.blog-prose h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+  margin: 1.25rem 0 0.5rem;
+  line-height: 1.7;
+}
+.blog-prose h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+  margin: 1rem 0 0.4rem;
+  line-height: 1.7;
+}
+.blog-prose h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+  margin: 0.85rem 0 0.35rem;
+  line-height: 1.7;
+}
+.blog-prose p {
+  margin: 0.65rem 0;
+}
+.blog-prose ul {
+  list-style: disc;
+  padding-inline-start: 1.25rem;
+  margin: 0.65rem 0;
+}
+.blog-prose ol {
+  list-style: decimal;
+  padding-inline-start: 1.25rem;
+  margin: 0.65rem 0;
+}
+.blog-prose li {
+  margin: 0.25rem 0;
+}
+.blog-prose blockquote {
+  border-inline-start: 3px solid var(--ui-primary);
+  padding-inline-start: 0.85rem;
+  margin: 0.85rem 0;
+  color: var(--ui-text-muted);
+}
+.blog-prose a {
+  color: var(--ui-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.blog-prose img {
+  max-width: 100%;
+  border-radius: 0.75rem;
+  margin: 0.85rem 0;
+}
+.blog-prose hr {
+  border: 0;
+  border-top: 1px solid var(--ui-border);
+  margin: 1.25rem 0;
+}
+.blog-prose strong {
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+}

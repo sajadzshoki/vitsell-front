@@ -1,23 +1,23 @@
 <template>
   <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-    <div class="hidden lg:flex items-center justify-between mb-5 gap-3">
-      <h2 class="font-bold text-highlighted">
-        {{ $t('اعلان‌ها') }}
-      </h2>
-      <div class="flex items-center gap-3">
-        <div class="text-xs text-muted num">
-          {{ filtered.length.toLocaleString('fa-IR') }} {{ $t('اعلان') }}
-        </div>
-        <UButton
-          to="/seller/notifications/new"
-          color="primary"
-          size="sm"
-          icon="i-tabler-send"
-          class="font-medium cursor-pointer"
-        >
-          {{ $t('ارسال اعلان') }}
-        </UButton>
-      </div>
+    <div class="hidden lg:block">
+      <TheSellerPageHeader
+        :title="$t('اعلان‌ها')"
+        :description="$t('کمپین‌های اعلان کاربران — ارسال، زمان‌بندی و لغو')"
+        :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('اعلان')}` : undefined"
+      >
+        <template #actions>
+          <UButton
+            to="/seller/notifications/new"
+            color="primary"
+            size="sm"
+            icon="i-tabler-send"
+            class="font-medium cursor-pointer"
+          >
+            {{ $t('ارسال اعلان') }}
+          </UButton>
+        </template>
+      </TheSellerPageHeader>
     </div>
 
     <div class="lg:hidden mb-4">
@@ -32,29 +32,30 @@
       </UButton>
     </div>
 
-    <div class="flex flex-col sm:(flex-row items-center) gap-3 mb-4">
-      <TheFormInput
-        v-model="query"
-        icon="i-tabler-search"
-        :placeholder="$t('جستجوی عنوان یا توضیحات')"
-        class="flex-1 w-full"
-      />
-      <USelect
-        v-model="typeFilter"
-        :items="typeFilterItems"
-        value-key="value"
-        class="w-full sm:w-44"
-      />
-      <USelect
-        v-model="statusFilter"
-        :items="statusFilterItems"
-        value-key="value"
-        class="w-full sm:w-44"
-      />
-    </div>
+    <TheSellerListToolbar
+      v-model:search="search"
+      :status="status"
+      :tabs="statusTabs"
+      :search-placeholder="$t('جستجوی عنوان یا توضیحات')"
+      :has-active="hasActiveFilters || typeFilter !== 'all'"
+      :clear-label="$t('پاک کردن فیلترها')"
+      @update:status="status = $event"
+      @clear="clearAllFilters"
+    >
+      <template #extra>
+        <USelect
+          :model-value="typeFilter"
+          :items="typeFilterItems"
+          value-key="value"
+          class="w-44"
+          :placeholder="$t('نوع')"
+          @update:model-value="setType(String($event ?? 'all'))"
+        />
+      </template>
+    </TheSellerListToolbar>
 
     <div
-      v-if="pending && !campaigns.length"
+      v-if="(loading || pending) && !campaigns.length"
       class="py-16 grid place-items-center"
     >
       <UIcon
@@ -64,14 +65,14 @@
     </div>
 
     <TheSellerEmptyState
-      v-else-if="!filtered.length"
+      v-else-if="!campaigns.length"
       icon="i-tabler-bell"
-      :message="query.trim() || typeFilter !== 'all' || statusFilter !== 'all'
+      :message="hasActiveFilters || typeFilter !== 'all'
         ? $t('اعلانی با این فیلتر پیدا نشد')
         : $t('هنوز اعلانی ارسال نشده است')"
     >
       <template
-        v-if="!query.trim() && typeFilter === 'all' && statusFilter === 'all'"
+        v-if="!hasActiveFilters && typeFilter === 'all'"
         #actions
       >
         <UButton
@@ -91,7 +92,7 @@
       class="space-y-3"
     >
       <div
-        v-for="campaign in filtered"
+        v-for="campaign in campaigns"
         :key="campaign.id"
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
       >
@@ -215,6 +216,17 @@
           </div>
         </div>
       </div>
+
+      <div
+        v-if="pageCount > 1"
+        class="mt-5 flex justify-center"
+      >
+        <UPagination
+          v-model:page="page"
+          :total="listMeta.total"
+          :items-per-page="listMeta.pageSize || pageSize"
+        />
+      </div>
     </div>
 
     <UModal
@@ -241,6 +253,7 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
+            :disabled="deleting"
             @click="deleteOpen = false"
           >
             {{ $t('انصراف') }}
@@ -265,21 +278,33 @@ import {
   sellerNotificationStatusMeta,
   sellerNotificationTypeMeta,
   type SellerNotificationCampaign,
-  type SellerNotificationStatus,
   type SellerNotificationType,
 } from '~/data/seller-notifications'
 
+const pageSize = 10
+
 const { t } = useI18n()
 const toast = useAppToast()
-const { campaigns, pending, ensureLoaded, deleteCampaign, cancelScheduled } = useSellerNotifications()
+const route = useRoute()
+const {
+  campaigns,
+  listMeta,
+  pending,
+  fetchList,
+  deleteCampaign,
+  cancelScheduled,
+} = useSellerNotifications()
+const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+  defaultStatus: 'all',
+})
 
-const query = ref('')
-const typeFilter = ref<'all' | SellerNotificationType>('all')
-const statusFilter = ref<'all' | SellerNotificationStatus>('all')
+const loading = ref(true)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerNotificationCampaign | null>(null)
 const deleting = ref(false)
 const cancellingId = ref<string | null>(null)
+
+const typeFilter = computed(() => String(route.query.type ?? 'all'))
 
 const typeFilterItems = computed(() => [
   { label: t('همه انواع'), value: 'all' },
@@ -289,29 +314,61 @@ const typeFilterItems = computed(() => [
   })),
 ])
 
-const statusFilterItems = computed(() => [
-  { label: t('همه وضعیت‌ها'), value: 'all' },
-  ...(Object.keys(sellerNotificationStatusMeta) as SellerNotificationStatus[]).map(value => ({
-    label: t(sellerNotificationStatusMeta[value].label),
-    value,
-  })),
-])
-
-await ensureLoaded({ force: true })
-
-const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  return campaigns.value.filter((c) => {
-    if (typeFilter.value !== 'all' && c.type !== typeFilter.value) return false
-    if (statusFilter.value !== 'all' && c.status !== statusFilter.value) return false
-    if (!q) return true
-    return (
-      c.title.includes(query.value.trim())
-      || c.description.includes(query.value.trim())
-      || (c.link ?? '').toLowerCase().includes(q)
-    )
-  })
+const statusTabs = computed(() => {
+  const c = listMeta.value.statusCounts
+  return [
+    { id: 'all', label: t('همه'), count: Number(c.all) || 0 },
+    { id: 'draft', label: t(sellerNotificationStatusMeta.draft.label), count: Number(c.draft) || 0 },
+    { id: 'scheduled', label: t(sellerNotificationStatusMeta.scheduled.label), count: Number(c.scheduled) || 0 },
+    { id: 'sent', label: t(sellerNotificationStatusMeta.sent.label), count: Number(c.sent) || 0 },
+    { id: 'failed', label: t(sellerNotificationStatusMeta.failed.label), count: Number(c.failed) || 0 },
+    { id: 'cancelled', label: t(sellerNotificationStatusMeta.cancelled.label), count: Number(c.cancelled) || 0 },
+  ]
 })
+
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
+}
+
+async function setType(value: string) {
+  await patchQuery({
+    type: value && value !== 'all' ? value : undefined,
+    page: undefined,
+  })
+}
+
+async function clearAllFilters() {
+  await clearFilters()
+  await patchQuery({ type: undefined })
+}
+
+async function loadNotifications() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      status: status.value || undefined,
+      type: typeFilter.value !== 'all' ? typeFilter.value : undefined,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(apiErrorMessage(error, t('بارگذاری اعلان‌ها ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
 function formatTime(iso: string) {
   const date = new Date(iso)
@@ -334,6 +391,7 @@ async function onCancel(campaign: SellerNotificationCampaign) {
       return
     }
     toast.success(t('زمان‌بندی لغو شد'))
+    await loadNotifications()
   }
   finally {
     cancellingId.value = null
@@ -357,9 +415,22 @@ async function confirmDelete() {
       return
     }
     toast.success(t('اعلان حذف شد'))
+    await loadNotifications()
   }
   finally {
     deleting.value = false
   }
 }
+
+watch(
+  () => route.query,
+  () => {
+    void loadNotifications()
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  void loadNotifications()
+})
 </script>

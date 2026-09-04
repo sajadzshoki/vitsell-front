@@ -27,7 +27,38 @@
         </UBadge>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+      <div
+        v-if="categoriesPending && !categoryOptions.length"
+        class="flex items-center justify-center gap-2 py-8 text-sm text-muted"
+      >
+        <UIcon
+          name="i-tabler-loader-2"
+          class="size-5 animate-spin"
+        />
+        {{ $t('در حال بارگذاری دسته‌بندی‌ها...') }}
+      </div>
+      <div
+        v-else-if="!categoryOptions.length"
+        class="rounded-2xl border border-dashed border-muted p-6 text-center space-y-3"
+      >
+        <p class="text-sm text-muted">
+          {{ $t('دسته‌بندی فعالی یافت نشد. ابتدا از بخش دسته‌بندی‌ها یک دسته بسازید.') }}
+        </p>
+        <UButton
+          to="/seller/categories/new"
+          color="primary"
+          variant="soft"
+          size="sm"
+          icon="i-tabler-plus"
+          class="cursor-pointer"
+        >
+          {{ $t('افزودن دسته‌بندی') }}
+        </UButton>
+      </div>
+      <div
+        v-else
+        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5"
+      >
         <button
           v-for="category in categoryOptions"
           :key="category.id"
@@ -432,9 +463,9 @@ import {
   emptySellerProductForm,
   getBrandOptions,
   getCategoryAttributeFields,
-  getSellerCategoryOptions,
   parsePriceInput,
   productToSellerForm,
+  sellerCategoriesToFormOptions,
   sellerProductBadges,
   SELLER_BADGE_NONE,
   sellerProductColorPresets,
@@ -471,14 +502,25 @@ const { can } = useSellerPermissions()
 const { getCommerce, saveCommerce } = useSellerProductCommerce()
 const { brands, ensureLoaded: ensureBrands } = useSellerBrands()
 const { warehouses, ensureWarehouses } = useSellerInventory()
+const {
+  categories,
+  pending: categoriesPending,
+  ensureLoaded: ensureCategories,
+  getById: getSellerCategory,
+} = useSellerCategories()
 
 ensureBrands()
 ensureWarehouses()
+void ensureCategories()
 
 const isEdit = computed(() => props.mode === 'edit' && Boolean(props.productId))
-const categoryOptions = getSellerCategoryOptions()
 const form = ref<SellerProductFormValues>(emptySellerProductForm())
 const commerce = ref<SellerProductCommerce>(emptyProductCommerce())
+const categoryOptions = computed(() =>
+  sellerCategoriesToFormOptions(categories.value, {
+    includeInactiveIds: form.value.category ? [form.value.category] : [],
+  }),
+)
 const errors = ref<Record<string, string>>({})
 const submitting = ref(false)
 const activeTab = ref('basic')
@@ -541,11 +583,17 @@ const tagsInput = computed({
 })
 
 const selectedCategory = computed(() =>
-  categoryOptions.find(item => item.id === form.value.category),
+  categoryOptions.value.find(item => item.id === form.value.category),
 )
 
 const brandOptions = computed(() => {
-  const fromCategory = getBrandOptions(form.value.category)
+  const sellerCat = getSellerCategory(form.value.category)
+  const brandSub = sellerCat?.subs.find(sub =>
+    sub.name.includes('برند') || sub.name === 'برندها',
+  )
+  const fromCategory = brandSub?.items.length
+    ? brandSub.items
+    : getBrandOptions(form.value.category)
   const fromStore = brands.value.filter(b => b.status === 'active').map(b => b.name)
   return [...new Set([...fromStore, ...fromCategory])]
 })
@@ -622,6 +670,23 @@ function persistCommerce(productId: string) {
   })
 }
 
+function listingExtras() {
+  return {
+    featured: commerce.value.featured,
+    published: commerce.value.published,
+    hasVariants: commerce.value.variants.length > 0,
+    sku: commerce.value.sku.trim() || undefined,
+    lowStockThreshold: Number(commerce.value.lowStockThreshold) || 5,
+  }
+}
+
+function withCategoryLabel<T extends { categoryLabel: string, category: string }>(product: T): T {
+  const label = selectedCategory.value?.name
+    || getSellerCategory(product.category)?.name
+    || product.categoryLabel
+  return { ...product, categoryLabel: label }
+}
+
 async function onSubmit(sendForReview: boolean) {
   errors.value = validateSellerProductForm(form.value, attributeFields.value)
   if (Object.keys(errors.value).length) {
@@ -641,20 +706,22 @@ async function onSubmit(sendForReview: boolean) {
 
     if (isEdit.value && props.productId) {
       const previous = resolveProduct(props.productId)
-      const product = buildSellerProductFromForm(form.value, {
+      const built = buildSellerProductFromForm(form.value, {
         id: props.productId,
         base: previous,
       })
-      if (!product) {
+      if (!built) {
         toast.error(t('اطلاعات محصول معتبر نیست'))
         return
       }
+      const product = withCategoryLabel(built)
       const listing = getListing(props.productId)
       const ok = await updateListingProduct(
         props.productId,
         product,
         stock,
         listing?.status,
+        listingExtras(),
       )
       if (!ok) {
         toast.error(t('ذخیره محصول ناموفق بود'))
@@ -674,22 +741,25 @@ async function onSubmit(sendForReview: boolean) {
       return
     }
 
-    const product = buildSellerProductFromForm(form.value)
-    if (!product) {
+    const built = buildSellerProductFromForm(form.value)
+    if (!built) {
       toast.error(t('اطلاعات محصول معتبر نیست'))
       return
     }
+    const product = withCategoryLabel(built)
+
+    // پیش‌نویس = unpublished؛ ارسال برای تأیید = published
+    commerce.value.published = sendForReview
 
     const status = sendForReview
       ? 'pending' as const
       : (stock > 0 ? 'inactive' as const : 'out_of_stock' as const)
-    const productId = await addListingProduct(product, stock, status)
+    const productId = await addListingProduct(product, stock, status, listingExtras())
     if (!productId) {
       toast.error(t('ثبت محصول ناموفق بود'))
       return
     }
 
-    commerce.value.published = sendForReview
     commerce.value.slug = commerce.value.slug.trim() || productId
     persistCommerce(productId)
 

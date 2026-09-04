@@ -30,7 +30,7 @@ export type SellerBlogFormValues = {
   image: string
   imageAlt: string
   relatedCategories: string[]
-  /** پاراگراف‌ها با خط خالی جدا می‌شوند */
+  /** HTML غنی از ادیتور (تیتر، لیست، لینک، …) */
   contentText: string
   highlights: string[]
   popular: boolean
@@ -104,15 +104,78 @@ const seedEngagement: Record<string, { popular?: boolean, engagement: number }> 
   '8': { engagement: 54 },
 }
 
+export function looksLikeHtml(value: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(value.trim())
+}
+
+export function isEmptyHtml(html: string): boolean {
+  return !html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/** محتوای ذخیره‌شده (آرایه پاراگراف یا یک سند HTML) → HTML ادیتور/نمایش */
+export function contentToHtml(content: string[]): string {
+  if (!content.length) return ''
+  if (content.length === 1 && looksLikeHtml(content[0]!)) return content[0]!
+  if (content.some(looksLikeHtml)) return content.join('')
+  return content.map(p => `<p>${escapeHtml(p)}</p>`).join('')
+}
+
 export function contentToText(content: string[]): string {
+  if (!content.length) return ''
+  if (content.some(looksLikeHtml)) {
+    return contentToHtml(content)
+      .replace(/<\/(p|h[1-6]|li|blockquote|div)>/gi, '\n\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  }
   return content.join('\n\n')
 }
 
 export function textToContent(text: string): string[] {
-  return text
+  const trimmed = text.trim()
+  if (!trimmed) return []
+  if (looksLikeHtml(trimmed)) {
+    if (isEmptyHtml(trimmed)) return []
+    return [trimmed]
+  }
+  return trimmed
     .split(/\n\s*\n/)
     .map(p => p.trim())
     .filter(Boolean)
+}
+
+/** حذف تگ‌های خطرناک قبل از v-html در استورفرانت */
+export function sanitizeBlogHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<object[\s\S]*?>[\s\S]*?<\/object>/gi, '')
+    .replace(/<embed[\s\S]*?>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/javascript:/gi, '')
+}
+
+export function isRichBlogContent(content: string[]): boolean {
+  return content.some(looksLikeHtml)
 }
 
 export function deriveBlogActive(status: SellerBlogStatus, scheduledAt?: string | null, now = Date.now()): boolean {
@@ -218,7 +281,7 @@ export function toBlogForm(post: SellerBlogPost): SellerBlogFormValues {
     image: post.image,
     imageAlt: post.imageAlt || '',
     relatedCategories: [...post.relatedCategories],
-    contentText: contentToText(post.content),
+    contentText: contentToHtml(post.content),
     highlights: post.highlights?.length ? [...post.highlights] : [''],
     popular: post.popular,
     featured: post.featured,
@@ -252,6 +315,15 @@ export function formToSellerBlogPost(
     ? new Date(form.scheduledAt).toISOString()
     : null
 
+  const seo = { ...emptySeoMeta(), ...form.seo }
+  if (!seo.metaTitle.trim()) seo.metaTitle = form.title.trim().slice(0, 60)
+  if (!seo.metaDescription.trim()) seo.metaDescription = form.excerpt.trim().slice(0, 160)
+  if (!seo.ogImage.trim() && form.image.trim()) seo.ogImage = form.image.trim()
+  if (!seo.twitterImage.trim()) seo.twitterImage = seo.ogImage
+  if (!seo.ogTitle.trim()) seo.ogTitle = seo.metaTitle
+  if (!seo.ogDescription.trim()) seo.ogDescription = seo.metaDescription
+  // canonical خالی می‌ماند تا در صفحه عمومی از siteUrl + /blog/:id ساخته شود
+
   return {
     id: form.id.trim(),
     title: form.title.trim(),
@@ -276,7 +348,7 @@ export function formToSellerBlogPost(
     imageAlt: form.imageAlt.trim() || form.title.trim(),
     tags: [...form.tags],
     relatedPostIds: [...form.relatedPostIds],
-    seo: { ...emptySeoMeta(), ...form.seo },
+    seo,
   }
 }
 

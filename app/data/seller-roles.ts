@@ -17,6 +17,8 @@ export type SellerRole = {
   isSystem: boolean
   createdAt: string
   updatedAt: string
+  /** Populated by GET /seller/roles */
+  adminCount?: number
 }
 
 export type SellerRoleFormValues = {
@@ -110,3 +112,19 @@ export function toRoleForm(role: SellerRole): SellerRoleFormValues {
 }
 
 export const roleKeyPattern = /^[A-Z][A-Z0-9_]*$/
+
+/** Build a valid role key from a display name when possible */
+export function suggestRoleKey(name: string) {
+  const latin = name
+    .trim()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9\s_-]+/g, ' ')
+    .trim()
+    .replace(/[\s-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .toUpperCase()
+  if (!latin || !/^[A-Z]/.test(latin)) return ''
+  return latin.slice(0, 48)
+}

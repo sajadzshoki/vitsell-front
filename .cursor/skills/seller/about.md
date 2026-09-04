@@ -24,9 +24,11 @@ description: About page content editor for the digishop seller (admin) panel.
 ## قوانین
 
 - تصاویر با `TheSellerImageUpload`.
+- متن داستان / ماموریت / چشم‌انداز با `TheSellerRichTextEditor` (HTML).
+- ادمین: `GET|PUT /seller/about` از طریق `useAbout.fetchAdmin` / `saveAbout`.
 - سکشن‌های مخفی در `TheAboutPage` رندر نشوند.
-- عمومی: `useEntitySeo` + `Organization` JSON-LD.
-- فرانت‌only روی state مشترک `site-about-page`.
+- عمومی: `GET /about` + `useEntitySeo` + `Organization` JSON-LD.
+- HTML غنی در `TheAboutPage` با `sanitizeBlogHtml` رندر می‌شود.
 
 ## چک
 

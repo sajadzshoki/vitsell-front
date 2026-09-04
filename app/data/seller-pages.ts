@@ -1,5 +1,10 @@
 import { emptySeoMeta, type SeoMeta } from '~/data/seo'
 import {
+  contentToHtml,
+  isEmptyHtml,
+  textToContent,
+} from '~/data/seller-blog'
+import {
   staticPages,
   type StaticPage,
   type StaticPageId,
@@ -55,7 +60,7 @@ function sectionsToEditable(sections: StaticSection[]) {
   const listSections: { title: string, itemsText: string }[] = []
   for (const section of sections) {
     if (section.type === 'paragraphs') {
-      paragraphSections.push({ itemsText: section.items.join('\n\n') })
+      paragraphSections.push({ itemsText: contentToHtml(section.items) })
     }
     else if (section.type === 'list') {
       listSections.push({
@@ -71,14 +76,11 @@ function sectionsToEditable(sections: StaticSection[]) {
 function editableToSections(form: SellerPageFormValues, previous?: StaticSection[]): StaticSection[] {
   const preserved = (previous || []).filter(s => s.type !== 'paragraphs' && s.type !== 'list')
   const paragraphs: StaticSection[] = form.paragraphSections
-    .map(s => ({
-      type: 'paragraphs' as const,
-      items: s.itemsText
-        .split(/\n\s*\n/)
-        .map(p => p.trim())
-        .filter(Boolean),
-    }))
-    .filter(s => s.items.length)
+    .map((s) => {
+      const items = textToContent(s.itemsText)
+      return { type: 'paragraphs' as const, items }
+    })
+    .filter(s => s.items.length && !isEmptyHtml(s.items.join('')))
   const lists: StaticSection[] = form.listSections
     .map(s => ({
       type: 'list' as const,

@@ -5,6 +5,23 @@ import {
   type SellerAmazingDeal,
   type SellerAmazingDealFormValues,
 } from '~/data/seller-deals'
+import { deriveScheduleStatus } from '~/data/seller-marketing-shared'
+
+export type SellerDealsQuery = {
+  q?: string
+  status?: string
+  page?: number
+  pageSize?: number
+  all?: boolean
+}
+
+export type SellerDealsPage = {
+  items: SellerAmazingDeal[]
+  total: number
+  page: number
+  pageSize: number
+  statusCounts: Record<string, number>
+}
 
 function apiErrorMessage(error: any, fallback: string) {
   return (
@@ -14,8 +31,46 @@ function apiErrorMessage(error: any, fallback: string) {
   )
 }
 
+function scheduleOf(deal: SellerAmazingDeal) {
+  return deriveScheduleStatus({
+    startsAt: deal.startsAt,
+    endsAt: deal.endsAt,
+    active: deal.active,
+  })
+}
+
+function computeStatusCounts(list: SellerAmazingDeal[]): Record<string, number> {
+  const counts = {
+    all: list.length,
+    active: 0,
+    scheduled: 0,
+    paused: 0,
+    expired: 0,
+  }
+  for (const deal of list) {
+    const status = scheduleOf(deal)
+    if (status === 'active') counts.active += 1
+    else if (status === 'scheduled') counts.scheduled += 1
+    else if (status === 'paused') counts.paused += 1
+    else if (status === 'expired' || status === 'ended') counts.expired += 1
+  }
+  return counts
+}
+
 export function useSellerDeals() {
   const items = useState<SellerAmazingDeal[]>('seller-amazing-deals', () => [])
+  const listMeta = useState('seller-amazing-deals-meta', () => ({
+    total: 0,
+    page: 1,
+    pageSize: 10,
+    statusCounts: {
+      all: 0,
+      active: 0,
+      scheduled: 0,
+      paused: 0,
+      expired: 0,
+    } as Record<string, number>,
+  }))
   const seeded = useState('seller-amazing-deals-seeded', () => false)
   const pending = useState('seller-amazing-deals-pending', () => false)
 
@@ -33,28 +88,60 @@ export function useSellerDeals() {
     }
   }
 
-  async function ensureLoaded(options?: { force?: boolean }) {
-    if (seeded.value && items.value.length && !options?.force) {
-      return items.value
-    }
-
+  async function fetchList(query?: SellerDealsQuery) {
     pending.value = true
     try {
-      const { result, error } = await useGet<SellerAmazingDeal[]>('/seller/deals', {
-        headers: { 'no-error': true },
-      })
-      if (error || !Array.isArray(result)) {
-        items.value = []
-        seeded.value = true
-        return items.value
+      const params: Record<string, string | number | boolean> = {}
+      if (query?.q?.trim()) params.q = query.q.trim()
+      if (query?.status && query.status !== 'all') params.status = query.status
+      if (query?.all) {
+        params.all = true
+        params.pageSize = query.pageSize || 200
       }
-      items.value = result.map(d => toAmazingDeal(d))
+      else {
+        if (query?.page != null) params.page = query.page
+        params.pageSize = query?.pageSize || 10
+      }
+
+      const { result, error } = await useGet<SellerDealsPage | SellerAmazingDeal[]>(
+        '/seller/deals',
+        { query: params, headers: { 'no-error': true }, server: false },
+      )
+
+      if (error || result == null) {
+        return { ok: false as const, error: error ?? { message: 'deals-fetch-failed' } }
+      }
+
+      if (Array.isArray(result)) {
+        items.value = result.map(d => toAmazingDeal(d))
+        listMeta.value = {
+          total: items.value.length,
+          page: 1,
+          pageSize: items.value.length,
+          statusCounts: computeStatusCounts(items.value),
+        }
+      }
+      else {
+        items.value = Array.isArray(result.items) ? result.items.map(d => toAmazingDeal(d)) : []
+        listMeta.value = {
+          total: Number(result.total) || items.value.length,
+          page: Number(result.page) || 1,
+          pageSize: Number(result.pageSize) || 10,
+          statusCounts: result.statusCounts || computeStatusCounts(items.value),
+        }
+      }
       seeded.value = true
-      return items.value
+      return { ok: true as const, error: null as null }
     }
     finally {
       pending.value = false
     }
+  }
+
+  async function ensureLoaded(options?: { force?: boolean }) {
+    if (seeded.value && !options?.force) return items.value
+    await fetchList({ page: 1, pageSize: 100 })
+    return items.value
   }
 
   async function fetchDeal(id: string, options?: { force?: boolean }) {
@@ -147,8 +234,10 @@ export function useSellerDeals() {
   return {
     deals,
     items,
+    listMeta,
     pending: computed(() => pending.value),
     seeded,
+    fetchList,
     ensureLoaded,
     fetchDeal,
     getById,

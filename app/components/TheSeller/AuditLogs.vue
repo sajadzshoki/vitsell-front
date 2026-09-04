@@ -5,7 +5,7 @@
       :description="mode === 'activity'
         ? $t('فعالیت‌های عملیاتی بدون رویدادهای ورود')
         : $t('ردیابی اقدامات مهم ادمین‌ها — فقط خواندنی')"
-      :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('رویداد')}`"
+      :count-label="`${(listMeta.total || 0).toLocaleString('fa-IR')} ${$t('رویداد')}`"
     />
 
     <TheSellerListToolbar
@@ -14,7 +14,7 @@
       :search-placeholder="$t('جستجو در خلاصه یا عامل')"
     >
       <template #extra>
-        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto items-end">
           <USelect
             v-model="actorFilter"
             :items="actorItems"
@@ -63,8 +63,15 @@
       </template>
     </TheSellerListToolbar>
 
+    <div
+      v-if="loading"
+      class="text-sm text-muted py-10 text-center"
+    >
+      {{ $t('در حال بارگذاری…') }}
+    </div>
+
     <TheSellerEmptyState
-      v-if="!filtered.length"
+      v-else-if="!logs.length"
       icon="i-tabler-clipboard-list"
       :message="$t('رویدادی یافت نشد')"
     />
@@ -74,7 +81,7 @@
       class="space-y-2"
     >
       <div
-        v-for="log in paged"
+        v-for="log in logs"
         :key="log.id"
         class="bg-muted border border-muted rounded-2xl p-4"
       >
@@ -86,10 +93,11 @@
             <div class="text-[11px] text-muted mt-1 flex flex-wrap gap-x-2 gap-y-1">
               <span>{{ log.actorName }}</span>
               <span>·</span>
-              <span>{{ $t(sellerAuditActionMeta[log.action].label) }}</span>
+              <span>{{ $t(sellerAuditActionMeta[log.action]?.label || log.action) }}</span>
               <span>·</span>
-              <span>{{ $t(sellerAuditEntityMeta[log.entity].label) }}</span>
+              <span>{{ $t(sellerAuditEntityMeta[log.entity]?.label || log.entity) }}</span>
               <span
+                v-if="log.entityId"
                 class="num"
                 dir="ltr"
               >#{{ log.entityId }}</span>
@@ -106,7 +114,7 @@
             class="text-[11px] text-muted num shrink-0"
             dir="ltr"
           >
-            {{ log.createdAt.slice(0, 16).replace('T', ' ') }}
+            {{ formatWhen(log.createdAt) }}
           </div>
         </div>
       </div>
@@ -118,7 +126,7 @@
     >
       <UPagination
         v-model:page="page"
-        :total="filtered.length"
+        :total="listMeta.total || 0"
         :items-per-page="pageSize"
       />
     </div>
@@ -129,8 +137,6 @@
 import {
   sellerAuditActionMeta,
   sellerAuditEntityMeta,
-  type SellerAuditAction,
-  type SellerAuditEntity,
 } from '~/data/seller-audit'
 
 const props = withDefaults(defineProps<{
@@ -140,8 +146,13 @@ const props = withDefaults(defineProps<{
 })
 
 const { t } = useI18n()
-const { logs, ensureLoaded } = useSellerAudit()
-ensureLoaded()
+const toast = useAppToast()
+const {
+  logs,
+  listMeta,
+  fetchList,
+  apiErrorMessage,
+} = useSellerAudit()
 
 const search = ref('')
 const actorFilter = ref('all')
@@ -151,14 +162,14 @@ const dateFrom = ref('')
 const dateTo = ref('')
 const page = ref(1)
 const pageSize = 12
+const loading = ref(false)
 
-const actorItems = computed(() => {
-  const names = [...new Set(logs.value.map(l => l.actorName))]
-  return [
-    { value: 'all', label: t('همه عامل‌ها') },
-    ...names.map(n => ({ value: n, label: n })),
-  ]
-})
+const actorItems = computed(() => [
+  { value: 'all', label: t('همه عامل‌ها') },
+  ...listMeta.value.actors
+    .filter(a => a.id)
+    .map(a => ({ value: a.id, label: a.name || a.id })),
+])
 
 const actionItems = computed(() => [
   { value: 'all', label: t('همه اقدامات') },
@@ -187,6 +198,10 @@ const hasFilters = computed(() =>
   ),
 )
 
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
+)
+
 function clearFilters() {
   search.value = ''
   actorFilter.value = 'all'
@@ -197,32 +212,46 @@ function clearFilters() {
   page.value = 1
 }
 
-const filtered = computed(() => {
-  const q = search.value.trim()
-  return logs.value.filter((l) => {
-    if (props.mode === 'activity' && l.action === 'login') return false
-    if (actorFilter.value !== 'all' && l.actorName !== actorFilter.value) return false
-    if (actionFilter.value !== 'all' && l.action !== actionFilter.value as SellerAuditAction) return false
-    if (entityFilter.value !== 'all' && l.entity !== entityFilter.value as SellerAuditEntity) return false
-    if (dateFrom.value && l.createdAt.slice(0, 10) < dateFrom.value) return false
-    if (dateTo.value && l.createdAt.slice(0, 10) > dateTo.value) return false
-    if (!q) return true
-    return (
-      l.summary.includes(q)
-      || l.actorName.includes(q)
-      || l.entityId.includes(q)
-    )
-  })
-})
+function formatWhen(iso: string) {
+  try {
+    return iso.slice(0, 16).replace('T', ' ')
+  }
+  catch {
+    return iso
+  }
+}
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
+async function loadList() {
+  loading.value = true
+  try {
+    const { ok, error } = await fetchList({
+      q: search.value || undefined,
+      actorId: actorFilter.value,
+      action: actionFilter.value,
+      entity: entityFilter.value,
+      dateFrom: dateFrom.value || undefined,
+      dateTo: dateTo.value || undefined,
+      mode: props.mode,
+      page: page.value,
+      pageSize,
+    })
+    if (!ok) {
+      toast.error(t(apiErrorMessage(error, 'بارگذاری لاگ ناموفق بود')))
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
 
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
+watch(
+  [search, actorFilter, actionFilter, entityFilter, dateFrom, dateTo, page, () => props.mode],
+  () => {
+    void loadList()
+  },
+)
 
-watch(filtered, () => {
-  if (page.value > pageCount.value) page.value = pageCount.value
+onMounted(() => {
+  void loadList()
 })
 </script>

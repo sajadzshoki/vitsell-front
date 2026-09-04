@@ -1,4 +1,5 @@
 import { categories, getCategoryById, getCategoryIcon } from '~/data/categories'
+import { resolveCategoryIconName } from '~/data/seller-categories'
 import { compareTemplates, type CompareSection } from '~/data/compare'
 import { categoryLabels, type Product, type ProductColor, type ProductSpec } from '~/data/products'
 
@@ -89,12 +90,33 @@ const defaultTemplate: CompareSection[] = [
   { title: 'مشخصات', rows: ['ویژگی‌ها'] },
 ]
 
-export function getSellerCategoryOptions() {
+export type SellerProductCategoryOption = {
+  id: string
+  name: string
+  icon: string
+}
+
+export function getSellerCategoryOptions(): SellerProductCategoryOption[] {
   return categories.map(category => ({
     id: category.id,
     name: category.name,
     icon: getCategoryIcon(category.id),
   }))
+}
+
+/** Map admin/API categories for product form picker */
+export function sellerCategoriesToFormOptions(
+  items: Array<{ id: string, name: string, icon: string, status?: string }>,
+  options?: { includeInactiveIds?: string[] },
+): SellerProductCategoryOption[] {
+  const include = new Set(options?.includeInactiveIds?.filter(Boolean) ?? [])
+  return items
+    .filter(c => c.status !== 'inactive' || include.has(c.id))
+    .map(category => ({
+      id: category.id,
+      name: category.name,
+      icon: resolveCategoryIconName(category.icon || 'category'),
+    }))
 }
 
 export function getBrandOptions(categoryId: string): string[] {
