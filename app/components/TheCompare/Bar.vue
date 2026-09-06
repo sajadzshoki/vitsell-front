@@ -5,9 +5,20 @@
       class="fixed inset-x-0 z-[60] flex justify-center px-4 pointer-events-none"
       :class="barBottomClass"
     >
-      <div class="pointer-events-auto flex items-center gap-2 bg-inverted text-inverted text-xs rounded-full px-4 py-2.5 shadow-xl">
+      <div class="pointer-events-auto flex items-center gap-2 bg-inverted text-inverted text-xs rounded-full ps-4 pe-1.5 py-1.5 shadow-xl">
         <UIcon name="i-tabler-arrows-diff" class="size-4 shrink-0" />
-        <span>{{ $t('برای مقایسه، یک محصول دیگر انتخاب کنید') }}</span>
+        <span class="py-1">{{ $t('برای مقایسه، یک محصول دیگر انتخاب کنید') }}</span>
+        <UButton
+          type="button"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          square
+          icon="i-tabler-x"
+          class="rounded-full text-inverted hover:bg-default/15 shrink-0 cursor-pointer"
+          :aria-label="$t('حذف از مقایسه')"
+          @click="onToggle(items[0]!.id)"
+        />
       </div>
     </div>
 

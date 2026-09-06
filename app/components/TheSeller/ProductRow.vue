@@ -100,7 +100,7 @@
               class="cursor-pointer"
               :aria-label="$t('جزئیات محصول')"
             />
-            <UButton
+            <!-- <UButton
               :to="`/product/${listing.productId}`"
               color="neutral"
               variant="ghost"
@@ -108,7 +108,7 @@
               icon="i-tabler-external-link"
               class="cursor-pointer"
               :aria-label="$t('مشاهده در فروشگاه')"
-            />
+            /> -->
           </div>
         </div>
       </div>

@@ -1,63 +1,22 @@
 <template>
   <footer class="mt-10 md:mt-16 <md:hidden">
-    <!-- Trust strip -->
-    <div class="border-y border-muted bg-muted/60">
-      <div class="mx-auto max-w-8xl px-3 py-8 sm:px-4 lg:px-6 grid grid-cols-2 md:grid-cols-4 gap-6">
-        <div
-          v-for="item in trustItems"
-          :key="item.id"
-          class="flex items-center gap-3"
-        >
-          <div class="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0">
-            <UIcon
-              :name="`i-tabler-${item.icon}`"
-              class="size-6"
-            />
-          </div>
-          <div class="min-w-0">
-            <div class="text-sm font-semibold text-highlighted truncate">
-              {{ $t(item.title) }}
-            </div>
-            <div class="text-xs text-muted mt-0.5 truncate">
-              {{ $t(item.subtitle) }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main footer: soft surface + primary top glow (light & dark) -->
-    <div class="relative overflow-hidden border-t border-muted bg-muted">
-      <!-- Soft primary glow from top -->
+    <div class="relative overflow-hidden border-t border-muted bg-default">
+      <!-- Soft primary glow from top (must sit above bg-default, not on <footer>) -->
       <div
-        class="pointer-events-none absolute inset-x-0 top-0 h-56 bg-linear-to-b from-primary/20 via-primary/8 to-transparent"
+        class="pointer-events-none absolute inset-x-0 top-0 h-48 bg-linear-to-b from-primary/15 via-primary/5 to-transparent"
         aria-hidden="true"
       />
-      <div
-        class="pointer-events-none absolute -top-24 inset-x-0 mx-auto size-[28rem] rounded-full bg-primary/15 blur-3xl"
+      <!-- <div
+        class="pointer-events-none absolute -top-28 inset-x-0 mx-auto size-[26rem] rounded-full bg-primary/10 blur-3xl"
         aria-hidden="true"
-      />
+      /> -->
 
       <div class="relative z-10 mx-auto max-w-8xl px-3 sm:px-4 lg:px-6">
-        <!-- Brand + columns -->
-        <div class="py-10 lg:py-12 grid grid-cols-1 xl:grid-cols-12 gap-10 xl:gap-12">
+        <!-- Brand + link columns + contact -->
+        <div class="py-10 lg:py-12 grid grid-cols-1 xl:grid-cols-12 gap-10 xl:gap-8">
           <!-- Brand block -->
           <div class="xl:col-span-3 flex flex-col gap-5">
-            <div class="flex items-start justify-between gap-3">
-              <TheNavbarLogo />
-              <UButton
-                type="button"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                icon="i-tabler-chevron-up"
-                class="shrink-0 text-toned hover:(text-highlighted bg-elevated)"
-                :aria-label="$t('بازگشت به بالا')"
-                @click="scrollToTop"
-              >
-                <span class="hidden sm:inline">{{ $t('بازگشت به بالا') }}</span>
-              </UButton>
-            </div>
+            <TheNavbarLogo />
 
             <p
               v-if="aboutSegments.length"
@@ -82,25 +41,25 @@
                 :key="social.id"
                 :to="social.href"
                 :aria-label="$t(social.label)"
-                color="neutral"
-                variant="ghost"
+                color="primary"
+                variant="outline"
                 size="sm"
                 square
                 :icon="`i-tabler-${social.icon}`"
-                class="size-10 rounded-full !bg-elevated !text-toned border border-default hover:(!bg-primary/10 !text-primary !border-primary/30)"
+                class="size-10 rounded-full !bg-primary/5 !text-primary !border-primary/25 hover:(!bg-primary/10 !border-primary/40)"
               />
             </div>
           </div>
 
-          <!-- Link columns -->
-          <div class="xl:col-span-9 grid grid-cols-2 md:grid-cols-3 gap-8 lg:gap-10">
+          <!-- Link columns + contact -->
+          <div class="xl:col-span-9 grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-6">
             <div
               v-for="column in columns"
               :key="column.id"
             >
               <h4 class="flex items-center gap-2 text-sm font-bold text-highlighted mb-4 text-start">
                 <span
-                  class="size-1.5 rounded-full bg-primary shadow-sm shadow-primary/40 shrink-0"
+                  class="size-1.5 rounded-full bg-primary shrink-0"
                   aria-hidden="true"
                 />
                 {{ $t(column.title) }}
@@ -119,88 +78,109 @@
                 </li>
               </ul>
             </div>
+
+            <!-- Contact -->
+            <div v-if="hasContact">
+              <h4 class="flex items-center gap-2 text-sm font-bold text-highlighted mb-4 text-start">
+                <span
+                  class="size-1.5 rounded-full bg-primary shrink-0"
+                  aria-hidden="true"
+                />
+                {{ $t('ارتباط با ما') }}
+              </h4>
+              <ul class="space-y-2.5">
+                <li
+                  v-for="phone in contact.phones"
+                  :key="phone.href"
+                >
+                  <a
+                    :href="phone.href"
+                    class="text-sm text-muted hover:text-primary num cursor-pointer transition"
+                    dir="ltr"
+                  >
+                    {{ phone.label }}
+                  </a>
+                </li>
+                <li v-if="contact.email?.href">
+                  <a
+                    :href="contact.email.href"
+                    class="text-sm text-muted hover:text-primary cursor-pointer transition"
+                    dir="ltr"
+                  >
+                    {{ contact.email.label }}
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        <!-- Contact / apps -->
-        <div class="py-8 border-y border-default grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
+        <!-- Apps + trust badges -->
+        <div class="py-8 border-t border-muted flex flex-col md:(flex-row items-end justify-between) gap-8">
+          <div v-if="appStores.length">
             <h4 class="flex items-center gap-2 text-sm font-bold text-highlighted mb-4 text-start">
               <span
-                class="size-1.5 rounded-full bg-primary shadow-sm shadow-primary/40 shrink-0"
-                aria-hidden="true"
-              />
-              {{ $t('ارتباط با ما') }}
-            </h4>
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
-              <a
-                v-for="phone in contact.phones"
-                :key="phone.href"
-                :href="phone.href"
-                class="text-sm text-toned hover:text-primary num cursor-pointer transition"
-                dir="ltr"
-              >
-                {{ phone.label }}
-              </a>
-            </div>
-            <a
-              v-if="contact.email?.href"
-              :href="contact.email.href"
-              class="text-sm text-muted hover:text-primary cursor-pointer transition"
-              dir="ltr"
-            >
-              {{ contact.email.label }}
-            </a>
-          </div>
-
-          <div>
-            <h4 class="flex items-center gap-2 text-sm font-bold text-highlighted mb-4 text-start">
-              <span
-                class="size-1.5 rounded-full bg-primary shadow-sm shadow-primary/40 shrink-0"
+                class="size-1.5 rounded-full bg-primary shrink-0"
                 aria-hidden="true"
               />
               {{ $t('دانلود اپلیکیشن ما از') }}
             </h4>
-            <div class="flex flex-wrap items-center gap-2">
-              <UButton
+            <div class="flex flex-wrap items-center gap-2.5">
+              <a
                 v-for="store in appStores"
                 :key="store.id"
                 :href="store.href"
-                color="neutral"
-                variant="solid"
-                size="sm"
-                :icon="`i-tabler-${store.icon}`"
-                class="bg-default text-highlighted border border-default hover:bg-elevated font-medium"
+                :aria-label="$t(store.label)"
+                class="inline-flex items-center cursor-pointer transition hover:opacity-90 focus-visible:(outline-none ring-2 ring-primary/40) rounded-xl"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                {{ $t(store.label) }}
-              </UButton>
+                <img
+                  v-if="storeBadgeSrc(store.id)"
+                  :src="storeBadgeSrc(store.id)"
+                  :alt="$t(store.label)"
+                  class="h-10 w-auto rounded-xl"
+                  loading="lazy"
+                  width="140"
+                  height="40"
+                >
+                <span
+                  v-else
+                  class="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-default bg-default text-sm font-medium text-highlighted"
+                >
+                  <UIcon
+                    :name="`i-tabler-${store.icon}`"
+                    class="size-4"
+                  />
+                  {{ $t(store.label) }}
+                </span>
+              </a>
+            </div>
+          </div>
+
+          <div
+            v-if="badges.length"
+            class="flex flex-wrap items-center gap-2 md:justify-end"
+          >
+            <div
+              v-for="badge in badges"
+              :key="badge.id"
+              class="size-16 rounded-xl border border-default bg-muted/50 grid place-items-center"
+              :title="$t(badge.label)"
+            >
+              <UIcon
+                :name="`i-tabler-${badge.icon}`"
+                class="size-7 text-toned"
+              />
             </div>
           </div>
         </div>
 
-        <!-- Badges -->
-        <div
-          v-if="badges.length"
-          class="pt-8 flex flex-wrap items-center justify-center gap-2"
-        >
-          <div
-            v-for="badge in badges"
-            :key="badge.id"
-            class="size-14 rounded-xl border border-default bg-default grid place-items-center"
-            :title="$t(badge.label)"
-          >
-            <UIcon
-              :name="`i-tabler-${badge.icon}`"
-              class="size-6 text-toned"
-            />
-          </div>
-        </div>
-
-        <!-- Copyright pill -->
-        <div class="py-8 flex justify-center">
+        <!-- Copyright -->
+        <div class="py-6 border-t border-muted flex justify-center">
           <p
             v-if="copyright"
-            class="px-5 py-2.5 rounded-full border border-default bg-default text-xs text-muted num text-center"
+            class="text-xs text-muted num text-center"
           >
             {{ $t(copyright) }}
           </p>
@@ -211,13 +191,17 @@
 </template>
 
 <script setup lang="ts">
+const STORE_BADGES: Record<string, string> = {
+  myket: '/images/myket-download.png',
+  bazaar: '/images/bazaar-download.png',
+}
+
 const { t } = useI18n()
 const { footer, fetchFooter } = useFooter()
 const { site, fetchSite } = useSiteSettings()
 
 await Promise.all([fetchFooter(), fetchSite()])
 
-const trustItems = computed(() => footer.value.trustItems)
 const socials = computed(() => footer.value.socials)
 const columns = computed(() => footer.value.columns)
 const copyright = computed(() => footer.value.copyright)
@@ -228,6 +212,10 @@ const contact = computed(() => footer.value.contact ?? {
 })
 const appStores = computed(() => footer.value.appStores ?? [])
 const badges = computed(() => footer.value.badges ?? [])
+
+const hasContact = computed(() =>
+  contact.value.phones.length > 0 || Boolean(contact.value.email?.href),
+)
 
 const siteName = computed(() => site.value.name?.trim() || t('دیجی‌شاپ'))
 
@@ -248,8 +236,7 @@ const aboutSegments = computed(() => {
   return segments
 })
 
-function scrollToTop() {
-  if (!import.meta.client) return
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+function storeBadgeSrc(id: string) {
+  return STORE_BADGES[id] ?? ''
 }
 </script>

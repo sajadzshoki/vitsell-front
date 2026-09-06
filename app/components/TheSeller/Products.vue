@@ -284,15 +284,15 @@
       <div
         v-for="listing in paged"
         :key="listing.productId"
-        class="relative"
+        class="relative flex items-center"
       >
-        <div class="absolute top-3 start-3 z-10">
+        <!-- <div class="absolute top- start-3 z-10"> -->
           <UCheckbox
             :model-value="selectedIds.includes(listing.productId)"
             @update:model-value="toggleSelect(listing.productId, !!$event)"
           />
-        </div>
-        <div class="ps-8">
+        <!-- </div> -->
+        <div class="ps-4 grow">
           <TheSellerProductRow :listing="listing" />
         </div>
       </div>
