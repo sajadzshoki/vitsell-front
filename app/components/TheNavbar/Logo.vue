@@ -3,7 +3,14 @@
     to="/"
     class="flex items-center gap-2 shrink-0 <md:flex-col"
   >
+    <img
+      v-if="logoUrl"
+      :src="logoUrl"
+      :alt="siteName"
+      class="size-10 rounded-xl object-cover shadow-lg shadow-primary/20"
+    >
     <div
+      v-else
       class="size-10 rounded-xl grid place-items-center shadow-lg shadow-primary/20"
       :class="inverted ? 'bg-default text-highlighted' : 'bg-primary text-inverted'"
     >
@@ -23,7 +30,7 @@
         class="text-[10px] -mt-0.5"
         :class="inverted ? 'text-inverted/60' : 'text-dimmed'"
       >
-        {{ $t('فروشگاه پرمیوم') }}
+        {{ tagline }}
       </span>
     </div>
   </NuxtLink>
@@ -41,5 +48,11 @@ const { site, fetchSite } = useSiteSettings()
 
 await fetchSite()
 
-const siteName = computed(() => site.value.name?.trim() || t('دیجی‌شاپ'))
+const siteName = computed(() =>
+  site.value.brandName?.trim()
+  || site.value.name?.trim()
+  || t('دیجی‌شاپ'),
+)
+const logoUrl = computed(() => site.value.logoUrl?.trim() || '')
+const tagline = computed(() => t('فروشگاه پرمیوم'))
 </script>

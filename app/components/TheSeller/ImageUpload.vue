@@ -27,24 +27,31 @@
 
     <button
       type="button"
-      class="relative w-full min-h-36 rounded-2xl border border-dashed overflow-hidden grid place-items-center text-center transition cursor-pointer"
+      class="relative w-full min-h-36 rounded-2xl border border-dashed overflow-hidden grid place-items-center text-center transition"
       :class="[
         surfaceClass,
-        dragOver ? 'border-primary bg-primary/10' : 'border-muted hover:(border-primary/50 bg-primary/5)',
+        props.disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
+        !props.disabled && dragOver ? 'border-primary bg-primary/10' : 'border-muted',
+        !props.disabled && 'hover:(border-primary/50 bg-primary/5)',
       ]"
-      :disabled="reading"
+      :disabled="reading || props.disabled"
       @click="openPicker"
-      @dragenter.prevent="dragOver = true"
-      @dragover.prevent="dragOver = true"
+      @dragenter.prevent="onDragEnter"
+      @dragover.prevent="onDragEnter"
       @dragleave.prevent="dragOver = false"
       @drop.prevent="onDrop"
     >
       <img
-        v-if="model.trim() && !reading"
-        :src="model"
+        v-if="previewSrc"
+        :src="previewSrc"
         :alt="alt"
-        class="absolute inset-0 size-full object-cover"
-        @error="emit('error')"
+        class="absolute inset-0 size-full"
+        :class="[
+          fit === 'contain' ? 'object-contain p-3' : 'object-cover',
+          reading ? 'opacity-40' : '',
+        ]"
+        @load="onImgLoad"
+        @error="onImgError"
       >
 
       <div
@@ -59,7 +66,7 @@
       </div>
 
       <div
-        v-else-if="!model.trim()"
+        v-else-if="!previewSrc"
         class="relative z-10 flex flex-col items-center gap-2 p-4"
       >
         <div
@@ -88,7 +95,7 @@
       </div>
 
       <div
-        v-else
+        v-else-if="previewSrc && !reading"
         class="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center p-2 bg-inverted/55"
       >
         <span class="text-[11px] text-inverted font-medium">
@@ -98,7 +105,7 @@
     </button>
 
     <div
-      v-if="canViewLibrary"
+      v-if="canViewLibrary && !props.disabled"
       class="mt-2 flex justify-center"
     >
       <UButton
@@ -119,10 +126,11 @@
       v-model:open="libraryOpen"
       v-model="model"
       kind="image"
+      @select="onLibrarySelect"
     />
 
     <div
-      v-if="model.trim()"
+      v-if="String(model || '').trim() && !props.disabled"
       class="mt-2 flex justify-end"
     >
       <UButton
@@ -162,12 +170,17 @@ const props = withDefaults(defineProps<{
   badgeColor?: 'primary' | 'neutral' | 'warning' | 'success' | 'info' | 'error' | 'secondary'
   hint?: string
   error?: string
+  disabled?: boolean
   /** Preview surface: light box vs dark box */
   themePreview?: 'light' | 'dark'
+  /** How the image fills the preview box */
+  fit?: 'cover' | 'contain'
 }>(), {
   alt: '',
   badgeColor: 'neutral',
   themePreview: 'light',
+  disabled: false,
+  fit: 'cover',
 })
 
 const emit = defineEmits<{
@@ -178,16 +191,24 @@ const model = defineModel<string>({ default: '' })
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { can } = useSellerPermissions()
+const { canAny } = useSellerPermissions()
+const { uploadFiles } = useSellerMedia()
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const reading = ref(false)
 const dragOver = ref(false)
 const libraryOpen = ref(false)
+const localPreview = ref('')
+const preferLocal = ref(false)
 
-const canViewLibrary = computed(() => can('media.view'))
+const canViewLibrary = computed(() => canAny('media.view', 'media.upload', 'media.manage'))
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024
+
+const previewSrc = computed(() => {
+  if (preferLocal.value && localPreview.value) return localPreview.value
+  return String(model.value || '').trim() || localPreview.value
+})
 
 const surfaceClass = computed(() =>
   props.themePreview === 'dark'
@@ -195,17 +216,58 @@ const surfaceClass = computed(() =>
     : 'bg-muted/40',
 )
 
+function revokeLocalPreview() {
+  if (localPreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(localPreview.value)
+  }
+  localPreview.value = ''
+  preferLocal.value = false
+}
+
 function openPicker() {
-  if (reading.value) return
+  if (reading.value || props.disabled) return
   inputRef.value?.click()
 }
 
+function onDragEnter() {
+  if (props.disabled || reading.value) return
+  dragOver.value = true
+}
+
 function clear() {
+  if (props.disabled) return
+  revokeLocalPreview()
   model.value = ''
   if (inputRef.value) inputRef.value.value = ''
 }
 
+function onLibrarySelect() {
+  revokeLocalPreview()
+}
+
+function onImgLoad(event: Event) {
+  const img = event.target as HTMLImageElement
+  const src = img.currentSrc || img.src
+  if (!src || src.startsWith('blob:')) return
+  if (!localPreview.value) return
+  if (localPreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(localPreview.value)
+  }
+  localPreview.value = ''
+  preferLocal.value = false
+}
+
+function onImgError() {
+  // Keep blob preview if remote URL fails
+  if (localPreview.value) {
+    preferLocal.value = true
+    return
+  }
+  emit('error')
+}
+
 async function uploadFile(file: File) {
+  if (props.disabled) return
   if (!file.type.startsWith('image/')) {
     toast.error(t('فقط فایل تصویری مجاز است'))
     return
@@ -215,23 +277,24 @@ async function uploadFile(file: File) {
     return
   }
 
+  revokeLocalPreview()
+  localPreview.value = URL.createObjectURL(file)
+  preferLocal.value = true
   reading.value = true
   try {
-    const body = new FormData()
-    body.append('file', file)
-    const { result, error } = await usePost<{ url: string }, FormData>(
-      '/upload',
-      body,
-      { headers: { 'no-error': true } },
-    )
-    if (error || !result?.url) {
-      toast.error(t('آپلود تصویر ناموفق بود'))
+    const result = await uploadFiles([file])
+    if (!result.ok || !result.items[0]?.url) {
+      toast.error(t(result.error || 'آپلود تصویر ناموفق بود'))
+      revokeLocalPreview()
       return
     }
-    model.value = result.url
+    model.value = result.items[0].url
+    // Try remote URL; keep blob as fallback if it fails to load
+    preferLocal.value = false
   }
   catch {
     toast.error(t('خواندن تصویر ناموفق بود'))
+    revokeLocalPreview()
   }
   finally {
     reading.value = false
@@ -248,7 +311,12 @@ function onFileChange(event: Event) {
 
 function onDrop(event: DragEvent) {
   dragOver.value = false
+  if (props.disabled) return
   const file = event.dataTransfer?.files?.[0]
   if (file) void uploadFile(file)
 }
+
+onBeforeUnmount(() => {
+  revokeLocalPreview()
+})
 </script>

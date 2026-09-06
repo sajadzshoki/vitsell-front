@@ -198,7 +198,7 @@ export function useSellerAdmins() {
           lastName: profile.value.lastName || '',
           email: profile.value.email || '',
           phone: profile.value.phone || '',
-          avatar: null,
+          avatar: profile.value.avatar?.trim() || null,
           status: (profile.value.adminStatus as SellerAdminUser['status']) || 'active',
           roleIds: Array.isArray(profile.value.roleIds) ? profile.value.roleIds : ['role-super_admin'],
           primaryRoleKey: profile.value.primaryRoleKey || 'SUPER_ADMIN',

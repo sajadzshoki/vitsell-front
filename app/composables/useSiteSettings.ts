@@ -16,6 +16,16 @@ function normalizeSite(raw: Partial<SiteSettings> | null | undefined): SiteSetti
     rating: Number(raw?.rating ?? defaultSellerShop.rating) || 0,
     reviewCount: Number(raw?.reviewCount ?? defaultSellerShop.reviewCount) || 0,
     joinDate: String(raw?.joinDate ?? defaultSellerShop.joinDate ?? ''),
+    logoUrl: String(raw?.logoUrl ?? ''),
+    faviconUrl: String(raw?.faviconUrl ?? ''),
+    defaultOgImage: String(raw?.defaultOgImage ?? ''),
+    brandName: String(raw?.brandName ?? ''),
+    brandDescription: String(raw?.brandDescription ?? ''),
+    supportPhone: String(raw?.supportPhone ?? ''),
+    salesPhone: String(raw?.salesPhone ?? ''),
+    supportEmail: String(raw?.supportEmail ?? ''),
+    address: String(raw?.address ?? ''),
+    workingHours: String(raw?.workingHours ?? ''),
   }
 }
 

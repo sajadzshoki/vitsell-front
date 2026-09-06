@@ -5,9 +5,16 @@
       class="space-y-3"
     >
       <USkeleton class="h-10 rounded-xl" />
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <USkeleton
+          v-for="i in 3"
+          :key="i"
+          class="h-20 rounded-2xl"
+        />
+      </div>
       <USkeleton
         v-for="i in 5"
-        :key="i"
+        :key="`row-${i}`"
         class="h-24 rounded-2xl"
       />
     </div>
@@ -16,6 +23,7 @@
       <div class="hidden lg:block">
         <TheSellerPageHeader
           :title="$t('تراکنش‌ها')"
+          :description="$t('دفترکل یکپارچه پرداخت، بازپرداخت، تسویه و تعدیل')"
           :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('رکورد')}`"
         >
           <template #actions>
@@ -35,12 +43,30 @@
         </TheSellerPageHeader>
       </div>
 
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        <div
+          v-for="card in summaryCards"
+          :key="card.label"
+          class="bg-muted border border-muted rounded-2xl p-4"
+        >
+          <div class="text-xs text-muted mb-1">
+            {{ $t(card.label) }}
+          </div>
+          <div
+            class="text-base font-bold num"
+            :class="card.tone"
+          >
+            {{ card.value }}
+          </div>
+        </div>
+      </div>
+
       <TheSellerListToolbar
         v-model:search="search"
         :status="status"
         :tabs="statusTabs"
         :search-placeholder="$t('جستجوی شناسه، سفارش، مشتری یا مرجع')"
-        :has-active="hasActiveFilters || typeFilter !== 'all'"
+        :has-active="hasActiveFilters || typeFilter !== 'all' || gatewayFilter !== 'all'"
         @update:status="status = $event"
         @clear="clearAll"
       >
@@ -52,12 +78,25 @@
             class="w-40"
             @update:model-value="onTypeChange"
           />
+          <USelect
+            :model-value="gatewayFilter"
+            :items="gatewayItems"
+            value-key="value"
+            class="w-44"
+            @update:model-value="onGatewayChange"
+          />
         </template>
       </TheSellerListToolbar>
 
       <TheSellerEmptyState
-        v-if="!filtered.length"
+        v-if="!transactions.length"
         icon="i-tabler-arrows-exchange"
+        :message="$t('هنوز تراکنشی ثبت نشده')"
+      />
+
+      <TheSellerEmptyState
+        v-else-if="!filtered.length"
+        icon="i-tabler-filter-off"
         :message="$t('تراکنشی با این فیلتر پیدا نشد')"
       />
 
@@ -103,6 +142,9 @@
                   >{{ item.orderId }}</span>
                 </template>
                 · {{ item.sourceLabel }}
+                <template v-if="item.gateway">
+                  · {{ item.gateway }}
+                </template>
               </div>
             </div>
             <div class="text-end shrink-0">
@@ -149,6 +191,8 @@ const toast = useAppToast()
 const route = useRoute()
 const { can } = useSellerPermissions()
 const {
+  transactions,
+  transactionsMeta,
   filterTransactions,
   loaded,
   loading,
@@ -162,6 +206,7 @@ const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = use
 const pageSize = PAGE_SIZE
 
 const typeFilter = computed(() => String(route.query.type ?? 'all'))
+const gatewayFilter = computed(() => String(route.query.gateway ?? 'all'))
 
 const typeItems = computed(() => [
   { label: t('همه انواع'), value: 'all' },
@@ -171,14 +216,26 @@ const typeItems = computed(() => [
   })),
 ])
 
-const statusTabs = computed(() => {
-  const all = filterTransactions({})
+const gatewayItems = computed(() => {
+  const fromMeta = transactionsMeta.value.gatewayOptions || []
+  const fromRows = [...new Set(transactions.value.map(t => t.gateway).filter(Boolean))]
+  const names = [...new Set([...fromMeta, ...fromRows])].sort((a, b) => a.localeCompare(b, 'fa'))
   return [
-    { id: 'all', label: t('همه'), count: all.length },
-    { id: 'pending', label: t('در انتظار'), count: all.filter(i => i.status === 'pending').length },
-    { id: 'processing', label: t('در حال پردازش'), count: all.filter(i => i.status === 'processing').length },
-    { id: 'completed', label: t('تکمیل‌شده'), count: all.filter(i => i.status === 'completed').length },
-    { id: 'failed', label: t('ناموفق'), count: all.filter(i => i.status === 'failed').length },
+    { label: t('همه درگاه‌ها'), value: 'all' },
+    ...names.map(name => ({ label: name, value: name })),
+  ]
+})
+
+const statusTabs = computed(() => {
+  const counts = transactionsMeta.value.statusCounts || {}
+  const all = transactions.value
+  const n = (key: string) => Number(counts[key]) || all.filter(i => key === 'all' ? true : i.status === key).length
+  return [
+    { id: 'all', label: t('همه'), count: n('all') || all.length },
+    { id: 'pending', label: t('در انتظار'), count: n('pending') },
+    { id: 'processing', label: t('در حال پردازش'), count: n('processing') },
+    { id: 'completed', label: t('تکمیل‌شده'), count: n('completed') },
+    { id: 'failed', label: t('ناموفق'), count: n('failed') },
   ]
 })
 
@@ -187,8 +244,24 @@ const filtered = computed(() =>
     search: search.value,
     status: status.value,
     type: typeFilter.value,
+    gateway: gatewayFilter.value,
   }),
 )
+
+const summaryCards = computed(() => {
+  const inflow = filtered.value.filter(t => t.signedAmount > 0).reduce((s, t) => s + t.signedAmount, 0)
+  const outflow = filtered.value.filter(t => t.signedAmount < 0).reduce((s, t) => s + Math.abs(t.signedAmount), 0)
+  const net = inflow - outflow
+  return [
+    { label: 'ورودی', value: formatPrice(inflow), tone: 'text-success' },
+    { label: 'خروجی', value: formatPrice(outflow), tone: 'text-error' },
+    {
+      label: 'خالص',
+      value: `${net >= 0 ? '+' : '−'}${formatPrice(Math.abs(net))}`,
+      tone: net < 0 ? 'text-error' : 'text-success',
+    },
+  ]
+})
 
 const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
 
@@ -207,9 +280,14 @@ function onTypeChange(value: string | number) {
   void patchQuery({ type: next === 'all' ? undefined : next, page: undefined })
 }
 
+function onGatewayChange(value: string | number) {
+  const next = String(value || 'all')
+  void patchQuery({ gateway: next === 'all' ? undefined : next, page: undefined })
+}
+
 async function clearAll() {
   await clearFilters()
-  await patchQuery({ type: undefined })
+  await patchQuery({ type: undefined, gateway: undefined })
 }
 
 function exportCsv() {
@@ -231,10 +309,6 @@ function exportCsv() {
   )
 }
 
-try {
-  await ensureLoaded()
-}
-catch {
-  toast.error(t('بارگذاری تراکنش‌ها ناموفق بود'))
-}
+const boot = await ensureLoaded()
+if (!boot.ok) toast.error(t(boot.error || 'بارگذاری تراکنش‌ها ناموفق بود'))
 </script>

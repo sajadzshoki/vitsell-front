@@ -5,9 +5,16 @@
       class="space-y-3"
     >
       <USkeleton class="h-10 rounded-xl" />
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <USkeleton
+          v-for="i in 3"
+          :key="i"
+          class="h-20 rounded-2xl"
+        />
+      </div>
       <USkeleton
         v-for="i in 3"
-        :key="i"
+        :key="`row-${i}`"
         class="h-24 rounded-2xl"
       />
     </div>
@@ -47,6 +54,24 @@
         >
           {{ $t('تعدیل جدید') }}
         </UButton>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        <div
+          v-for="card in summaryCards"
+          :key="card.label"
+          class="bg-muted border border-muted rounded-2xl p-4"
+        >
+          <div class="text-xs text-muted mb-1">
+            {{ $t(card.label) }}
+          </div>
+          <div
+            class="text-base font-bold num"
+            :class="card.tone"
+          >
+            {{ card.value }}
+          </div>
+        </div>
       </div>
 
       <TheSellerEmptyState
@@ -157,6 +182,7 @@
             <UButton
               type="submit"
               color="primary"
+              :loading="createBusy"
               class="cursor-pointer"
             >
               {{ $t('ثبت') }}
@@ -181,6 +207,7 @@ const toast = useAppToast()
 const { can } = useSellerPermissions()
 const {
   adjustments,
+  adjustmentsMeta,
   createAdjustment,
   loaded,
   loading,
@@ -188,6 +215,7 @@ const {
 } = useSellerFinance()
 
 const createOpen = ref(false)
+const createBusy = ref(false)
 const createForm = ref({
   type: 'accounting_correction' as SellerFinanceAdjustmentType,
   amount: '',
@@ -202,38 +230,53 @@ const typeItems = computed(() =>
   })),
 )
 
+const summaryCards = computed(() => {
+  const summary = adjustmentsMeta.value.summary
+  return [
+    { label: 'بستانکار', value: formatPrice(summary.credit || 0), tone: 'text-success' },
+    { label: 'بدهکار', value: formatPrice(summary.debit || 0), tone: 'text-error' },
+    {
+      label: 'خالص',
+      value: `${(summary.net || 0) >= 0 ? '+' : '−'}${formatPrice(Math.abs(summary.net || 0))}`,
+      tone: (summary.net || 0) < 0 ? 'text-error' : 'text-success',
+    },
+  ]
+})
+
 function formatSigned(amount: number) {
   const sign = amount > 0 ? '+' : amount < 0 ? '−' : ''
   return `${sign}${formatPrice(Math.abs(amount))}`
 }
 
-function submitCreate() {
+async function submitCreate() {
   const amount = Number(String(createForm.value.amount).replace(/[^\d-]/g, ''))
-  const result = createAdjustment({
-    type: createForm.value.type,
-    amount,
-    reason: createForm.value.reason,
-    orderId: createForm.value.orderId.trim() || null,
-    actor,
-  })
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
+  createBusy.value = true
+  try {
+    const result = await createAdjustment({
+      type: createForm.value.type,
+      amount,
+      reason: createForm.value.reason,
+      orderId: createForm.value.orderId.trim() || null,
+      actor,
+    })
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    createOpen.value = false
+    createForm.value = {
+      type: 'accounting_correction',
+      amount: '',
+      reason: '',
+      orderId: '',
+    }
+    toast.success(t('تعدیل ثبت شد'))
   }
-  createOpen.value = false
-  createForm.value = {
-    type: 'accounting_correction',
-    amount: '',
-    reason: '',
-    orderId: '',
+  finally {
+    createBusy.value = false
   }
-  toast.success(t('تعدیل ثبت شد'))
 }
 
-try {
-  await ensureLoaded()
-}
-catch {
-  toast.error(t('بارگذاری تعدیلات ناموفق بود'))
-}
+const boot = await ensureLoaded()
+if (!boot.ok) toast.error(t(boot.error || 'بارگذاری تعدیلات ناموفق بود'))
 </script>

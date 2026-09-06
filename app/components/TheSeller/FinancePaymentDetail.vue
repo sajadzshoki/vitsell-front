@@ -279,6 +279,7 @@ const route = useRoute()
 const { can } = useSellerPermissions()
 const {
   getPayment,
+  fetchPayment,
   refunds,
   reviewPayment,
   loaded,
@@ -310,10 +311,12 @@ function submitReview() {
   toast.success(t('یادداشت بررسی ذخیره شد'))
 }
 
-try {
-  await ensureLoaded()
+const boot = await ensureLoaded()
+if (!boot.ok) {
+  toast.error(t(boot.error || 'بارگذاری پرداخت ناموفق بود'))
 }
-catch {
-  toast.error(t('بارگذاری پرداخت ناموفق بود'))
+else if (!payment.value) {
+  const detail = await fetchPayment(String(route.params.id))
+  if (!detail.ok) toast.error(t(detail.error || 'پرداخت یافت نشد'))
 }
 </script>

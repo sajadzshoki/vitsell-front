@@ -455,11 +455,50 @@ export function useSellerShipping() {
     return { ok: true as const, method: next }
   }
 
+  async function createMethod(payload: {
+    name: string
+    carrier?: string
+    estimatedDays?: string
+    baseCost?: number
+    status?: 'active' | 'inactive'
+  }) {
+    const { result, error } = await usePost<SellerShippingMethod>(
+      '/seller/shipping',
+      {
+        name: payload.name,
+        carrier: payload.carrier,
+        estimatedDays: payload.estimatedDays,
+        baseCost: payload.baseCost,
+        status: payload.status,
+      },
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return { ok: false as const, error: apiErrorMessage(error, 'ایجاد روش ارسال ناموفق بود') }
+    }
+    const next = toMethod(result)
+    methods.value = [...methods.value, next]
+    return { ok: true as const, method: next }
+  }
+
+  async function deleteMethod(id: string) {
+    const { error } = await useDelete(`/seller/shipping/${encodeURIComponent(id)}`, {
+      headers: { 'no-error': true },
+    })
+    if (error) {
+      return { ok: false as const, error: apiErrorMessage(error, 'حذف روش ارسال ناموفق بود') }
+    }
+    methods.value = methods.value.filter(m => m.id !== id)
+    return { ok: true as const }
+  }
+
   return {
     shippingMethods,
     pending: computed(() => pending.value),
     fetchList,
     ensureLoaded,
     updateMethod,
+    createMethod,
+    deleteMethod,
   }
 }

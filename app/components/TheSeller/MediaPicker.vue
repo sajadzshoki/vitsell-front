@@ -204,13 +204,16 @@ async function loadPickerList() {
   loading.value = true
   try {
     const activeKind = props.kind || kindFilter.value
-    await fetchList({
+    const result = await fetchList({
       q: localSearch.value || undefined,
       kind: activeKind,
       page: 1,
       pageSize: 100,
       all: true,
     })
+    if (!result.ok) {
+      toast.error(t(apiErrorMessage(result.error, 'بارگذاری کتابخانه ناموفق بود')))
+    }
   }
   finally {
     loading.value = false

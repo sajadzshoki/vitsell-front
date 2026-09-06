@@ -2,6 +2,7 @@ import { categories, getCategoryById, getCategoryIcon } from '~/data/categories'
 import { resolveCategoryIconName } from '~/data/seller-categories'
 import { compareTemplates, type CompareSection } from '~/data/compare'
 import { categoryLabels, type Product, type ProductColor, type ProductSpec } from '~/data/products'
+import { isEmptyHtml } from '~/data/seller-blog'
 
 export type SellerProductFieldType = 'text' | 'select' | 'number' | 'textarea'
 
@@ -151,7 +152,7 @@ export function getCategoryAttributeFields(categoryId: string): SellerProductFie
         label: row,
         type: options?.length ? 'select' : 'text',
         options,
-        required: row === 'مدل',
+        required: false,
         group: section.title,
         placeholder: `${row} را وارد کنید`,
       })
@@ -187,14 +188,29 @@ export function parsePriceInput(value: string): number {
   return digits ? Number(digits) : 0
 }
 
-function slugifyTitle(title: string) {
+export function slugifyProductTitle(title: string) {
   const base = title
     .trim()
     .toLowerCase()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9\u0600-\u06FF-]/gi, '')
-    .slice(0, 40)
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
   return base || 'product'
+}
+
+/** On save: turn spaces into hyphens while keeping the rest of the user-edited slug. */
+export function normalizeProductSlug(value: string) {
+  return value
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function slugifyTitle(title: string) {
+  return slugifyProductTitle(title).slice(0, 40)
 }
 
 export function productToSellerForm(
@@ -240,7 +256,7 @@ export function buildSellerProductFromForm(
   const stock = Number.parseInt(form.stock.replace(/[^\d]/g, '') || '0', 10)
   const oldPrice = parsePriceInput(form.oldPrice)
 
-  if (!title || !brand || !category || price <= 0) return null
+  if (!title || !category || price <= 0) return null
 
   const specs: ProductSpec[] = Object.entries(form.attrs)
     .filter(([, value]) => value.trim())
@@ -256,7 +272,7 @@ export function buildSellerProductFromForm(
     id,
     title,
     shortName: form.shortName.trim() || undefined,
-    brand,
+    brand: brand || '',
     category,
     categoryLabel: categoryLabels[category] ?? getCategoryById(category)?.name ?? category,
     price,
@@ -270,8 +286,8 @@ export function buildSellerProductFromForm(
     colors: form.colors.length ? form.colors : undefined,
     inStock: stock > 0,
     fastDelivery: form.fastDelivery,
-    shortDesc: form.shortDesc.trim() || undefined,
-    description: form.description.trim() || undefined,
+    shortDesc: isEmptyHtml(form.shortDesc) ? undefined : form.shortDesc.trim(),
+    description: isEmptyHtml(form.description) ? undefined : form.description.trim(),
     specs: specs.length ? specs : undefined,
   }
 }
@@ -284,14 +300,12 @@ export function validateSellerProductForm(
 
   if (!form.category) errors.category = 'دسته‌بندی را انتخاب کنید'
   if (!form.title.trim()) errors.title = 'عنوان محصول الزامی است'
-  if (!form.brand.trim()) errors.brand = 'برند الزامی است'
 
   const price = parsePriceInput(form.price)
   if (price <= 0) errors.price = 'قیمت معتبر وارد کنید'
 
   const stockRaw = form.stock.trim()
-  if (!stockRaw) errors.stock = 'موجودی الزامی است'
-  else if (Number.isNaN(Number.parseInt(stockRaw.replace(/[^\d]/g, ''), 10))) {
+  if (stockRaw && Number.isNaN(Number.parseInt(stockRaw.replace(/[^\d]/g, ''), 10))) {
     errors.stock = 'موجودی معتبر نیست'
   }
 

@@ -902,6 +902,13 @@ export function useSeller() {
         const { saveCommerce } = useSellerOrderCommerce()
         for (const raw of rawItems) {
           if (!raw?.id) continue
+          if (raw.commerce && typeof raw.commerce === 'object') {
+            saveCommerce(String(raw.id), {
+              ...raw.commerce,
+              refunds: Array.isArray(raw.commerce.refunds) ? raw.commerce.refunds : [],
+            })
+            continue
+          }
           if (raw.trackingCode != null || raw.carrier != null || raw.estimatedDelivery != null) {
             saveCommerce(String(raw.id), {
               trackingCode: String(raw.trackingCode ?? ''),
@@ -1062,6 +1069,28 @@ export function useSeller() {
     if (!current) return false
     upsertOrder({ ...current, status })
     return true
+  }
+
+  async function deleteOrder(id: string) {
+    const { error } = await useDelete(`/seller/orders/${encodeURIComponent(id)}`, {
+      headers: { 'no-error': true },
+    })
+    if (error) {
+      return {
+        ok: false as const,
+        error:
+          error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+          || error?.data?.message
+          || error?.message
+          || 'حذف سفارش ناموفق بود',
+      }
+    }
+    orders.value = orders.value.filter(o => o.id !== id)
+    ordersMeta.value = {
+      ...ordersMeta.value,
+      total: Math.max(0, (ordersMeta.value.total || 0) - 1),
+    }
+    return { ok: true as const }
   }
 
   async function advanceOrder(id: string) {
@@ -1243,6 +1272,7 @@ export function useSeller() {
     advanceOrder,
     revertOrder,
     setOrderStatus,
+    deleteOrder,
     replyToReview,
     updateShop,
     fetchShop,

@@ -146,14 +146,46 @@ export function toCategoryRoute(id: string) {
   return { name: 'category-catId', params: { catId: id } }
 }
 
-export function toSearchRoute(query: { q?: string, category?: string }) {
+export function toSearchRoute(query: {
+  q?: string
+  category?: string
+  brands?: string | string[]
+}) {
   const q = query.q?.trim()
   const category = query.category?.trim()
+  const brandsRaw = query.brands
+  const brands = (Array.isArray(brandsRaw) ? brandsRaw : brandsRaw ? [brandsRaw] : [])
+    .map(b => String(b || '').trim())
+    .filter(Boolean)
+
   return {
     path: '/search',
     query: {
       ...(q ? { q } : {}),
       ...(category ? { category } : {}),
+      ...(brands.length === 1
+        ? { brands: brands[0] }
+        : brands.length
+          ? { brands: brands.join(',') }
+          : {}),
     },
   }
+}
+
+function storefrontHref(storeUrl: string, route: { path: string, query: Record<string, string> }) {
+  const base = String(storeUrl || '').replace(/\/+$/, '')
+  const qs = new URLSearchParams(
+    Object.entries(route.query).filter(([, v]) => v != null && v !== '') as [string, string][],
+  ).toString()
+  return `${base}${route.path}${qs ? `?${qs}` : ''}`
+}
+
+/** Absolute storefront URL for a brand's product listing (admin → store). */
+export function brandStorefrontHref(storeUrl: string, brandName: string) {
+  return storefrontHref(storeUrl, toSearchRoute({ brands: brandName }))
+}
+
+/** Absolute storefront URL for a category's product listing (admin → store). */
+export function categoryStorefrontHref(storeUrl: string, categoryId: string) {
+  return storefrontHref(storeUrl, toSearchRoute({ category: categoryId }))
 }

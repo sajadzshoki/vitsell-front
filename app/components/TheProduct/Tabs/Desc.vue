@@ -1,17 +1,18 @@
 <template>
   <div class="space-y-6 md:space-y-8">
     <div class="text-sm text-toned space-y-2.5 md:space-y-4 leading-6 md:leading-8">
-      <p v-if="leadDesc">
-        {{ leadDesc }}
-      </p>
+      <div
+        v-if="safeLeadHtml"
+        class="blog-prose"
+        v-html="safeLeadHtml"
+      />
+      <div
+        v-if="safeBodyHtml"
+        class="blog-prose"
+        v-html="safeBodyHtml"
+      />
       <p
-        v-for="(paragraph, i) in descParagraphs"
-        :key="i"
-      >
-        {{ paragraph }}
-      </p>
-      <p
-        v-if="!leadDesc && !descParagraphs.length"
+        v-if="!safeLeadHtml && !safeBodyHtml"
         class="text-muted"
       >
         {{ $t('توضیحات این محصول هنوز ثبت نشده است.') }}
@@ -66,18 +67,20 @@
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
+import { contentToHtml, isEmptyHtml, sanitizeBlogHtml } from '~/data/seller-blog'
 
 const props = defineProps<{
   product: Product
 }>()
 
-const leadDesc = computed(() => props.product.shortDesc?.trim() || '')
+function toSafeHtml(raw: string | null | undefined) {
+  const value = raw?.trim()
+  if (!value || isEmptyHtml(value)) return ''
+  return sanitizeBlogHtml(contentToHtml([value]))
+}
 
-const descParagraphs = computed(() => {
-  const raw = props.product.description?.trim()
-  if (!raw) return [] as string[]
-  return raw.split(/\n+/).map(p => p.trim()).filter(Boolean)
-})
+const safeLeadHtml = computed(() => toSafeHtml(props.product.shortDesc))
+const safeBodyHtml = computed(() => toSafeHtml(props.product.description))
 
 const mediaImages = computed(() => {
   const fromDesc = props.product.descImages?.filter(Boolean) ?? []

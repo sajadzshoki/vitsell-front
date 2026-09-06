@@ -57,7 +57,8 @@
 <script setup lang="ts">
 import { navSellerLink } from '~/data/nav-links'
 
-const { publicQuickLinks } = useSellerNavigation()
+const { publicQuickLinks, fetchNavigation } = useSellerNavigation()
+await fetchNavigation({ force: false, admin: false })
 const links = computed(() => publicQuickLinks.value.filter(l => l.id !== 'categories'))
 const seller = navSellerLink
 

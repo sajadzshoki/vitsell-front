@@ -32,6 +32,9 @@ export type SellerOrderCommerce = {
   estimatedDelivery: string
   carrier: string
   transactionId: string
+  paymentAuthority?: string | null
+  paymentRefId?: string | null
+  paymentCardPan?: string | null
   paymentDate: string
   discountAmount: number
   shippingCost: number

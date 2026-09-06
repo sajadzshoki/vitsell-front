@@ -12,26 +12,64 @@ function apiErrorMessage(error: any, fallback: string) {
   )
 }
 
+function str(value: unknown, fallback = '') {
+  if (value == null) return fallback
+  return String(value)
+}
+
 function toSettings(raw: any): SellerPlatformSettings {
+  const src = raw && typeof raw === 'object' ? raw : {}
   return {
     ...defaultPlatformSettings,
-    ...(raw && typeof raw === 'object' ? raw : {}),
-    minOrderAmount: Math.max(0, Number(raw?.minOrderAmount) || 0),
-    freeShippingThreshold: Math.max(0, Number(raw?.freeShippingThreshold) || 0),
-    returnWindowDays: Math.max(0, Math.round(Number(raw?.returnWindowDays) || 0)),
-    guestCheckoutEnabled: Boolean(raw?.guestCheckoutEnabled ?? defaultPlatformSettings.guestCheckoutEnabled),
+    ...src,
+    defaultLocale: str(src.defaultLocale, defaultPlatformSettings.defaultLocale),
+    currencyLabel: str(src.currencyLabel, defaultPlatformSettings.currencyLabel),
+    dateFormatHint: str(src.dateFormatHint, defaultPlatformSettings.dateFormatHint),
+    numberFormatHint: str(src.numberFormatHint, defaultPlatformSettings.numberFormatHint),
+    timezone: str(src.timezone, defaultPlatformSettings.timezone),
+    logoUrl: str(src.logoUrl),
+    faviconUrl: str(src.faviconUrl),
+    defaultOgImage: str(src.defaultOgImage),
+    brandName: str(src.brandName),
+    brandDescription: str(src.brandDescription),
+    supportPhone: str(src.supportPhone),
+    salesPhone: str(src.salesPhone),
+    supportEmail: str(src.supportEmail),
+    address: str(src.address),
+    workingHours: str(src.workingHours, defaultPlatformSettings.workingHours),
+    minOrderAmount: Math.max(0, Number(src.minOrderAmount) || 0),
+    freeShippingThreshold: Math.max(0, Number(src.freeShippingThreshold) || 0),
+    returnWindowDays: Math.max(0, Math.round(Number(src.returnWindowDays) || 0)),
+    guestCheckoutEnabled: Boolean(src.guestCheckoutEnabled ?? defaultPlatformSettings.guestCheckoutEnabled),
     shippingMethodsVisible: Boolean(
-      raw?.shippingMethodsVisible ?? defaultPlatformSettings.shippingMethodsVisible,
+      src.shippingMethodsVisible ?? defaultPlatformSettings.shippingMethodsVisible,
     ),
-    notifyAdminNewOrder: Boolean(raw?.notifyAdminNewOrder ?? true),
-    notifyAdminFailedPayment: Boolean(raw?.notifyAdminFailedPayment ?? true),
-    notifyAdminLowStock: Boolean(raw?.notifyAdminLowStock ?? true),
-    notifyAdminReturn: Boolean(raw?.notifyAdminReturn ?? true),
-    notifyAdminRefund: Boolean(raw?.notifyAdminRefund ?? true),
-    notifyCustomerOrderStatus: Boolean(raw?.notifyCustomerOrderStatus ?? true),
-    notifyCustomerPayment: Boolean(raw?.notifyCustomerPayment ?? true),
-    notifyCustomerShipping: Boolean(raw?.notifyCustomerShipping ?? true),
-    notifyCustomerMarketing: Boolean(raw?.notifyCustomerMarketing ?? false),
+    outOfStockBehavior:
+      src.outOfStockBehavior === 'hide'
+      || src.outOfStockBehavior === 'allow_backorder'
+      || src.outOfStockBehavior === 'show_unavailable'
+        ? src.outOfStockBehavior
+        : defaultPlatformSettings.outOfStockBehavior,
+    taxDisplay:
+      src.taxDisplay === 'inclusive'
+      || src.taxDisplay === 'exclusive'
+      || src.taxDisplay === 'none'
+        ? src.taxDisplay
+        : defaultPlatformSettings.taxDisplay,
+    cancelAllowedStatuses: str(src.cancelAllowedStatuses, defaultPlatformSettings.cancelAllowedStatuses),
+    deliveryEstimateText: str(
+      src.deliveryEstimateText,
+      defaultPlatformSettings.deliveryEstimateText,
+    ),
+    notifyAdminNewOrder: Boolean(src.notifyAdminNewOrder ?? true),
+    notifyAdminFailedPayment: Boolean(src.notifyAdminFailedPayment ?? true),
+    notifyAdminLowStock: Boolean(src.notifyAdminLowStock ?? true),
+    notifyAdminReturn: Boolean(src.notifyAdminReturn ?? true),
+    notifyAdminRefund: Boolean(src.notifyAdminRefund ?? true),
+    notifyCustomerOrderStatus: Boolean(src.notifyCustomerOrderStatus ?? true),
+    notifyCustomerPayment: Boolean(src.notifyCustomerPayment ?? true),
+    notifyCustomerShipping: Boolean(src.notifyCustomerShipping ?? true),
+    notifyCustomerMarketing: Boolean(src.notifyCustomerMarketing ?? false),
   }
 }
 
@@ -79,7 +117,7 @@ export function useSellerPlatformSettings() {
   ) {
     pending.value = true
     try {
-      const payload = { ...settings.value, ...patch }
+      const payload = toSettings({ ...settings.value, ...patch })
       const { result, error } = await usePut<SellerPlatformSettings>('/seller/settings', payload, {
         headers: { 'no-error': true },
       })

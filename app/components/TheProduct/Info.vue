@@ -183,6 +183,7 @@ import {
   getProductReturnNote,
 } from '~/data/product-detail'
 import type { Product } from '~/data/products'
+import { htmlToPlainText } from '~/data/seo'
 
 const props = defineProps<{
   product: Product
@@ -204,9 +205,9 @@ const returnNote = computed(() => getProductReturnNote(props.product))
 const questionsCount = computed(() => questions.value.length)
 
 const introText = computed(() => {
-  const short = props.product.shortDesc?.trim()
+  const short = htmlToPlainText(props.product.shortDesc)
   if (short) return short
-  const raw = props.product.description?.trim()
+  const raw = htmlToPlainText(props.product.description)
   if (!raw) return ''
   return raw.split(/\n+/).map(p => p.trim()).find(Boolean) ?? ''
 })

@@ -40,6 +40,24 @@ export const seoRobotsOptions: { value: SeoRobots, label: string }[] = [
 export const SEO_TITLE_SOFT_MAX = 60
 export const SEO_DESC_SOFT_MAX = 160
 
+/** Strip HTML tags for SERP / meta character counts. */
+export function htmlToPlainText(value: string | null | undefined): string {
+  const raw = String(value || '')
+  if (!raw.trim()) return ''
+  return raw
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function emptySeoMeta(): SeoMeta {
   return {
     metaTitle: '',
@@ -145,17 +163,17 @@ export function resolveSeoMeta(input: ResolveSeoInput): ResolvedSeo {
   const fallbackDescription = (input.fallbackDescription || '').trim()
   const fallbackImage = (input.fallbackImage || defaults.defaultOgImage || '').trim()
 
-  const title = (entity.metaTitle || '').trim()
+  const title = htmlToPlainText(entity.metaTitle || '')
     || applyTitlePattern(defaults.titlePattern || '{title} | {site}', fallbackTitle, siteName)
-  const description = (entity.metaDescription || '').trim() || fallbackDescription
+  const description = htmlToPlainText(entity.metaDescription || '') || htmlToPlainText(fallbackDescription)
   const canonical = (entity.canonicalUrl || '').trim()
     || (siteUrl && input.path ? joinSiteUrl(siteUrl, input.path) : '')
   const robots = entity.robots || defaults.defaultRobots || 'index,follow'
-  const ogTitle = (entity.ogTitle || '').trim() || title
-  const ogDescription = (entity.ogDescription || '').trim() || description
+  const ogTitle = htmlToPlainText(entity.ogTitle || '') || title
+  const ogDescription = htmlToPlainText(entity.ogDescription || '') || description
   const ogImage = (entity.ogImage || '').trim() || fallbackImage
-  const twitterTitle = (entity.twitterTitle || '').trim() || ogTitle
-  const twitterDescription = (entity.twitterDescription || '').trim() || ogDescription
+  const twitterTitle = htmlToPlainText(entity.twitterTitle || '') || ogTitle
+  const twitterDescription = htmlToPlainText(entity.twitterDescription || '') || ogDescription
   const twitterImage = (entity.twitterImage || '').trim() || ogImage
 
   return {
@@ -180,8 +198,8 @@ export function collectSeoWarnings(meta: SeoMeta, opts?: {
   previewDescription?: string
 }): SeoWarning[] {
   const warnings: SeoWarning[] = []
-  const title = (meta.metaTitle || opts?.previewTitle || '').trim()
-  const desc = (meta.metaDescription || opts?.previewDescription || '').trim()
+  const title = htmlToPlainText(meta.metaTitle || opts?.previewTitle || '')
+  const desc = htmlToPlainText(meta.metaDescription || opts?.previewDescription || '')
   if (!title) {
     warnings.push({ key: 'title', message: 'عنوان سئو خالی است — از عنوان پیش‌فرض استفاده می‌شود', severity: 'info' })
   }

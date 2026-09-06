@@ -61,6 +61,8 @@
           v-model="form.logo"
           :label="$t('لوگو')"
           :alt="form.name || $t('لوگوی برند')"
+          fit="contain"
+          :hint="$t('پس از انتخاب، پیش‌نمایش بلافاصله نمایش داده می‌شود')"
         />
       </div>
 
@@ -82,7 +84,7 @@
         class="mt-6"
         :preview-title="form.name"
         :preview-description="form.description"
-        :preview-url="form.slug ? `/brand/${form.slug}` : ''"
+        :preview-url="form.slug ? `/search?brands=${encodeURIComponent(form.name || form.slug)}` : ''"
       />
 
       <div class="flex items-center gap-3 flex-wrap mt-6">
@@ -95,6 +97,18 @@
           @click="onSave"
         >
           {{ isEdit ? $t('ذخیره تغییرات') : $t('ثبت برند') }}
+        </UButton>
+        <UButton
+          v-if="isEdit && form.name.trim()"
+          type="button"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          icon="i-tabler-external-link"
+          class="cursor-pointer"
+          @click="openStorefront"
+        >
+          {{ $t('نمایش') }}
         </UButton>
         <UButton
           to="/seller/brands"
@@ -118,6 +132,7 @@ import {
   type SellerBrand,
   type SellerBrandFormValues,
 } from '~/data/seller-brands'
+import { brandStorefrontHref } from '~/data/categories'
 
 const props = defineProps<{
   initial?: SellerBrand | null
@@ -126,6 +141,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useAppToast()
 const { createBrand, updateBrand } = useSellerBrands()
+const { storeUrl } = useAppMode()
 
 const isEdit = computed(() => Boolean(props.initial?.id))
 const saving = ref(false)
@@ -171,6 +187,13 @@ function slugifyLatin(input: string) {
     .replace(/^-|-$/g, '')
 }
 
+function openStorefront() {
+  const name = form.value.name.trim()
+  if (!name) return
+  const href = brandStorefrontHref(storeUrl, name)
+  if (import.meta.client) window.open(href, '_blank', 'noopener,noreferrer')
+}
+
 function validate() {
   const next: typeof errors.value = {}
   if (!form.value.name.trim()) next.name = t('نام الزامی است')
@@ -205,7 +228,12 @@ async function onSave() {
     }
 
     toast.success(isEdit.value ? t('برند به‌روز شد') : t('برند اضافه شد'))
-    await navigateTo('/seller/brands')
+    if (result.brand?.id) {
+      await navigateTo(`/seller/brands/${result.brand.id}`)
+    }
+    else {
+      await navigateTo('/seller/brands')
+    }
   }
   finally {
     saving.value = false

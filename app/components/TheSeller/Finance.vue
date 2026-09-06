@@ -338,6 +338,7 @@ const {
   refunds,
   loaded,
   loading,
+  loadError,
   ensureLoaded,
 } = useSellerFinance()
 
@@ -501,10 +502,11 @@ const refundChartOptions = computed(() => ({
   },
 }))
 
-try {
-  await ensureLoaded()
+const boot = await ensureLoaded()
+if (!boot.ok) {
+  toast.error(t(boot.error || loadError.value || 'بارگذاری اطلاعات مالی ناموفق بود'))
 }
-catch {
-  toast.error(t('بارگذاری اطلاعات مالی ناموفق بود'))
+else if (boot.error) {
+  toast.error(t(String(boot.error)))
 }
 </script>

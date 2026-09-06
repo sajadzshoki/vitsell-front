@@ -163,6 +163,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET` | `/locations` | — | موقعیت‌ها / شهرها |
 | `GET` | `/compare/templates/:category` | — | قالب مقایسه بر اساس دسته |
 | `GET` | `/footer` | — | لینک‌ها و داده فوتر |
+| `GET` | `/navigation` | — | لینک‌های سریع و منوی پایین (فقط فعال‌ها) |
 | `GET` | `/site` | — | هویت سایت (نام، تماس، درباره) |
 | `GET` | `/discount-codes` | — | کدهای تخفیف |
 | `GET` | `/blog` | — | فهرست بلاگ |
@@ -234,7 +235,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `POST` | `/seller/listings` | افزودن محصول |
 | `PATCH` | `/seller/listings/:productId` | ویرایش محصول / وضعیت / موجودی |
 | `DELETE` | `/seller/listings/:productId` | حذف آگهی |
-| `GET` | `/seller/orders` | فیلتر: `q` `status` `payment` `shipping` `paymentMethod` `amountMin/Max` `dateFrom/To` `hasDiscount/Refund/Return` `needsTracking` `sort` `page` |
+| `GET` | `/seller/orders` | فیلتر: `q` `status` `payment` `shipping` `paymentMethod` `amountMin/Max` `dateFrom/To` `hasDiscount/Refund/Return` `needsTracking` `sort` `page` / `all` — هر آیتم شامل `commerce` + `payment` (batch) |
 | `GET` | `/seller/orders/:id` | جزئیات + commerce + فاکتور + پرداخت |
 | `PATCH` | `/seller/orders/:id/status` | تغییر وضعیت سفارش |
 | `PATCH` | `/seller/orders/:id/tracking` | کد پیگیری / حامل |
@@ -265,6 +266,20 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET` | `/seller/payouts` | پرداخت‌ها / تسویه |
 | `POST` | `/seller/payouts` | درخواست تسویه |
 | `GET` | `/seller/sales` | فروش‌ها |
+| `GET` | `/seller/transactions` | دفترکل مالی (پرداخت+بازپرداخت+تسویه)؛ فیلتر: `q` `type` `status` `gateway` `orderId` `page` / `all` |
+| `GET` | `/seller/transactions/:id` | جزئیات یک ردیف دفترکل |
+| `GET` | `/seller/payments` | پرداخت‌های سفارش؛ فیلتر: `q` `status` `gateway` `orderId` `page` / `all` |
+| `GET` | `/seller/payments/:id` | جزئیات پرداخت (`pay-<orderId>` یا orderId) |
+| `GET` | `/seller/settlements` | تسویه درگاه/بانک؛ فیلتر: `q` `status` `source` `gateway` `page` / `all` |
+| `GET` | `/seller/settlements/:id` | جزئیات تسویه (`stl-<id>` یا payout id) |
+| `POST` | `/seller/settlements` | ثبت تسویه (`amount` `fees?` `source?` `gateway?` `reference?` `note?`) |
+| `PATCH` | `/seller/settlements/:id/status` | تغییر وضعیت تسویه |
+| `GET` | `/seller/reconciliation` | تشخیص مغایرت مالی؛ فیلتر: `q` `severity` `status=open\|resolved` |
+| `POST` | `/seller/reconciliation/resolve` | علامت رسیدگی (`{ id }`) — persistence در content_blocks |
+| `DELETE` | `/seller/reconciliation/:id` | برداشتن علامت رسیدگی |
+| `GET` | `/seller/adjustments` | تعدیلات مالی؛ فیلتر: `q` `type` |
+| `POST` | `/seller/adjustments` | ثبت تعدیل (append-only؛ persistence در content_blocks) |
+| `GET` | `/seller/reports` | گزارش مالی؛ فیلتر: `period` `start` `end` — KPI + روند فروش/پرداخت |
 | `GET\|POST` | `/seller/categories` | لیست (فیلتر: `q`, `status`, `parentId`) / ایجاد |
 | `GET\|PUT\|DELETE` | `/seller/categories/:id` | جزئیات / ویرایش / حذف دسته |
 | `GET\|POST` | `/seller/brands` | لیست برند (فیلتر: `q`, `status`, `page`) / ایجاد |
@@ -316,6 +331,10 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `PATCH` | `/seller/pages/:id/status` | draft/published/archived |
 | `GET\|PUT` | `/seller/about` | صفحه درباره ما (خواندن / ذخیره) |
 | `GET\|PUT` | `/seller/settings` | تنظیمات پلتفرم (برندینگ، تجارت، اعلان‌ها، …) |
+| `GET\|PUT` | `/seller/seo` | تنظیمات سئوی سراسری سایت |
+| `GET\|POST` | `/seller/seo/redirects` | لیست / ایجاد ریدایرکت |
+| `PUT\|DELETE` | `/seller/seo/redirects/:id` | ویرایش / حذف ریدایرکت |
+| `GET\|PUT` | `/seller/navigation` | منوی سریع + منوی پایین موبایل |
 | `GET\|POST` | `/seller/media` | کتابخانه رسانه — فیلتر: `q` `kind` `page`؛ POST multipart |
 | `POST` | `/seller/media/register` | ثبت URL در کتابخانه |
 | `POST` | `/seller/media/bulk-delete` | حذف گروهی |

@@ -114,10 +114,6 @@ function onPriority(id: string, raw: string | number | null | undefined) {
   updateGateway(id, { priority })
 }
 
-try {
-  await ensureLoaded()
-}
-catch {
-  toast.error(t('بارگذاری درگاه‌ها ناموفق بود'))
-}
+const boot = await ensureLoaded()
+if (!boot.ok) toast.error(t(boot.error || 'بارگذاری درگاه‌ها ناموفق بود'))
 </script>

@@ -82,6 +82,18 @@
             {{ $t('لغو سفارش') }}
           </UButton>
           <UButton
+            v-if="can('orders.delete')"
+            type="button"
+            color="error"
+            variant="ghost"
+            size="sm"
+            icon="i-tabler-trash"
+            class="cursor-pointer"
+            @click="deleteOpen = true"
+          >
+            {{ $t('حذف') }}
+          </UButton>
+          <UButton
             v-if="can('orders.refund') || can('refunds.create')"
             type="button"
             color="neutral"
@@ -254,6 +266,33 @@
             @click="confirmCancel"
           >
             {{ $t('لغو سفارش') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="deleteOpen"
+      :title="$t('حذف سفارش')"
+      :description="$t('این سفارش از پنل حذف می‌شود و قابل بازگشت نیست.')"
+    >
+      <template #footer>
+        <div class="flex items-center gap-2 w-full justify-end">
+          <UButton
+            color="neutral"
+            variant="outline"
+            class="cursor-pointer"
+            @click="deleteOpen = false"
+          >
+            {{ $t('انصراف') }}
+          </UButton>
+          <UButton
+            color="error"
+            class="font-bold cursor-pointer"
+            :loading="deleting"
+            @click="confirmDelete"
+          >
+            {{ $t('حذف') }}
           </UButton>
         </div>
       </template>
@@ -832,7 +871,7 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { fetchOrder, advanceOrder, revertOrder, setOrderStatus, resolveProduct, updateOrderTracking, addOrderNote, createOrderRefund } = useSeller()
+const { fetchOrder, advanceOrder, revertOrder, setOrderStatus, resolveProduct, updateOrderTracking, addOrderNote, createOrderRefund, deleteOrder } = useSeller()
 const { getCommerce } = useSellerOrderCommerce()
 const { customers, ensureLoaded: ensureCustomers } = useSellerCustomers()
 const { can } = useSellerPermissions()
@@ -847,6 +886,8 @@ const trackingDraft = ref('')
 const carrierDraft = ref('')
 const etaDraft = ref('')
 const cancelOpen = ref(false)
+const deleteOpen = ref(false)
+const deleting = ref(false)
 const cancelling = ref(false)
 const savingTracking = ref(false)
 const savingNote = ref(false)
@@ -988,6 +1029,24 @@ function openStatusConfirm(mode: StatusConfirmMode) {
 
 function openCancel() {
   cancelOpen.value = true
+}
+
+async function confirmDelete() {
+  if (!order.value) return
+  deleting.value = true
+  try {
+    const result = await deleteOrder(order.value.id)
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    deleteOpen.value = false
+    toast.success(t('سفارش حذف شد'))
+    await navigateTo('/seller/orders')
+  }
+  finally {
+    deleting.value = false
+  }
 }
 
 async function confirmStatusChange() {

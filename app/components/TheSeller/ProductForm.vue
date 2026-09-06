@@ -120,22 +120,44 @@
                 dir="ltr"
                 icon="i-tabler-link"
                 :placeholder="$t('product-slug')"
+                :help="$t('به‌صورت خودکار از عنوان ساخته می‌شود؛ قابل ویرایش')"
+                @update:model-value="onSlugManualEdit"
               />
               <TheFormSelect
                 v-model="form.brand"
                 :label="$t('برند')"
                 :items="brandOptions"
-                :placeholder="$t('انتخاب برند')"
+                :placeholder="$t('انتخاب برند (اختیاری)')"
                 :error="errors.brand"
-                required
                 icon="i-tabler-building-store"
               />
-              <TheFormInput
-                v-model="tagsInput"
+              <UFormField
                 :label="$t('برچسب‌ها')"
-                :placeholder="$t('با ویرگول جدا کنید')"
-                :help="$t('برای جستجو و فیلتر')"
-              />
+                :help="$t('برچسب موجود را انتخاب کنید یا نام جدید بنویسید')"
+              >
+                <div class="space-y-2">
+                  <USelectMenu
+                    v-model="commerce.tags"
+                    multiple
+                    create-item
+                    :items="tagOptions"
+                    value-key="value"
+                    :placeholder="$t('انتخاب برچسب')"
+                    class="w-full"
+                    @create="onCreateTag"
+                  />
+                  <NuxtLink
+                    to="/seller/products/tags"
+                    class="text-xs text-primary cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <UIcon
+                      name="i-tabler-tags"
+                      class="size-3.5"
+                    />
+                    {{ $t('مدیریت برچسب‌ها') }}
+                  </NuxtLink>
+                </div>
+              </UFormField>
               <div class="flex items-end gap-4 flex-wrap md:col-span-2">
                 <UCheckbox
                   v-model="commerce.featured"
@@ -153,24 +175,22 @@
               <UFormField
                 class="md:col-span-2"
                 :label="$t('توضیح کوتاه')"
+                :help="$t('یک تا دو جمله برای معرفی محصول در کارت و بالای مشخصات')"
               >
-                <UTextarea
+                <TheTextEditor
                   v-model="form.shortDesc"
-                  :rows="2"
-                  autoresize
-                  class="w-full"
+                  variant="simple"
                   :placeholder="$t('یک تا دو جمله برای معرفی محصول')"
                 />
               </UFormField>
               <UFormField
                 class="md:col-span-2"
                 :label="$t('توضیحات کامل')"
+                :help="$t('از تیتر، فهرست و لینک برای صفحه جزئیات استفاده کنید')"
               >
-                <UTextarea
+                <TheTextEditor
                   v-model="form.description"
-                  :rows="4"
-                  autoresize
-                  class="w-full"
+                  variant="full"
                   :placeholder="$t('توضیحات تکمیلی محصول برای صفحه جزئیات')"
                 />
               </UFormField>
@@ -206,9 +226,10 @@
                 dir="ltr"
                 digits-only
                 :error="errors.stock"
-                required
                 icon="i-tabler-box"
-                :help="commerce.variants.length ? $t('با واریانت، موجودی هر ترکیب جداست') : undefined"
+                :help="commerce.variants.length
+                  ? $t('با واریانت، موجودی هر ترکیب جداست')
+                  : $t('اختیاری — با وارد کردن موجودی، محصول موجود می‌شود')"
               />
               <TheFormInput
                 v-model="commerce.sku"
@@ -375,7 +396,7 @@
             v-model="commerce.seo"
             :title="$t('سئوی محصول')"
             :preview-title="form.title"
-            :preview-description="form.shortDesc"
+            :preview-description="seoPreviewDescription"
             :preview-url="commerce.seo.canonicalUrl || (commerce.slug ? `/product/${commerce.slug}` : '')"
           />
         </template>
@@ -463,17 +484,20 @@ import {
   emptySellerProductForm,
   getBrandOptions,
   getCategoryAttributeFields,
+  normalizeProductSlug,
   parsePriceInput,
   productToSellerForm,
   sellerCategoriesToFormOptions,
   sellerProductBadges,
   SELLER_BADGE_NONE,
   sellerProductColorPresets,
+  slugifyProductTitle,
   validateSellerProductForm,
   type SellerProductField,
   type SellerProductFormValues,
 } from '~/data/seller-product-form'
 import { emptyProductCommerce, type SellerProductCommerce } from '~/data/seller-product-variants'
+import { htmlToPlainText } from '~/data/seo'
 import type { ProductColor } from '~/data/products'
 
 const props = withDefaults(defineProps<{
@@ -503,6 +527,12 @@ const { getCommerce, saveCommerce } = useSellerProductCommerce()
 const { brands, ensureLoaded: ensureBrands } = useSellerBrands()
 const { warehouses, ensureWarehouses } = useSellerInventory()
 const {
+  tags: productTags,
+  ensureLoaded: ensureProductTags,
+  ensureTagByName,
+  bumpUsage,
+} = useSellerProductTags()
+const {
   categories,
   pending: categoriesPending,
   ensureLoaded: ensureCategories,
@@ -511,11 +541,13 @@ const {
 
 ensureBrands()
 ensureWarehouses()
+ensureProductTags()
 void ensureCategories()
 
 const isEdit = computed(() => props.mode === 'edit' && Boolean(props.productId))
 const form = ref<SellerProductFormValues>(emptySellerProductForm())
 const commerce = ref<SellerProductCommerce>(emptyProductCommerce())
+const slugManual = ref(false)
 const categoryOptions = computed(() =>
   sellerCategoriesToFormOptions(categories.value, {
     includeInactiveIds: form.value.category ? [form.value.category] : [],
@@ -529,6 +561,7 @@ const savedSnapshot = ref('')
 const isDirty = computed(() =>
   JSON.stringify({ form: form.value, commerce: commerce.value }) !== savedSnapshot.value,
 )
+const seoPreviewDescription = computed(() => htmlToPlainText(form.value.shortDesc))
 const { allowNextNavigation } = useSellerUnsavedGuard(isDirty)
 
 function captureSnapshot() {
@@ -553,6 +586,7 @@ if (isEdit.value && props.productId) {
   const product = resolveProduct(props.productId)
   form.value = productToSellerForm(product, listing?.stock ?? 0)
   loadCommerce(props.productId)
+  slugManual.value = Boolean(commerce.value.slug?.trim())
   captureSnapshot()
 }
 else {
@@ -567,20 +601,40 @@ watch(
       const product = resolveProduct(props.productId)
       form.value = productToSellerForm(product, listing?.stock ?? 0)
       loadCommerce(props.productId)
+      slugManual.value = Boolean(commerce.value.slug?.trim())
       errors.value = {}
     }
   },
 )
 
-const tagsInput = computed({
-  get: () => commerce.value.tags.join('، '),
-  set: (value: string) => {
-    commerce.value.tags = value
-      .split(/[,،]/)
-      .map(s => s.trim())
-      .filter(Boolean)
+watch(
+  () => form.value.title,
+  (title) => {
+    if (slugManual.value) return
+    commerce.value.slug = title.trim() ? slugifyProductTitle(title) : ''
   },
+)
+
+function onSlugManualEdit() {
+  slugManual.value = true
+}
+
+const tagOptions = computed(() => {
+  ensureProductTags()
+  const names = new Set([
+    ...productTags.value.map(t => t.name),
+    ...commerce.value.tags,
+  ])
+  return [...names].map(value => ({ label: value, value }))
 })
+
+function onCreateTag(item: string) {
+  const tag = ensureTagByName(item)
+  if (!tag) return
+  if (!commerce.value.tags.includes(tag.name)) {
+    commerce.value.tags = [...commerce.value.tags, tag.name]
+  }
+}
 
 const selectedCategory = computed(() =>
   categoryOptions.value.find(item => item.id === form.value.category),
@@ -661,7 +715,8 @@ function toggleColor(color: ProductColor) {
 }
 
 function persistCommerce(productId: string) {
-  const slug = commerce.value.slug.trim() || productId
+  const slug = normalizeProductSlug(commerce.value.slug) || productId
+  commerce.value.slug = slug
   saveCommerce(productId, {
     ...commerce.value,
     productId,
@@ -688,10 +743,11 @@ function withCategoryLabel<T extends { categoryLabel: string, category: string }
 }
 
 async function onSubmit(sendForReview: boolean) {
+  commerce.value.slug = normalizeProductSlug(commerce.value.slug || form.value.title)
   errors.value = validateSellerProductForm(form.value, attributeFields.value)
   if (Object.keys(errors.value).length) {
     toast.error(t('لطفاً فیلدهای الزامی را تکمیل کنید'))
-    activeTab.value = errors.value.category || errors.value.title || errors.value.brand
+    activeTab.value = errors.value.category || errors.value.title
       ? 'basic'
       : (errors.value.price || errors.value.stock ? 'pricing' : 'basic')
     return
@@ -703,6 +759,10 @@ async function onSubmit(sendForReview: boolean) {
     const stock = commerce.value.variants.length
       ? variantStock
       : Number.parseInt(form.value.stock.replace(/[^\d]/g, '') || '0', 10)
+
+    const previousTags = isEdit.value && props.productId
+      ? [...(getCommerce(props.productId).tags || [])]
+      : []
 
     if (isEdit.value && props.productId) {
       const previous = resolveProduct(props.productId)
@@ -728,6 +788,8 @@ async function onSubmit(sendForReview: boolean) {
         return
       }
       persistCommerce(props.productId)
+      bumpUsage(previousTags, -1)
+      bumpUsage(commerce.value.tags, 1)
       if (previous.price !== product.price || (previous.oldPrice ?? null) !== (product.oldPrice ?? null)) {
         pushChange(
           props.productId,
@@ -760,8 +822,9 @@ async function onSubmit(sendForReview: boolean) {
       return
     }
 
-    commerce.value.slug = commerce.value.slug.trim() || productId
+    commerce.value.slug = normalizeProductSlug(commerce.value.slug) || productId
     persistCommerce(productId)
+    bumpUsage(commerce.value.tags, 1)
 
     toast.success(
       sendForReview

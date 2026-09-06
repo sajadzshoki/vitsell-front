@@ -51,7 +51,8 @@ import type { BottomNavItem } from '~/data/nav-links'
 
 const route = useRoute()
 const { cartCount, cartBump, isLoggedIn } = useShop()
-const { publicBottomLinks } = useSellerNavigation()
+const { publicBottomLinks, fetchNavigation } = useSellerNavigation()
+await fetchNavigation({ force: false, admin: false })
 
 const items = computed(() =>
   publicBottomLinks.value.map((item) => {

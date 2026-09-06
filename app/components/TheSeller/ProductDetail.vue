@@ -278,14 +278,14 @@
         </div>
 
         <div
-          v-if="product.shortDesc"
+          v-if="shortDescText"
           class="bg-muted border border-muted rounded-2xl p-4"
         >
           <h3 class="text-sm font-bold text-highlighted mb-2">
             {{ $t('توضیح کوتاه') }}
           </h3>
           <p class="text-sm text-toned leading-7">
-            {{ product.shortDesc }}
+            {{ shortDescText }}
           </p>
         </div>
       </div>
@@ -510,6 +510,7 @@ import {
   sellerProductBadges,
   SELLER_BADGE_NONE,
 } from '~/data/seller-product-form'
+import { htmlToPlainText } from '~/data/seo'
 
 const props = defineProps<{
   productId: string
@@ -559,6 +560,7 @@ const loadError = ref('')
 
 const listing = computed(() => getListing(props.productId))
 const product = computed(() => resolveProduct(props.productId))
+const shortDescText = computed(() => htmlToPlainText(product.value?.shortDesc))
 
 async function loadPanel() {
   if (!props.productId) {

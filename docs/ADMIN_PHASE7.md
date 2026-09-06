@@ -18,7 +18,8 @@ Single-vendor financial administration for digishop seller + storefront integrat
 
 ## Architecture
 
-- **Ledger is derived**: payments (from orders + commerce) + refunds + settlements + adjustments → `SellerFinanceTransaction` projection.
+- **Ledger is derived**: payments (from orders + `payments` table) + refunds + settlements + adjustments → `SellerFinanceTransaction` projection.
+- **API**: `GET /seller/transactions`, `GET /seller/payments`, `GET|POST /seller/settlements`, `GET /seller/reconciliation` (+ resolve), `GET|POST /seller/adjustments`, `GET /seller/reports` — server projections; reconciled IDs / adjustments persist in `content_blocks`.
 - **Settlements** map from existing `GET/POST /seller/payouts` + FE enrichment (fees, gateway, reference, statuses).
 - Marketplace wallet / «درخواست تسویه» UX removed from dashboard.
 
@@ -34,8 +35,12 @@ Entities: `payment`, `refund`, `settlement`, `adjustment`, `finance` via `useSel
 
 ## Backend gaps
 
-- No seller payment/transaction CRUD APIs; payments projected from orders.
-- `SellerPayoutSchema` lacks fees/gateway/reconciled.
-- Gateway secrets stay server env (`ZARINPAL_*`).
-- Audit/reconciliation persistence is FE session until API ready.
+- Payments via `GET /seller/payments` (projection from orders + `payments` table).
+- Settlements via `GET|POST /seller/settlements` + `PATCH .../status` (enriched `seller_payouts`).
+- Reconciliation via `GET /seller/reconciliation` + `POST .../resolve` (rules on server; resolved IDs in `content_blocks`).
+- Transactions ledger via `GET /seller/transactions` (read-only projection).
+- `SellerPayout` stores fees/gateway/source/reference/note/`settlement_status`.
+- Gateway secrets stay server env (`ZARINPAL_*`); finance gateways sync status from `GET /seller/system` integrations.
+- Adjustments via `GET|POST /seller/adjustments` (append-only list in `content_blocks`).
+- Reports via `GET /seller/reports` (`period` `start` `end`) — server KPIs + sales/payment trend.
 - True gateway settlement feeds not available — reconciliation uses local rules only.

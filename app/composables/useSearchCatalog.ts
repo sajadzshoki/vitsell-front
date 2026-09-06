@@ -76,10 +76,29 @@ export function useSearchCatalog() {
   const categoryId = computed(() => String(route.query.category ?? '').trim())
   const category = computed(() => getCategoryById(categoryId.value))
 
+  function brandsFromRoute(): string[] {
+    const raw = route.query.brands ?? route.query.brand
+    if (Array.isArray(raw)) {
+      return raw.flatMap(v => String(v).split(',')).map(s => s.trim()).filter(Boolean)
+    }
+    if (raw == null || raw === '') return []
+    return String(raw).split(',').map(s => s.trim()).filter(Boolean)
+  }
+
+  const routeBrands = computed(() => brandsFromRoute())
+
+  if (routeBrands.value.length) {
+    filters.value = { ...cloneSearchFilters(filters.value), brands: [...routeBrands.value] }
+  }
+
   const heading = computed(() => {
     if (q.value) return q.value
     if (category.value) return category.value.name
     if (categoryId.value) return categoryId.value
+    if (filters.value.brands.length === 1) return filters.value.brands[0]!
+    if (filters.value.brands.length > 1) {
+      return filters.value.brands.join('، ')
+    }
     return t('همه محصولات')
   })
 
@@ -198,6 +217,16 @@ export function useSearchCatalog() {
       refreshCategorySeo()
     },
     { immediate: true },
+  )
+
+  watch(
+    routeBrands,
+    (next) => {
+      const current = filters.value.brands
+      const same = next.length === current.length && next.every((b, i) => b === current[i])
+      if (same) return
+      filters.value = { ...filters.value, brands: [...next] }
+    },
   )
 
   watch(

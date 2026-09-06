@@ -23,6 +23,7 @@
               size="sm"
               icon="i-tabler-download"
               class="cursor-pointer"
+              :loading="reportsLoading"
               @click="exportCsv"
             >
               {{ $t('خروجی CSV') }}
@@ -40,7 +41,7 @@
               :color="period === opt.id ? 'primary' : 'neutral'"
               :variant="period === opt.id ? 'soft' : 'ghost'"
               class="shrink-0 cursor-pointer"
-              @click="setPeriod(opt.id)"
+              @click="onPeriod(opt.id)"
             >
               {{ $t(opt.label) }}
             </UButton>
@@ -130,7 +131,7 @@
 <script setup lang="ts">
 import { downloadSellerCsv } from '~/data/seller-export'
 import { formatPrice } from '~/data/products'
-import { financePeriodOptions, isDateInRange } from '~/data/seller-finance'
+import { financePeriodOptions, isDateInRange, type FinancePeriodId } from '~/data/seller-finance'
 import { sellerFinancePaymentStatusMeta } from '~/data/seller-finance-payments'
 
 const { t } = useI18n()
@@ -144,14 +145,16 @@ const {
   range,
   kpis,
   discountImpact,
-  sales,
+  reportTrend,
   payments,
   loaded,
   loading,
   ensureLoaded,
+  fetchReports,
 } = useSellerFinance()
 
 const activeTab = ref<'sales' | 'payments' | 'refunds' | 'discounts' | 'orders'>('sales')
+const reportsLoading = ref(false)
 
 const tabs = [
   { id: 'sales' as const, label: 'فروش' },
@@ -210,22 +213,16 @@ const activeCards = computed(() => {
   ]
 })
 
-const periodPaymentSeries = computed(() => {
-  const total = payments.value
-    .filter(p => isDateInRange(p.createdAt, range.value.start, range.value.end))
-    .filter(p => p.status === 'successful' || p.status === 'partially_refunded' || p.status === 'refunded')
-    .reduce((s, p) => s + p.amount, 0)
-  if (!sales.value.length) return [] as number[]
-  const per = Math.round(total / sales.value.length)
-  return sales.value.map((_, i) => (i === sales.value.length - 1
-    ? total - per * (sales.value.length - 1)
-    : per))
+const trendSeries = computed(() => {
+  const trend = reportTrend.value
+  const paymentData = trend.payments.length
+    ? trend.payments
+    : trend.sales.map(() => 0)
+  return [
+    { name: t('فروش'), data: trend.sales },
+    { name: t('پرداخت'), data: paymentData },
+  ]
 })
-
-const trendSeries = computed(() => [
-  { name: t('فروش'), data: sales.value.map(p => p.value) },
-  { name: t('پرداخت'), data: periodPaymentSeries.value },
-])
 
 const trendOptions = computed(() => ({
   chart: { toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'inherit' },
@@ -234,7 +231,7 @@ const trendOptions = computed(() => ({
   dataLabels: { enabled: false },
   grid: { borderColor: 'rgba(148,163,184,0.25)', strokeDashArray: 4 },
   xaxis: {
-    categories: sales.value.map(p => p.label),
+    categories: reportTrend.value.labels,
     labels: { style: { colors: '#94a3b8', fontSize: '11px' } },
   },
   yaxis: {
@@ -248,6 +245,31 @@ const trendOptions = computed(() => ({
     y: { formatter: (val: number) => formatPrice(val) },
   },
 }))
+
+async function refreshReports() {
+  reportsLoading.value = true
+  try {
+    const res = await fetchReports({ force: true })
+    if (!res.ok) toast.error(t(res.error || 'بارگذاری گزارش مالی ناموفق بود'))
+  }
+  finally {
+    reportsLoading.value = false
+  }
+}
+
+async function onPeriod(id: FinancePeriodId) {
+  setPeriod(id)
+  await refreshReports()
+}
+
+let customDebounce: ReturnType<typeof setTimeout> | null = null
+watch([customStart, customEnd], () => {
+  if (period.value !== 'custom') return
+  if (customDebounce) clearTimeout(customDebounce)
+  customDebounce = setTimeout(() => {
+    void refreshReports()
+  }, 350)
+})
 
 function exportCsv() {
   downloadSellerCsv(
@@ -271,10 +293,6 @@ function exportCsv() {
   )
 }
 
-try {
-  await ensureLoaded()
-}
-catch {
-  toast.error(t('بارگذاری گزارش مالی ناموفق بود'))
-}
+const boot = await ensureLoaded()
+if (!boot.ok) toast.error(t(boot.error || 'بارگذاری گزارش مالی ناموفق بود'))
 </script>

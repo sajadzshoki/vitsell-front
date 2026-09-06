@@ -79,6 +79,7 @@ import { productJsonLd, useJsonLd } from '~/composables/useJsonLd'
 import { useEntitySeo } from '~/composables/useEntitySeo'
 import { useSellerSeoSettings } from '~/composables/useSellerSeoSettings'
 import { useSellerProductCommerce } from '~/composables/useSellerProductCommerce'
+import { htmlToPlainText } from '~/data/seo'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -165,7 +166,7 @@ const commerce = computed(() =>
 useEntitySeo(() => ({
   entity: commerce.value?.seo,
   fallbackTitle: product.value?.title ?? '',
-  fallbackDescription: product.value?.shortDesc ?? product.value?.title ?? '',
+  fallbackDescription: htmlToPlainText(product.value?.shortDesc) || product.value?.title || '',
   fallbackImage: product.value?.image ?? '',
   path: productId.value ? `/product/${productId.value}` : undefined,
 }))
@@ -177,7 +178,9 @@ useJsonLd(() => {
   const price = p.price
   return productJsonLd({
     name: commerce.value?.seo?.metaTitle || p.title,
-    description: commerce.value?.seo?.metaDescription || p.shortDesc || p.title,
+    description: htmlToPlainText(commerce.value?.seo?.metaDescription)
+      || htmlToPlainText(p.shortDesc)
+      || p.title,
     image: commerce.value?.seo?.ogImage || p.image,
     url: base ? `${base}/product/${p.id}` : `/product/${p.id}`,
     sku: commerce.value?.sku || undefined,

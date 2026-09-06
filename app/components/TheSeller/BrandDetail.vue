@@ -87,6 +87,32 @@
             </UBadge>
           </div>
 
+          <div class="mt-3 flex items-center gap-2 flex-wrap">
+            <UButton
+              type="button"
+              color="primary"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-external-link"
+              class="cursor-pointer"
+              @click="openStorefront"
+            >
+              {{ $t('نمایش') }}
+            </UButton>
+            <UButton
+              v-if="can('brands.update')"
+              type="button"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-pencil"
+              class="cursor-pointer"
+              @click="onTabClick('edit')"
+            >
+              {{ $t('ویرایش') }}
+            </UButton>
+          </div>
+
           <p
             v-if="brand.description"
             class="text-xs text-muted mt-3 leading-6 line-clamp-3"
@@ -307,6 +333,8 @@
 </template>
 
 <script setup lang="ts">
+import { brandStorefrontHref } from '~/data/categories'
+
 const props = defineProps<{
   brandId: string
 }>()
@@ -314,6 +342,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const route = useRoute()
 const { can } = useSellerPermissions()
+const { storeUrl } = useAppMode()
 const { getById, fetchBrand } = useSellerBrands()
 const { listings, resolveProduct, fetchListings } = useSeller()
 
@@ -328,6 +357,13 @@ function tabFromQuery(raw: unknown): TabId {
 const loading = ref(true)
 const activeTab = ref<TabId>(tabFromQuery(route.query.tab))
 const brand = computed(() => getById(props.brandId))
+
+function openStorefront() {
+  const name = brand.value?.name?.trim()
+  if (!name) return
+  const href = brandStorefrontHref(storeUrl, name)
+  if (import.meta.client) window.open(href, '_blank', 'noopener,noreferrer')
+}
 
 onMounted(async () => {
   loading.value = true

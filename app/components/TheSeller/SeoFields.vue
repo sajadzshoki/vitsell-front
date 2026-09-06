@@ -39,7 +39,7 @@
           {{ resolvedPreviewUrl }}
         </div>
         <p class="text-xs text-muted mt-1 line-clamp-2 leading-5">
-          {{ modelValue.metaDescription || previewDescription || $t('توضیح متا اینجا نمایش داده می‌شود') }}
+          {{ plainMetaDescription || previewDescription || $t('توضیح متا اینجا نمایش داده می‌شود') }}
         </p>
       </div>
     </div>
@@ -67,7 +67,7 @@
             {{ modelValue.ogTitle || modelValue.metaTitle || previewTitle || $t('عنوان') }}
           </div>
           <p class="text-[11px] text-muted line-clamp-2 leading-5">
-            {{ modelValue.ogDescription || modelValue.metaDescription || previewDescription || $t('توضیح') }}
+            {{ plainOgDescription || plainMetaDescription || previewDescription || $t('توضیح') }}
           </p>
         </div>
       </div>
@@ -89,13 +89,11 @@
         :label="$t('Meta Description')"
         :help="descHelp"
       >
-        <UTextarea
+        <TheTextEditor
           :model-value="modelValue.metaDescription"
-          :rows="3"
-          autoresize
-          class="w-full"
+          variant="simple"
           :placeholder="$t('توضیح کوتاه برای نتایج جستجو')"
-          @update:model-value="patch('metaDescription', String($event ?? ''))"
+          @update:model-value="patch('metaDescription', $event)"
         />
       </UFormField>
       <TheFormInput
@@ -150,12 +148,11 @@
           class="md:col-span-2"
           :label="$t('OG Description')"
         >
-          <UTextarea
+          <TheTextEditor
             :model-value="modelValue.ogDescription"
-            :rows="2"
-            autoresize
-            class="w-full"
-            @update:model-value="patch('ogDescription', String($event ?? ''))"
+            variant="simple"
+            :placeholder="$t('توضیح برای شبکه‌های اجتماعی')"
+            @update:model-value="patch('ogDescription', $event)"
           />
         </UFormField>
       </div>
@@ -186,12 +183,11 @@
           class="md:col-span-2"
           :label="$t('Twitter Description')"
         >
-          <UTextarea
+          <TheTextEditor
             :model-value="modelValue.twitterDescription"
-            :rows="2"
-            autoresize
-            class="w-full"
-            @update:model-value="patch('twitterDescription', String($event ?? ''))"
+            variant="simple"
+            :placeholder="$t('توضیح برای توییتر')"
+            @update:model-value="patch('twitterDescription', $event)"
           />
         </UFormField>
       </div>
@@ -202,6 +198,7 @@
 <script setup lang="ts">
 import {
   collectSeoWarnings,
+  htmlToPlainText,
   SEO_DESC_SOFT_MAX,
   SEO_TITLE_SOFT_MAX,
   seoRobotsOptions,
@@ -230,9 +227,11 @@ const robotItems = seoRobotsOptions.map(o => ({
 }))
 
 const previewTitle = computed(() => props.previewTitle || '')
-const previewDescription = computed(() => props.previewDescription || '')
+const previewDescription = computed(() => htmlToPlainText(props.previewDescription || ''))
 const resolvedPreviewUrl = computed(() => props.previewUrl || props.modelValue.canonicalUrl || '')
 const socialImage = computed(() => props.modelValue.ogImage || props.modelValue.twitterImage || '')
+const plainMetaDescription = computed(() => htmlToPlainText(props.modelValue.metaDescription))
+const plainOgDescription = computed(() => htmlToPlainText(props.modelValue.ogDescription))
 
 const warnings = computed(() =>
   collectSeoWarnings(props.modelValue, {
@@ -247,7 +246,7 @@ const titleHelp = computed(() => {
 })
 
 const descHelp = computed(() => {
-  const len = (props.modelValue.metaDescription || previewDescription.value).length
+  const len = (plainMetaDescription.value || previewDescription.value).length
   return t('{n} / {max} کاراکتر', { n: len, max: SEO_DESC_SOFT_MAX })
 })
 

@@ -166,6 +166,7 @@ const toast = useAppToast()
 const route = useRoute()
 const {
   getSettlement,
+  fetchSettlement,
   loaded,
   loading,
   ensureLoaded,
@@ -173,10 +174,12 @@ const {
 
 const settlement = computed(() => getSettlement(String(route.params.id)))
 
-try {
-  await ensureLoaded()
+const boot = await ensureLoaded()
+if (!boot.ok) {
+  toast.error(t(boot.error || 'بارگذاری تسویه ناموفق بود'))
 }
-catch {
-  toast.error(t('بارگذاری تسویه ناموفق بود'))
+else if (!settlement.value) {
+  const detail = await fetchSettlement(String(route.params.id))
+  if (!detail.ok) toast.error(t(detail.error || 'تسویه یافت نشد'))
 }
 </script>

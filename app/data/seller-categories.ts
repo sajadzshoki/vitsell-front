@@ -4,6 +4,7 @@ import type {
   CategorySuggestedItem,
 } from '~/data/category-pages'
 import { emptySeoMeta, sanitizeSeoMeta, seoMetaFromCategoryHeading, type SeoMeta } from '~/data/seo'
+import { resolveSellerAdminIconName } from '~/data/seller-admin-icons'
 
 export type SellerCategoryStatus = 'active' | 'inactive'
 
@@ -381,8 +382,5 @@ export function flattenCategoryTree(categories: SellerCategory[]): SellerCategor
 }
 
 export function resolveCategoryIconName(icon: string) {
-  const raw = icon.trim()
-  if (!raw) return 'i-tabler-category'
-  if (raw.startsWith('i-')) return raw
-  return `i-tabler-${raw}`
+  return resolveSellerAdminIconName(icon)
 }

@@ -47,6 +47,7 @@ export type SellerPermission =
   | 'orders.create'
   | 'orders.update'
   | 'orders.cancel'
+  | 'orders.delete'
   | 'orders.refund'
   | 'orders.export'
   | 'returns.view'
@@ -261,6 +262,7 @@ export const sellerPermissionCatalog: SellerPermissionMeta[] = [
   { key: 'orders.create', label: 'ایجاد سفارش', group: 'orders' },
   { key: 'orders.update', label: 'به‌روزرسانی سفارش', group: 'orders' },
   { key: 'orders.cancel', label: 'لغو سفارش', group: 'orders' },
+  { key: 'orders.delete', label: 'حذف سفارش', group: 'orders' },
   { key: 'orders.refund', label: 'بازپرداخت سفارش', group: 'orders' },
   { key: 'orders.export', label: 'خروجی سفارش‌ها', group: 'orders' },
   { key: 'returns.view', label: 'مشاهده مرجوعی', group: 'orders' },
@@ -430,6 +432,7 @@ export function permissionsInGroup(group: SellerPermissionGroupId) {
 export const sellerNavPermissionMap: Record<string, SellerPermission> = {
   dashboard: 'dashboard.view',
   products: 'products.view',
+  product_tags: 'products.view',
   categories: 'categories.view',
   brands: 'brands.view',
   attributes: 'attributes.view',
@@ -480,6 +483,7 @@ export const sellerNavPermissionMap: Record<string, SellerPermission> = {
 
 /** Page path prefix → required view permission */
 export const sellerRoutePermissionMap: { prefix: string, permission: SellerPermission }[] = [
+  { prefix: '/seller/products/tags', permission: 'products.view' },
   { prefix: '/seller/products', permission: 'products.view' },
   { prefix: '/seller/categories', permission: 'categories.view' },
   { prefix: '/seller/brands', permission: 'brands.view' },
@@ -563,7 +567,7 @@ export const sellerDefaultRolePermissions: Record<SellerSystemRoleKey, SellerPer
   ],
   ORDER_MANAGER: [
     'dashboard.view',
-    'orders.view', 'orders.create', 'orders.update', 'orders.cancel', 'orders.refund', 'orders.export',
+    'orders.view', 'orders.create', 'orders.update', 'orders.cancel', 'orders.delete', 'orders.refund', 'orders.export',
     'returns.view', 'returns.manage', 'shipping.view', 'shipping.manage',
     'refunds.view', 'refunds.create', 'refunds.manage',
     'customers.view', 'customers.create', 'customers.update', 'customers.export', 'customers.block',

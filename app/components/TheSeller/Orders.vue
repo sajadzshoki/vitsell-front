@@ -227,7 +227,11 @@
             />
           </div>
           <div class="ps-8">
-            <TheSellerOrderRow :order="order" />
+            <TheSellerOrderRow
+              :order="order"
+              :can-delete="can('orders.delete')"
+              @delete="openDelete"
+            />
           </div>
         </div>
       </div>
@@ -254,6 +258,51 @@
         />
       </div>
     </template>
+
+    <UModal
+      v-model:open="deleteOpen"
+      :title="$t('حذف سفارش')"
+      :description="$t('این سفارش از پنل حذف می‌شود و قابل بازگشت نیست.')"
+    >
+      <template #body>
+        <div
+          v-if="pendingDelete"
+          class="rounded-xl border border-muted bg-muted/40 p-4 text-sm space-y-2"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-muted">{{ $t('شماره') }}</span>
+            <span
+              class="font-medium text-highlighted num"
+              dir="ltr"
+            >{{ pendingDelete.id }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-muted">{{ $t('خریدار') }}</span>
+            <span class="font-medium text-highlighted">{{ pendingDelete.customerName }}</span>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex items-center gap-2 w-full justify-end">
+          <UButton
+            color="neutral"
+            variant="outline"
+            class="cursor-pointer"
+            @click="deleteOpen = false"
+          >
+            {{ $t('انصراف') }}
+          </UButton>
+          <UButton
+            color="error"
+            class="font-bold cursor-pointer"
+            :loading="deleting"
+            @click="confirmDelete"
+          >
+            {{ $t('حذف') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -261,6 +310,7 @@
 import {
   sellerOrderSortOptions,
   sellerOrdersPageSize,
+  type SellerOrder,
   type SellerOrderStatus,
 } from '~/data/seller'
 import { sellerOrderFilterDefs } from '~/data/seller-order-commerce'
@@ -276,6 +326,7 @@ const {
   fetchOrders,
   fetchOrdersExport,
   setOrderStatus,
+  deleteOrder,
 } = useSeller()
 const { can } = useSellerPermissions()
 
@@ -292,6 +343,9 @@ const bulkRunning = ref(false)
 const loading = ref(true)
 const exporting = ref(false)
 const pageSize = sellerOrdersPageSize
+const deleteOpen = ref(false)
+const deleting = ref(false)
+const pendingDelete = ref<SellerOrder | null>(null)
 
 const statusTabs = computed(() => {
   const c = ordersMeta.value.statusCounts
@@ -428,6 +482,31 @@ function toggleSelect(id: string, on: boolean) {
   }
   else {
     selectedIds.value = selectedIds.value.filter(x => x !== id)
+  }
+}
+
+function openDelete(order: SellerOrder) {
+  pendingDelete.value = order
+  deleteOpen.value = true
+}
+
+async function confirmDelete() {
+  if (!pendingDelete.value) return
+  deleting.value = true
+  try {
+    const result = await deleteOrder(pendingDelete.value.id)
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    selectedIds.value = selectedIds.value.filter(id => id !== pendingDelete.value!.id)
+    deleteOpen.value = false
+    pendingDelete.value = null
+    toast.success(t('سفارش حذف شد'))
+    await loadOrders()
+  }
+  finally {
+    deleting.value = false
   }
 }
 

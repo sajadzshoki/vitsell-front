@@ -5,9 +5,16 @@
       class="space-y-3"
     >
       <USkeleton class="h-10 rounded-xl" />
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <USkeleton
+          v-for="i in 3"
+          :key="i"
+          class="h-20 rounded-2xl"
+        />
+      </div>
       <USkeleton
         v-for="i in 5"
-        :key="i"
+        :key="`row-${i}`"
         class="h-24 rounded-2xl"
       />
     </div>
@@ -16,6 +23,7 @@
       <div class="hidden lg:block">
         <TheSellerPageHeader
           :title="$t('پرداخت‌ها')"
+          :description="$t('پرداخت‌های سفارش‌ها از درگاه و وضعیت تأیید')"
           :count-label="`${filtered.length.toLocaleString('fa-IR')} ${$t('رکورد')}`"
         >
           <template #actions>
@@ -33,6 +41,21 @@
             </UButton>
           </template>
         </TheSellerPageHeader>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        <div
+          v-for="card in summaryCards"
+          :key="card.label"
+          class="bg-muted border border-muted rounded-2xl p-4"
+        >
+          <div class="text-xs text-muted mb-1">
+            {{ $t(card.label) }}
+          </div>
+          <div class="text-base font-bold text-highlighted num">
+            {{ card.value }}
+          </div>
+        </div>
       </div>
 
       <TheSellerListToolbar
@@ -56,8 +79,14 @@
       </TheSellerListToolbar>
 
       <TheSellerEmptyState
-        v-if="!filtered.length"
+        v-if="!payments.length"
         icon="i-tabler-credit-card"
+        :message="$t('هنوز پرداختی ثبت نشده')"
+      />
+
+      <TheSellerEmptyState
+        v-else-if="!filtered.length"
+        icon="i-tabler-filter-off"
         :message="$t('پرداختی با این فیلتر پیدا نشد')"
       />
 
@@ -94,6 +123,13 @@
                   dir="ltr"
                 >{{ item.orderId }}</span>
                 · {{ item.gateway }}
+                <template v-if="item.refId || item.authority">
+                  ·
+                  <span
+                    class="num"
+                    dir="ltr"
+                  >{{ item.refId || item.authority }}</span>
+                </template>
               </div>
             </div>
             <div class="text-end shrink-0">
@@ -135,6 +171,7 @@ const { can } = useSellerPermissions()
 const {
   filterPayments,
   payments,
+  paymentsMeta,
   loaded,
   loading,
   ensureLoaded,
@@ -149,7 +186,9 @@ const canExport = computed(() => can('transactions.export') || can('payments.vie
 const gatewayFilter = computed(() => String(route.query.gateway ?? 'all'))
 
 const gatewayItems = computed(() => {
-  const names = [...new Set(payments.value.map(p => p.gateway))]
+  const fromMeta = paymentsMeta.value.gatewayOptions || []
+  const fromRows = [...new Set(payments.value.map(p => p.gateway).filter(Boolean))]
+  const names = [...new Set([...fromMeta, ...fromRows])].sort((a, b) => a.localeCompare(b, 'fa'))
   return [
     { label: t('همه درگاه‌ها'), value: 'all' },
     ...names.map(name => ({ label: name, value: name })),
@@ -157,24 +196,30 @@ const gatewayItems = computed(() => {
 })
 
 const statusTabs = computed(() => {
-  const all = filterPayments({})
+  const counts = paymentsMeta.value.statusCounts || {}
+  const all = payments.value
+  const n = (key: string, fallback: () => number) => Number(counts[key]) || fallback()
   return [
-    { id: 'all', label: t('همه'), count: all.length },
-    { id: 'successful', label: t('موفق'), count: all.filter(i => i.status === 'successful').length },
-    { id: 'pending', label: t('در انتظار'), count: all.filter(i => i.status === 'pending' || i.status === 'processing').length },
-    { id: 'failed', label: t('ناموفق'), count: all.filter(i => i.status === 'failed').length },
-    { id: 'refunded', label: t('بازپرداخت'), count: all.filter(i => i.status === 'refunded' || i.status === 'partially_refunded').length },
+    { id: 'all', label: t('همه'), count: n('all', () => all.length) },
+    { id: 'successful', label: t('موفق'), count: n('successful', () => all.filter(i => i.status === 'successful').length) },
+    {
+      id: 'pending',
+      label: t('در انتظار'),
+      count: n('pending_group', () => all.filter(i => i.status === 'pending' || i.status === 'processing').length),
+    },
+    { id: 'failed', label: t('ناموفق'), count: n('failed', () => all.filter(i => i.status === 'failed').length) },
+    {
+      id: 'refunded',
+      label: t('بازپرداخت'),
+      count: n('refunded_group', () => all.filter(i => i.status === 'refunded' || i.status === 'partially_refunded').length),
+    },
   ]
 })
 
 const filtered = computed(() => {
   let list = filterPayments({
     search: search.value,
-    status: status.value === 'pending'
-      ? undefined
-      : status.value === 'refunded'
-        ? undefined
-        : status.value,
+    status: status.value === 'pending' || status.value === 'refunded' ? undefined : status.value,
     gateway: gatewayFilter.value,
   })
   if (status.value === 'pending') {
@@ -184,6 +229,17 @@ const filtered = computed(() => {
     list = list.filter(p => p.status === 'refunded' || p.status === 'partially_refunded')
   }
   return list
+})
+
+const summaryCards = computed(() => {
+  const successful = filtered.value.filter(p => p.status === 'successful' || p.status === 'partially_refunded' || p.status === 'refunded')
+  const volume = successful.reduce((s, p) => s + p.amount, 0)
+  const pending = filtered.value.filter(p => p.status === 'pending' || p.status === 'processing').length
+  return [
+    { label: 'حجم موفق', value: formatPrice(volume) },
+    { label: 'تعداد موفق', value: successful.length.toLocaleString('fa-IR') },
+    { label: 'در انتظار', value: pending.toLocaleString('fa-IR') },
+  ]
 })
 
 const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
@@ -220,10 +276,6 @@ function exportCsv() {
   )
 }
 
-try {
-  await ensureLoaded()
-}
-catch {
-  toast.error(t('بارگذاری پرداخت‌ها ناموفق بود'))
-}
+const boot = await ensureLoaded()
+if (!boot.ok) toast.error(t(boot.error || 'بارگذاری پرداخت‌ها ناموفق بود'))
 </script>

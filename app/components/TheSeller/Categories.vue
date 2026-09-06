@@ -342,6 +342,17 @@
 
             <div class="mt-3 flex items-center gap-2 flex-wrap">
               <UButton
+                type="button"
+                color="neutral"
+                variant="soft"
+                size="xs"
+                icon="i-tabler-external-link"
+                class="cursor-pointer"
+                @click="openCategoryStorefront(row)"
+              >
+                {{ $t('نمایش') }}
+              </UButton>
+              <UButton
                 v-if="can('categories.update')"
                 :to="`/seller/categories/${row.id}`"
                 color="primary"
@@ -450,11 +461,13 @@ import {
   type SellerCategoryStatus,
   type SellerCategoryTreeRow,
 } from '~/data/seller-categories'
+import { categoryStorefrontHref } from '~/data/categories'
 import { downloadSellerCsv } from '~/data/seller-export'
 
 const { t } = useI18n()
 const toast = useAppToast()
 const route = useRoute()
+const { storeUrl } = useAppMode()
 const {
   listItems,
   listMeta,
@@ -469,6 +482,11 @@ const { can } = useSellerPermissions()
 const { search, status, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
 })
+
+function openCategoryStorefront(row: SellerCategoryTreeRow) {
+  const href = categoryStorefrontHref(storeUrl, row.id)
+  if (import.meta.client) window.open(href, '_blank', 'noopener,noreferrer')
+}
 
 const viewMode = ref<'tree' | 'flat'>('tree')
 /** Collapsed parent ids — Record is more reliably reactive than Set in templates */

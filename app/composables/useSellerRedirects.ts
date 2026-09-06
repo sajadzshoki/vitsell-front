@@ -1,9 +1,17 @@
-export type SellerRedirect = {
-  id: string
-  source: string
-  destination: string
-  enabled: boolean
-  permanent: boolean
+import {
+  formToRedirect,
+  type SellerRedirect,
+  type SellerRedirectForm,
+  type SellerRedirectType,
+} from '~/data/seller-redirects'
+
+function apiErrorMessage(error: any, fallback: string) {
+  return (
+    error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+    || error?.data?.message
+    || error?.message
+    || fallback
+  )
 }
 
 function normalizePath(path: string) {
@@ -16,18 +24,56 @@ function normalizePath(path: string) {
   return withSlash
 }
 
-function defaultRedirects(): SellerRedirect[] {
-  return []
+function toRedirect(raw: any): SellerRedirect {
+  const typeNum = Number(raw?.type)
+  const type: SellerRedirectType =
+    typeNum === 308 || typeNum === 302 || typeNum === 301 ? typeNum : 301
+  const now = new Date().toISOString()
+  return {
+    id: String(raw?.id || `redir-${Date.now()}`),
+    source: normalizePath(String(raw?.source || '/')),
+    destination: String(raw?.destination || '').trim() || '/',
+    type,
+    active: raw?.active === false ? false : true,
+    createdAt: raw?.createdAt ? String(raw.createdAt) : now,
+    updatedAt: raw?.updatedAt ? String(raw.updatedAt) : now,
+  }
 }
 
 export function useSellerRedirects() {
-  const redirects = useState<SellerRedirect[]>('seller-seo-redirects', () => defaultRedirects())
-  const seeded = useState('seller-seo-redirects-seeded', () => false)
+  const redirects = useState<SellerRedirect[]>('seller-seo-redirects', () => [])
+  const loaded = useState('seller-seo-redirects-loaded', () => false)
+  const pending = useState('seller-seo-redirects-pending', () => false)
+
+  async function fetchRedirects(options?: { force?: boolean }) {
+    if (loaded.value && !options?.force) {
+      return { ok: true as const, error: null as null }
+    }
+    pending.value = true
+    try {
+      const { result, error } = await useGet<{ items: SellerRedirect[] } | SellerRedirect[]>(
+        '/seller/seo/redirects',
+        { headers: { 'no-error': true }, server: false },
+      )
+      if (error || result == null) {
+        return {
+          ok: false as const,
+          error: apiErrorMessage(error, 'بارگذاری ریدایرکت‌ها ناموفق بود'),
+        }
+      }
+      const items = Array.isArray(result) ? result : result.items
+      redirects.value = Array.isArray(items) ? items.map(toRedirect) : []
+      loaded.value = true
+      return { ok: true as const, error: null as null }
+    }
+    finally {
+      pending.value = false
+    }
+  }
 
   function ensureLoaded() {
-    if (!seeded.value) {
-      redirects.value = defaultRedirects()
-      seeded.value = true
+    if (!loaded.value && !pending.value) {
+      void fetchRedirects()
     }
     return redirects.value
   }
@@ -36,45 +82,79 @@ export function useSellerRedirects() {
     ensureLoaded()
     const target = normalizePath(path)
     return redirects.value.find(item =>
-      item.enabled && normalizePath(item.source) === target,
+      item.active && normalizePath(item.source) === target,
     )
   }
 
-  function upsertRedirect(input: Omit<SellerRedirect, 'id'> & { id?: string }) {
-    ensureLoaded()
-    const id = input.id || `redir-${Date.now().toString(36)}`
-    const next: SellerRedirect = {
-      id,
-      source: normalizePath(input.source),
-      destination: input.destination.trim(),
-      enabled: input.enabled !== false,
-      permanent: Boolean(input.permanent),
+  async function createRedirect(form: SellerRedirectForm) {
+    const draft = formToRedirect(form)
+    const { result, error } = await usePost<SellerRedirect>('/seller/seo/redirects', {
+      source: draft.source,
+      destination: draft.destination,
+      type: draft.type,
+      active: draft.active,
+    }, { headers: { 'no-error': true } })
+    if (error || !result?.id) {
+      return {
+        ok: false as const,
+        error: apiErrorMessage(error, 'ثبت ریدایرکت ناموفق بود'),
+        redirect: null as SellerRedirect | null,
+      }
     }
-    const index = redirects.value.findIndex(r => r.id === id)
-    if (index === -1) {
-      redirects.value = [...redirects.value, next]
-    }
-    else {
-      const copy = [...redirects.value]
-      copy[index] = next
-      redirects.value = copy
-    }
-    return next
+    const item = toRedirect(result)
+    redirects.value = [...redirects.value, item]
+    loaded.value = true
+    return { ok: true as const, error: null as null, redirect: item }
   }
 
-  function removeRedirect(id: string) {
-    ensureLoaded()
+  async function updateRedirect(id: string, form: SellerRedirectForm) {
+    const previous = redirects.value.find(r => r.id === id)
+    const draft = formToRedirect(form, previous)
+    const { result, error } = await usePut<SellerRedirect>(
+      `/seller/seo/redirects/${encodeURIComponent(id)}`,
+      {
+        source: draft.source,
+        destination: draft.destination,
+        type: draft.type,
+        active: draft.active,
+      },
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return {
+        ok: false as const,
+        error: apiErrorMessage(error, 'به‌روزرسانی ریدایرکت ناموفق بود'),
+        redirect: null as SellerRedirect | null,
+      }
+    }
+    const item = toRedirect(result)
+    redirects.value = redirects.value.map(r => (r.id === id ? item : r))
+    return { ok: true as const, error: null as null, redirect: item }
+  }
+
+  async function deleteRedirect(id: string) {
+    const { error } = await useDelete(`/seller/seo/redirects/${encodeURIComponent(id)}`, {
+      headers: { 'no-error': true },
+    })
+    if (error) {
+      return {
+        ok: false as const,
+        error: apiErrorMessage(error, 'حذف ریدایرکت ناموفق بود'),
+      }
+    }
     redirects.value = redirects.value.filter(r => r.id !== id)
+    return { ok: true as const, error: null as null }
   }
 
   return {
-    redirects: computed(() => {
-      ensureLoaded()
-      return redirects.value
-    }),
+    redirects: computed(() => redirects.value),
+    pending,
+    loaded,
     ensureLoaded,
+    fetchRedirects,
     findByPath,
-    upsertRedirect,
-    removeRedirect,
+    createRedirect,
+    updateRedirect,
+    deleteRedirect,
   }
 }

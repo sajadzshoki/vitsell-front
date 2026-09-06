@@ -53,15 +53,12 @@
           :error="errors.name"
           required
         />
-        <TheFormInput
+        <TheSellerIconPicker
           v-model="form.icon"
           :label="$t('آیکون')"
-          :placeholder="$t('مثلاً device-mobile')"
-          dir="ltr"
-          :error="errors.icon"
           required
-          icon="i-tabler-icons"
-          :help="$t('نام آیکون Tabler بدون پیشوند i-tabler-')"
+          :error="errors.icon"
+          :help="$t('آیکون را از داخل پنل مدیریت انتخاب کنید')"
         />
 
         <UFormField
@@ -119,7 +116,7 @@
           :label="$t('تصویر دسته')"
           :alt="form.name || $t('پیش‌نمایش')"
           icon="i-tabler-photo"
-          :hint="$t('تصویر کارت دسته در مگامنو و جستجو')"
+          :hint="$t('پس از انتخاب، پیش‌نمایش بلافاصله نمایش داده می‌شود — می‌توانید از کتابخانه هم انتخاب کنید')"
         />
       </div>
 
@@ -372,16 +369,28 @@
     </div>
 
     <div class="flex items-center gap-3 flex-wrap pb-2">
-          <UButton
-            type="button"
-            color="primary"
-            size="lg"
-            class="font-bold cursor-pointer"
-            :loading="saving"
-            :disabled="saving"
-            @click="onSave"
-          >
+      <UButton
+        type="button"
+        color="primary"
+        size="lg"
+        class="font-bold cursor-pointer"
+        :loading="saving"
+        :disabled="saving"
+        @click="onSave"
+      >
         {{ isEdit ? $t('ذخیره تغییرات') : $t('ثبت دسته‌بندی') }}
+      </UButton>
+      <UButton
+        v-if="isEdit && initial?.id"
+        type="button"
+        color="neutral"
+        variant="soft"
+        size="lg"
+        icon="i-tabler-external-link"
+        class="cursor-pointer"
+        @click="openStorefront"
+      >
+        {{ $t('نمایش') }}
       </UButton>
       <UButton
         type="button"
@@ -389,6 +398,7 @@
         variant="outline"
         size="lg"
         to="/seller/categories"
+        class="cursor-pointer"
       >
         {{ $t('انصراف') }}
       </UButton>
@@ -409,6 +419,7 @@ import {
   type SellerCategory,
   type SellerCategoryFormValues,
 } from '~/data/seller-categories'
+import { categoryStorefrontHref } from '~/data/categories'
 
 const props = defineProps<{
   initial?: SellerCategory | null
@@ -424,6 +435,7 @@ const {
   ensureLoaded: ensureAttrs,
 } = useSellerAttributes()
 const { can } = useSellerPermissions()
+const { storeUrl } = useAppMode()
 const route = useRoute()
 
 void ensureLoaded()
@@ -431,6 +443,13 @@ void ensureAttrs()
 
 const isEdit = computed(() => Boolean(props.initial?.id))
 const saving = ref(false)
+
+function openStorefront() {
+  const id = props.initial?.id?.trim()
+  if (!id) return
+  const href = categoryStorefrontHref(storeUrl, id)
+  if (import.meta.client) window.open(href, '_blank', 'noopener,noreferrer')
+}
 
 function parentIdFromQuery() {
   const raw = route.query.parentId
@@ -575,7 +594,13 @@ async function onSave() {
     }
 
     toast.success(isEdit.value ? t('دسته‌بندی به‌روز شد') : t('دسته‌بندی اضافه شد'))
-    await navigateTo('/seller/categories')
+    const savedId = result.category?.id || props.initial?.id || form.value.id.trim()
+    if (savedId) {
+      await navigateTo(`/seller/categories/${savedId}`)
+    }
+    else {
+      await navigateTo('/seller/categories')
+    }
   }
   finally {
     saving.value = false

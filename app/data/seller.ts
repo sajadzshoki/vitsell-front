@@ -1,6 +1,7 @@
 export type SellerTabId =
   | 'dashboard'
   | 'products'
+  | 'product_tags'
   | 'categories'
   | 'brands'
   | 'attributes'
@@ -215,6 +216,17 @@ export type SellerShop = {
   rating: number
   reviewCount: number
   joinDate: string
+  /** From platform settings overlay on GET /site */
+  logoUrl?: string
+  faviconUrl?: string
+  defaultOgImage?: string
+  brandName?: string
+  brandDescription?: string
+  supportPhone?: string
+  salesPhone?: string
+  supportEmail?: string
+  address?: string
+  workingHours?: string
 }
 
 export type SellerSalesPoint = {
@@ -267,6 +279,7 @@ export const sellerNavGroups: SellerNavGroup[] = [
     label: 'کاتالوگ',
     items: [
       { id: 'products', label: 'محصولات', icon: 'i-tabler-package', to: '/seller/products' },
+      { id: 'product_tags', label: 'برچسب‌ها', icon: 'i-tabler-tags', to: '/seller/products/tags' },
       { id: 'categories', label: 'دسته‌بندی‌ها', icon: 'i-tabler-category', to: '/seller/categories' },
       { id: 'brands', label: 'برندها', icon: 'i-tabler-trademark', to: '/seller/brands' },
       { id: 'attributes', label: 'ویژگی‌ها', icon: 'i-tabler-list-details', to: '/seller/attributes' },

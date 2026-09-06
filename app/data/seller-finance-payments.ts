@@ -72,6 +72,8 @@ export function paymentFromOrder(
 ): SellerPayment {
   const status = mapCommercePaymentStatus(commerce.paymentStatus)
   const completed = status === 'successful' || status === 'refunded' || status === 'partially_refunded'
+  const refId = commerce.paymentRefId || commerce.transactionId || null
+  const authority = commerce.paymentAuthority || null
   return {
     id: `pay-${order.id}`,
     orderId: order.id,
@@ -82,10 +84,10 @@ export function paymentFromOrder(
     paymentMethod: order.paymentMethod,
     gateway: inferGateway(order.paymentMethod),
     status,
-    authority: commerce.transactionId ? `AUTH-${commerce.transactionId.slice(-8)}` : null,
-    refId: commerce.transactionId || null,
-    cardPan: null,
-    transactionId: commerce.transactionId || `txn-${order.id}`,
+    authority,
+    refId,
+    cardPan: commerce.paymentCardPan || null,
+    transactionId: refId || authority || `txn-${order.id}`,
     adminNote: '',
     createdAt: order.date,
     completedAt: completed ? (commerce.paymentDate || order.date) : null,

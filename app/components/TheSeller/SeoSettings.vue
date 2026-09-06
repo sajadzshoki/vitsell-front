@@ -21,13 +21,24 @@
         </UButton>
       </div>
 
-      <template v-if="activeTab === 'general'">
+      <div
+        v-if="bootPending"
+        class="py-16 grid place-items-center"
+      >
+        <UIcon
+          name="i-tabler-loader-2"
+          class="size-7 text-primary animate-spin"
+        />
+      </div>
+
+      <template v-else-if="activeTab === 'general'">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <TheFormInput
             v-model="form.siteName"
             :label="$t('نام سایت')"
             required
             icon="i-tabler-building-store"
+            :disabled="!can('seo.update')"
           />
           <TheFormInput
             v-model="form.siteUrl"
@@ -36,6 +47,7 @@
             required
             icon="i-tabler-world"
             placeholder="https://example.com"
+            :disabled="!can('seo.update')"
           />
           <TheFormInput
             v-model="form.titlePattern"
@@ -44,6 +56,7 @@
             dir="ltr"
             :help="$t('از {title} و {site} استفاده کنید')"
             icon="i-tabler-template"
+            :disabled="!can('seo.update')"
           />
           <UFormField :label="$t('ربات‌های پیش‌فرض')">
             <USelect
@@ -51,6 +64,7 @@
               :items="robotItems"
               value-key="value"
               class="w-full"
+              :disabled="!can('seo.update')"
             />
           </UFormField>
           <UFormField :label="$t('کارت توییتر')">
@@ -59,6 +73,7 @@
               :items="twitterItems"
               value-key="value"
               class="w-full"
+              :disabled="!can('seo.update')"
             />
           </UFormField>
           <div class="md:col-span-2 max-w-md">
@@ -67,6 +82,7 @@
               :label="$t('تصویر Open Graph پیش‌فرض')"
               :alt="$t('OG پیش‌فرض')"
               icon="i-tabler-photo"
+              :disabled="!can('seo.update')"
             />
           </div>
         </div>
@@ -78,7 +94,7 @@
             color="primary"
             size="lg"
             class="font-bold cursor-pointer"
-            :loading="saving"
+            :loading="saving || seoPending"
             @click="onSaveSettings"
           >
             {{ $t('ذخیره تنظیمات') }}
@@ -87,6 +103,16 @@
       </template>
 
       <template v-else>
+        <div
+          v-if="redirectsPending && !redirects.length"
+          class="py-12 grid place-items-center"
+        >
+          <UIcon
+            name="i-tabler-loader-2"
+            class="size-6 text-primary animate-spin"
+          />
+        </div>
+        <template v-else>
         <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
           <p class="text-xs text-muted">
             {{ redirects.length.toLocaleString('fa-IR') }} {{ $t('ریدایرکت') }}
@@ -173,6 +199,7 @@
             </div>
           </div>
         </div>
+        </template>
       </template>
     </div>
 
@@ -283,17 +310,26 @@ import {
 const { t } = useI18n()
 const toast = useAppToast()
 const { can } = useSellerPermissions()
-const { settings, ensureLoaded, updateSettings } = useSellerSeoSettings()
+const { settings, pending: seoPending, fetchSettings, updateSettings } = useSellerSeoSettings()
 const {
   redirects,
-  ensureLoaded: ensureRedirects,
+  pending: redirectsPending,
+  fetchRedirects,
   createRedirect,
   updateRedirect,
   deleteRedirect,
 } = useSellerRedirects()
 
-ensureLoaded()
-ensureRedirects()
+const bootPending = ref(true)
+const seoLoad = await fetchSettings({ force: true })
+const redirectsLoad = await fetchRedirects({ force: true })
+bootPending.value = false
+if (!seoLoad.ok) {
+  toast.error(t(seoLoad.error || 'بارگذاری تنظیمات سئو ناموفق بود'))
+}
+if (!redirectsLoad.ok) {
+  toast.error(t(redirectsLoad.error || 'بارگذاری ریدایرکت‌ها ناموفق بود'))
+}
 
 const activeTab = ref<'general' | 'redirects'>('general')
 const tabs = [
@@ -330,7 +366,7 @@ const redirectTypeItems = ([301, 308, 302] as SellerRedirectType[]).map(value =>
   label: `${value} — ${t(sellerRedirectTypeMeta[value].label)}`,
 }))
 
-function onSaveSettings() {
+async function onSaveSettings() {
   if (!can('seo.update')) {
     toast.error(t('دسترسی ندارید'))
     return
@@ -341,7 +377,12 @@ function onSaveSettings() {
   }
   saving.value = true
   try {
-    updateSettings(form.value)
+    const result = await updateSettings(form.value)
+    if (!result.ok) {
+      toast.error(t(result.error || 'ذخیره تنظیمات سئو ناموفق بود'))
+      return
+    }
+    form.value = { ...result.settings }
     toast.success(t('تنظیمات سئو ذخیره شد'))
   }
   finally {
@@ -366,14 +407,22 @@ function openRedirectDelete(item: SellerRedirect) {
   redirectDeleteOpen.value = true
 }
 
-function onSaveRedirect() {
+async function onSaveRedirect() {
+  if (!can('seo.update')) {
+    toast.error(t('دسترسی ندارید'))
+    return
+  }
+  if (!redirectForm.value.source.trim() || !redirectForm.value.destination.trim()) {
+    toast.warning(t('لطفاً فیلدهای الزامی را تکمیل کنید'))
+    return
+  }
   redirectSaving.value = true
   try {
     const result = editingRedirect.value
-      ? updateRedirect(editingRedirect.value.id, redirectForm.value)
-      : createRedirect(redirectForm.value)
+      ? await updateRedirect(editingRedirect.value.id, redirectForm.value)
+      : await createRedirect(redirectForm.value)
     if (!result.ok) {
-      toast.error(t(result.error))
+      toast.error(t(result.error || 'ذخیره ریدایرکت ناموفق بود'))
       return
     }
     toast.success(editingRedirect.value ? t('ریدایرکت به‌روز شد') : t('ریدایرکت اضافه شد'))
@@ -384,13 +433,14 @@ function onSaveRedirect() {
   }
 }
 
-function confirmRedirectDelete() {
+async function confirmRedirectDelete() {
   if (!pendingRedirectDelete.value) return
-  const result = deleteRedirect(pendingRedirectDelete.value.id)
+  const id = pendingRedirectDelete.value.id
   redirectDeleteOpen.value = false
   pendingRedirectDelete.value = null
+  const result = await deleteRedirect(id)
   if (!result.ok) {
-    toast.error(t(result.error))
+    toast.error(t(result.error || 'حذف ریدایرکت ناموفق بود'))
     return
   }
   toast.success(t('ریدایرکت حذف شد'))

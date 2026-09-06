@@ -2,7 +2,7 @@
   <div class="bg-muted border border-muted rounded-2xl p-4 transition hover:(border-accented bg-elevated/50)">
     <NuxtLink
       :to="orderLink"
-      class="block"
+      class="block cursor-pointer"
     >
       <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div class="flex items-center gap-3 flex-wrap">
@@ -101,6 +101,23 @@
         </div>
       </div>
     </NuxtLink>
+
+    <div
+      v-if="canDelete"
+      class="mt-3 pt-3 border-t border-muted flex justify-end"
+    >
+      <UButton
+        type="button"
+        color="error"
+        variant="ghost"
+        size="xs"
+        icon="i-tabler-trash"
+        class="cursor-pointer"
+        @click.stop="emit('delete', order)"
+      >
+        {{ $t('حذف') }}
+      </UButton>
+    </div>
   </div>
 </template>
 
@@ -114,6 +131,11 @@ import { formatPrice } from '~/data/products'
 const props = defineProps<{
   order: SellerOrder
   compact?: boolean
+  canDelete?: boolean
+}>()
+
+const emit = defineEmits<{
+  delete: [order: SellerOrder]
 }>()
 
 const { resolveProduct } = useSeller()

@@ -222,6 +222,17 @@
 
             <div class="mt-3 flex items-center gap-2 flex-wrap">
               <UButton
+                type="button"
+                color="neutral"
+                variant="soft"
+                size="xs"
+                icon="i-tabler-external-link"
+                class="cursor-pointer"
+                @click="openBrandStorefront(brand)"
+              >
+                {{ $t('نمایش') }}
+              </UButton>
+              <UButton
                 v-if="can('brands.view')"
                 :to="`/seller/brands/${brand.id}`"
                 color="neutral"
@@ -321,12 +332,14 @@
 
 <script setup lang="ts">
 import { downloadSellerCsv } from '~/data/seller-export'
+import { brandStorefrontHref } from '~/data/categories'
 import type { SellerBrand } from '~/data/seller-brands'
 
 const { t } = useI18n()
 const toast = useAppToast()
 const route = useRoute()
 const { can } = useSellerPermissions()
+const { storeUrl } = useAppMode()
 const {
   brands,
   listMeta,
@@ -338,6 +351,11 @@ const {
 const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
 })
+
+function openBrandStorefront(brand: SellerBrand) {
+  const href = brandStorefrontHref(storeUrl, brand.name)
+  if (import.meta.client) window.open(href, '_blank', 'noopener,noreferrer')
+}
 
 const pageSize = 10
 const loading = ref(true)

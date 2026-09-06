@@ -154,7 +154,7 @@
           </UButton>
           <UButton
             v-if="tx.refundId"
-            to="/seller/refunds"
+            :to="`/seller/refunds?q=${encodeURIComponent(tx.refundId)}`"
             color="neutral"
             variant="soft"
             size="sm"
@@ -290,6 +290,7 @@ const route = useRoute()
 const {
   getTransaction,
   getPayment,
+  fetchTransaction,
   loaded,
   loading,
   ensureLoaded,
@@ -306,10 +307,12 @@ function formatSigned(amount: number) {
   return `${sign}${formatPrice(Math.abs(amount))}`
 }
 
-try {
-  await ensureLoaded()
+const boot = await ensureLoaded()
+if (!boot.ok) {
+  toast.error(t(boot.error || 'بارگذاری تراکنش ناموفق بود'))
 }
-catch {
-  toast.error(t('بارگذاری تراکنش ناموفق بود'))
+else if (!tx.value) {
+  const detail = await fetchTransaction(String(route.params.id))
+  if (!detail.ok) toast.error(t(detail.error || 'تراکنش یافت نشد'))
 }
 </script>

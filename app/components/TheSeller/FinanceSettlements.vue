@@ -49,6 +49,21 @@
         </UButton>
       </div>
 
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        <div
+          v-for="card in summaryCards"
+          :key="card.label"
+          class="bg-muted border border-muted rounded-2xl p-4"
+        >
+          <div class="text-xs text-muted mb-1">
+            {{ $t(card.label) }}
+          </div>
+          <div class="text-base font-bold text-highlighted num">
+            {{ card.value }}
+          </div>
+        </div>
+      </div>
+
       <TheSellerListToolbar
         v-model:search="search"
         :status="status"
@@ -60,8 +75,14 @@
       />
 
       <TheSellerEmptyState
-        v-if="!filtered.length"
+        v-if="!settlements.length"
         icon="i-tabler-building-bank"
+        :message="$t('هنوز تسویه‌ای ثبت نشده')"
+      />
+
+      <TheSellerEmptyState
+        v-else-if="!filtered.length"
+        icon="i-tabler-filter-off"
         :message="$t('تسویه‌ای با این فیلتر پیدا نشد')"
       />
 
@@ -264,6 +285,7 @@ const toast = useAppToast()
 const { can } = useSellerPermissions()
 const {
   settlements,
+  settlementsMeta,
   createSettlement,
   setSettlementStatus,
   loaded,
@@ -301,13 +323,30 @@ const sourceItems = computed(() =>
 )
 
 const statusTabs = computed(() => {
+  const counts = settlementsMeta.value.statusCounts || {}
   const all = settlements.value
+  const n = (key: string, fallback: () => number) => Number(counts[key]) || fallback()
   return [
-    { id: 'all', label: t('همه'), count: all.length },
-    { id: 'pending', label: t('در انتظار'), count: all.filter(i => i.status === 'pending').length },
-    { id: 'processing', label: t('در حال پردازش'), count: all.filter(i => i.status === 'processing').length },
-    { id: 'completed', label: t('تکمیل‌شده'), count: all.filter(i => i.status === 'completed').length },
-    { id: 'failed', label: t('ناموفق'), count: all.filter(i => i.status === 'failed').length },
+    { id: 'all', label: t('همه'), count: n('all', () => all.length) },
+    { id: 'pending', label: t('در انتظار'), count: n('pending', () => all.filter(i => i.status === 'pending').length) },
+    { id: 'processing', label: t('در حال پردازش'), count: n('processing', () => all.filter(i => i.status === 'processing').length) },
+    { id: 'completed', label: t('تکمیل‌شده'), count: n('completed', () => all.filter(i => i.status === 'completed').length) },
+    { id: 'failed', label: t('ناموفق'), count: n('failed', () => all.filter(i => i.status === 'failed').length) },
+  ]
+})
+
+const summaryCards = computed(() => {
+  const pending = filtered.value
+    .filter(s => s.status === 'pending' || s.status === 'processing')
+    .reduce((sum, s) => sum + s.netAmount, 0)
+  const completed = filtered.value
+    .filter(s => s.status === 'completed' || s.status === 'reconciled')
+    .reduce((sum, s) => sum + s.netAmount, 0)
+  const fees = filtered.value.reduce((sum, s) => sum + s.fees, 0)
+  return [
+    { label: 'در انتظار', value: formatPrice(pending) },
+    { label: 'تکمیل‌شده', value: formatPrice(completed) },
+    { label: 'کارمزد', value: formatPrice(fees) },
   ]
 })
 
@@ -367,15 +406,19 @@ function openStatusConfirm(item: SellerSettlement, next: SellerSettlementStatus,
 
 function confirmStatusChange() {
   if (!pendingItem.value || !pendingStatus.value) return
-  const result = setSettlementStatus(pendingItem.value.id, pendingStatus.value, actor)
+  const item = pendingItem.value
+  const next = pendingStatus.value
   statusConfirmOpen.value = false
   pendingItem.value = null
   pendingStatus.value = null
-  if (!result.ok) {
-    toast.error(t(result.error))
-    return
-  }
-  toast.success(t('وضعیت تسویه به‌روزرسانی شد'))
+  void (async () => {
+    const result = await setSettlementStatus(item.id, next, actor)
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    toast.success(t('وضعیت تسویه به‌روزرسانی شد'))
+  })()
 }
 
 async function submitCreate() {
@@ -412,10 +455,6 @@ async function submitCreate() {
   }
 }
 
-try {
-  await ensureLoaded()
-}
-catch {
-  toast.error(t('بارگذاری تسویه‌ها ناموفق بود'))
-}
+const boot = await ensureLoaded()
+if (!boot.ok) toast.error(t(boot.error || 'بارگذاری تسویه‌ها ناموفق بود'))
 </script>

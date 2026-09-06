@@ -28,6 +28,13 @@ export type SellerSystemOverview = {
     banners: { total: number }
   }
   integrations: SellerSystemIntegration[]
+  security?: {
+    twoFactorRequired: boolean
+    twoFactorConfigured: boolean
+    adminAuth: string
+    otpMock: boolean
+    hasSmsProvider: boolean
+  }
   recentEvents: SellerSystemEvent[]
   generatedAt: string
 }
@@ -46,6 +53,13 @@ function emptyOverview(): SellerSystemOverview {
       banners: { total: 0 },
     },
     integrations: [],
+    security: {
+      twoFactorRequired: false,
+      twoFactorConfigured: false,
+      adminAuth: 'password',
+      otpMock: false,
+      hasSmsProvider: false,
+    },
     recentEvents: [],
     generatedAt: new Date().toISOString(),
   }
@@ -97,6 +111,21 @@ export function useSellerSystem() {
           banners: { total: Number(result.stats.banners?.total) || 0 },
         },
         integrations: Array.isArray(result.integrations) ? result.integrations : [],
+        security: result.security
+          ? {
+              twoFactorRequired: Boolean(result.security.twoFactorRequired),
+              twoFactorConfigured: Boolean(result.security.twoFactorConfigured),
+              adminAuth: String(result.security.adminAuth || 'password'),
+              otpMock: Boolean(result.security.otpMock),
+              hasSmsProvider: Boolean(result.security.hasSmsProvider),
+            }
+          : {
+              twoFactorRequired: false,
+              twoFactorConfigured: false,
+              adminAuth: 'password',
+              otpMock: false,
+              hasSmsProvider: false,
+            },
         recentEvents: Array.isArray(result.recentEvents) ? result.recentEvents : [],
         generatedAt: result.generatedAt || new Date().toISOString(),
       }

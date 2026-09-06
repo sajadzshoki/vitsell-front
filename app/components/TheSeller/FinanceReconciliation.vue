@@ -5,9 +5,16 @@
       class="space-y-3"
     >
       <USkeleton class="h-10 rounded-xl" />
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <USkeleton
+          v-for="i in 3"
+          :key="i"
+          class="h-20 rounded-2xl"
+        />
+      </div>
       <USkeleton
         v-for="i in 4"
-        :key="i"
+        :key="`row-${i}`"
         class="h-28 rounded-2xl"
       />
     </div>
@@ -18,7 +25,40 @@
           :title="$t('مغایرت‌گیری')"
           :description="$t('ناسازگاری‌های مالی بین سفارش، پرداخت، بازپرداخت و تسویه')"
           :count-label="`${visible.length.toLocaleString('fa-IR')} ${$t('مورد')}`"
-        />
+        >
+          <template #actions>
+            <UButton
+              type="button"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-refresh"
+              class="cursor-pointer"
+              :loading="refreshing"
+              @click="refresh"
+            >
+              {{ $t('بررسی مجدد') }}
+            </UButton>
+          </template>
+        </TheSellerPageHeader>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        <div
+          v-for="card in summaryCards"
+          :key="card.label"
+          class="bg-muted border border-muted rounded-2xl p-4"
+        >
+          <div class="text-xs text-muted mb-1">
+            {{ $t(card.label) }}
+          </div>
+          <div
+            class="text-base font-bold num"
+            :class="card.tone"
+          >
+            {{ card.value }}
+          </div>
+        </div>
       </div>
 
       <div class="flex items-center gap-2 mb-4 flex-wrap">
@@ -117,6 +157,16 @@
                 >
                   {{ $t('تسویه') }}
                 </UButton>
+                <UButton
+                  v-if="item.refundId"
+                  :to="`/seller/refunds?q=${encodeURIComponent(item.refundId)}`"
+                  color="neutral"
+                  variant="soft"
+                  size="xs"
+                  class="cursor-pointer"
+                >
+                  {{ $t('بازپرداخت') }}
+                </UButton>
               </div>
             </div>
             <UButton
@@ -126,6 +176,7 @@
               variant="soft"
               size="sm"
               class="cursor-pointer shrink-0"
+              :loading="markingId === item.id"
               @click="markDone(item.id)"
             >
               {{ $t('علامت رسیدگی') }}
@@ -147,21 +198,40 @@ const { can } = useSellerPermissions()
 const {
   discrepancies,
   openDiscrepancies,
+  reconciliationMeta,
   markDiscrepancyReconciled,
+  fetchReconciliation,
   loaded,
   loading,
   ensureLoaded,
 } = useSellerFinance()
 
 const showReconciled = ref(false)
+const refreshing = ref(false)
+const markingId = ref<string | null>(null)
 
-const reconciledCount = computed(() => discrepancies.value.filter(d => d.reconciled).length)
+const reconciledCount = computed(() =>
+  Number(reconciliationMeta.value.resolvedCount)
+  || discrepancies.value.filter(d => d.reconciled).length,
+)
 
 const visible = computed(() =>
   showReconciled.value
     ? discrepancies.value.filter(d => d.reconciled)
     : openDiscrepancies.value,
 )
+
+const summaryCards = computed(() => {
+  const counts = reconciliationMeta.value.severityCounts || {}
+  const high = Number(counts.high) || discrepancies.value.filter(d => d.severity === 'high' && !d.reconciled).length
+  const medium = Number(counts.medium) || discrepancies.value.filter(d => d.severity === 'medium' && !d.reconciled).length
+  const open = openDiscrepancies.value.length
+  return [
+    { label: 'مغایرت باز', value: open.toLocaleString('fa-IR'), tone: open ? 'text-warning' : 'text-success' },
+    { label: 'اولویت بالا', value: high.toLocaleString('fa-IR'), tone: high ? 'text-error' : 'text-highlighted' },
+    { label: 'اولویت متوسط', value: medium.toLocaleString('fa-IR'), tone: 'text-highlighted' },
+  ]
+})
 
 function severityColor(s: FinanceDiscrepancySeverity): 'error' | 'warning' | 'info' {
   if (s === 'high') return 'error'
@@ -175,15 +245,36 @@ function severityLabel(s: FinanceDiscrepancySeverity) {
   return t('پایین')
 }
 
-function markDone(id: string) {
-  markDiscrepancyReconciled(id, actor)
-  toast.success(t('مغایرت به‌عنوان رسیدگی‌شده علامت خورد'))
+async function markDone(id: string) {
+  markingId.value = id
+  try {
+    const result = await markDiscrepancyReconciled(id, actor)
+    if (!result.ok) {
+      toast.error(t(result.error || 'علامت‌گذاری ناموفق بود'))
+      return
+    }
+    toast.success(t('مغایرت به‌عنوان رسیدگی‌شده علامت خورد'))
+  }
+  finally {
+    markingId.value = null
+  }
 }
 
-try {
-  await ensureLoaded()
+async function refresh() {
+  refreshing.value = true
+  try {
+    const result = await fetchReconciliation({ force: true })
+    if (!result.ok) {
+      toast.error(t(result.error || 'بررسی مجدد ناموفق بود'))
+      return
+    }
+    toast.success(t('مغایرت‌ها به‌روز شد'))
+  }
+  finally {
+    refreshing.value = false
+  }
 }
-catch {
-  toast.error(t('بارگذاری مغایرت‌گیری ناموفق بود'))
-}
+
+const boot = await ensureLoaded()
+if (!boot.ok) toast.error(t(boot.error || 'بارگذاری مغایرت‌گیری ناموفق بود'))
 </script>
