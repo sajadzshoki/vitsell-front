@@ -316,3 +316,14 @@ button.bg-primary {
   font-weight: 700;
   color: var(--ui-text-highlighted);
 }
+
+/* Myket download badge — white in light, black in dark */
+.dark .myket-border {
+  fill: #A6A6A6;
+}
+.dark .myket-bg {
+  fill: #000000;
+}
+.dark .myket-text {
+  fill: #FFFFFF;
+}

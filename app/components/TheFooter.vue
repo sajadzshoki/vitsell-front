@@ -13,9 +13,9 @@
 
       <div class="relative z-10 mx-auto max-w-8xl px-3 sm:px-4 lg:px-6">
         <!-- Brand + link columns + contact -->
-        <div class="py-10 lg:py-12 grid grid-cols-1 xl:grid-cols-12 gap-10 xl:gap-8">
+        <div class="py-10 lg:py-12 !pb-4 grid grid-cols-1 xl:grid-cols-12 gap-10 xl:gap-8">
           <!-- Brand block -->
-          <div class="xl:col-span-3 flex flex-col gap-5">
+          <div class="xl:col-span-4 flex flex-col gap-5">
             <TheNavbarLogo />
 
             <p
@@ -52,7 +52,7 @@
           </div>
 
           <!-- Link columns + contact -->
-          <div class="xl:col-span-9 grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-6">
+          <div class="xl:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-6">
             <div
               v-for="column in columns"
               :key="column.id"
@@ -116,8 +116,8 @@
         </div>
 
         <!-- Apps + trust badges -->
-        <div class="py-8 border-t border-muted flex flex-col md:(flex-row items-end justify-between) gap-8">
-          <div v-if="appStores.length">
+        <div class="py-6 flex flex-col md:(flex-row items-end justify-between) gap-8">
+          <div>
             <h4 class="flex items-center gap-2 text-sm font-bold text-highlighted mb-4 text-start">
               <span
                 class="size-1.5 rounded-full bg-primary shrink-0"
@@ -127,7 +127,7 @@
             </h4>
             <div class="flex flex-wrap items-center gap-2.5">
               <a
-                v-for="store in appStores"
+                v-for="store in downloadStores"
                 :key="store.id"
                 :href="store.href"
                 :aria-label="$t(store.label)"
@@ -135,25 +135,11 @@
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <img
-                  v-if="storeBadgeSrc(store.id)"
-                  :src="storeBadgeSrc(store.id)"
-                  :alt="$t(store.label)"
-                  class="h-10 w-auto rounded-xl"
-                  loading="lazy"
-                  width="140"
-                  height="40"
-                >
-                <span
-                  v-else
-                  class="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-default bg-default text-sm font-medium text-highlighted"
-                >
-                  <UIcon
-                    :name="`i-tabler-${store.icon}`"
-                    class="size-4"
-                  />
-                  {{ $t(store.label) }}
-                </span>
+                <TheIcon
+                  :name="store.icon"
+                  icon-type="svg"
+                  class="footer-store-badge !h-12 !w-auto !text-[2.5rem] leading-none [&_.nuxt-icon]:(!h-full !w-full) [&_svg]:(!h-full !w-auto !mb-0 !max-w-none)"
+                />
               </a>
             </div>
           </div>
@@ -165,10 +151,20 @@
             <div
               v-for="badge in badges"
               :key="badge.id"
-              class="size-16 rounded-xl border border-default bg-muted/50 grid place-items-center"
+              class="size-25 rounded-xl  bg-elevated flex items-center justify-center overflow-hidden p-1.5"
               :title="$t(badge.label)"
             >
+              <img
+                v-if="badgeImageSrc(badge.id)"
+                :src="badgeImageSrc(badge.id)"
+                :alt="$t(badge.label)"
+                class="size-full object-contain"
+                loading="lazy"
+                width="56"
+                height="56"
+              >
               <UIcon
+                v-else
                 :name="`i-tabler-${badge.icon}`"
                 class="size-7 text-toned"
               />
@@ -177,7 +173,7 @@
         </div>
 
         <!-- Copyright -->
-        <div class="py-6 border-t border-muted flex justify-center">
+        <div class="py-6 flex justify-center">
           <p
             v-if="copyright"
             class="text-xs text-muted num text-center"
@@ -191,10 +187,19 @@
 </template>
 
 <script setup lang="ts">
-const STORE_BADGES: Record<string, string> = {
-  myket: '/images/myket-download.png',
-  bazaar: '/images/bazaar-download.png',
+const TRUST_BADGES: Record<string, string> = {
+  enamad: '/images/enamad-logo.png',
+  samandehi: '/images/samandehi.png',
+  ecunion: '/images/enamad-logo.png',
+  payment: '/images/samandehi.png',
 }
+
+/** Temporary store badges — App Store / Google Play / Microsoft */
+const FALLBACK_DOWNLOAD_STORES = [
+  { id: 'appstore', label: 'App Store', icon: 'store-appstore', href: '#' },
+  { id: 'googleplay', label: 'Google Play', icon: 'store-googleplay', href: '#' },
+  { id: 'microsoft', label: 'Microsoft', icon: 'store-microsoft', href: '#' },
+] as const
 
 const { t } = useI18n()
 const { footer, fetchFooter } = useFooter()
@@ -210,8 +215,19 @@ const contact = computed(() => footer.value.contact ?? {
   phones: [],
   email: { label: '', href: '' },
 })
-const appStores = computed(() => footer.value.appStores ?? [])
 const badges = computed(() => footer.value.badges ?? [])
+
+const downloadStores = computed(() => {
+  const fromApi = footer.value.appStores ?? []
+  return FALLBACK_DOWNLOAD_STORES.map((store) => {
+    const match = fromApi.find(item => item.id === store.id)
+    return {
+      ...store,
+      href: match?.href || store.href,
+      label: match?.label || store.label,
+    }
+  })
+})
 
 const hasContact = computed(() =>
   contact.value.phones.length > 0 || Boolean(contact.value.email?.href),
@@ -236,7 +252,7 @@ const aboutSegments = computed(() => {
   return segments
 })
 
-function storeBadgeSrc(id: string) {
-  return STORE_BADGES[id] ?? ''
+function badgeImageSrc(id: string) {
+  return TRUST_BADGES[id] ?? ''
 }
 </script>
