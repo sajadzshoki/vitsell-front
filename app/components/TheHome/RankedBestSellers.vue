@@ -13,10 +13,11 @@
       </div>
 
       <div class="relative">
-        <UCarousel
+        <TheCarousel
           v-slot="{ item: column }"
           :items="columns"
           arrows
+          :per-view="[1, 2, 2, 3, 3]"
           :prev="{ color: 'neutral', variant: 'solid', size: 'md' }"
           :next="{ color: 'neutral', variant: 'solid', size: 'md' }"
           prev-icon="i-tabler-chevron-right"
@@ -60,7 +61,7 @@
               </div>
             </NuxtLink>
           </div>
-        </UCarousel>
+        </TheCarousel>
       </div>
     </div>
   </section>

@@ -1,13 +1,32 @@
 <template>
   <div class="space-y-5">
     <div
-      v-if="pending && !ready"
+      v-if="bootPending"
       class="py-16 grid place-items-center"
     >
       <UIcon
         name="i-tabler-loader-2"
         class="size-8 text-primary animate-spin"
       />
+    </div>
+
+    <div
+      v-else-if="loadError && !form.about && !form.columns.length"
+      class="py-10 space-y-4 text-center"
+    >
+      <p class="text-sm text-error">
+        {{ loadError }}
+      </p>
+      <UButton
+        type="button"
+        color="primary"
+        variant="soft"
+        class="cursor-pointer"
+        :loading="pending"
+        @click="onRetry"
+      >
+        {{ $t('تلاش مجدد') }}
+      </UButton>
     </div>
 
     <template v-else>
@@ -73,11 +92,10 @@
               color="error"
               variant="ghost"
               size="sm"
-              class="mb-1"
+              class="mb-1 cursor-pointer shrink-0"
               icon="i-tabler-trash"
-              :disabled="form.contact.phones.length <= 1"
               :aria-label="$t('حذف')"
-              @click="form.contact.phones.splice(index, 1)"
+              @click.stop.prevent="openDeletePhone(index)"
             />
           </div>
         </div>
@@ -153,7 +171,8 @@
               variant="ghost"
               size="sm"
               icon="i-tabler-trash"
-              @click="form.trustItems.splice(index, 1)"
+              class="cursor-pointer"
+              @click.stop.prevent="openDeleteTrust(index)"
             >
               {{ $t('حذف') }}
             </UButton>
@@ -206,10 +225,10 @@
               color="error"
               variant="ghost"
               size="sm"
-              class="mt-7 shrink-0"
+              class="mt-7 shrink-0 cursor-pointer"
               icon="i-tabler-trash"
               :aria-label="$t('حذف ستون')"
-              @click="form.columns.splice(colIndex, 1)"
+              @click.stop.prevent="openDeleteColumn(colIndex)"
             />
           </div>
 
@@ -240,11 +259,11 @@
                 color="error"
                 variant="ghost"
                 size="sm"
-                class="shrink-0"
+                class="shrink-0 cursor-pointer"
                 :class="linkIndex === 0 ? 'mb-0.5' : ''"
                 icon="i-tabler-x"
                 :aria-label="$t('حذف لینک')"
-                @click="column.links.splice(linkIndex, 1)"
+                @click.stop.prevent="openDeleteLink(colIndex, linkIndex)"
               />
             </div>
             <UButton
@@ -312,7 +331,8 @@
               variant="ghost"
               size="sm"
               icon="i-tabler-trash"
-              @click="form.socials.splice(index, 1)"
+              class="cursor-pointer"
+              @click.stop.prevent="openDeleteSocial(index)"
             >
               {{ $t('حذف') }}
             </UButton>
@@ -371,7 +391,8 @@
               variant="ghost"
               size="sm"
               icon="i-tabler-trash"
-              @click="form.appStores.splice(index, 1)"
+              class="cursor-pointer"
+              @click.stop.prevent="openDeleteAppStore(index)"
             >
               {{ $t('حذف') }}
             </UButton>
@@ -425,7 +446,8 @@
               variant="ghost"
               size="sm"
               icon="i-tabler-trash"
-              @click="form.badges.splice(index, 1)"
+              class="cursor-pointer"
+              @click.stop.prevent="openDeleteBadge(index)"
             >
               {{ $t('حذف') }}
             </UButton>
@@ -455,6 +477,61 @@
         </UButton>
       </div>
     </template>
+
+    <Teleport to="body">
+      <div
+        v-if="deleteOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="$t('تأیید حذف')"
+      >
+        <button
+          type="button"
+          class="absolute inset-0 bg-elevated/75 cursor-pointer border-0"
+          :aria-label="$t('انصراف')"
+          @click="cancelDelete"
+        />
+        <div class="relative w-full max-w-md rounded-lg bg-default shadow-lg ring ring-default divide-y divide-default">
+          <div class="p-4 sm:px-6">
+            <h3 class="text-highlighted font-semibold">
+              {{ $t('تأیید حذف') }}
+            </h3>
+            <p class="mt-1 text-sm text-muted">
+              {{ deleteDescription }}
+            </p>
+          </div>
+          <div
+            v-if="deletePreview"
+            class="p-4 sm:px-6"
+          >
+            <div class="rounded-xl border border-muted bg-muted/40 p-4 text-sm font-medium text-highlighted text-end">
+              {{ deletePreview }}
+            </div>
+          </div>
+          <div class="p-4 sm:px-6 flex items-center justify-end gap-2">
+            <UButton
+              type="button"
+              color="neutral"
+              variant="outline"
+              class="cursor-pointer"
+              @click="cancelDelete"
+            >
+              {{ $t('انصراف') }}
+            </UButton>
+            <UButton
+              type="button"
+              color="error"
+              class="cursor-pointer font-bold"
+              icon="i-tabler-trash"
+              @click="onConfirmDelete()"
+            >
+              {{ $t('حذف') }}
+            </UButton>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -475,16 +552,80 @@ type FooterForm = {
   badges: NonNullable<FooterPayload['badges']>
 }
 
+type DeleteTarget =
+  | { kind: 'phone', index: number }
+  | { kind: 'trust', index: number }
+  | { kind: 'column', index: number }
+  | { kind: 'link', colIndex: number, linkIndex: number }
+  | { kind: 'social', index: number }
+  | { kind: 'appStore', index: number }
+  | { kind: 'badge', index: number }
+
 const { t } = useI18n()
 const toast = useAppToast()
 const { footer, pending, fetchFooter, saveFooter } = useFooter()
 
 const ready = ref(false)
+const loadError = ref('')
 const saving = ref(false)
 const saved = ref(false)
 const form = ref<FooterForm>(emptyForm())
+const deleteOpen = ref(false)
+const pendingDelete = ref<DeleteTarget | null>(null)
 
-await fetchFooter({ force: true, admin: true })
+const bootPending = computed(() => pending.value && !ready.value)
+
+const deleteDescription = computed(() => {
+  switch (pendingDelete.value?.kind) {
+    case 'phone':
+      return t('این شماره تلفن از فوتر حذف می‌شود.')
+    case 'trust':
+      return t('این آیتم نوار اعتماد حذف می‌شود.')
+    case 'column':
+      return t('این ستون لینک و همه لینک‌هایش حذف می‌شوند.')
+    case 'link':
+      return t('این لینک از ستون حذف می‌شود.')
+    case 'social':
+      return t('این شبکه اجتماعی حذف می‌شود.')
+    case 'appStore':
+      return t('این فروشگاه اپلیکیشن حذف می‌شود.')
+    case 'badge':
+      return t('این نشان حذف می‌شود.')
+    default:
+      return t('این مورد حذف می‌شود.')
+  }
+})
+
+const deletePreview = computed(() => {
+  const target = pendingDelete.value
+  if (!target) return ''
+  switch (target.kind) {
+    case 'phone':
+      return form.value.contact.phones[target.index]?.label || ''
+    case 'trust':
+      return form.value.trustItems[target.index]?.title || ''
+    case 'column':
+      return form.value.columns[target.index]?.title || ''
+    case 'link': {
+      const col = form.value.columns[target.colIndex]
+      return col?.links[target.linkIndex]?.label || ''
+    }
+    case 'social':
+      return form.value.socials[target.index]?.label || ''
+    case 'appStore':
+      return form.value.appStores[target.index]?.label || ''
+    case 'badge':
+      return form.value.badges[target.index]?.label || ''
+    default:
+      return ''
+  }
+})
+
+const load = await fetchFooter({ force: true, admin: true })
+if (!load.ok) {
+  loadError.value = load.error || t('بارگذاری اطلاعات فوتر ناموفق بود')
+  toast.error(loadError.value)
+}
 hydrateFromFooter()
 ready.value = true
 
@@ -507,20 +648,107 @@ function emptyForm(): FooterForm {
 function hydrateFromFooter() {
   const source = cloneFooter(footer.value)
   form.value = {
-    trustItems: source.trustItems,
-    columns: source.columns,
-    socials: source.socials,
+    trustItems: source.trustItems.map(item => ({ ...item })),
+    columns: source.columns.map(column => ({
+      ...column,
+      links: (column.links || []).map(link => ({ ...link })),
+    })),
+    socials: source.socials.map(item => ({ ...item })),
     about: source.about,
     copyright: source.copyright,
     contact: source.contact?.phones?.length
-      ? source.contact
+      ? {
+          phones: source.contact.phones.map(p => ({ ...p })),
+          email: { ...(source.contact.email || { label: '', href: '' }) },
+        }
       : {
           phones: [{ label: '', href: '' }],
-          email: source.contact?.email ?? { label: '', href: '' },
+          email: { ...(source.contact?.email ?? { label: '', href: '' }) },
         },
-    appStores: source.appStores ?? [],
-    badges: source.badges ?? [],
+    appStores: (source.appStores ?? []).map(item => ({ ...item })),
+    badges: (source.badges ?? []).map(item => ({ ...item })),
   }
+}
+
+function openDeletePhone(index: number) {
+  openDelete({ kind: 'phone', index })
+}
+function openDeleteTrust(index: number) {
+  openDelete({ kind: 'trust', index })
+}
+function openDeleteColumn(index: number) {
+  openDelete({ kind: 'column', index })
+}
+function openDeleteLink(colIndex: number, linkIndex: number) {
+  openDelete({ kind: 'link', colIndex, linkIndex })
+}
+function openDeleteSocial(index: number) {
+  openDelete({ kind: 'social', index })
+}
+function openDeleteAppStore(index: number) {
+  openDelete({ kind: 'appStore', index })
+}
+function openDeleteBadge(index: number) {
+  openDelete({ kind: 'badge', index })
+}
+
+function openDelete(target: DeleteTarget) {
+  pendingDelete.value = target
+  deleteOpen.value = true
+}
+
+function applyRemove(target: DeleteTarget) {
+  switch (target.kind) {
+    case 'phone': {
+      const phones = form.value.contact.phones.filter((_, i) => i !== target.index)
+      form.value.contact = {
+        ...form.value.contact,
+        phones: phones.length ? phones : [{ label: '', href: '' }],
+      }
+      break
+    }
+    case 'trust':
+      form.value.trustItems = form.value.trustItems.filter((_, i) => i !== target.index)
+      break
+    case 'column':
+      form.value.columns = form.value.columns.filter((_, i) => i !== target.index)
+      break
+    case 'link':
+      form.value.columns = form.value.columns.map((col, i) => {
+        if (i !== target.colIndex) return col
+        const links = col.links.filter((_, li) => li !== target.linkIndex)
+        return {
+          ...col,
+          links: links.length ? links : [{ label: '', to: '/' }],
+        }
+      })
+      break
+    case 'social':
+      form.value.socials = form.value.socials.filter((_, i) => i !== target.index)
+      break
+    case 'appStore':
+      form.value.appStores = form.value.appStores.filter((_, i) => i !== target.index)
+      break
+    case 'badge':
+      form.value.badges = form.value.badges.filter((_, i) => i !== target.index)
+      break
+  }
+}
+
+function cancelDelete() {
+  deleteOpen.value = false
+  pendingDelete.value = null
+}
+
+function onConfirmDelete(_close?: () => void) {
+  const target = pendingDelete.value
+  if (!target) {
+    cancelDelete()
+    return
+  }
+  applyRemove(target)
+  cancelDelete()
+  toast.success(t('حذف شد. برای اعمال روی سایت، ذخیره کنید.'))
 }
 
 function sanitizeForm(): FooterPayload {
@@ -656,8 +884,24 @@ async function onSave() {
 }
 
 async function onReset() {
-  await fetchFooter({ force: true, admin: true })
+  const result = await fetchFooter({ force: true, admin: true })
+  if (!result.ok) {
+    toast.error(result.error || t('بارگذاری اطلاعات فوتر ناموفق بود'))
+    return
+  }
+  loadError.value = ''
   hydrateFromFooter()
   toast.info(t('فرم به آخرین ذخیره بازگردانی شد'))
+}
+
+async function onRetry() {
+  const result = await fetchFooter({ force: true, admin: true })
+  if (!result.ok) {
+    loadError.value = result.error || t('بارگذاری اطلاعات فوتر ناموفق بود')
+    toast.error(loadError.value)
+    return
+  }
+  loadError.value = ''
+  hydrateFromFooter()
 }
 </script>

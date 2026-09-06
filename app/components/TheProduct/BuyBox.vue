@@ -58,16 +58,15 @@
         >
           <UButton
             type="button"
-            color="neutral"
-            variant="soft"
+            :color="qty === 1 ? 'error' : 'neutral'"
+            :variant="qty === 1 ? 'solid' : 'soft'"
             size="sm"
             square
-            :icon="qty === 1 ? 'i-tabler-trash' : undefined"
+            class="size-9 rounded-lg shrink-0"
+            :icon="qty === 1 ? 'i-tabler-trash' : 'i-tabler-minus'"
             :aria-label="qty === 1 ? $t('حذف از سبد') : $t('کاهش تعداد')"
             @click="updateQty(product.id, qty - 1)"
-          >
-            <span v-if="qty > 1">−</span>
-          </UButton>
+          />
           <div class="flex flex-col items-center">
             <span class="text-sm font-bold text-primary num">
               {{ qty.toLocaleString('fa-IR') }}
@@ -77,13 +76,14 @@
           <UButton
             type="button"
             color="primary"
+            variant="solid"
             size="sm"
             square
+            icon="i-tabler-plus"
+            class="size-9 rounded-lg shrink-0"
             :aria-label="$t('افزایش تعداد')"
             @click="updateQty(product.id, qty + 1)"
-          >
-            +
-          </UButton>
+          />
         </div>
 
         <UButton

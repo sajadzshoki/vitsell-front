@@ -28,10 +28,18 @@
 </template>
 
 <script setup lang="ts">
-const { cartCount, cartBump } = useShop()
+const { cartCount, cartBump, isLoggedIn, ensureCartLoaded } = useShop()
 
 const cartAnimating = ref(false)
 let bumpTimer: ReturnType<typeof setTimeout> | undefined
+
+onMounted(() => {
+  if (isLoggedIn.value) void ensureCartLoaded()
+})
+
+watch(isLoggedIn, (loggedIn) => {
+  if (loggedIn) void ensureCartLoaded()
+})
 
 watch(cartBump, () => {
   cartAnimating.value = false

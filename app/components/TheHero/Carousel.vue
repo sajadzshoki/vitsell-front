@@ -10,9 +10,10 @@
     v-else-if="slides.length"
     class="select-none relative w-screen max-w-[100vw] ms-[calc(50%-50vw)] -mt-4 [--ui-bg-inverted:var(--ui-color-neutral-950)] [--ui-text-inverted:var(--ui-color-neutral-50)] [--ui-bg:var(--ui-color-neutral-50)] [--ui-bg-elevated:var(--ui-color-neutral-100)] [--ui-text-highlighted:var(--ui-color-neutral-900)] [--ui-text:var(--ui-color-neutral-800)]"
   >
-    <UCarousel
+    <TheCarousel
       v-slot="{ item, index }"
       :items="slides"
+      :per-view="[1, 1, 1, 1, 1]"
       loop
       fade
       arrows
@@ -117,7 +118,7 @@
           </div>
         </div>
       </div>
-    </UCarousel>
+    </TheCarousel>
   </section>
 </template>
 

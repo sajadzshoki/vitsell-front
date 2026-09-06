@@ -12,10 +12,11 @@
   >
     <!-- Embla must init on the client after layout; loop + SSR measure caused stacked slides on refresh. -->
     <ClientOnly>
-      <UCarousel
+      <TheCarousel
         v-slot="{ item }"
         :items="items"
         arrows
+        :per-view="[4, 6, 8, 10, 12]"
         align="start"
         :slides-to-scroll="3"
         prev-icon="i-tabler-chevron-right"
@@ -54,7 +55,7 @@
             {{ $t(item.title) }}
           </span>
         </NuxtLink>
-      </UCarousel>
+      </TheCarousel>
 
       <template #fallback>
         <TheSkeleton variant="circle" />

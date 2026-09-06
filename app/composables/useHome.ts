@@ -9,14 +9,14 @@ import type {
   HomeAppStore,
 } from '~/data/home'
 import {
-  homeBannerRows,
-  homeCategoryShelves,
   homeSeoBlocks,
-  homeTopMobileBrands,
   homeAppStores,
 } from '~/data/home'
-import { bannersForPlacement } from '~/data/seller-banners'
-import { products as localProducts, type Product } from '~/data/products'
+import { type Product } from '~/data/products'
+
+export type HomeCategoryShelfPayload = HomeCategoryShelf & {
+  products?: Product[]
+}
 
 export type HomePayload = {
   heroSlides: HeroSlide[]
@@ -24,6 +24,9 @@ export type HomePayload = {
   brands: string[]
   circles: HomeCircleItem[]
   promos: HomePromo[]
+  bannerRows: HomeBannerRow[]
+  categoryShelves: HomeCategoryShelfPayload[]
+  topMobileBrands: HomeTopBrand[]
   dealsOfTheDay: Product[]
   bestSellers: Product[]
   newArrivals: Product[]
@@ -36,6 +39,9 @@ function emptyHome(): HomePayload {
     brands: [],
     circles: [],
     promos: [],
+    bannerRows: [],
+    categoryShelves: [],
+    topMobileBrands: [],
     dealsOfTheDay: [],
     bestSellers: [],
     newArrivals: [],
@@ -51,6 +57,55 @@ function uniqueProducts(list: Product[]) {
   })
 }
 
+function asBannerRows(raw: unknown): HomeBannerRow[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((row, index) => {
+      const items = Array.isArray(row?.items)
+        ? row.items.map((item: any, i: number) => ({
+            id: String(item?.id || `banner-${index}-${i}`),
+            title: String(item?.title || ''),
+            subtitle: item?.subtitle ? String(item.subtitle) : undefined,
+            image: String(item?.image || ''),
+            to: String(item?.to || '/'),
+            tone: (['primary', 'secondary', 'warning', 'success', 'inverted'].includes(item?.tone)
+              ? item.tone
+              : 'primary') as HomeBannerRow['items'][number]['tone'],
+          })).filter((item: { image: string }) => Boolean(item.image))
+        : []
+      return {
+        id: String(row?.id || `row-${index + 1}`),
+        items,
+      }
+    })
+    .filter(row => row.items.length > 0)
+}
+
+function asCategoryShelves(raw: unknown): HomeCategoryShelfPayload[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((shelf: any, index: number) => ({
+      id: String(shelf?.id || `shelf-${index + 1}`),
+      title: String(shelf?.title || ''),
+      category: String(shelf?.category || ''),
+      viewAllTo: String(shelf?.viewAllTo || `/search?category=${encodeURIComponent(String(shelf?.category || ''))}`),
+      products: Array.isArray(shelf?.products) ? shelf.products as Product[] : [],
+    }))
+    .filter(shelf => shelf.category && shelf.title)
+}
+
+function asTopMobileBrands(raw: unknown): HomeTopBrand[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((brand: any) => ({
+      id: String(brand?.id || ''),
+      name: String(brand?.name || ''),
+      image: String(brand?.image || ''),
+      to: String(brand?.to || '/search'),
+    }))
+    .filter(brand => brand.id && brand.name && brand.image)
+}
+
 export function useHome() {
   const home = useState<HomePayload>('home-payload', emptyHome)
   const loaded = useState('home-loaded', () => false)
@@ -58,29 +113,8 @@ export function useHome() {
   const error = useState<string | null>('home-error', () => null)
   const inFlight = useState<Promise<{ home: HomePayload }> | null>('home-inflight', () => null)
   const { categories, fetchCategories } = useCategories()
-  const { banners: sellerBanners } = useSellerBanners()
-  const sellerBannersSeeded = useState('seller-banners-seeded', () => false)
 
-  const heroSlides = computed<HeroSlide[]>(() => {
-    if (!sellerBannersSeeded.value) return home.value.heroSlides
-    const fromSeller = bannersForPlacement(sellerBanners.value, 'homepage_hero')
-    if (!fromSeller.length) return home.value.heroSlides
-    return fromSeller.map((b, index) => {
-      const fallback = home.value.heroSlides[index]
-      return {
-        id: b.id,
-        eyebrow: b.internalName || '',
-        title: b.title || fallback?.title || '',
-        subtitle: fallback?.subtitle || '',
-        cta: fallback?.cta || 'مشاهده',
-        to: b.link,
-        image: b.image,
-        icon: fallback?.icon || 'photo',
-        tone: (fallback?.tone || 'inverted') as HeroSlide['tone'],
-        discount: fallback?.discount,
-      }
-    })
-  })
+  const heroSlides = computed(() => home.value.heroSlides)
   const heroFeatures = computed(() => home.value.heroFeatures)
   const brands = computed(() => home.value.brands)
   const circles = computed(() => home.value.circles)
@@ -89,34 +123,36 @@ export function useHome() {
   const bestSellers = computed(() => home.value.bestSellers)
   const newArrivals = computed(() => home.value.newArrivals)
 
-  const catalogProducts = computed(() => {
-    const fromApi = uniqueProducts([
+  const catalogProducts = computed(() =>
+    uniqueProducts([
       ...home.value.dealsOfTheDay,
       ...home.value.bestSellers,
       ...home.value.newArrivals,
-    ])
-    return fromApi.length ? fromApi : localProducts
+      ...home.value.categoryShelves.flatMap(s => s.products || []),
+    ]),
+  )
+
+  const bannerRows = computed<HomeBannerRow[]>(() => home.value.bannerRows)
+  const topMobileBrands = computed<HomeTopBrand[]>(() => home.value.topMobileBrands)
+  const categoryShelves = computed<HomeCategoryShelf[]>(() =>
+    home.value.categoryShelves.map(({ products: _p, ...shelf }) => shelf),
+  )
+  const seoBlocks = computed<HomeSeoBlock[]>(() => homeSeoBlocks)
+
+  const { footer, fetchFooter } = useFooter()
+  const appStores = computed<HomeAppStore[]>(() => {
+    const fromFooter = footer.value.appStores || []
+    if (fromFooter.length) {
+      return fromFooter.map(s => ({
+        id: s.id,
+        label: s.label,
+        icon: s.icon,
+        href: s.href,
+      }))
+    }
+    return homeAppStores
   })
 
-  const bannerRows = computed<HomeBannerRow[]>(() => {
-    if (!sellerBannersSeeded.value) return homeBannerRows
-    const strip = bannersForPlacement(sellerBanners.value, 'homepage_promo_strip')
-    if (!strip.length) return homeBannerRows
-    return [{
-      id: 'seller-promo-strip',
-      items: strip.map(b => ({
-        id: b.id,
-        title: b.title || '',
-        subtitle: b.alt || '',
-        image: b.imageMobile || b.image,
-        to: b.link,
-      })),
-    }]
-  })
-  const topMobileBrands = computed<HomeTopBrand[]>(() => homeTopMobileBrands)
-  const categoryShelves = computed<HomeCategoryShelf[]>(() => homeCategoryShelves)
-  const seoBlocks = computed<HomeSeoBlock[]>(() => homeSeoBlocks)
-  const appStores = computed<HomeAppStore[]>(() => homeAppStores)
   const { publishedPosts, ensureLoaded: ensureBlogLoaded } = useBlog()
   const homeBlogPosts = computed(() =>
     publishedPosts.value.slice(0, 8).map(p => ({
@@ -138,11 +174,13 @@ export function useHome() {
   )
 
   function productsForCategory(category: string, limit = 10): Product[] {
-    const fromCatalog = catalogProducts.value
+    const shelf = home.value.categoryShelves.find(s => s.category === category)
+    if (shelf?.products?.length) {
+      return shelf.products.slice(0, limit)
+    }
+    return catalogProducts.value
       .filter(p => p.category === category)
       .slice(0, limit)
-    if (fromCatalog.length >= 4) return fromCatalog
-    return localProducts.filter(p => p.category === category).slice(0, limit)
   }
 
   async function fetchHome(options?: { force?: boolean }) {
@@ -160,6 +198,7 @@ export function useHome() {
           useGet<HomePayload>('/home', { headers: { 'no-error': true } }),
           fetchCategories({ withCounts: false }),
           ensureBlogLoaded(),
+          fetchFooter(),
         ])
 
         if (homeError || !homeResult) {
@@ -175,6 +214,9 @@ export function useHome() {
           brands: homeResult.brands ?? [],
           circles: homeResult.circles ?? [],
           promos: homeResult.promos ?? [],
+          bannerRows: asBannerRows(homeResult.bannerRows),
+          categoryShelves: asCategoryShelves(homeResult.categoryShelves),
+          topMobileBrands: asTopMobileBrands(homeResult.topMobileBrands),
           dealsOfTheDay: homeResult.dealsOfTheDay ?? [],
           bestSellers: homeResult.bestSellers ?? [],
           newArrivals: homeResult.newArrivals ?? [],

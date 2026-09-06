@@ -6,10 +6,11 @@
   <section v-else-if="brands.length">
     <div class="bg-default rounded-3xl p-4 sm:p-6">
       <div class="sm:hidden">
-        <UCarousel
+        <TheCarousel
           v-slot="{ item }"
           :items="brands"
           arrows
+          :per-view="[3, 3, 3, 3, 3]"
           align="start"
           :slides-to-scroll="2"
           prev-icon="i-tabler-chevron-right"
@@ -28,10 +29,11 @@
           <button
             type="button"
             class="w-full text-lg font-bold text-dimmed hover:text-highlighted transition tracking-wide cursor-pointer py-2"
+            @click="navigateTo(`/search?q=${encodeURIComponent(item)}`)"
           >
             {{ item }}
           </button>
-        </UCarousel>
+        </TheCarousel>
       </div>
 
       <div class="hidden sm:flex items-center flex-wrap justify-around gap-6">
@@ -40,6 +42,7 @@
           :key="brand"
           type="button"
           class="text-lg md:text-2xl font-bold text-dimmed hover:text-highlighted transition tracking-wide cursor-pointer"
+          @click="navigateTo(`/search?q=${encodeURIComponent(brand)}`)"
         >
           {{ brand }}
         </button>

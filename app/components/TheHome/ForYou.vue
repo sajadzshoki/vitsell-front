@@ -36,10 +36,11 @@
     </div>
 
     <div class="  overflow-hidden">
-      <UCarousel
+      <TheCarousel
         v-slot="{ item }"
         :items="products"
         arrows
+        :per-view="[2, 3, 4, 5, 6]"
         :prev="{ color: 'neutral', variant: 'solid', size: 'md' }"
         :next="{ color: 'neutral', variant: 'solid', size: 'md' }"
         prev-icon="i-tabler-chevron-right"
@@ -56,7 +57,7 @@
           :product="item"
           compact
         />
-      </UCarousel>
+      </TheCarousel>
     </div>
   </section>
 </template>

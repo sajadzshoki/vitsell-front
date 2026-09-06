@@ -175,6 +175,14 @@ input:disabled {
   cursor: not-allowed;
 }
 
+/* Carousel: hide Embla-disabled prev/next (edge of track) */
+[data-slot='prev']:disabled,
+[data-slot='next']:disabled,
+[data-slot='prev'][aria-disabled='true'],
+[data-slot='next'][aria-disabled='true'] {
+  display: none !important;
+}
+
 textarea {
   font-family: inherit;
   resize: none;

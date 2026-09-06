@@ -17,38 +17,32 @@
         </UButton>
       </template>
       <template v-else-if="qty > 0">
-        <div class="flex items-center gap-0.5 bg-default rounded-xl border border-muted p-1 shrink-0">
+        <div class="flex items-center gap-1 bg-default rounded-xl border border-muted p-1 shrink-0">
           <UButton
             type="button"
             color="primary"
-            variant="ghost"
+            variant="solid"
             size="sm"
             square
-            class="size-9 text-primary"
+            icon="i-tabler-plus"
+            class="size-9 rounded-lg shrink-0"
             :aria-label="$t('افزایش تعداد')"
             @click="updateQty(product.id, qty + 1)"
-          >
-            +
-          </UButton>
+          />
           <span class="min-w-8 px-1 text-center text-base font-bold text-highlighted num">
             {{ qty.toLocaleString('fa-IR') }}
           </span>
           <UButton
             type="button"
-            color="error"
-            variant="ghost"
+            :color="qty === 1 ? 'error' : 'neutral'"
+            :variant="qty === 1 ? 'solid' : 'soft'"
             size="sm"
             square
-            class="size-9"
-            :icon="qty === 1 ? 'i-tabler-trash' : undefined"
+            class="size-9 rounded-lg shrink-0"
+            :icon="qty === 1 ? 'i-tabler-trash' : 'i-tabler-minus'"
             :aria-label="qty === 1 ? $t('حذف از سبد') : $t('کاهش تعداد')"
             @click="updateQty(product.id, qty - 1)"
-          >
-            <span
-              v-if="qty > 1"
-              class="text-lg leading-none"
-            >−</span>
-          </UButton>
+          />
         </div>
       </template>
       <UButton

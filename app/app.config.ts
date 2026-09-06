@@ -88,8 +88,9 @@ export default defineAppConfig({
     },
     carousel: {
       slots: {
-        prev: '!opacity-50 hover:!opacity-100 transition-opacity',
-        next: '!opacity-50 hover:!opacity-100 transition-opacity',
+        // Edge hide when Embla disables a side; whole arrows gated by TheCarousel
+        prev: 'opacity-50 hover:opacity-100 transition-opacity disabled:!hidden',
+        next: 'opacity-50 hover:opacity-100 transition-opacity disabled:!hidden',
         dots: 'bottom-4',
         dot: 'w-2 h-2 rounded-full bg-accented transition-all data-[state=active]:bg-inverted data-[state=active]:w-8',
       },

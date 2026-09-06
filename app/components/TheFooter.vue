@@ -1,15 +1,43 @@
 <template>
   <footer class="mt-10 md:mt-16 <md:hidden">
+    <!-- Trust strip (admin: /seller/footer → نوار اعتماد) -->
+    <div
+      v-if="trustItems.length"
+      class="border-y border-muted bg-muted/60"
+    >
+      <div class="mx-auto max-w-8xl px-3 py-8 sm:px-4 lg:px-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div
+          v-for="item in trustItems"
+          :key="item.id"
+          class="flex items-center gap-3"
+        >
+          <div class="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0">
+            <UIcon
+              :name="`i-tabler-${item.icon}`"
+              class="size-6"
+            />
+          </div>
+          <div class="min-w-0 text-start">
+            <div class="text-sm font-semibold text-highlighted truncate">
+              {{ $t(item.title) }}
+            </div>
+            <div
+              v-if="item.subtitle"
+              class="text-xs text-muted mt-0.5 truncate"
+            >
+              {{ $t(item.subtitle) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="relative overflow-hidden border-t border-muted bg-default">
       <!-- Soft primary glow from top (must sit above bg-default, not on <footer>) -->
       <div
         class="pointer-events-none absolute inset-x-0 top-0 h-48 bg-linear-to-b from-primary/15 via-primary/5 to-transparent"
         aria-hidden="true"
       />
-      <!-- <div
-        class="pointer-events-none absolute -top-28 inset-x-0 mx-auto size-[26rem] rounded-full bg-primary/10 blur-3xl"
-        aria-hidden="true"
-      /> -->
 
       <div class="relative z-10 mx-auto max-w-8xl px-3 sm:px-4 lg:px-6">
         <!-- Brand + link columns + contact -->
@@ -39,13 +67,15 @@
               <UButton
                 v-for="social in socials"
                 :key="social.id"
-                :to="social.href"
+                :href="social.href"
                 :aria-label="$t(social.label)"
                 color="primary"
                 variant="outline"
                 size="sm"
                 square
                 :icon="`i-tabler-${social.icon}`"
+                target="_blank"
+                rel="noopener noreferrer"
                 class="size-10 rounded-full !bg-primary/5 !text-primary !border-primary/25 hover:(!bg-primary/10 !border-primary/40)"
               />
             </div>
@@ -67,7 +97,7 @@
               <ul class="space-y-2.5">
                 <li
                   v-for="link in column.links"
-                  :key="link.label"
+                  :key="`${column.id}-${link.to}-${link.label}`"
                 >
                   <NuxtLink
                     :to="link.to"
@@ -79,7 +109,7 @@
               </ul>
             </div>
 
-            <!-- Contact -->
+            <!-- Contact (footer + site/platform settings) -->
             <div v-if="hasContact">
               <h4 class="flex items-center gap-2 text-sm font-bold text-highlighted mb-4 text-start">
                 <span
@@ -91,7 +121,7 @@
               <ul class="space-y-2.5">
                 <li
                   v-for="phone in contact.phones"
-                  :key="phone.href"
+                  :key="phone.href || phone.label"
                 >
                   <a
                     :href="phone.href"
@@ -101,7 +131,7 @@
                     {{ phone.label }}
                   </a>
                 </li>
-                <li v-if="contact.email?.href">
+                <li v-if="contact.email?.href && contact.email?.label">
                   <a
                     :href="contact.email.href"
                     class="text-sm text-muted hover:text-primary cursor-pointer transition"
@@ -110,13 +140,36 @@
                     {{ contact.email.label }}
                   </a>
                 </li>
+                <li
+                  v-if="workingHours"
+                  class="flex items-start gap-2 text-sm text-muted text-start"
+                >
+                  <UIcon
+                    name="i-tabler-clock"
+                    class="size-4 mt-0.5 shrink-0 text-toned"
+                  />
+                  <span>{{ workingHours }}</span>
+                </li>
+                <li
+                  v-if="address"
+                  class="flex items-start gap-2 text-sm text-muted text-start"
+                >
+                  <UIcon
+                    name="i-tabler-map-pin"
+                    class="size-4 mt-0.5 shrink-0 text-toned"
+                  />
+                  <span>{{ address }}</span>
+                </li>
               </ul>
             </div>
           </div>
         </div>
 
         <!-- Apps + trust badges -->
-        <div class="py-8 border-t border-muted flex flex-col md:(flex-row items-end justify-between) gap-8">
+        <div
+          v-if="appStores.length || badges.length"
+          class="py-8 border-t border-muted flex flex-col md:(flex-row items-end justify-between) gap-8"
+        >
           <div v-if="appStores.length">
             <h4 class="flex items-center gap-2 text-sm font-bold text-highlighted mb-4 text-start">
               <span
@@ -202,22 +255,74 @@ const { site, fetchSite } = useSiteSettings()
 
 await Promise.all([fetchFooter(), fetchSite()])
 
-const socials = computed(() => footer.value.socials)
-const columns = computed(() => footer.value.columns)
-const copyright = computed(() => footer.value.copyright)
-const aboutText = computed(() => footer.value.about?.trim() || '')
-const contact = computed(() => footer.value.contact ?? {
-  phones: [],
-  email: { label: '', href: '' },
-})
-const appStores = computed(() => footer.value.appStores ?? [])
-const badges = computed(() => footer.value.badges ?? [])
+const trustItems = computed(() =>
+  (footer.value.trustItems || []).filter(item => item?.id && item?.title && item?.icon),
+)
+const socials = computed(() =>
+  (footer.value.socials || []).filter(s => s?.id && s?.icon && s?.href),
+)
+const columns = computed(() =>
+  (footer.value.columns || [])
+    .map(col => ({
+      ...col,
+      links: (col.links || []).filter(link => link?.label && link?.to),
+    }))
+    .filter(col => col.id && col.title && col.links.length > 0),
+)
+const copyright = computed(() => footer.value.copyright?.trim() || '')
+const aboutText = computed(() =>
+  footer.value.about?.trim()
+  || site.value.brandDescription?.trim()
+  || site.value.about?.trim()
+  || '',
+)
+const contact = computed(() => {
+  const fromFooter = footer.value.contact
+  const phones = (fromFooter?.phones || [])
+    .filter(p => p?.label && p?.href)
+  const emailLabel = fromFooter?.email?.label?.trim()
+    || site.value.supportEmail?.trim()
+    || site.value.email?.trim()
+    || ''
+  const emailHref = fromFooter?.email?.href?.trim()
+    || (emailLabel ? `mailto:${emailLabel}` : '')
 
-const hasContact = computed(() =>
-  contact.value.phones.length > 0 || Boolean(contact.value.email?.href),
+  // If footer phones empty, fall back to site/platform contact phones
+  const fallbackPhones: { label: string, href: string }[] = []
+  if (!phones.length) {
+    const support = site.value.supportPhone?.trim() || site.value.phone?.trim()
+    const sales = site.value.salesPhone?.trim()
+    if (support) fallbackPhones.push({ label: support, href: `tel:${support.replace(/\D/g, '') || support}` })
+    if (sales) fallbackPhones.push({ label: sales, href: `tel:${sales.replace(/\D/g, '') || sales}` })
+  }
+
+  return {
+    phones: phones.length ? phones : fallbackPhones,
+    email: { label: emailLabel, href: emailHref },
+  }
+})
+const appStores = computed(() =>
+  (footer.value.appStores || []).filter(s => s?.id && s?.label && s?.href),
+)
+const badges = computed(() =>
+  (footer.value.badges || []).filter(b => b?.id && b?.label && b?.icon),
 )
 
-const siteName = computed(() => site.value.name?.trim() || t('دیجی‌شاپ'))
+const address = computed(() => site.value.address?.trim() || '')
+const workingHours = computed(() => site.value.workingHours?.trim() || '')
+
+const hasContact = computed(() =>
+  contact.value.phones.length > 0
+  || Boolean(contact.value.email?.href && contact.value.email?.label)
+  || Boolean(address.value)
+  || Boolean(workingHours.value),
+)
+
+const siteName = computed(() =>
+  site.value.brandName?.trim()
+  || site.value.name?.trim()
+  || t('دیجی‌شاپ'),
+)
 
 const aboutSegments = computed(() => {
   if (!aboutText.value) return [] as { text: string, highlight: boolean }[]

@@ -74,11 +74,18 @@ export function useShop() {
   async function fetchCart() {
     if (!token.value) {
       cartLines.value = []
-      return
+      return { ok: true as const, error: null as null }
     }
-    const { result } = await useGet<CartLine[]>('/cart', { headers: { 'no-error': true } })
+    const { result, error } = await useGet<CartLine[]>('/cart', {
+      headers: { 'no-error': true },
+      server: false,
+    })
+    if (error) {
+      return { ok: false as const, error }
+    }
     cartLines.value = Array.isArray(result) ? result : []
     remember(cartLines.value.map(l => l.product))
+    return { ok: true as const, error: null as null }
   }
 
   async function fetchWishlist() {
@@ -88,6 +95,7 @@ export function useShop() {
     }
     const { result, error } = await useGet<Product[]>('/wishlist', {
       headers: { 'no-error': true },
+      server: false,
     })
     if (error) {
       return { result: null as Product[] | null, error }
@@ -104,6 +112,7 @@ export function useShop() {
     }
     const { result } = await useGet<ShopNotification[]>('/notifications', {
       headers: { 'no-error': true },
+      server: false,
     })
     notificationList.value = Array.isArray(result) ? result : []
   }
@@ -130,6 +139,13 @@ export function useShop() {
     finally {
       shopPending.value = false
     }
+  }
+
+  /** Ensure cart badge has fresh data after login / on navbar mount */
+  async function ensureCartLoaded() {
+    if (!import.meta.client) return
+    if (!token.value || !isLoggedIn.value) return
+    await fetchCart()
   }
 
   if (import.meta.client && !authHydrated.value) {
@@ -271,12 +287,14 @@ export function useShop() {
     notificationList.value = notificationList.value.map(n => ({ ...n, read: true }))
   }
 
-  function login(accessToken?: string, accountProfile?: AccountProfile) {
+  async function login(accessToken?: string, accountProfile?: AccountProfile) {
     if (accessToken) setToken(accessToken)
     if (accountProfile) profile.value = accountProfile
     isLoggedIn.value = true
-    hydrateShop()
-    fetchProfile()
+    // Wait a tick so cookie/Authorization is visible to subsequent $fetch calls
+    await nextTick()
+    await hydrateShop()
+    void fetchProfile()
   }
 
   async function logout() {
@@ -328,5 +346,6 @@ export function useShop() {
     fetchWishlist,
     fetchNotifications,
     hydrateShop,
+    ensureCartLoaded,
   }
 }

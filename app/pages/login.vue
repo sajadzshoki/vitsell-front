@@ -453,7 +453,9 @@ const subtitle = computed(() => {
 })
 
 const canSubmitPhone = computed(() => /^09\d{9}$/.test(phone.value) && !loading.value)
-const canSubmitOtp = computed(() => otp.value.filter(Boolean).length === 5 && !loading.value)
+/** OTP as ASCII digits (Persian/Arabic numerals → English) for API */
+const otpCode = computed(() => p2e(otp.value.join('')).replace(/\D/g, ''))
+const canSubmitOtp = computed(() => otpCode.value.length === 5 && !loading.value)
 const canSubmitPassword = computed(
   () => password.value.length >= 1 && !loading.value,
 )
@@ -492,6 +494,17 @@ if (import.meta.client && isLoggedIn.value) {
 watch(isLoggedIn, (v) => {
   if (v) navigateTo(redirectAfterLogin())
 })
+
+watch(otp, (cells) => {
+  let changed = false
+  const next = cells.map((c) => {
+    if (!c) return c
+    const digit = p2e(String(c)).replace(/\D/g, '').slice(-1)
+    if (digit !== c) changed = true
+    return digit
+  })
+  if (changed) otp.value = next
+}, { deep: true })
 
 async function sendOtpAndGo(options?: {
   fromPassword?: boolean
@@ -672,7 +685,7 @@ function onOtpComplete(value: string[]) {
 }
 
 async function submitOtp() {
-  const code = otp.value.join('')
+  const code = otpCode.value
   if (code.length !== 5 || loading.value) return
 
   if (otpPurpose.value === 'reset') {
@@ -697,7 +710,7 @@ async function submitOtp() {
       return
     }
 
-    login(result.token, result.profile)
+    await login(result.token, result.profile)
     clearTimer()
     toast.success(
       t('ورود موفق'),
@@ -731,7 +744,7 @@ async function submitPasswordLogin() {
       return
     }
 
-    login(result.token, result.profile)
+    await login(result.token, result.profile)
     toast.success(
       t('ورود موفق'),
       t('به دیجی‌شاپ خوش آمدید'),
@@ -792,7 +805,7 @@ async function submitResetPassword() {
       return
     }
 
-    login(result.token, result.profile)
+    await login(result.token, result.profile)
     toast.success(
       result.message || t('رمز عبور تغییر کرد'),
       t('با رمز جدید وارد شدید'),

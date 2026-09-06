@@ -34,10 +34,11 @@
       </div>
 
       <div class="bg-default/80  ">
-        <UCarousel
+        <TheCarousel
           v-slot="{ item }"
           :items="deals"
           arrows
+          :per-view="[2, 3, 4, 5, 6]"
           :prev="{ color: 'neutral', variant: 'solid', size: 'md' }"
           :next="{ color: 'neutral', variant: 'solid', size: 'md' }"
           prev-icon="i-tabler-chevron-right"
@@ -51,7 +52,7 @@
           class="w-full"
         >
           <TheProductCard :product="item" compact />
-        </UCarousel>
+        </TheCarousel>
       </div>
     </div>
   </section>

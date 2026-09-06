@@ -34,10 +34,11 @@
 
       <!-- Mobile: horizontal strip -->
       <div class="sm:hidden">
-        <UCarousel
+        <TheCarousel
           v-slot="{ item }"
           :items="categories"
           arrows
+          :per-view="[4, 4, 4, 4, 4]"
           align="start"
           :slides-to-scroll="3"
           prev-icon="i-tabler-chevron-right"
@@ -72,7 +73,7 @@
               {{ $t(item.name) }}
             </span>
           </NuxtLink>
-        </UCarousel>
+        </TheCarousel>
       </div>
 
       <!-- Tablet / desktop grid -->

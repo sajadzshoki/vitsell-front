@@ -21,10 +21,11 @@
         </UButton>
       </div>
 
-      <UCarousel
+      <TheCarousel
         v-slot="{ item }"
         :items="posts"
         arrows
+        :per-view="[1, 2, 3, 4, 5]"
         :prev="{ color: 'neutral', variant: 'solid', size: 'md' }"
         :next="{ color: 'neutral', variant: 'solid', size: 'md' }"
         prev-icon="i-tabler-chevron-right"
@@ -54,7 +55,7 @@
             </p>
           </div>
         </NuxtLink>
-      </UCarousel>
+      </TheCarousel>
     </div>
   </section>
 </template>
