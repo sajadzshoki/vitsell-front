@@ -92,8 +92,9 @@ export const footerContact: FooterContact = {
 }
 
 export const footerAppStores: FooterAppStore[] = [
-  { id: 'bazaar', label: 'دریافت از بازار', icon: 'shopping-bag', href: '#' },
-  { id: 'myket', label: 'دریافت از مایکت', icon: 'brand-android', href: '#' },
+  { id: 'appstore', label: 'App Store', icon: 'brand-apple', href: '#' },
+  { id: 'googleplay', label: 'Google Play', icon: 'brand-google-play', href: '#' },
+  { id: 'microsoft', label: 'Microsoft', icon: 'brand-windows', href: '#' },
 ]
 
 export const footerBadges: FooterBadge[] = [
