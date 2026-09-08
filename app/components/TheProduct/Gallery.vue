@@ -337,6 +337,8 @@ const props = defineProps<{
   product: Product
 }>()
 
+const { t } = useI18n()
+const toast = useAppToast()
 const { isInWishlist, toggleWishlist } = useShop()
 const { allReviews } = useProductDetail(() => props.product)
 
@@ -492,20 +494,22 @@ function openFullscreen() {
 async function onShare() {
   const url = import.meta.client ? window.location.href : ''
   if (!url) return
+
   if (navigator.share) {
     try {
       await navigator.share({ title: props.product.title, url })
       return
     }
     catch {
-      // cancelled
+      // cancelled or unavailable — fall through to clipboard
     }
   }
   try {
     await navigator.clipboard.writeText(url)
+    toast.success(t('لینک محصول کپی شد'))
   }
   catch {
-    // unavailable
+    toast.error(t('کپی لینک ناموفق بود'))
   }
 }
 </script>

@@ -27,9 +27,9 @@
       :ui="{
         item: 'basis-full min-w-full ps-0',
         container: 'ms-0',
-        prev: 'hidden md:flex start-5 z-20',
-        next: 'hidden md:flex end-5 z-20',
-        dots: 'bottom-2.5 md:bottom-6 z-20 gap-1.5 md:gap-2',
+        prev: 'hidden md:flex start-5 z-20 opacity-100 hover:brightness-110  !h-fit !translate-y-40',
+        next: 'hidden md:flex start-16 w-fit z-20 opacity-100 hover:brightness-110  !translate-y-40 h-fit',
+        dots: 'bottom-2.5 md:bottom-6 z-20 gap-1.5 md:gap-2 ',
         dot: 'size-1.5 md:size-2 bg-default/50 data-[state=active]:bg-default data-[state=active]:w-5 md:data-[state=active]:w-8 rounded-full transition-all',
       }"
     >
