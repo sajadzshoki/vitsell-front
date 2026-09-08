@@ -2,11 +2,11 @@
   <div ref="wrapRef" class="relative flex-1 w-full md:max-w-xl">
     <!-- Border on wrapper so global input{border:none} cannot kill it; flex = icon/text align -->
     <label
-      class="group flex items-center gap-2.5 h-12 w-full ps-4 pe-4 rounded-2xl bg-elevated hover:bg-muted focus-within:bg-default border-2 border-default focus-within:border-primary transition cursor-text"
+      class="group flex items-center gap-2.5 h-12 w-full ps-4 pe-4 rounded-2xl bg-elevated hover:bg-muted focus-within:bg-default border-2 border-default focus-within:border-primary transition-all  cursor-text"
     >
       <UIcon
         name="i-tabler-search"
-        class="size-5 shrink-0 text-dimmed transition group-focus-within:text-primary"
+        class="size-5 shrink-0 text-dimmed transition-all  group-focus-within:text-primary"
       />
       <input
         v-model="query"

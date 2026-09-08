@@ -92,6 +92,17 @@
           </div>
           <div>
             <div class="text-[11px] text-muted">
+              {{ $t('شماره تماس') }}
+            </div>
+            <div
+              class="mt-1 num"
+              dir="ltr"
+            >
+              {{ payment.customerPhone || '—' }}
+            </div>
+          </div>
+          <div>
+            <div class="text-[11px] text-muted">
               {{ $t('مبلغ') }}
             </div>
             <div class="mt-1 num font-bold">

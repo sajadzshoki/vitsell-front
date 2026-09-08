@@ -17,7 +17,7 @@
         <NuxtLink
           v-if="item.to && !item.disabled && !item.comingSoon"
           :to="item.to"
-          class="flex items-center gap-3 px-4 py-3.5 text-start border-b border-muted transition hover:bg-muted/50 cursor-pointer"
+          class="flex items-center gap-3 px-4 py-3.5 text-start border-b border-muted transition-all  hover:bg-muted/50 cursor-pointer"
         >
           <div class="size-9 rounded-xl grid place-items-center shrink-0 bg-primary/10 text-primary">
             <UIcon

@@ -26,7 +26,7 @@
         v-for="article in articles"
         :key="article.id"
         :to="article.to"
-        class="group bg-default border border-muted rounded-2xl overflow-hidden transition hover:(border-primary/40 shadow-sm)"
+        class="group bg-default border border-muted rounded-2xl overflow-hidden transition-all  hover:(border-primary/40 shadow-sm)"
       >
         <div class="aspect-[16/10] bg-muted overflow-hidden">
           <img

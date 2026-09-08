@@ -61,7 +61,7 @@
             v-for="card in kpiCards"
             :key="card.id"
             :to="card.to"
-            class="bg-muted border border-muted rounded-2xl p-4 hover:bg-accented/40 transition cursor-pointer"
+            class="bg-muted border border-muted rounded-2xl p-4 hover:bg-accented/40 transition-all  cursor-pointer"
           >
             <div class="flex items-start justify-between gap-2 mb-3">
               <div

@@ -88,7 +88,7 @@ function asCategoryShelves(raw: unknown): HomeCategoryShelfPayload[] {
       id: String(shelf?.id || `shelf-${index + 1}`),
       title: String(shelf?.title || ''),
       category: String(shelf?.category || ''),
-      viewAllTo: String(shelf?.viewAllTo || `/search?category=${encodeURIComponent(String(shelf?.category || ''))}`),
+      viewAllTo: String(shelf?.viewAllTo || `/search/category-${encodeURIComponent(String(shelf?.category || ''))}`),
       products: Array.isArray(shelf?.products) ? shelf.products as Product[] : [],
     }))
     .filter(shelf => shelf.category && shelf.title)

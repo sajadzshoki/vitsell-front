@@ -81,7 +81,7 @@ export const blogCategoryChips: BlogCategoryChip[] = [
 ]
 
 export const blogPostIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-export const blogPageSize = 9
+export const blogPageSize = 8
 
 export const sellerBlogStatusMeta: Record<
   SellerBlogStatus,

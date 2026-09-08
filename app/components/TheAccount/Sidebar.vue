@@ -24,7 +24,7 @@
         v-for="item in accountNavItems"
         :key="item.id"
         :to="item.to"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition text-start cursor-pointer"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all  text-start cursor-pointer"
         :class="isActive(item.to)
           ? 'bg-primary/10 text-primary font-medium'
           : 'text-toned hover:bg-elevated'"
@@ -53,7 +53,7 @@
 
       <NuxtLink
         to="/account/settings"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition text-start cursor-pointer"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all  text-start cursor-pointer"
         :class="isActive('/account/settings')
           ? 'bg-primary/10 text-primary font-medium'
           : 'text-toned hover:bg-elevated'"
@@ -73,7 +73,7 @@
 
       <button
         type="button"
-        class="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted hover:(bg-error/10 rounded-xl) transition text-start border-t border-muted mt-3 pt-3 text-error cursor-pointer"
+        class="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted hover:(bg-error/10 rounded-xl) transition-all  text-start border-t border-muted mt-3 pt-3 text-error cursor-pointer"
         @click="onLogout"
       >
         <UIcon

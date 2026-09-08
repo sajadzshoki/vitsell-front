@@ -90,7 +90,7 @@
           v-for="(product, index) in topProducts"
           :key="product.id"
           :to="`/seller/products/${product.id}`"
-          class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/60 transition cursor-pointer"
+          class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/60 transition-all  cursor-pointer"
         >
           <span class="size-7 rounded-lg bg-primary/10 text-primary grid place-items-center text-xs font-bold num">
             {{ (index + 1).toLocaleString('fa-IR') }}

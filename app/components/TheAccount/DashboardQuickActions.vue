@@ -12,10 +12,10 @@
         v-for="action in accountQuickActions"
         :key="action.id"
         :to="action.to"
-        class="group flex flex-col gap-3 rounded-2xl border border-muted bg-muted/40 p-3.5 sm:p-4 transition hover:(border-primary/25 bg-primary/5) cursor-pointer text-start"
+        class="group flex flex-col gap-3 rounded-2xl border border-muted bg-muted/40 p-3.5 sm:p-4 transition-all  hover:(border-primary/25 bg-primary/5) cursor-pointer text-start"
       >
         <div
-          class="size-10 rounded-xl grid place-items-center shrink-0 transition group-hover:scale-105"
+          class="size-10 rounded-xl grid place-items-center shrink-0 transition-all  group-hover:scale-105"
           :class="action.iconWrap"
         >
           <UIcon

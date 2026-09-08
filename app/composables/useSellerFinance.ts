@@ -162,6 +162,7 @@ export function useSellerFinance() {
       orderId: raw.orderId ? String(raw.orderId) : null,
       customerId: raw.customerId != null ? String(raw.customerId) : null,
       customerName: String(raw.customerName || ''),
+      customerPhone: String(raw.customerPhone || ''),
       reference: String(raw.reference || ''),
       paymentId: raw.paymentId ? String(raw.paymentId) : null,
       refundId: raw.refundId ? String(raw.refundId) : null,
@@ -179,6 +180,7 @@ export function useSellerFinance() {
       orderId: String(raw.orderId || ''),
       customerId: raw.customerId != null ? String(raw.customerId) : null,
       customerName: String(raw.customerName || ''),
+      customerPhone: String(raw.customerPhone || ''),
       amount: Math.max(0, Math.round(Number(raw.amount) || 0)),
       currency: String(raw.currency || 'IRR'),
       paymentMethod: String(raw.paymentMethod || ''),
@@ -1135,7 +1137,8 @@ export function useSellerFinance() {
         || p.orderId.toLowerCase().includes(q)
         || (p.refId || '').toLowerCase().includes(q)
         || (p.authority || '').toLowerCase().includes(q)
-        || p.customerName.includes(opts.search!.trim()),
+        || p.customerName.includes(opts.search!.trim())
+        || (p.customerPhone || '').includes(opts.search!.trim()),
       )
     }
     if (opts.status && opts.status !== 'all') {
@@ -1164,14 +1167,21 @@ export function useSellerFinance() {
         t.id.toLowerCase().includes(q)
         || (t.orderId || '').toLowerCase().includes(q)
         || t.reference.toLowerCase().includes(q)
-        || t.customerName.includes(opts.search!.trim()),
+        || t.customerName.includes(opts.search!.trim())
+        || (t.customerPhone || '').includes(opts.search!.trim()),
       )
     }
     if (opts.type && opts.type !== 'all') list = list.filter(t => t.type === opts.type)
     if (opts.status && opts.status !== 'all') list = list.filter(t => t.status === opts.status)
     if (opts.gateway && opts.gateway !== 'all') list = list.filter(t => t.gateway === opts.gateway)
     if (opts.orderId) list = list.filter(t => t.orderId === opts.orderId)
-    if (opts.customer) list = list.filter(t => t.customerName.includes(opts.customer!) || t.customerId === opts.customer)
+    if (opts.customer) {
+      list = list.filter(t =>
+        t.customerName.includes(opts.customer!)
+        || (t.customerPhone || '').includes(opts.customer!)
+        || t.customerId === opts.customer,
+      )
+    }
     if (opts.amountMin != null) list = list.filter(t => t.amount >= opts.amountMin!)
     if (opts.amountMax != null) list = list.filter(t => t.amount <= opts.amountMax!)
     return list

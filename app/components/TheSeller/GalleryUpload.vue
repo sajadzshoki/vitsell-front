@@ -33,7 +33,7 @@
 
     <button
       type="button"
-      class="w-full rounded-2xl border border-dashed border-muted bg-muted/40 px-4 py-5 text-center transition cursor-pointer hover:(border-primary/50 bg-primary/5)"
+      class="w-full rounded-2xl border border-dashed border-muted bg-muted/40 px-4 py-5 text-center transition-all  cursor-pointer hover:(border-primary/50 bg-primary/5)"
       :class="dragOver && 'border-primary bg-primary/10'"
       :disabled="reading"
       @click="openPicker"

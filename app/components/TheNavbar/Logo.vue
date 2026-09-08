@@ -26,12 +26,12 @@
       >
         {{ siteName }}
       </span>
-      <span
+      <!-- <span
         class="text-[10px] -mt-0.5"
         :class="inverted ? 'text-inverted/60' : 'text-dimmed'"
       >
         {{ tagline }}
-      </span>
+      </span> -->
     </div>
   </NuxtLink>
 </template>

@@ -60,7 +60,7 @@ function toPage(raw: any): SellerManagedPage {
 function formToPayload(form: SellerPageFormValues, previous?: SellerManagedPage | null) {
   const page = formToSellerPage(form, previous)
   return {
-    id: page.id,
+    ...(page.id ? { id: page.id } : {}),
     path: page.path,
     title: page.title,
     subtitle: page.subtitle,

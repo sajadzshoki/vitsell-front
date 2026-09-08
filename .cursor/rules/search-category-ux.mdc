@@ -1,5 +1,5 @@
 ---
-description: Clickable elements must use cursor pointer; MegaMenu main categories go to /search; search page shows subcategory chips when ?category= is set.
+description: Clickable elements must use cursor pointer; MegaMenu main categories go to /search/category-{id}; search page shows subcategory chips when category path is set.
 alwaysApply: true
 ---
 
@@ -18,16 +18,18 @@ alwaysApply: true
 کلیک روی **دسته‌های اصلی** در `app/components/TheNavbar/MegaMenu.vue` باید به صفحه جستجو برود:
 
 ```ts
-toSearchRoute({ category: id })  // → /search?category=<id>
+toSearchRoute({ category: id })  // → /search/category-{id}
 ```
 
 - نه `/category/:catId` برای کلیک دسته اصلی / دکمه «صفحه دسته».
-- آیتم‌های برگ زیردسته همچنان `toSearchRoute({ q, category })`.
+- نه `/search?category=` برای دسته (legacy؛ ریدایرکت ۳۰۱ به path).
+- آیتم‌های برگ زیردسته همچنان `toSearchRoute({ q, category })` → `/search/category-{id}?q=...`.
+- سرچ دستی بدون دسته → `/search?q=...`.
 - API: `GET /products?category=` و `GET /categories` — ببین `ROUTES.md` و `CategorySchema.subs` در `types/models.ts`.
 
 ## Search subcategory section
 
-وقتی کاربر با **دسته اصلی** وارد `/search` شده (`query.category` ست باشد و دسته `subs` داشته باشد)، زیردسته‌ها را **داخل همان سکشن هدر** (`TheSearchHeader`) نشان بده — نه سکشن جدا:
+وقتی کاربر با **دسته اصلی** وارد شده (`/search/category-{id}` و دسته `subs` داشته باشد)، زیردسته‌ها را **داخل همان سکشن هدر** (`TheSearchHeader`) نشان بده — نه سکشن جدا:
 
 - داده: `category.subs` + عکس از `category.image` (یا `sub.image` اگر بود) — `types/models.ts` → `CategorySchema`
 - هر کارت → `toSearchRoute({ q: sub.name, category })`

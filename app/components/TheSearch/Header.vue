@@ -36,7 +36,10 @@
               {{ heading }}
             </template>
           </h1>
-          <p class="text-xs text-muted mt-1 num">
+          <p
+            v-if="total > 0"
+            class="text-xs text-muted mt-1 num"
+          >
             {{ total.toLocaleString('fa-IR') }} {{ $t('کالا پیدا شده') }}
           </p>
         </div>
@@ -51,7 +54,7 @@
           v-for="item in visibleSubs"
           :key="item.name"
           :to="toSearchRoute({ q: item.name, category: categoryId })"
-          class="group flex flex-col items-center justify-center gap-2 shrink-0 w-[6.5rem] sm:w-28 min-h-[7rem] px-2 py-3 rounded-xl bg-muted hover:bg-elevated transition text-center"
+          class="group flex flex-col items-center justify-center gap-2 shrink-0 w-[6.5rem] sm:w-28 min-h-[7rem] px-2 py-3 rounded-xl bg-muted hover:bg-elevated transition-all  text-center"
         >
           <div class="size-12 sm:size-14 rounded-xl bg-default overflow-hidden grid place-items-center shadow-sm">
             <img
@@ -75,7 +78,7 @@
         <button
           v-if="hiddenCount > 0 && !expanded"
           type="button"
-          class="flex flex-col items-center justify-center gap-1.5 shrink-0 w-[6.5rem] sm:w-28 min-h-[7rem] px-2 py-3 rounded-xl bg-muted hover:bg-elevated transition text-center"
+          class="flex flex-col items-center justify-center gap-1.5 shrink-0 w-[6.5rem] sm:w-28 min-h-[7rem] px-2 py-3 rounded-xl bg-muted hover:bg-elevated transition-all  text-center"
           @click="expanded = true"
         >
           <span class="text-2xl font-bold text-highlighted num leading-none">

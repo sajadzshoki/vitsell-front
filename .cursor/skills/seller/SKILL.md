@@ -180,7 +180,7 @@ type CategorySub = {
 - ست کردن `image` برای هر گروه
 - ترتیب گروه‌ها (و ترجیحاً آیتم‌ها) را عوض کرد
 
-مصرف فرانت: کلیک دسته اصلی → `/search?category=<id>`؛ برگ → `/search?q=<term>&category=<id>` (قانون search-category-ux).
+مصرف فرانت: کلیک دسته اصلی → `/search/category-<id>`؛ برگ → `/search/category-<id>?q=<term>` (قانون search-category-ux).
 
 ### صفحه و کامپوننت‌ها
 

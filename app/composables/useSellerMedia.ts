@@ -4,6 +4,7 @@ import {
   type SellerMediaItem,
   type SellerMediaKind,
 } from '~/data/seller-media'
+import { resolveMediaUrl } from '~/composables/fetch'
 
 export type SellerMediaQuery = {
   q?: string
@@ -38,7 +39,7 @@ function toItem(raw: any): SellerMediaItem {
 
   return {
     id: String(raw?.id || ''),
-    url: String(raw?.url || ''),
+    url: resolveMediaUrl(String(raw?.url || '')),
     filename: String(raw?.filename || filenameFromUrl(String(raw?.url || ''))),
     mimeType,
     kind,

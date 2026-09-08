@@ -98,7 +98,7 @@
           v-for="item in paged"
           :key="item.id"
           :to="`/seller/finance/payments/${item.id}`"
-          class="block bg-muted border border-muted rounded-2xl p-4 hover:bg-primary/5 transition cursor-pointer"
+          class="block bg-muted border border-muted rounded-2xl p-4 hover:bg-primary/5 transition-all  cursor-pointer"
         >
           <div class="flex items-start justify-between gap-3 flex-wrap">
             <div class="min-w-0">
@@ -117,6 +117,13 @@
               </div>
               <div class="text-[11px] text-muted mt-1">
                 {{ item.customerName }}
+                <template v-if="item.customerPhone">
+                  ·
+                  <span
+                    class="num"
+                    dir="ltr"
+                  >{{ item.customerPhone }}</span>
+                </template>
                 · {{ $t('سفارش') }}
                 <span
                   class="num"
@@ -262,11 +269,12 @@ async function clearAll() {
 function exportCsv() {
   downloadSellerCsv(
     'finance-payments',
-    ['شناسه', 'سفارش', 'مشتری', 'وضعیت', 'مبلغ', 'درگاه', 'مرجع', 'تاریخ'],
+    ['شناسه', 'سفارش', 'مشتری', 'تلفن', 'وضعیت', 'مبلغ', 'درگاه', 'مرجع', 'تاریخ'],
     filtered.value.map(r => [
       r.id,
       r.orderId,
       r.customerName,
+      r.customerPhone || '',
       sellerFinancePaymentStatusMeta[r.status].label,
       r.amount,
       r.gateway,

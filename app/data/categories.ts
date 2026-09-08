@@ -146,6 +146,16 @@ export function toCategoryRoute(id: string) {
   return { name: 'category-catId', params: { catId: id } }
 }
 
+/** Digikala-style category listing path: `/search/category-mobile` */
+export function toSearchCategoryPath(categoryId: string) {
+  return `/search/category-${String(categoryId || '').trim()}`
+}
+
+/**
+ * Search / category listing route.
+ * - Category browse → path `/search/category-{id}` (SEO); `q` / `brands` stay in query.
+ * - Text-only → `/search?q=...`
+ */
 export function toSearchRoute(query: {
   q?: string
   category?: string
@@ -158,17 +168,25 @@ export function toSearchRoute(query: {
     .map(b => String(b || '').trim())
     .filter(Boolean)
 
+  const searchQuery = {
+    ...(q ? { q } : {}),
+    ...(brands.length === 1
+      ? { brands: brands[0] }
+      : brands.length
+        ? { brands: brands.join(',') }
+        : {}),
+  }
+
+  if (category) {
+    return {
+      path: toSearchCategoryPath(category),
+      query: searchQuery,
+    }
+  }
+
   return {
     path: '/search',
-    query: {
-      ...(q ? { q } : {}),
-      ...(category ? { category } : {}),
-      ...(brands.length === 1
-        ? { brands: brands[0] }
-        : brands.length
-          ? { brands: brands.join(',') }
-          : {}),
-    },
+    query: searchQuery,
   }
 }
 

@@ -3,7 +3,7 @@
     <!-- Wallet snapshot -->
     <NuxtLink
       to="/account/wallet"
-      class="relative overflow-hidden rounded-2xl bg-primary p-4 sm:p-5 text-inverted [--ui-text-inverted:white] transition hover:brightness-105 cursor-pointer"
+      class="relative overflow-hidden rounded-2xl bg-primary p-4 sm:p-5 text-inverted [--ui-text-inverted:white] transition-all  hover:brightness-105 cursor-pointer"
     >
       <div class="relative z-10 flex flex-col h-full min-h-[140px]">
         <div class="flex items-start justify-between gap-3">
@@ -93,7 +93,7 @@
         >
           <NuxtLink
             :to="tip.to"
-            class="flex items-start gap-3 rounded-xl border border-muted bg-muted/40 p-3 transition hover:(border-primary/25 bg-primary/5) cursor-pointer"
+            class="flex items-start gap-3 rounded-xl border border-muted bg-muted/40 p-3 transition-all  hover:(border-primary/25 bg-primary/5) cursor-pointer"
           >
             <div
               class="size-9 rounded-xl grid place-items-center shrink-0"

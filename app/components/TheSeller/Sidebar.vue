@@ -36,7 +36,7 @@
             <NuxtLink
               v-if="item.to && !item.disabled && !item.comingSoon"
               :to="item.to"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition text-start cursor-pointer"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all  text-start cursor-pointer"
               :class="isActive(item.to)
                 ? 'bg-primary/10 text-primary font-medium'
                 : 'text-toned hover:bg-elevated'"
@@ -103,7 +103,7 @@
 
       <button
         type="button"
-        class="w-full flex items-center gap-3 px-3 py-2.5 text-sm transition text-start border-t border-muted mt-3 pt-3 cursor-pointer rounded-xl hover:bg-elevated"
+        class="w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-all  text-start border-t border-muted mt-3 pt-3 cursor-pointer rounded-xl hover:bg-elevated"
         :aria-label="isDark ? $t('تغییر به حالت روشن') : $t('تغییر به حالت تاریک')"
         @click="toggleColorMode"
       >
@@ -125,7 +125,7 @@
 
       <button
         type="button"
-        class="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted hover:(bg-error/10 rounded-xl) transition text-start border-t border-muted mt-1 pt-3 cursor-pointer"
+        class="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted hover:(bg-error/10 rounded-xl) transition-all  text-start border-t border-muted mt-1 pt-3 cursor-pointer"
         @click="onLogout"
       >
         <UIcon

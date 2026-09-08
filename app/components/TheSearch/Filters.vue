@@ -42,7 +42,7 @@
     <section class="px-4 py-3 border-b border-muted">
       <button
         type="button"
-        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default"
+        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default cursor-pointer"
         @click="toggle('delivery')"
       >
         <span class="inline-flex items-center gap-2">
@@ -55,7 +55,10 @@
           :class="{ 'rotate-180': open.delivery }"
         />
       </button>
-      <div v-show="open.delivery" class="mt-3">
+      <div
+        v-show="open.delivery"
+        class="mt-3"
+      >
         <USwitch
           v-model="filters.fastDelivery"
           :label="$t('فقط کالاهای ارسال سریع')"
@@ -67,7 +70,7 @@
     <section class="px-4 py-3 border-b border-muted">
       <button
         type="button"
-        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default"
+        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default cursor-pointer"
         @click="toggle('availability')"
       >
         {{ $t('وضعیت کالا') }}
@@ -77,7 +80,10 @@
           :class="{ 'rotate-180': open.availability }"
         />
       </button>
-      <div v-show="open.availability" class="mt-3 flex flex-col gap-3">
+      <div
+        v-show="open.availability"
+        class="mt-3 flex flex-col gap-3"
+      >
         <UCheckbox
           v-model="filters.onlyInStock"
           :label="$t('فقط موجودها')"
@@ -92,7 +98,7 @@
     <section class="px-4 py-3 border-b border-muted">
       <button
         type="button"
-        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default"
+        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default cursor-pointer"
         @click="toggle('price')"
       >
         {{ $t('محدوده قیمت') }}
@@ -102,22 +108,31 @@
           :class="{ 'rotate-180': open.price }"
         />
       </button>
-      <div v-show="open.price" class="mt-3 space-y-3">
+      <div
+        v-show="open.price"
+        class="mt-3 space-y-3"
+      >
         <div class="grid grid-cols-2 gap-2">
           <UFormField :label="$t('از')">
             <UInput
-              v-model.number="filters.minPrice"
-              type="number"
+              :model-value="formatGrouped(filters.minPrice)"
+              type="text"
+              inputmode="numeric"
               size="sm"
               class="num"
+              dir="ltr"
+              @update:model-value="onMinPriceInput"
             />
           </UFormField>
           <UFormField :label="$t('تا')">
             <UInput
-              v-model.number="filters.maxPrice"
-              type="number"
+              :model-value="formatGrouped(filters.maxPrice)"
+              type="text"
+              inputmode="numeric"
               size="sm"
               class="num"
+              dir="ltr"
+              @update:model-value="onMaxPriceInput"
             />
           </UFormField>
         </div>
@@ -125,20 +140,25 @@
           v-model="priceRange"
           size="lg"
           :min="0"
-          :max="SEARCH_PRICE_MAX"
-          :step="500_000"
+          :max="priceCeiling"
+          :step="priceStep"
           :min-steps-between-thumbs="1"
         />
-        <p class="text-center text-[11px] text-muted">
+        <p class="text-center text-[11px] text-muted num">
+          {{ formatPrice(priceCeiling) }}
           {{ $t('تومان') }}
+          <span class="text-dimmed">{{ $t('(حداکثر در نتایج)') }}</span>
         </p>
       </div>
     </section>
 
-    <section class="px-4 py-3 border-b border-muted">
+    <section
+      v-if="brands.length"
+      class="px-4 py-3 border-b border-muted"
+    >
       <button
         type="button"
-        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default"
+        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default cursor-pointer"
         @click="toggle('brand')"
       >
         {{ $t('برند') }}
@@ -148,7 +168,10 @@
           :class="{ 'rotate-180': open.brand }"
         />
       </button>
-      <div v-show="open.brand" class="mt-3 max-h-52 overflow-y-auto space-y-2">
+      <div
+        v-show="open.brand"
+        class="mt-3 max-h-52 overflow-y-auto space-y-2"
+      >
         <UCheckbox
           v-for="brand in brands"
           :key="brand"
@@ -159,10 +182,50 @@
       </div>
     </section>
 
+    <section
+      v-for="attr in attributes"
+      :key="attr.id"
+      class="px-4 py-3 border-b border-muted last:border-b-0"
+    >
+      <button
+        type="button"
+        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default cursor-pointer"
+        @click="toggleAttrSection(attr.slug)"
+      >
+        {{ attr.name }}
+        <UIcon
+          name="i-tabler-chevron-down"
+          class="size-4 text-dimmed transition"
+          :class="{ 'rotate-180': openAttrs[attr.slug] }"
+        />
+      </button>
+      <div
+        v-show="openAttrs[attr.slug]"
+        class="mt-3 max-h-52 overflow-y-auto space-y-2"
+      >
+        <label
+          v-for="option in attr.values"
+          :key="option.id"
+          class="flex items-center gap-2 cursor-pointer"
+        >
+          <UCheckbox
+            :model-value="isAttrSelected(attr.slug, option.value)"
+            @update:model-value="toggleAttr(attr.slug, option.value)"
+          />
+          <span
+            v-if="attr.type === 'color' && option.meta"
+            class="size-3.5 rounded-full border border-muted shrink-0"
+            :style="{ backgroundColor: option.meta }"
+          />
+          <span class="text-sm text-toned">{{ option.label }}</span>
+        </label>
+      </div>
+    </section>
+
     <section class="px-4 py-3">
       <button
         type="button"
-        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default"
+        class="w-full flex items-center justify-between gap-2 text-sm font-bold text-default cursor-pointer"
         @click="toggle('rating')"
       >
         {{ $t('حداقل امتیاز') }}
@@ -172,12 +235,15 @@
           :class="{ 'rotate-180': open.rating }"
         />
       </button>
-      <div v-show="open.rating" class="mt-3 flex flex-col gap-2">
+      <div
+        v-show="open.rating"
+        class="mt-3 flex flex-col gap-2"
+      >
         <button
           v-for="rating in searchRatingOptions"
           :key="rating"
           type="button"
-          class="flex items-center gap-2 text-start rounded-lg px-2 py-1.5 transition"
+          class="flex items-center gap-2 text-start rounded-lg px-2 py-1.5 transition-all  cursor-pointer"
           :class="filters.minRating === rating
             ? 'bg-primary/10 text-primary'
             : 'hover:bg-elevated'"
@@ -192,10 +258,16 @@
               class="size-2 rounded-full bg-primary"
             />
           </span>
-          <span v-if="rating === 0" class="text-xs text-toned">
+          <span
+            v-if="rating === 0"
+            class="text-xs text-toned"
+          >
             {{ $t('همه') }}
           </span>
-          <span v-else class="inline-flex items-center gap-1">
+          <span
+            v-else
+            class="inline-flex items-center gap-1"
+          >
             <UIcon
               v-for="star in 5"
               :key="star"
@@ -212,19 +284,25 @@
 </template>
 
 <script setup lang="ts">
+import { formatPrice } from '~/data/products'
 import {
   cloneSearchFilters,
   countActiveFilters,
   SEARCH_PRICE_MAX,
   searchRatingOptions,
+  type SearchFilterAttribute,
   type SearchFilters,
 } from '~/data/search'
 
 const props = withDefaults(defineProps<{
   brands: string[]
+  attributes?: SearchFilterAttribute[]
+  priceCeiling?: number
   closable?: boolean
   focus?: 'delivery' | 'availability' | 'price' | 'brand' | 'rating' | ''
 }>(), {
+  attributes: () => [],
+  priceCeiling: SEARCH_PRICE_MAX,
   closable: false,
   focus: '',
 })
@@ -242,25 +320,92 @@ const open = reactive({
   rating: false,
 })
 
-const activeCount = computed(() => countActiveFilters(filters.value))
+const openAttrs = reactive<Record<string, boolean>>({})
+
+const activeCount = computed(() =>
+  countActiveFilters(filters.value, props.priceCeiling),
+)
+
+const priceCeiling = computed(() => Math.max(1, props.priceCeiling || SEARCH_PRICE_MAX))
+
+const priceStep = computed(() => {
+  const max = priceCeiling.value
+  if (max <= 5_000_000) return 100_000
+  if (max <= 50_000_000) return 500_000
+  return 1_000_000
+})
+
+function toEnDigits(value: string) {
+  return value
+    .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+}
+
+function parseGrouped(value: unknown) {
+  const digits = toEnDigits(String(value ?? '')).replace(/\D/g, '')
+  if (!digits) return 0
+  return Number(digits)
+}
+
+function formatGrouped(value: number) {
+  const n = Math.max(0, Math.floor(Number(value) || 0))
+  return n.toLocaleString('en-US')
+}
+
+function onMinPriceInput(value: string | number) {
+  const next = Math.min(parseGrouped(value), priceCeiling.value)
+  filters.value = {
+    ...filters.value,
+    minPrice: next,
+    maxPrice: Math.max(filters.value.maxPrice, next),
+  }
+}
+
+function onMaxPriceInput(value: string | number) {
+  const next = Math.min(Math.max(parseGrouped(value), filters.value.minPrice), priceCeiling.value)
+  filters.value = {
+    ...filters.value,
+    maxPrice: next || priceCeiling.value,
+  }
+}
 
 const priceRange = computed({
-  get: () => [filters.value.minPrice, filters.value.maxPrice] as number[],
+  get: () => [
+    Math.min(filters.value.minPrice, priceCeiling.value),
+    Math.min(filters.value.maxPrice, priceCeiling.value),
+  ] as number[],
   set: (value: number[]) => {
     filters.value = {
       ...filters.value,
       minPrice: value[0] ?? 0,
-      maxPrice: value[1] ?? SEARCH_PRICE_MAX,
+      maxPrice: value[1] ?? priceCeiling.value,
     }
   },
 })
+
+watch(
+  () => props.attributes.map(a => a.slug).join(','),
+  () => {
+    for (const attr of props.attributes) {
+      if (openAttrs[attr.slug] === undefined) openAttrs[attr.slug] = false
+    }
+  },
+  { immediate: true },
+)
 
 function toggle(key: keyof typeof open) {
   open[key] = !open[key]
 }
 
+function toggleAttrSection(slug: string) {
+  openAttrs[slug] = !openAttrs[slug]
+}
+
 function reset() {
-  filters.value = cloneSearchFilters()
+  filters.value = {
+    ...cloneSearchFilters(),
+    maxPrice: priceCeiling.value,
+  }
 }
 
 function toggleBrand(brand: string) {
@@ -270,10 +415,24 @@ function toggleBrand(brand: string) {
   filters.value = { ...filters.value, brands: Array.from(next) }
 }
 
+function isAttrSelected(slug: string, value: string) {
+  return (filters.value.attrs?.[slug] || []).includes(value)
+}
+
+function toggleAttr(slug: string, value: string) {
+  const current = new Set(filters.value.attrs?.[slug] || [])
+  if (current.has(value)) current.delete(value)
+  else current.add(value)
+  const attrs = { ...(filters.value.attrs || {}) }
+  if (current.size) attrs[slug] = Array.from(current)
+  else delete attrs[slug]
+  filters.value = { ...filters.value, attrs }
+}
+
 watch(
   () => props.focus,
   (section) => {
-    if (section && section in open) open[section] = true
+    if (section && section in open) open[section as keyof typeof open] = true
   },
   { immediate: true },
 )

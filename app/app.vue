@@ -29,7 +29,8 @@ const toaster = computed(() => {
     duration: 3500,
     expand: true,
     ...(appConfig.toaster ?? {}),
-    position: (isProductPage ? 'bottom-center' : 'top-center') as 'bottom-center' | 'top-center',
+    // position: (isProductPage  ? 'bottom-center' : 'top-center') as 'bottom-center' | 'top-center',
+    position:  'top-center',
   }
 })
 </script>

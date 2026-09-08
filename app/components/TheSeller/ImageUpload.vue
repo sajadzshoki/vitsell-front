@@ -207,7 +207,8 @@ const MAX_IMAGE_BYTES = 2 * 1024 * 1024
 
 const previewSrc = computed(() => {
   if (preferLocal.value && localPreview.value) return localPreview.value
-  return String(model.value || '').trim() || localPreview.value
+  const remote = String(model.value || '').trim()
+  return (remote ? resolveMediaUrl(remote) : '') || localPreview.value
 })
 
 const surfaceClass = computed(() =>

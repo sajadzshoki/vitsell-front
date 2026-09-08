@@ -1,7 +1,7 @@
 <template>
   <NuxtLink
     :to="orderLink"
-    class="block bg-muted border border-muted rounded-2xl p-4 transition hover:(border-accented bg-elevated/50)"
+    class="block bg-muted border border-muted rounded-2xl p-4 transition-all  hover:(border-accented bg-elevated/50)"
   >
     <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
       <div class="flex items-center gap-3 flex-wrap">

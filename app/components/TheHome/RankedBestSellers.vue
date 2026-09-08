@@ -35,14 +35,14 @@
               v-for="entry in column"
               :key="entry.product.id"
               :to="{ name: 'product-id', params: { id: entry.product.id } }"
-              class="flex items-center gap-3 p-2 rounded-xl hover:bg-primary/5 transition cursor-pointer group"
+              class="flex items-center gap-3 p-2 rounded-xl hover:bg-primary/5 transition-all  cursor-pointer group"
             >
               <span
                 class="size-8 rounded-full bg-error text-inverted text-sm font-bold grid place-items-center shrink-0 num"
               >
                 {{ entry.rank.toLocaleString('fa-IR') }}
               </span>
-              <p class="flex-1 min-w-0 text-sm text-toned line-clamp-2 group-hover:text-primary transition leading-6">
+              <p class="flex-1 min-w-0 text-sm text-toned line-clamp-2 group-hover:text-primary transition-all  leading-6">
                 {{ entry.product.title }}
               </p>
               <div class="size-14 sm:size-16 rounded-lg bg-muted overflow-hidden shrink-0">

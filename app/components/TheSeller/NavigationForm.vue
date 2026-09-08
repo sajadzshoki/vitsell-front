@@ -69,26 +69,23 @@
               />
             </div>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <TheFormInput
               v-model="link.label"
               :label="$t('عنوان')"
               :disabled="!canEdit"
             />
-            <TheFormInput
+            <TheSellerInternalLinkField
               v-model="link.to"
               :label="$t('مسیر')"
-              dir="ltr"
               :disabled="!canEdit"
-            />
-            <TheFormInput
-              v-model="link.icon"
-              :label="$t('آیکون')"
-              dir="ltr"
-              :disabled="!canEdit"
-              :help="$t('نام بدون پیشوند tabler')"
             />
           </div>
+          <TheSellerIconPicker
+            v-model="link.icon"
+            :label="$t('آیکون')"
+            :disabled="!canEdit"
+          />
         </div>
       </section>
 
@@ -130,22 +127,27 @@
               />
             </div>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <TheFormInput
               v-model="link.label"
               :label="$t('عنوان')"
               :disabled="!canEdit"
             />
-            <TheFormInput
+            <TheSellerInternalLinkField
               v-model="link.to"
               :label="$t('مسیر')"
-              dir="ltr"
               :disabled="!canEdit"
             />
-            <TheFormInput
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <TheSellerIconPicker
               v-model="link.icon"
               :label="$t('آیکون')"
-              dir="ltr"
+              :disabled="!canEdit"
+            />
+            <TheSellerIconPicker
+              v-model="link.iconActive"
+              :label="$t('آیکون فعال')"
               :disabled="!canEdit"
             />
           </div>

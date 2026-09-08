@@ -14,7 +14,7 @@
 
       <button
         type="button"
-        class="text-muted hover:text-primary transition cursor-pointer num"
+        class="text-muted hover:text-primary transition-all  cursor-pointer num"
         @click="emit('open-reviews')"
       >
         {{ product.reviews.toLocaleString('fa-IR') }} {{ $t('دیدگاه') }}
@@ -24,7 +24,7 @@
 
       <button
         type="button"
-        class="text-muted hover:text-primary transition cursor-pointer num"
+        class="text-muted hover:text-primary transition-all  cursor-pointer num"
         @click="emit('open-questions')"
       >
         {{ questionsCount.toLocaleString('fa-IR') }} {{ $t('پرسش') }}
@@ -47,7 +47,7 @@
           v-for="(c, i) in product.colors"
           :key="c.name"
           type="button"
-          class="size-9 rounded-full border-2 grid place-items-center transition cursor-pointer"
+          class="size-9 rounded-full border-2 grid place-items-center transition-all  cursor-pointer"
           :class="colorIndex === i ? 'border-primary' : 'border-muted'"
           :aria-label="c.name"
           @click="colorIndex = i"

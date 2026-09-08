@@ -60,12 +60,9 @@
             class="w-full"
           />
         </UFormField>
-        <TheFormInput
+        <TheSellerIconPicker
           v-model="form.icon"
           :label="$t('آیکون')"
-          :placeholder="$t('مثلاً sparkles')"
-          dir="ltr"
-          :help="$t('نام Tabler بدون i-tabler-')"
         />
         <div class="flex items-end pb-1">
           <UCheckbox

@@ -171,6 +171,20 @@
               <span class="text-muted">{{ $t('روش پرداخت') }}</span>
               <span class="text-default">{{ order.paymentMethod }}</span>
             </div>
+            <div
+              v-if="order.carrier"
+              class="flex justify-between gap-3"
+            >
+              <span class="text-muted">{{ $t('حامل') }}</span>
+              <span class="text-default">{{ order.carrier }}</span>
+            </div>
+            <div
+              v-if="order.trackingCode"
+              class="flex justify-between gap-3"
+            >
+              <span class="text-muted">{{ $t('کد پیگیری') }}</span>
+              <span class="num text-default" dir="ltr">{{ order.trackingCode }}</span>
+            </div>
           </div>
           <div class="border-t border-muted mt-3 pt-3 space-y-2 text-xs">
             <div class="flex justify-between gap-3">

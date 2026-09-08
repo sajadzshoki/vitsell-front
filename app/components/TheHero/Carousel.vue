@@ -83,17 +83,18 @@
 
             <div class="flex items-center gap-2 md:gap-3 flex-wrap">
               <UButton
+                v-if="item.to"
                 :to="item.to"
                 color="neutral"
                 variant="outline"
                 size="md"
                 trailing-icon="i-tabler-arrow-left"
-                class="md:h-12 md:text-base md:px-5"
+                class="md:h-12 md:text-base md:px-5 cursor-pointer"
                 :ui="{
                   base: 'rounded-xl font-bold shadow-lg border-default/20 bg-default text-highlighted dark:text-black hover:bg-elevated',
                 }"
               >
-                {{ $t(item.cta) }}
+                {{ $t(item.cta || 'مشاهده') }}
               </UButton>
 
               <div

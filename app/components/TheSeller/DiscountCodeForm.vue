@@ -146,7 +146,7 @@
           type="datetime-local"
           dir="ltr"
           :error="errors.startsAt"
-          required
+          :help="$t('اختیاری')"
           icon="i-tabler-calendar-event"
         />
         <TheFormInput
@@ -155,7 +155,7 @@
           type="datetime-local"
           dir="ltr"
           :error="errors.endsAt"
-          required
+          :help="$t('اختیاری')"
           icon="i-tabler-calendar-due"
         />
 
@@ -276,17 +276,15 @@ function validate() {
   else if (!Number.isFinite(fixedAmount) || fixedAmount < 0) {
     next.fixedAmount = t('مبلغ ثابت نامعتبر است')
   }
-  if (!form.value.startsAt.trim()) next.startsAt = t('زمان شروع الزامی است')
-  if (!form.value.endsAt.trim()) next.endsAt = t('زمان پایان الزامی است')
+  if (!Number.isFinite(minAmount) || minAmount < 0) {
+    next.minAmount = t('حداقل مبلغ نامعتبر است')
+  }
   if (
     form.value.startsAt
     && form.value.endsAt
     && new Date(form.value.endsAt).getTime() <= new Date(form.value.startsAt).getTime()
   ) {
     next.endsAt = t('زمان پایان باید بعد از شروع باشد')
-  }
-  if (!Number.isFinite(minAmount) || minAmount < 0) {
-    next.minAmount = t('حداقل مبلغ نامعتبر است')
   }
 
   errors.value = next

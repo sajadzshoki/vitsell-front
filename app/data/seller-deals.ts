@@ -133,14 +133,16 @@ export function toAmazingDealForm(deal: SellerAmazingDeal): SellerAmazingDealFor
 }
 
 export function formToAmazingDealPayload(form: SellerAmazingDealFormValues): SellerAmazingDealApiPayload {
-  return {
-    id: form.id.trim(),
+  const payload: SellerAmazingDealApiPayload = {
     productId: form.productId.trim(),
     discountPercent: clampPercent(Number(form.discountPercent)),
     startsAt: fromDatetimeLocalValue(form.startsAt),
     endsAt: fromDatetimeLocalValue(form.endsAt),
     active: form.active,
   }
+  const id = form.id.trim()
+  if (id) payload.id = id
+  return payload
 }
 
 export function applyDealOverlay(

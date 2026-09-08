@@ -164,7 +164,7 @@
               <div class="min-w-0">
                 <NuxtLink
                   :to="`/seller/campaigns/${campaign.id}`"
-                  class="text-sm font-medium text-highlighted truncate block hover:text-primary transition cursor-pointer"
+                  class="text-sm font-medium text-highlighted truncate block hover:text-primary transition-all  cursor-pointer"
                 >
                   {{ campaign.name }}
                 </NuxtLink>

@@ -45,25 +45,6 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TheFormInput
-          v-model="form.id"
-          :label="$t('شناسه (انگلیسی)')"
-          :placeholder="$t('مثلاً deal-iphone-16')"
-          dir="ltr"
-          :disabled="isEdit"
-          :error="errors.id"
-          required
-          icon="i-tabler-id"
-          :help="isEdit ? $t('شناسه بعد از ایجاد قابل تغییر نیست') : $t('فقط حروف کوچک انگلیسی، عدد و خط تیره')"
-        />
-
-        <TheFormInput
-          v-model="form.name"
-          :label="$t('نام نمایشی')"
-          :placeholder="$t('مثلاً شگفت‌انگیز آیفون')"
-          icon="i-tabler-tag"
-        />
-
         <UFormField
           class="md:col-span-2"
           :label="$t('محصول')"
@@ -246,7 +227,6 @@
 <script setup lang="ts">
 import type { Product } from '~/data/products'
 import {
-  amazingDealIdPattern,
   clampPercent,
   dealPriceFrom,
   emptyAmazingDealForm,
@@ -370,17 +350,12 @@ function formatPrice(value: number) {
 
 function validate() {
   const next: typeof errors.value = {}
-  const id = form.value.id.trim()
   const productId = form.value.productId.trim()
   const percent = Number(form.value.discountPercent)
   const startsAt = form.value.startsAt.trim()
   const endsAt = form.value.endsAt.trim()
   const specialRaw = form.value.specialPrice.trim()
 
-  if (!isEdit.value) {
-    if (!id) next.id = t('شناسه الزامی است')
-    else if (!amazingDealIdPattern.test(id)) next.id = t('شناسه فقط حروف کوچک، عدد و خط تیره')
-  }
   if (!productId) next.productId = t('انتخاب محصول الزامی است')
   if (!Number.isFinite(percent) || percent < 1 || percent > 99) {
     next.discountPercent = t('تخفیف باید بین ۱ تا ۹۹ باشد')

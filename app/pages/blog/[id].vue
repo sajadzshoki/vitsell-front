@@ -77,7 +77,7 @@ const post = computed<StaticBlogPost | null>(() =>
 )
 
 const related = computed<StaticBlogPost[]>(() =>
-  post.value ? morePosts(post.value.id, 3) : [],
+  post.value ? morePosts(post.value.id, 8) : [],
 )
 
 const isPublic = computed(() =>

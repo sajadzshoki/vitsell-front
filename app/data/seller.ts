@@ -351,7 +351,7 @@ export const sellerNavGroups: SellerNavGroup[] = [
       { id: 'system', label: 'نمای سیستم', icon: 'i-tabler-server-cog', to: '/seller/system' },
       { id: 'admins', label: 'کاربران ادمین', icon: 'i-tabler-user-shield', to: '/seller/admins' },
       { id: 'roles', label: 'نقش‌ها و دسترسی‌ها', icon: 'i-tabler-lock-access', to: '/seller/roles' },
-      { id: 'permissions', label: 'کاتالوگ دسترسی‌ها', icon: 'i-tabler-key', to: '/seller/roles/permissions' },
+      // { id: 'permissions', label: 'کاتالوگ دسترسی‌ها', icon: 'i-tabler-key', to: '/seller/roles/permissions' },
       { id: 'audit', label: 'لاگ حسابرسی', icon: 'i-tabler-clipboard-list', to: '/seller/audit' },
       { id: 'activity', label: 'لاگ فعالیت', icon: 'i-tabler-history', to: '/seller/activity' },
       { id: 'imports', label: 'مرکز ورود داده', icon: 'i-tabler-file-import', to: '/seller/imports' },

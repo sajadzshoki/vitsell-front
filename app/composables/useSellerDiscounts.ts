@@ -8,7 +8,6 @@ import {
   type SellerDiscountStatus,
 } from '~/data/seller-discounts'
 import { emptyMarketingTargeting } from '~/data/seller-marketing-shared'
-import { isValidScheduleWindow } from '~/data/seller-marketing-shared'
 
 export type SellerDiscountsQuery = {
   q?: string
@@ -45,8 +44,8 @@ function toDiscount(raw: any): SellerDiscount {
     value: Math.max(0, Math.round(Number(raw.value) || 0)),
     minOrder: Math.max(0, Math.round(Number(raw.minOrder) || 0)),
     maxDiscount: raw.maxDiscount == null ? null : Math.max(0, Math.round(Number(raw.maxDiscount))),
-    startsAt: String(raw.startsAt || new Date().toISOString()),
-    endsAt: String(raw.endsAt || new Date().toISOString()),
+    startsAt: raw.startsAt ? String(raw.startsAt) : null,
+    endsAt: raw.endsAt ? String(raw.endsAt) : null,
     status: raw.status === 'inactive' ? 'inactive' : 'active',
     usageLimit: raw.usageLimit == null ? null : Math.max(0, Math.round(Number(raw.usageLimit))),
     usageCount: Math.max(0, Math.round(Number(raw.usageCount) || 0)),
@@ -210,12 +209,6 @@ export function useSellerDiscounts() {
     const value = Number(form.value)
     if (form.type === 'percent' && (value < 1 || value > 99)) return 'درصد باید بین ۱ تا ۹۹ باشد'
     if (form.type === 'fixed' && value <= 0) return 'مبلغ تخفیف باید مثبت باشد'
-    if (!isValidScheduleWindow(
-      form.startsAt.includes('T') ? new Date(form.startsAt).toISOString() : form.startsAt,
-      form.endsAt.includes('T') ? new Date(form.endsAt).toISOString() : form.endsAt,
-    )) {
-      if (form.endsAt <= form.startsAt) return 'پایان باید بعد از شروع باشد'
-    }
     if (form.endsAt && form.startsAt && form.endsAt <= form.startsAt) {
       return 'پایان باید بعد از شروع باشد'
     }

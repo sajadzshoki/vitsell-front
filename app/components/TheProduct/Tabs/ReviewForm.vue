@@ -3,7 +3,7 @@
     v-model:open="open"
     :title="$t('ثبت دیدگاه')"
     :description="$t('تجربه خرید خود را با دیگران به اشتراک بگذارید')"
-    :ui="{ content: 'sm:max-w-lg' }"
+    :ui="{ content: 'sm:max-w-xl' }"
   >
     <template #body>
       <form
@@ -20,7 +20,7 @@
               v-for="star in 5"
               :key="star"
               type="button"
-              class="size-10 rounded-xl grid place-items-center transition hover:bg-warning/10"
+              class="size-10 rounded-xl grid place-items-center transition-all  cursor-pointer hover:bg-warning/10"
               :aria-label="`${star}`"
               @click="form.rating = star"
             >
@@ -61,6 +61,71 @@
             @update:model-value="errors.text = ''"
           />
         </UFormField>
+
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <p class="text-sm font-medium text-default">
+              {{ $t('تصاویر') }}
+              <span class="text-dimmed font-normal text-xs">({{ $t('اختیاری') }})</span>
+            </p>
+            <span class="text-[11px] text-dimmed num">
+              {{ form.images.length.toLocaleString('fa-IR') }}
+              /
+              {{ MAX_IMAGES.toLocaleString('fa-IR') }}
+            </span>
+          </div>
+
+          <input
+            ref="fileInput"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            class="sr-only"
+            @change="onFileChange"
+          >
+
+          <div class="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+            <button
+              type="button"
+              class="size-20 shrink-0 rounded-xl border border-dashed border-muted bg-muted/40 grid place-items-center transition-all  cursor-pointer hover:(border-primary/50 bg-primary/5) disabled:(opacity-50 cursor-not-allowed)"
+              :disabled="uploading || form.images.length >= MAX_IMAGES"
+              :aria-label="$t('افزودن تصویر')"
+              @click="openPicker"
+            >
+              <UIcon
+                :name="uploading ? 'i-tabler-loader-2' : 'i-tabler-camera-plus'"
+                class="size-6 text-primary"
+                :class="uploading && 'animate-spin'"
+              />
+            </button>
+
+            <div
+              v-for="(src, index) in form.images"
+              :key="`${src}-${index}`"
+              class="relative size-20 shrink-0 rounded-xl overflow-hidden border border-muted bg-muted"
+            >
+              <img
+                :src="mediaSrc(src)"
+                :alt="$t('تصویر دیدگاه')"
+                class="size-full object-cover"
+                loading="lazy"
+                decoding="async"
+              >
+              <button
+                type="button"
+                class="absolute top-1 end-1 size-6 rounded-full bg-inverted/70 text-inverted grid place-items-center cursor-pointer"
+                :aria-label="$t('حذف تصویر')"
+                @click="removeImage(index)"
+              >
+                <UIcon name="i-tabler-x" class="size-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <p class="text-[11px] text-dimmed mt-2 leading-5">
+            {{ $t('JPG، PNG یا WebP — هر فایل حداکثر ۲ مگابایت') }}
+          </p>
+        </div>
 
         <div>
           <p class="text-sm font-medium text-default mb-2">
@@ -158,7 +223,10 @@
           <span class="text-sm text-toned">
             {{ $t('خرید این محصول را پیشنهاد می‌کنم') }}
           </span>
-          <USwitch v-model="form.recommend" color="success" />
+          <USwitch
+            v-model="form.recommend"
+            color="success"
+          />
         </div>
       </form>
     </template>
@@ -175,7 +243,8 @@
         <UButton
           color="primary"
           class="font-bold"
-          :loading="submitting"
+          :loading="submitting || uploading"
+          :disabled="uploading"
           @click="onSubmit"
         >
           {{ $t('ثبت دیدگاه') }}
@@ -187,6 +256,9 @@
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
+
+const MAX_IMAGES = 5
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024
 
 const props = defineProps<{
   product: Product
@@ -205,6 +277,7 @@ const form = reactive({
   text: '',
   pros: [] as string[],
   cons: [] as string[],
+  images: [] as string[],
   recommend: true,
 })
 
@@ -216,6 +289,8 @@ const errors = reactive({
 const prosDraft = ref('')
 const consDraft = ref('')
 const submitting = ref(false)
+const uploading = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const textareaUi = {
   base: 'rounded-xl border border-default bg-default focus:border-primary',
@@ -230,11 +305,80 @@ function resetForm() {
   form.text = ''
   form.pros = []
   form.cons = []
+  form.images = []
   form.recommend = true
   prosDraft.value = ''
   consDraft.value = ''
   errors.rating = ''
   errors.text = ''
+  uploading.value = false
+  if (fileInput.value) fileInput.value.value = ''
+}
+
+function mediaSrc(url: string) {
+  return resolveMediaUrl(url) || url
+}
+
+function openPicker() {
+  if (uploading.value || form.images.length >= MAX_IMAGES) return
+  fileInput.value?.click()
+}
+
+function removeImage(index: number) {
+  form.images.splice(index, 1)
+}
+
+async function uploadOne(file: File): Promise<string | null> {
+  if (!file.type.startsWith('image/')) {
+    toast.error(t('فقط فایل تصویری مجاز است'))
+    return null
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    toast.error(t('حداکثر حجم هر تصویر ۲ مگابایت است'))
+    return null
+  }
+
+  const body = new FormData()
+  body.append('file', file)
+  const { result, error } = await usePost<{ url: string }, FormData>(
+    '/upload',
+    body,
+    { headers: { 'no-error': true } },
+  )
+  if (error || !result?.url) {
+    toast.error(t('آپلود تصویر ناموفق بود'))
+    return null
+  }
+  return result.url
+}
+
+async function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = [...(input.files ?? [])]
+  input.value = ''
+  if (!files.length) return
+
+  const remaining = MAX_IMAGES - form.images.length
+  if (remaining <= 0) {
+    toast.error(t('حداکثر ۵ تصویر می‌توانید اضافه کنید'))
+    return
+  }
+
+  const selected = files.slice(0, remaining)
+  if (files.length > remaining) {
+    toast.error(t('حداکثر ۵ تصویر می‌توانید اضافه کنید'))
+  }
+
+  uploading.value = true
+  try {
+    for (const file of selected) {
+      const url = await uploadOne(file)
+      if (url) form.images.push(url)
+    }
+  }
+  finally {
+    uploading.value = false
+  }
 }
 
 function addChip(kind: 'pros' | 'cons') {
@@ -268,6 +412,7 @@ function validate() {
 }
 
 async function onSubmit() {
+  if (uploading.value) return
   if (!validate()) return
 
   submitting.value = true
@@ -278,6 +423,7 @@ async function onSubmit() {
       pros: form.pros,
       cons: form.cons,
       recommend: form.recommend,
+      images: form.images.length ? [...form.images] : undefined,
     })
 
     if (!ok) {

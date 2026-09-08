@@ -21,7 +21,10 @@
       </div>
     </div>
 
-    <p class="text-xs text-muted num hidden md:block">
+    <p
+      v-if="total > 0"
+      class="text-xs text-muted num hidden md:block"
+    >
       {{ total.toLocaleString('fa-IR') }} {{ $t('کالا') }}
     </p>
 

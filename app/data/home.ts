@@ -144,7 +144,7 @@ export const homeBannerRows: HomeBannerRow[] = [
         title: 'جشنواره هدفون و اسپیکر',
         subtitle: 'تا ۴۰٪ تخفیف',
         image: '/images/mock/sony-xm5-midnight.jpg',
-        to: '/search?category=audio',
+        to: '/search/category-audio',
         tone: 'secondary',
       },
       {
@@ -152,7 +152,7 @@ export const homeBannerRows: HomeBannerRow[] = [
         title: 'هفته کنسول و گیمینگ',
         subtitle: 'PS5، Xbox و لوازم جانبی',
         image: '/images/mock/ps5-pro.jpg',
-        to: '/search?category=gaming',
+        to: '/search/category-gaming',
         tone: 'warning',
       },
       {
@@ -160,7 +160,7 @@ export const homeBannerRows: HomeBannerRow[] = [
         title: 'لپ‌تاپ دانشجویی',
         subtitle: 'سبک، قوی، مناسب کلاس',
         image: '/images/mock/ipad-pro-m4.jpg',
-        to: '/search?category=laptop',
+        to: '/search/category-laptop',
         tone: 'primary',
       },
     ],
@@ -173,7 +173,7 @@ export const homeBannerRows: HomeBannerRow[] = [
         title: 'ساعت‌های هوشمند منتخب',
         subtitle: 'ورزش، سلامت و اعلان‌ها',
         image: '/images/mock/apple-watch-ultra.jpg',
-        to: '/search?category=watch',
+        to: '/search/category-watch',
         tone: 'inverted',
       },
       {
@@ -253,19 +253,19 @@ export const homeCategoryShelves: HomeCategoryShelf[] = [
     id: 'shelf-mobile',
     title: 'پرفروش‌ترین‌های موبایل',
     category: 'mobile',
-    viewAllTo: '/search?category=mobile',
+    viewAllTo: '/search/category-mobile',
   },
   {
     id: 'shelf-laptop',
     title: 'پرفروش‌ترین‌های لپ‌تاپ',
     category: 'laptop',
-    viewAllTo: '/search?category=laptop',
+    viewAllTo: '/search/category-laptop',
   },
   {
     id: 'shelf-audio',
     title: 'پرفروش‌ترین‌های صوتی',
     category: 'audio',
-    viewAllTo: '/search?category=audio',
+    viewAllTo: '/search/category-audio',
   },
 ]
 
@@ -287,7 +287,7 @@ export const homeSeoBlocks: HomeSeoBlock[] = [
     paragraphs: [
       'در دیجی‌شاپ می‌توانید انواع گوشی موبایل اپل، سامسونگ، شیائومی، آنر، گوگل و دیگر برندها را با گارانتی معتبر مقایسه و خریداری کنید. فیلترهای قیمت، حافظه، رم و امتیاز کاربران کمک می‌کند سریع‌تر به گزینه مناسب برسید. برای شروع،',
     ],
-    inlineLink: { label: 'خرید گوشی موبایل', to: '/search?category=mobile' },
+    inlineLink: { label: 'خرید گوشی موبایل', to: '/search/category-mobile' },
   },
   {
     title: 'لپ‌تاپ و تبلت برای کار و تحصیل',

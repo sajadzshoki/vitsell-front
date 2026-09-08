@@ -19,7 +19,33 @@ export type ProductReview = {
   pros?: string[]
   cons?: string[]
   hasImage?: boolean
+  images?: string[]
   helpfulCount: number
+}
+
+/** Flattened buyer photo linked to its source review (product gallery / lightbox). */
+export type ProductBuyerPhoto = {
+  url: string
+  reviewId: string
+  review: ProductReview
+}
+
+export function getReviewImages(review: ProductReview): string[] {
+  return (review.images ?? []).map(u => String(u || '').trim()).filter(Boolean)
+}
+
+export function reviewHasImages(review: ProductReview): boolean {
+  return getReviewImages(review).length > 0 || Boolean(review.hasImage)
+}
+
+export function collectBuyerPhotos(reviews: ProductReview[]): ProductBuyerPhoto[] {
+  const items: ProductBuyerPhoto[] = []
+  for (const review of reviews) {
+    for (const url of getReviewImages(review)) {
+      items.push({ url, reviewId: review.id, review })
+    }
+  }
+  return items
 }
 
 export type StarDistribution = {
@@ -107,6 +133,11 @@ export const productMockReviews: ProductReview[] = [
     pros: ['کیفیت ساخت عالی', 'دوربین قوی', 'ارسال سریع'],
     cons: ['قیمت بالا'],
     hasImage: true,
+    images: [
+      '/images/mock/iphone16pro-desert.jpg',
+      '/images/mock/iphone16_PNG13.png',
+      '/images/mock/galaxy-s25-ultra.jpg',
+    ],
     helpfulCount: 42,
   },
   {
@@ -157,6 +188,10 @@ export const productMockReviews: ProductReview[] = [
     text: 'از هر نظر عالیه. گارانتی رسمی هم داشت که خیالم راحت شد.',
     verified: true,
     hasImage: true,
+    images: [
+      '/images/mock/apple-watch-ultra.jpg',
+      '/images/mock/ipad-pro-m4.jpg',
+    ],
     helpfulCount: 19,
   },
   {

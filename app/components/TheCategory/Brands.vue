@@ -12,7 +12,7 @@
           v-for="brand in brands"
           :key="brand"
           :to="brandRoute(brand)"
-          class="text-base sm:text-xl font-bold text-dimmed hover:text-primary transition tracking-wide"
+          class="text-base sm:text-xl font-bold text-dimmed hover:text-primary transition-all  tracking-wide"
         >
           {{ brand }}
         </NuxtLink>

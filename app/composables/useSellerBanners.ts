@@ -32,6 +32,7 @@ function apiErrorMessage(error: any, fallback: string) {
 }
 
 function toBanner(raw: any): SellerBanner {
+  const linkTypes = ['none', 'url', 'product', 'category', 'brand', 'campaign'] as const
   return {
     id: String(raw.id || ''),
     title: String(raw.title || ''),
@@ -40,12 +41,11 @@ function toBanner(raw: any): SellerBanner {
     image: String(raw.image || ''),
     imageMobile: raw.imageMobile ? String(raw.imageMobile) : null,
     link: String(raw.link || ''),
-    linkType: (['url', 'product', 'category', 'brand', 'campaign'].includes(raw.linkType)
-      ? raw.linkType
-      : 'url') as SellerBanner['linkType'],
+    linkType: (linkTypes.includes(raw.linkType) ? raw.linkType : 'url') as SellerBanner['linkType'],
     productId: raw.productId ? String(raw.productId) : null,
     brandId: raw.brandId ? String(raw.brandId) : null,
     campaignId: raw.campaignId ? String(raw.campaignId) : null,
+    buttonText: raw.buttonText ? String(raw.buttonText) : null,
     type: raw.type === 'secondary' ? 'secondary' : 'main',
     placement: (raw.placement || 'homepage_hero') as SellerBanner['placement'],
     categoryId: raw.categoryId ? String(raw.categoryId) : null,
@@ -73,6 +73,7 @@ function formToBannerPayload(form: SellerBannerFormValues) {
     productId: banner.productId,
     brandId: banner.brandId,
     campaignId: banner.campaignId,
+    buttonText: banner.buttonText,
     type: banner.type,
     placement: banner.placement,
     categoryId: banner.categoryId,

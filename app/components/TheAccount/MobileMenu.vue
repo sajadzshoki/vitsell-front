@@ -4,7 +4,7 @@
       v-for="item in menuItems"
       :key="item.to"
       :to="item.to"
-      class="flex items-center gap-3 px-4 py-3.5 text-start border-b border-muted last:border-b-0 transition hover:bg-muted/50"
+      class="flex items-center gap-3 px-4 py-3.5 text-start border-b border-muted last:border-b-0 transition-all  hover:bg-muted/50"
     >
       <div
         class="size-9 rounded-xl grid place-items-center shrink-0"
@@ -27,7 +27,7 @@
 
     <button
       type="button"
-      class="w-full flex items-center gap-3 px-4 py-3.5 text-start border-t border-muted transition hover:bg-error/50"
+      class="w-full flex items-center gap-3 px-4 py-3.5 text-start border-t border-muted transition-all  hover:bg-error/50"
       @click="onLogout"
     >
       <div class="size-9 rounded-xl grid place-items-center shrink-0 bg-muted text-muted">

@@ -28,7 +28,7 @@
         >
           <button
             type="button"
-            class="w-full text-lg font-bold text-dimmed hover:text-highlighted transition tracking-wide cursor-pointer py-2"
+            class="w-full text-lg font-bold text-dimmed hover:text-highlighted transition-all  tracking-wide cursor-pointer py-2"
             @click="navigateTo(`/search?q=${encodeURIComponent(item)}`)"
           >
             {{ item }}
@@ -41,7 +41,7 @@
           v-for="brand in brands"
           :key="brand"
           type="button"
-          class="text-lg md:text-2xl font-bold text-dimmed hover:text-highlighted transition tracking-wide cursor-pointer"
+          class="text-lg md:text-2xl font-bold text-dimmed hover:text-highlighted transition-all  tracking-wide cursor-pointer"
           @click="navigateTo(`/search?q=${encodeURIComponent(brand)}`)"
         >
           {{ brand }}

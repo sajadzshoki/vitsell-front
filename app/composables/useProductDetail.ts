@@ -3,6 +3,7 @@ import {
   buildReviewSummary,
   getProductCriteriaScores,
   getProductSpecGroups,
+  reviewHasImages,
   type ProductQuestion,
   type ProductReview,
   type ProductReviewSort,
@@ -14,6 +15,7 @@ export type NewProductReviewInput = {
   pros?: string[]
   cons?: string[]
   recommend?: boolean
+  images?: string[]
 }
 
 export type NewProductQuestionInput = {
@@ -84,7 +86,7 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
       list = list.filter(r => r.verified)
     }
     if (filterWithImage.value) {
-      list = list.filter(r => r.hasImage)
+      list = list.filter(r => reviewHasImages(r))
     }
     if (filterStars.value !== null) {
       list = list.filter(r => r.rating === filterStars.value)
@@ -166,7 +168,7 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
         ...relatedByProduct.value,
         [id]: (relatedRes.result?.items ?? [])
           .filter(item => item.id !== id)
-          .slice(0, 4),
+          .slice(0, 6),
       }
       detailLoadedIds.value = { ...detailLoadedIds.value, [id]: true }
     }
@@ -188,6 +190,7 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
         recommend: input.recommend ?? true,
         ...(input.pros?.length ? { pros: input.pros } : {}),
         ...(input.cons?.length ? { cons: input.cons } : {}),
+        ...(input.images?.length ? { images: input.images } : {}),
       },
       { headers: { 'no-error': true } },
     )

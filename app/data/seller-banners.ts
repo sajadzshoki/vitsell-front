@@ -4,6 +4,7 @@ import { homeBannerRows } from '~/data/home'
 export type SellerBannerType = 'main' | 'secondary'
 
 export type SellerBannerLinkType =
+  | 'none'
   | 'url'
   | 'product'
   | 'category'
@@ -37,6 +38,7 @@ export type SellerBanner = {
   productId: string | null
   brandId: string | null
   campaignId: string | null
+  buttonText: string | null
   type: SellerBannerType
   placement: SellerBannerPlacement
   categoryId: string | null
@@ -61,6 +63,7 @@ export type SellerBannerFormValues = {
   productId: string
   brandId: string
   campaignId: string
+  buttonText: string
   type: SellerBannerType
   placement: SellerBannerPlacement
   categoryId: string
@@ -100,6 +103,7 @@ export const sellerBannerLinkTypeMeta: Record<
   SellerBannerLinkType,
   { label: string }
 > = {
+  none: { label: 'بدون لینک' },
   url: { label: 'لینک مستقیم' },
   product: { label: 'محصول' },
   category: { label: 'دسته‌بندی' },
@@ -174,6 +178,7 @@ export function buildDefaultSellerBanners(): SellerBanner[] {
     productId: null,
     brandId: null,
     campaignId: null,
+    buttonText: slide.cta || null,
     type: 'main',
     placement: 'homepage_hero',
     categoryId: categoryIdFromLink(slide.to),
@@ -199,6 +204,7 @@ export function buildDefaultSellerBanners(): SellerBanner[] {
       productId: null,
       brandId: null,
       campaignId: null,
+      buttonText: null,
       type: 'secondary' as const,
       placement: 'homepage_promo_strip' as const,
       categoryId: categoryIdFromLink(banner.to),
@@ -224,10 +230,11 @@ export function emptyBannerForm(): SellerBannerFormValues {
     image: '',
     imageMobile: '',
     link: '',
-    linkType: 'url',
+    linkType: 'none',
     productId: '',
     brandId: '',
     campaignId: '',
+    buttonText: '',
     type: 'secondary',
     placement: 'homepage_promo_strip',
     categoryId: '__none__',
@@ -252,6 +259,7 @@ export function toBannerForm(banner: SellerBanner): SellerBannerFormValues {
     productId: banner.productId ?? '',
     brandId: banner.brandId ?? '',
     campaignId: banner.campaignId ?? '',
+    buttonText: banner.buttonText ?? '',
     type: banner.type,
     placement: banner.placement ?? defaultPlacementForType(banner.type),
     categoryId: banner.categoryId || '__none__',
@@ -268,7 +276,7 @@ export function formToSellerBanner(
   previous?: SellerBanner | null,
 ): SellerBanner {
   const now = new Date().toISOString()
-  const linkType = form.linkType || 'url'
+  const linkType = form.linkType || 'none'
   return {
     id: form.id.trim(),
     title: form.title.trim(),
@@ -276,14 +284,20 @@ export function formToSellerBanner(
     alt: form.alt.trim() || form.title.trim(),
     image: form.image.trim(),
     imageMobile: form.imageMobile.trim() || null,
-    link: form.link.trim(),
+    link: linkType === 'none' ? '' : form.link.trim(),
     linkType,
     productId: linkType === 'product' ? (form.productId.trim() || null) : null,
     brandId: linkType === 'brand' ? (form.brandId.trim() || null) : null,
     campaignId: linkType === 'campaign' ? (form.campaignId.trim() || null) : null,
+    buttonText: linkType === 'none' ? null : (form.buttonText.trim() || null),
     type: form.type,
     placement: form.placement || defaultPlacementForType(form.type),
     categoryId: (() => {
+      if (linkType === 'category') {
+        const raw = form.categoryId.trim()
+        if (!raw || raw === '__none__') return null
+        return raw
+      }
       const raw = form.categoryId.trim()
       if (!raw || raw === '__none__') return null
       return raw

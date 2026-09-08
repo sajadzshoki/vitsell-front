@@ -34,13 +34,11 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TheFormInput
-          v-model="form.id"
-          :label="$t('شناسه (انگلیسی)')"
-          dir="ltr"
-          :disabled="isEdit"
+          v-model="form.title"
+          :label="$t('عنوان')"
           required
-          :error="errors.id"
-          icon="i-tabler-id"
+          :error="errors.title"
+          icon="i-tabler-heading"
         />
         <TheFormInput
           v-model="form.path"
@@ -50,20 +48,12 @@
           :error="errors.path"
           icon="i-tabler-link"
           placeholder="/example"
+          :help="$t('از عنوان ساخته می‌شود؛ می‌توانید ویرایش کنید')"
+          @update:model-value="pathTouched = true"
         />
-        <TheFormInput
-          v-model="form.title"
-          :label="$t('عنوان')"
-          required
-          :error="errors.title"
-          icon="i-tabler-heading"
-        />
-        <TheFormInput
+        <TheSellerIconPicker
           v-model="form.icon"
           :label="$t('آیکون')"
-          dir="ltr"
-          placeholder="i-tabler-file-text"
-          icon="i-tabler-icons"
         />
         <UFormField :label="$t('وضعیت')">
           <USelect
@@ -233,13 +223,13 @@
 <script setup lang="ts">
 import {
   emptyPageForm,
-  pageIdPattern,
   sellerPageStatusMeta,
   sellerPageTemplates,
   toPageForm,
   type SellerManagedPage,
   type SellerPageStatus,
 } from '~/data/seller-pages'
+import { slugifyLatin } from '~/data/seo'
 
 const props = defineProps<{
   initial?: SellerManagedPage | null
@@ -254,7 +244,8 @@ const { createPage, updatePage } = useSellerPages()
 const isEdit = computed(() => Boolean(props.initial?.id))
 const saving = ref(false)
 const form = ref(props.initial ? toPageForm(props.initial) : emptyPageForm())
-const errors = ref<Partial<Record<'id' | 'title' | 'path', string>>>({})
+const pathTouched = ref(Boolean(props.initial?.path && props.initial.path !== '/'))
+const errors = ref<Partial<Record<'title' | 'path', string>>>({})
 const savedSnapshot = ref(JSON.stringify(form.value))
 const isDirty = computed(() => JSON.stringify(form.value) !== savedSnapshot.value)
 const { allowNextNavigation } = useSellerUnsavedGuard(isDirty)
@@ -280,19 +271,27 @@ watch(
   (value) => {
     form.value = value ? toPageForm(value) : emptyPageForm()
     savedSnapshot.value = JSON.stringify(form.value)
+    pathTouched.value = Boolean(value?.path && value.path !== '/')
     errors.value = {}
+  },
+)
+
+watch(
+  () => form.value.title,
+  (title) => {
+    if (isEdit.value || pathTouched.value) return
+    const slug = slugifyLatin(title)
+    form.value.path = slug ? `/${slug}` : '/'
   },
 )
 
 function validate() {
   const next: typeof errors.value = {}
-  if (!isEdit.value) {
-    const id = form.value.id.trim()
-    if (!id) next.id = t('شناسه الزامی است')
-    else if (!pageIdPattern().test(id)) next.id = t('شناسه نامعتبر است')
-  }
   if (!form.value.title.trim()) next.title = t('عنوان الزامی است')
-  if (!form.value.path.trim()) next.path = t('مسیر الزامی است')
+  const path = form.value.path.trim() || (slugifyLatin(form.value.title) ? `/${slugifyLatin(form.value.title)}` : '')
+  if (!path || path === '/') next.path = t('مسیر الزامی است')
+  if (path && !path.startsWith('/')) form.value.path = `/${path}`
+  else if (path) form.value.path = path
   errors.value = next
   return !Object.keys(next).length
 }

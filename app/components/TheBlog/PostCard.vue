@@ -1,21 +1,19 @@
 <template>
   <NuxtLink
     :to="getBlogPostPath(post.id)"
-    class="group flex flex-col bg-default border border-muted rounded-2xl overflow-hidden transition cursor-pointer hover:(border-primary/40 shadow-sm)"
-    :class="featured ? 'md:flex-row md:min-h-72' : ''"
+    class="group cursor-pointer text-start"
+    :class="rootClass"
   >
     <div
-      class="relative bg-muted overflow-hidden shrink-0"
-      :class="featured
-        ? 'aspect-[16/10] md:(aspect-auto w-[48%] min-h-72)'
-        : 'aspect-[16/10]'"
+      class="relative bg-muted overflow-hidden shrink-0 "
+      :class="mediaClass"
     >
       <img
         v-if="post.image"
         :src="post.image"
-        :alt="post.title"
-        class="size-full object-cover transition duration-500 group-hover:scale-105"
-        :loading="featured ? 'eager' : 'lazy'"
+        :alt="$t(post.title)"
+        class="size-full object-cover transition-all duration-300  group-hover:scale-105"
+        :loading="variant === 'featured' ? 'eager' : 'lazy'"
       >
       <div
         v-else
@@ -28,65 +26,38 @@
         />
       </div>
 
-      <div
-        v-if="post.popular"
-        class="absolute top-3 start-3 z-10 size-9 rounded-full bg-error text-inverted grid place-items-center shadow-sm"
-        :title="$t('مورد علاقه کاربران')"
+      <span
+        v-if="post.readTime"
+        class="absolute top-2.5 start-2.5 z-10 rounded-lg bg-inverted/70 text-inverted text-[11px] font-medium px-2.5 py-1 backdrop-blur-sm"
       >
-        <UIcon
-          name="i-tabler-heart-filled"
-          class="size-4"
-        />
-      </div>
+        {{ $t('مطالعه') }} {{ $t(post.readTime) }}
+      </span>
     </div>
 
     <div
-      class="flex flex-col flex-1 min-w-0 p-4"
-      :class="featured ? 'md:(p-6 justify-center)' : ''"
+      class="flex flex-col min-w-0"
+      :class="bodyClass"
     >
-      <div class="flex items-center gap-2 flex-wrap mb-2">
-        <span class="text-[11px] font-medium text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
-          {{ $t(post.category) }}
-        </span>
-        <span
-          v-if="post.date"
-          class="text-[11px] text-dimmed num"
-        >
-          {{ $t(post.date) }}
-        </span>
-      </div>
+      <time
+        v-if="post.date"
+        class="text-[11px] text-dimmed num mb-1.5"
+      >
+        {{ $t(post.date) }}
+      </time>
 
       <h3
-        class="font-bold text-highlighted leading-7 transition group-hover:text-primary"
-        :class="featured ? 'text-lg md:text-xl line-clamp-3 mb-2' : 'text-sm line-clamp-2 mb-1.5'"
+        class="font-bold text-highlighted leading-7 transition-all group-hover:text-primary"
+        :class="titleClass"
       >
         {{ $t(post.title) }}
       </h3>
 
       <p
-        class="text-sm text-toned leading-7 flex-1"
-        :class="featured ? 'line-clamp-3 md:line-clamp-4' : 'line-clamp-2'"
+        class="text-sm text-muted leading-7"
+        :class="excerptClass"
       >
         {{ $t(post.excerpt) }}
       </p>
-
-      <div class="mt-3 pt-3 border-t border-muted flex items-center justify-between gap-3">
-        <span class="text-[11px] text-muted">
-          {{ $t('زمان مطالعه') }}: {{ $t(post.readTime) }}
-        </span>
-        <span
-          v-if="(post.engagement ?? 0) > 0"
-          class="inline-flex items-center gap-1 text-[11px] text-muted num"
-          :title="$t('تعداد تعامل')"
-        >
-          <UIcon
-            name="i-tabler-flame"
-            class="size-3.5"
-            :class="(post.engagement ?? 0) >= 80 ? 'text-warning' : 'text-dimmed'"
-          />
-          {{ (post.engagement ?? 0).toLocaleString('fa-IR') }}
-        </span>
-      </div>
     </div>
   </NuxtLink>
 </template>
@@ -94,8 +65,57 @@
 <script setup lang="ts">
 import { getBlogPostPath, type StaticBlogPost } from '~/data/static-pages'
 
-defineProps<{
+const props = withDefaults(defineProps<{
   post: StaticBlogPost
+  /** default = grid card; featured = large latest; side = compact horizontal */
+  variant?: 'default' | 'featured' | 'side'
+  /** @deprecated use variant="featured" */
   featured?: boolean
-}>()
+}>(), {
+  variant: 'default',
+  featured: false,
+})
+
+const variant = computed(() => {
+  if (props.featured) return 'featured' as const
+  return props.variant
+})
+
+const rootClass = computed(() => {
+  if (variant.value === 'side') {
+    // items-start → date/title flush with image top (Figma)
+    return 'flex flex-row gap-3 items-start'
+  }
+  if (variant.value === 'featured') {
+    return 'flex flex-col gap-3 h-full'
+  }
+  return 'flex flex-col gap-3'
+})
+
+const mediaClass = computed(() => {
+  if (variant.value === 'side') {
+    return 'h-32 sm:h-32 aspect-[16/10] rounded-xl'
+  }
+  if (variant.value === 'featured') {
+    return 'aspect-[16/10] h-80 rounded-2xl'
+  }
+  return 'aspect-[16/10] rounded-xl'
+})
+
+const bodyClass = computed(() => {
+  if (variant.value === 'side') return 'flex-1 py-0.5'
+  return ''
+})
+
+const titleClass = computed(() => {
+  if (variant.value === 'featured') return 'text-lg md:text-xl line-clamp-2 mb-2'
+  if (variant.value === 'side') return 'text-sm line-clamp-2 mb-1'
+  return 'text-sm md:text-base line-clamp-2 mb-1.5'
+})
+
+const excerptClass = computed(() => {
+  if (variant.value === 'featured') return 'line-clamp-3 md:line-clamp-4'
+  if (variant.value === 'side') return 'line-clamp-2 text-xs sm:text-sm'
+  return 'line-clamp-3'
+})
 </script>

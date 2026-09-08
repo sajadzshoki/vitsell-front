@@ -46,7 +46,7 @@ function toQuick(raw: any, index: number): SellerNavLinkForm {
   return {
     id,
     label: String(raw?.label || id),
-    icon: raw?.icon ? String(raw.icon) : undefined,
+    icon: raw?.icon ? String(raw.icon) : '',
     to: to || undefined,
     badge: raw?.badge ? String(raw.badge) : undefined,
     accent: Boolean(raw?.accent),
@@ -62,7 +62,7 @@ function toBottom(raw: any, index: number): SellerBottomNavForm {
     id,
     label: String(raw?.label || id),
     icon: String(raw?.icon || 'circle'),
-    iconActive: raw?.iconActive ? String(raw.iconActive) : undefined,
+    iconActive: raw?.iconActive ? String(raw.iconActive) : '',
     to: raw?.to ? String(raw.to) : undefined,
     badge: badge === 'cart' ? 'cart' : badge as SellerBottomNavForm['badge'],
     enabled: raw?.enabled === false ? false : true,

@@ -10,6 +10,7 @@ export type ProductsQuery = {
   onlyInStock?: boolean
   fastDelivery?: boolean
   minRating?: number
+  attrs?: Record<string, string[]>
   sort?: string
   page?: number
   pageSize?: number
@@ -33,6 +34,13 @@ function toQueryString(query: ProductsQuery) {
   if (query.onlyInStock) params.set('onlyInStock', 'true')
   if (query.fastDelivery) params.set('fastDelivery', 'true')
   if (query.minRating) params.set('minRating', String(query.minRating))
+  if (query.attrs && Object.keys(query.attrs).length) {
+    const cleaned: Record<string, string[]> = {}
+    for (const [key, values] of Object.entries(query.attrs)) {
+      if (values?.length) cleaned[key] = values
+    }
+    if (Object.keys(cleaned).length) params.set('attrs', JSON.stringify(cleaned))
+  }
   if (query.sort) params.set('sort', query.sort)
   if (query.page) params.set('page', String(query.page))
   if (query.pageSize) params.set('pageSize', String(query.pageSize))

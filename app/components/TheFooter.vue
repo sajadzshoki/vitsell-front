@@ -11,9 +11,16 @@
           :key="item.id"
           class="flex items-center gap-3"
         >
-          <div class="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0">
+          <div class="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0 overflow-hidden">
+            <img
+              v-if="isSellerAdminIconImage(item.icon)"
+              :src="resolveMediaUrl(item.icon)"
+              alt=""
+              class="size-6 object-contain"
+            >
             <UIcon
-              :name="`i-tabler-${item.icon}`"
+              v-else
+              :name="resolveSellerAdminIconName(item.icon)"
               class="size-6"
             />
           </div>
@@ -73,11 +80,18 @@
                 variant="outline"
                 size="sm"
                 square
-                :icon="`i-tabler-${social.icon}`"
+                :icon="isSellerAdminIconImage(social.icon) ? undefined : resolveSellerAdminIconName(social.icon)"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="size-10 rounded-full !bg-primary/5 !text-primary !border-primary/25 hover:(!bg-primary/10 !border-primary/40)"
-              />
+              >
+                <img
+                  v-if="isSellerAdminIconImage(social.icon)"
+                  :src="resolveMediaUrl(social.icon)"
+                  alt=""
+                  class="size-5 object-contain"
+                >
+              </UButton>
             </div>
           </div>
 
@@ -101,7 +115,7 @@
                 >
                   <NuxtLink
                     :to="link.to"
-                    class="text-sm text-muted hover:text-primary transition text-start cursor-pointer"
+                    class="text-sm text-muted hover:text-primary transition-all  text-start cursor-pointer"
                   >
                     {{ $t(link.label) }}
                   </NuxtLink>
@@ -186,7 +200,7 @@
                 :key="store.id"
                 :href="store.href"
                 :aria-label="$t(store.label)"
-                class="inline-flex items-center cursor-pointer transition hover:opacity-90 focus-visible:(outline-none ring-2 ring-primary/40) rounded-xl"
+                class="inline-flex items-center cursor-pointer transition-all  hover:opacity-90 focus-visible:(outline-none ring-2 ring-primary/40) rounded-xl"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -220,7 +234,7 @@
               >
               <UIcon
                 v-else
-                :name="`i-tabler-${badge.icon}`"
+                :name="resolveSellerAdminIconName(badge.icon)"
                 class="size-7 text-toned"
               />
             </div>
@@ -238,10 +252,18 @@
         </div>
       </div>
     </div>
+    </div>
+    </div>
   </footer>
 </template>
 
 <script setup lang="ts">
+import {
+  isSellerAdminIconImage,
+  resolveSellerAdminIconName,
+} from '~/data/seller-admin-icons'
+import { resolveMediaUrl } from '~/composables/fetch'
+
 const TRUST_BADGES: Record<string, string> = {
   enamad: '/images/enamad-logo.png',
   samandehi: '/images/samandehi.png',

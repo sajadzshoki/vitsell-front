@@ -4,7 +4,7 @@
     <div class="mb-7 flex flex-col items-center text-center gap-3">
       <NuxtLink
         to="/"
-        class="size-14 rounded-2xl bg-primary grid place-items-center text-inverted shadow-lg shadow-primary/20 transition hover:brightness-110"
+        class="size-14 rounded-2xl bg-primary grid place-items-center text-inverted shadow-lg shadow-primary/20 transition-all  hover:brightness-110"
         :aria-label="$t('دیجی‌شاپ')"
       >
         <UIcon name="i-tabler-shopping-bag" class="size-7" />
@@ -376,7 +376,7 @@
       <a
         v-if="isAdminApp && storeUrl"
         :href="storeUrl"
-        class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition cursor-pointer"
+        class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition-all  cursor-pointer"
       >
         <UIcon name="i-tabler-arrow-right" class="size-4" />
         {{ $t('بازگشت به فروشگاه') }}
@@ -384,7 +384,7 @@
       <template v-else-if="!isAdminApp">
         <NuxtLink
           to="/"
-          class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition cursor-pointer"
+          class="inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition-all  cursor-pointer"
         >
           <UIcon name="i-tabler-arrow-right" class="size-4" />
           {{ $t('بازگشت به فروشگاه') }}

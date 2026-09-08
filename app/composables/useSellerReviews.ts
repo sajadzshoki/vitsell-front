@@ -134,6 +134,30 @@ export function useSellerReviews() {
     return { ok: true as const, review: next }
   }
 
+  async function updateReview(
+    id: string,
+    payload: { text?: string, reply?: string | null },
+  ) {
+    const body: Record<string, string | null> = {}
+    if (payload.text != null) body.text = payload.text.trim()
+    if (payload.reply !== undefined) body.reply = payload.reply?.trim() || null
+    if (!Object.keys(body).length) {
+      return { ok: false as const, error: 'متن ویرایش خالی است' }
+    }
+
+    const { result, error } = await usePatch<SellerReview>(
+      `/seller/reviews/${encodeURIComponent(id)}`,
+      body,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return { ok: false as const, error: apiErrorMessage(error, 'ویرایش نظر ناموفق بود') }
+    }
+    const next = toReview(result)
+    items.value = items.value.map(r => (r.id === id ? next : r))
+    return { ok: true as const, review: next }
+  }
+
   async function setModeration(id: string, moderation: SellerReviewModeration) {
     const { result, error } = await usePatch<SellerReview>(
       `/seller/reviews/${encodeURIComponent(id)}/moderation`,
@@ -170,6 +194,7 @@ export function useSellerReviews() {
     unansweredCount,
     fetchList,
     reply,
+    updateReview,
     setModeration,
     bulkSetModeration,
   }

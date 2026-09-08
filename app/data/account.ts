@@ -27,6 +27,8 @@ export type ShopOrder = {
   shippingMethod: string
   paymentMethod: string
   address: CheckoutAddress
+  trackingCode?: string
+  carrier?: string
 }
 
 export type AccountProfile = {

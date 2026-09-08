@@ -21,11 +21,17 @@
             <NuxtLink
               v-if="link.to"
               :to="link.to"
-              class="inline-flex items-center gap-1.5 text-xs md:text-sm text-toned hover:text-primary transition whitespace-nowrap py-1"
+              class="inline-flex items-center gap-1.5 text-xs md:text-sm text-toned hover:text-primary transition-all  whitespace-nowrap py-1"
             >
+              <img
+                v-if="link.icon && isSellerAdminIconImage(link.icon)"
+                :src="resolveMediaUrl(link.icon)"
+                alt=""
+                class="size-4 shrink-0 object-contain"
+              >
               <UIcon
-                v-if="link.icon"
-                :name="`i-tabler-${link.icon}`"
+                v-else-if="link.icon"
+                :name="resolveSellerAdminIconName(link.icon)"
                 class="size-4 shrink-0"
               />
               <span>{{ $t(link.label) }}</span>
@@ -46,7 +52,7 @@
       <!-- <NuxtLink
         v-if="seller.to"
         :to="seller.to"
-        class="shrink-0 text-xs md:text-sm font-medium text-primary hover:text-primary/80 transition whitespace-nowrap"
+        class="shrink-0 text-xs md:text-sm font-medium text-primary hover:text-primary/80 transition-all  whitespace-nowrap"
       >
         {{ $t(seller.label) }}
       </NuxtLink> -->
@@ -56,6 +62,11 @@
 
 <script setup lang="ts">
 import { navSellerLink } from '~/data/nav-links'
+import {
+  isSellerAdminIconImage,
+  resolveSellerAdminIconName,
+} from '~/data/seller-admin-icons'
+import { resolveMediaUrl } from '~/composables/fetch'
 
 const { publicQuickLinks, fetchNavigation } = useSellerNavigation()
 await fetchNavigation({ force: false, admin: false })
@@ -65,7 +76,7 @@ const seller = navSellerLink
 /** Ignore tiny trackpad/jitter; sticky height changes also nudge scrollY. */
 const DELTA = 12
 const TOP_REVEAL = 64
-/** Cover max-height transition so layout/scroll anchoring cannot flip-flop. */
+/** Cover max-height transition-all  so layout/scroll anchoring cannot flip-flop. */
 const LOCK_MS = 350
 
 const { y } = useWindowScroll()

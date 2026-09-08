@@ -37,7 +37,7 @@
           class="flex flex-col items-center gap-1.5 group w-full px-1.5 cursor-pointer"
         >
           <div
-            class="size-14 sm:size-16 md:size-[4.5rem] rounded-full border-2 border-primary/40 p-0.5 bg-default shrink-0 transition group-hover:(border-primary shadow-sm)"
+            class="size-14 sm:size-16 md:size-[4.5rem] rounded-full border-2 border-primary/40 p-0.5 bg-default shrink-0 transition-all  group-hover:(border-primary shadow-sm)"
           >
             <div class="size-full rounded-full bg-primary/10 overflow-hidden grid place-items-center p-0.5">
               <img

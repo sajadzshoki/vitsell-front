@@ -37,10 +37,10 @@ const tablerName = computed(() => {
 
 const imageSrc = computed(() => {
   if (props.name.startsWith('http') || props.name.startsWith('/')) {
-    return props.name
+    return resolveMediaUrl(props.name)
   }
   if (props.name.includes('/')) {
-    return `/${props.name}`
+    return resolveMediaUrl(`/${props.name}`)
   }
   return `/images/${props.name}`
 })

@@ -117,7 +117,7 @@
               >
                 <NuxtLink
                   :to="toSearchRoute({ q: item, category: activeCategory.id })"
-                  class="flex items-center gap-2 py-2 px-3 -mx-3 rounded-xl text-sm text-muted hover:(bg-primary/5 text-primary) transition group/link"
+                  class="flex items-center gap-2 py-2 px-3 -mx-3 rounded-xl text-sm text-muted hover:(bg-primary/5 text-primary) transition-all  group/link"
                 >
                   <UIcon
                     name="i-tabler-chevron-left"

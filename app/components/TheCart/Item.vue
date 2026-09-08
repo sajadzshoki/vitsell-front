@@ -9,7 +9,7 @@
           v-if="product.image"
           :name="product.image"
           icon-type="img"
-          class="!w-full !h-full object-cover transition hover:scale-105"
+          class="!w-full !h-full object-cover transition-all  hover:scale-105"
         />
         <TheIcon
           v-else
@@ -58,7 +58,7 @@
         </div>
         <NuxtLink
           :to="`/product/${product.id}`"
-          class="text-sm font-medium text-default hover:text-primary transition text-start line-clamp-2"
+          class="text-sm font-medium text-default hover:text-primary transition-all  text-start line-clamp-2"
         >
           {{ product.title }}
         </NuxtLink>

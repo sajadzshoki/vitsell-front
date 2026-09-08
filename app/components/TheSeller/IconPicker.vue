@@ -16,30 +16,52 @@
     </div>
 
     <div class="flex items-center gap-3 flex-wrap">
-      <div class="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0">
+      <div class="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0 overflow-hidden">
+        <img
+          v-if="isImage"
+          :src="previewSrc"
+          alt=""
+          class="size-7 object-contain"
+        >
         <UIcon
+          v-else
           :name="previewName"
           class="size-6"
         />
       </div>
       <div class="min-w-0 flex-1">
         <div
-          class="text-xs text-muted num"
+          class="text-xs text-muted num truncate"
           dir="ltr"
         >
-          {{ model || '—' }}
+          {{ displayValue || '—' }}
         </div>
-        <UButton
-          type="button"
-          color="primary"
-          variant="soft"
-          size="sm"
-          icon="i-tabler-icons"
-          class="mt-2 cursor-pointer"
-          @click="open = true"
-        >
-          {{ $t('انتخاب آیکون') }}
-        </UButton>
+        <div class="mt-2 flex items-center gap-2 flex-wrap">
+          <UButton
+            type="button"
+            color="primary"
+            variant="soft"
+            size="sm"
+            icon="i-tabler-icons"
+            class="cursor-pointer"
+            :disabled="disabled"
+            @click="open = true"
+          >
+            {{ $t('انتخاب آیکون') }}
+          </UButton>
+          <UButton
+            v-if="model"
+            type="button"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            icon="i-tabler-x"
+            class="cursor-pointer"
+            :disabled="disabled"
+            :aria-label="$t('پاک کردن')"
+            @click="clear"
+          />
+        </div>
       </div>
     </div>
 
@@ -59,32 +81,101 @@
     <UModal
       v-model:open="open"
       :title="$t('انتخاب آیکون')"
-      :description="$t('آیکون را از لیست پنل مدیریت انتخاب کنید')"
+      :description="$t('از لیست انتخاب کنید، نام سفارشی وارد کنید یا تصویر آپلود کنید')"
+      :ui="{ content: 'sm:max-w-2xl' }"
     >
       <template #body>
-        <TheFormInput
-          v-model="search"
-          :placeholder="$t('جستجوی آیکون…')"
-          icon="i-tabler-search"
-          class="mb-4"
-        />
-        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-80 overflow-y-auto scrollbar-none">
-          <button
-            v-for="opt in filtered"
-            :key="opt.key"
-            type="button"
-            class="flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition cursor-pointer"
-            :class="model === opt.key
-              ? 'border-primary bg-primary/10 text-primary'
-              : 'border-muted bg-muted/40 text-toned hover:(border-accented bg-elevated)'"
-            @click="pick(opt.key)"
+        <div class="space-y-4">
+          <TheFormInput
+            v-model="search"
+            :placeholder="$t('جستجوی آیکون…')"
+            icon="i-tabler-search"
+          />
+
+          <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-72 overflow-y-auto scrollbar-none pe-1">
+            <button
+              v-for="key in filtered"
+              :key="key"
+              type="button"
+              class="aspect-square rounded-xl border grid place-items-center transition-all cursor-pointer"
+              :class="model === key
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-muted bg-muted/40 text-toned hover:(border-accented bg-elevated)'"
+              :title="key"
+              :aria-label="key"
+              @click="pick(key)"
+            >
+              <UIcon
+                :name="resolveSellerAdminIconName(key)"
+                class="size-5"
+              />
+            </button>
+          </div>
+
+          <p
+            v-if="!filtered.length"
+            class="text-xs text-muted text-center py-4"
           >
-            <UIcon
-              :name="resolveSellerAdminIconName(opt.key)"
-              class="size-6"
-            />
-            <span class="text-[10px] leading-tight">{{ $t(opt.label) }}</span>
-          </button>
+            {{ $t('آیکونی پیدا نشد') }}
+          </p>
+
+          <div
+            v-if="allowCustom || allowUpload"
+            class="border-t border-muted pt-4 space-y-3"
+          >
+            <div
+              v-if="allowCustom"
+              class="flex items-end gap-2"
+            >
+              <TheFormInput
+                v-model="customKey"
+                class="flex-1"
+                :label="$t('آیکون سفارشی')"
+                :placeholder="$t('مثلاً rocket')"
+                dir="ltr"
+                :help="$t('نام Tabler بدون پیشوند i-tabler-')"
+              />
+              <UButton
+                type="button"
+                color="primary"
+                variant="soft"
+                size="sm"
+                class="mb-1 cursor-pointer shrink-0"
+                :disabled="!customKey.trim()"
+                @click="addCustomKey"
+              >
+                {{ $t('افزودن') }}
+              </UButton>
+            </div>
+
+            <div
+              v-if="allowUpload"
+              class="flex items-center gap-2 flex-wrap"
+            >
+              <input
+                ref="fileInputRef"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                class="sr-only"
+                @change="onFileChange"
+              >
+              <UButton
+                type="button"
+                color="neutral"
+                variant="outline"
+                size="sm"
+                icon="i-tabler-upload"
+                class="cursor-pointer"
+                :loading="uploading"
+                @click="openFilePicker"
+              >
+                {{ $t('آپلود تصویر آیکون') }}
+              </UButton>
+              <span class="text-[11px] text-dimmed">
+                {{ $t('PNG، SVG، WebP — حداکثر ۲ مگابایت') }}
+              </span>
+            </div>
+          </div>
         </div>
       </template>
       <template #footer>
@@ -105,41 +196,114 @@
 
 <script setup lang="ts">
 import {
+  isSellerAdminIconImage,
+  normalizeSellerAdminIconKey,
   resolveSellerAdminIconName,
-  sellerAdminIconOptions,
+  sellerAdminIconKeys,
 } from '~/data/seller-admin-icons'
+import { resolveMediaUrl } from '~/composables/fetch'
 
 withDefaults(defineProps<{
   label?: string
   help?: string
   error?: string
   required?: boolean
+  disabled?: boolean
+  allowCustom?: boolean
+  allowUpload?: boolean
 }>(), {
   label: '',
   help: '',
   error: '',
   required: false,
+  disabled: false,
+  allowCustom: true,
+  allowUpload: true,
 })
 
 const model = defineModel<string>({ default: '' })
+const { t } = useI18n()
+const toast = useAppToast()
+const { uploadFiles } = useSellerMedia()
 
 const open = ref(false)
 const search = ref('')
+const customKey = ref('')
+const uploading = ref(false)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
-const previewName = computed(() => resolveSellerAdminIconName(model.value))
+const extraKeys = useState<string[]>('seller-icon-picker-extras', () => [])
+
+const allKeys = computed(() => {
+  const set = new Set<string>([...sellerAdminIconKeys, ...extraKeys.value])
+  const current = normalizeSellerAdminIconKey(model.value)
+  if (current && !isSellerAdminIconImage(current)) set.add(current)
+  return [...set]
+})
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
-  if (!q) return sellerAdminIconOptions
-  return sellerAdminIconOptions.filter(opt =>
-    opt.key.includes(q)
-    || opt.label.includes(search.value.trim())
-    || opt.label.toLowerCase().includes(q),
-  )
+  if (!q) return allKeys.value
+  return allKeys.value.filter(key => key.toLowerCase().includes(q))
+})
+
+const isImage = computed(() => isSellerAdminIconImage(model.value))
+const previewName = computed(() => resolveSellerAdminIconName(model.value))
+const previewSrc = computed(() => (isImage.value ? resolveMediaUrl(model.value) : ''))
+const displayValue = computed(() => {
+  const raw = String(model.value || '').trim()
+  if (!raw) return ''
+  if (isSellerAdminIconImage(raw)) return raw
+  return normalizeSellerAdminIconKey(raw)
 })
 
 function pick(key: string) {
-  model.value = key
+  model.value = normalizeSellerAdminIconKey(key)
   open.value = false
+}
+
+function clear() {
+  model.value = ''
+}
+
+function openFilePicker() {
+  fileInputRef.value?.click()
+}
+
+function addCustomKey() {
+  const key = normalizeSellerAdminIconKey(customKey.value)
+  if (!key || isSellerAdminIconImage(key)) return
+  if (!extraKeys.value.includes(key)) {
+    extraKeys.value = [...extraKeys.value, key]
+  }
+  model.value = key
+  customKey.value = ''
+  open.value = false
+}
+
+async function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  if (file.size > 2 * 1024 * 1024) {
+    toast.error(t('حجم فایل نباید بیشتر از ۲ مگابایت باشد'))
+    return
+  }
+
+  uploading.value = true
+  try {
+    const result = await uploadFiles([file])
+    if (!result.ok || !result.items[0]?.url) {
+      toast.error(t(result.error || 'آپلود آیکون ناموفق بود'))
+      return
+    }
+    model.value = result.items[0].url
+    open.value = false
+  }
+  finally {
+    uploading.value = false
+  }
 }
 </script>

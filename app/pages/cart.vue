@@ -27,7 +27,7 @@
           <button
             v-if="crumb.clickable"
             type="button"
-            class="hover:text-primary transition cursor-pointer"
+            class="hover:text-primary transition-all  cursor-pointer"
             @click="store.goToStep(crumb.id)"
           >
             {{ $t(crumb.name) }}

@@ -97,7 +97,7 @@
           :label="$t('شروع')"
           dir="ltr"
           :error="errors.startsAt"
-          required
+          :help="$t('اختیاری')"
           icon="i-tabler-calendar-event"
         />
 
@@ -107,7 +107,7 @@
           :label="$t('پایان')"
           dir="ltr"
           :error="errors.endsAt"
-          required
+          :help="$t('اختیاری')"
           icon="i-tabler-calendar-due"
         />
 
@@ -261,8 +261,6 @@ function validate() {
   if (form.value.type === 'fixed' && (!(value > 0) || Number.isNaN(value))) {
     next.value = t('مبلغ تخفیف باید مثبت باشد')
   }
-  if (!form.value.startsAt) next.startsAt = t('شروع الزامی است')
-  if (!form.value.endsAt) next.endsAt = t('پایان الزامی است')
   if (form.value.startsAt && form.value.endsAt && form.value.endsAt <= form.value.startsAt) {
     next.endsAt = t('پایان باید بعد از شروع باشد')
   }

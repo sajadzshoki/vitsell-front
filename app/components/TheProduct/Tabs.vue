@@ -9,7 +9,7 @@
           v-for="tab in tabItems"
           :key="tab.value"
           type="button"
-          class="relative shrink-0 whitespace-nowrap font-medium px-2.5 py-2.5 text-[10px] md:(px-5 py-4 text-sm) cursor-pointer transition text-muted hover:text-primary border-b-2 border-transparent"
+          class="relative shrink-0 whitespace-nowrap font-medium px-2.5 py-2.5 text-[10px] md:(px-5 py-4 text-sm) cursor-pointer transition-all  text-muted hover:text-primary border-b-2 border-transparent"
           :class="activeTab === tab.value ? 'text-primary border-primary' : ''"
           :aria-current="activeTab === tab.value ? 'true' : undefined"
           @click="scrollToSection(tab.value)"

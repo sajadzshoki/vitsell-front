@@ -55,9 +55,9 @@
 
 | UI | Route | Notes |
 |----|-------|-------|
-| MegaMenu — دسته اصلی | `/search?category=<id>` | `toSearchRoute({ category })` — نه `/category/:id` |
-| MegaMenu — آیتم برگ | `/search?q=<term>&category=<id>` | |
-| Search — زیردسته‌ها | همان `/search` | داخل `TheSearchHeader` وقتی `?category=` ست است؛ عکس از `CategorySchema.image` / `subs[].image` |
+| MegaMenu — دسته اصلی | `/search/category-<id>` | `toSearchRoute({ category })` — نه `/category/:id`؛ نه `?category=` |
+| MegaMenu — آیتم برگ | `/search/category-<id>?q=<term>` | |
+| Search — زیردسته‌ها | همان path دسته | داخل `TheSearchHeader` وقتی category از path ست است؛ عکس از `CategorySchema.image` / `subs[].image` |
 | فیلتر محصولات | `GET /products?category=&q=` | |
 
 ## Cart / wishlist / account / checkout (auth مگر خلافش گفته شود)

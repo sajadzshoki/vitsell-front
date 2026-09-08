@@ -112,9 +112,31 @@
             size="sm"
             icon="i-tabler-printer"
             class="cursor-pointer"
-            @click="printInvoice"
+            @click="printDocument('invoice')"
           >
             {{ $t('فاکتور') }}
+          </UButton>
+          <UButton
+            type="button"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            icon="i-tabler-map-pin"
+            class="cursor-pointer"
+            @click="printDocument('label-a4')"
+          >
+            {{ $t('برچسب A4') }}
+          </UButton>
+          <UButton
+            type="button"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            icon="i-tabler-receipt"
+            class="cursor-pointer"
+            @click="printDocument('label-thermal')"
+          >
+            {{ $t('برچسب حرارتی') }}
           </UButton>
         </div>
       </div>
@@ -365,6 +387,7 @@
     <div
       id="seller-order-invoice"
       class="hidden print:block bg-white text-black p-8"
+      data-print-target="invoice"
     >
       <div class="flex items-start justify-between gap-4 mb-6 border-b border-gray-300 pb-4">
         <div>
@@ -428,6 +451,56 @@
         <div>{{ $t('آدرس') }}: {{ order.address.province }}، {{ order.address.city }}، {{ order.address.address }}</div>
         <div>{{ $t('پرداخت') }}: {{ order.paymentMethod }} · {{ $t('ارسال') }}: {{ order.shippingMethod }}</div>
         <div v-if="commerce.trackingCode">{{ $t('کد پیگیری') }}: <span class="num" dir="ltr">{{ commerce.trackingCode }}</span></div>
+      </div>
+    </div>
+
+    <!-- A4 postal address label -->
+    <div
+      id="seller-order-label-a4"
+      class="hidden print:block bg-white text-black p-10"
+      data-print-target="label-a4"
+    >
+      <div class="border-2 border-black rounded-lg p-8 max-w-xl mx-auto space-y-4">
+        <div class="text-xs text-gray-600">{{ $t('برچسب پستی') }}</div>
+        <div class="text-2xl font-bold">{{ order.customerName }}</div>
+        <div class="text-lg num" dir="ltr">{{ order.customerPhone }}</div>
+        <div class="text-base leading-8">
+          {{ order.address.province }}، {{ order.address.city }}، {{ order.address.address }}
+        </div>
+        <div class="text-base font-bold num">
+          {{ $t('کدپستی') }}: {{ order.address.postalCode }}
+        </div>
+        <div class="pt-4 border-t border-gray-300 text-sm space-y-1">
+          <div>{{ $t('شماره سفارش') }}: <span class="num" dir="ltr">{{ order.id }}</span></div>
+          <div v-if="commerce.trackingCode">
+            {{ $t('کد پیگیری') }}: <span class="num" dir="ltr">{{ commerce.trackingCode }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thermal printer address label (~80×120mm) -->
+    <div
+      id="seller-order-label-thermal"
+      class="hidden print:block bg-white text-black"
+      data-print-target="label-thermal"
+    >
+      <div class="seller-thermal-label space-y-2">
+        <div class="text-[10px]">{{ $t('برچسب پستی') }}</div>
+        <div class="text-base font-bold leading-tight">{{ order.customerName }}</div>
+        <div class="text-sm num" dir="ltr">{{ order.customerPhone }}</div>
+        <div class="text-xs leading-5">
+          {{ order.address.province }}، {{ order.address.city }}، {{ order.address.address }}
+        </div>
+        <div class="text-xs font-bold num">
+          {{ $t('کدپستی') }}: {{ order.address.postalCode }}
+        </div>
+        <div class="pt-2 border-t border-black text-[10px] space-y-0.5">
+          <div>{{ $t('سفارش') }}: <span class="num" dir="ltr">{{ order.id }}</span></div>
+          <div v-if="commerce.trackingCode">
+            {{ $t('کد پیگیری') }}: <span class="num" dir="ltr">{{ commerce.trackingCode }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1167,8 +1240,18 @@ async function saveTracking() {
   }
 }
 
-function printInvoice() {
+type PrintTarget = 'invoice' | 'label-a4' | 'label-thermal'
+
+function printDocument(target: PrintTarget) {
+  document.body.dataset.printTarget = target
+  const cleanup = () => {
+    delete document.body.dataset.printTarget
+    window.removeEventListener('afterprint', cleanup)
+  }
+  window.addEventListener('afterprint', cleanup)
   window.print()
+  // Fallback if afterprint does not fire in some browsers
+  window.setTimeout(cleanup, 1000)
 }
 
 function formatEventDate(value: string) {
@@ -1190,15 +1273,42 @@ function formatEventDate(value: string) {
   body * {
     visibility: hidden !important;
   }
-  #seller-order-invoice,
-  #seller-order-invoice * {
+
+  body[data-print-target='invoice'] #seller-order-invoice,
+  body[data-print-target='invoice'] #seller-order-invoice *,
+  body[data-print-target='label-a4'] #seller-order-label-a4,
+  body[data-print-target='label-a4'] #seller-order-label-a4 *,
+  body[data-print-target='label-thermal'] #seller-order-label-thermal,
+  body[data-print-target='label-thermal'] #seller-order-label-thermal * {
     visibility: visible !important;
   }
-  #seller-order-invoice {
+
+  body[data-print-target='invoice'] #seller-order-invoice,
+  body[data-print-target='label-a4'] #seller-order-label-a4,
+  body[data-print-target='label-thermal'] #seller-order-label-thermal {
     display: block !important;
     position: absolute;
     inset: 0;
     width: 100%;
   }
+
+  body[data-print-target='label-thermal'] #seller-order-label-thermal {
+    width: 80mm;
+    min-height: 120mm;
+    inset: auto;
+    inset-inline-start: 0;
+    top: 0;
+  }
+
+  body[data-print-target='label-thermal'] .seller-thermal-label {
+    width: 80mm;
+    min-height: 120mm;
+    padding: 4mm;
+    box-sizing: border-box;
+  }
+}
+
+@page {
+  margin: 8mm;
 }
 </style>

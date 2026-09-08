@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-muted border border-muted rounded-2xl p-4 transition hover:(border-accented bg-elevated/50)">
+  <div class="bg-muted border border-muted rounded-2xl p-4 transition-all  hover:(border-accented bg-elevated/50)">
     <NuxtLink
       :to="orderLink"
       class="block cursor-pointer"

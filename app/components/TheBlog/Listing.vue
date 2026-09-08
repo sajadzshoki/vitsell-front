@@ -1,13 +1,14 @@
 <template>
   <div class="flex flex-col gap-6 md:gap-8">
     <!-- Hero -->
-    <section class="relative overflow-hidden rounded-2xl border border-muted bg-elevated">
-      <div class="absolute inset-0 bg-gradient-to-bl from-primary/15 via-transparent to-secondary/10 pointer-events-none" />
-      <div class="relative px-5 py-8 sm:(px-8 py-10) md:py-12 flex flex-col gap-4 max-w-3xl">
-        <nav class="text-xs text-muted flex items-center gap-2 flex-wrap">
+    <section
+      class="w-screen max-w-[100vw] ms-[calc(50%-50vw)] -mt-2 md:-mt-4 bg-elevated"
+    >
+      <div class="mx-auto max-w-8xl w-full px-3 sm:px-4 lg:px-6 py-8 md:py-12 flex flex-col items-center text-center gap-4">
+        <nav class="w-full text-xs text-muted flex items-center justify-start gap-2 flex-wrap">
           <NuxtLink
             to="/"
-            class="hover:text-primary transition cursor-pointer"
+            class="hover:text-primary transition-all  cursor-pointer"
           >
             {{ $t('خانه') }}
           </NuxtLink>
@@ -15,59 +16,84 @@
           <span class="text-toned">{{ $t('بلاگ') }}</span>
         </nav>
 
-        <div class="inline-flex items-center gap-2 text-primary">
-          <UIcon
-            name="i-tabler-news"
-            class="size-5"
-          />
-          <span class="text-xs font-medium">{{ $t('مجله دیجی‌شاپ') }}</span>
-        </div>
-
         <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-highlighted leading-tight">
           {{ $t('بلاگ دیجی‌شاپ') }}
         </h1>
-        <p class="text-sm md:text-base text-toned leading-8">
-          {{ $t('راهنمای خرید، بررسی محصول و اخبار دنیای تکنولوژی — قبل از خرید، هوشمندانه بخوانید.') }}
+        <p class="text-sm md:text-base text-muted leading-8 max-w-2xl">
+          {{ $t('راهنمای خرید، بررسی محصولات و تازه‌ترین اخبار دنیای تکنولوژی؛ هوشمندانه‌تر انتخاب کنید.') }}
         </p>
 
-        <div class="flex flex-wrap items-center gap-3 pt-1">
-          <div class="text-xs text-muted num">
-            {{ publishedCount.toLocaleString('fa-IR') }} {{ $t('مطلب منتشر شده') }}
+        <form
+          class="w-full max-w-xl mt-1"
+          @submit.prevent="submitSearch"
+        >
+          <div class="flex items-stretch rounded-xl border border-muted bg-default overflow-hidden focus-within:border-primary/50 transition">
+            <div class="flex items-center flex-1 min-w-0 gap-2 ps-3.5 pe-2">
+              <UIcon
+                name="i-tabler-search"
+                class="size-5 text-dimmed shrink-0"
+              />
+              <input
+                v-model="searchDraft"
+                type="search"
+                class="flex-1 min-w-0 h-11 bg-transparent border-none outline-none text-sm text-default placeholder:text-dimmed"
+                :placeholder="$t('جستجو در مطالب بلاگ...')"
+                autocomplete="off"
+              >
+            </div>
+            <UButton
+              type="submit"
+              color="primary"
+              size="md"
+              class="rounded-none rounded-s-xl px-5 shrink-0 cursor-pointer"
+            >
+              {{ $t('جستجو') }}
+            </UButton>
           </div>
-          <span class="text-dimmed">·</span>
-          <div class="text-xs text-muted">
-            {{ $t('دسته‌بندی‌ها') }}:
-            {{ categoryCount.toLocaleString('fa-IR') }}
-          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Latest -->
+    <section
+      v-if="showLatest"
+      class="flex flex-col gap-5"
+    >
+      <h2 class="text-lg md:text-xl font-bold text-highlighted text-start">
+        {{ $t('آخرین‌های دیجی‌شاپ') }}
+      </h2>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6">
+        <div class="lg:col-span-5">
+          <TheBlogPostCard
+            v-if="featuredPost"
+            :post="featuredPost"
+            variant="featured"
+          />
+        </div>
+        <div class="lg:col-span-7 flex flex-col gap-4">
+          <TheBlogPostCard
+            v-for="post in sidePosts"
+            :key="post.id"
+            :post="post"
+            variant="side"
+          />
         </div>
       </div>
     </section>
 
-    <!-- Category chips -->
-    <section class="flex flex-col gap-3">
-      <div class="flex items-center justify-between gap-3">
-        <h2 class="text-sm font-bold text-highlighted">
-          {{ $t('موضوعات') }}
-        </h2>
-        <UButton
-          v-if="selectedCategory"
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-tabler-x"
-          class="cursor-pointer"
-          @click="clearCategory"
-        >
-          {{ $t('پاک کردن فیلتر') }}
-        </UButton>
-      </div>
+    <!-- Articles -->
+    <section class="flex flex-col gap-5">
+      <h2 class="text-lg md:text-xl font-bold text-highlighted text-start">
+        {{ $t('مقالات') }}
+      </h2>
 
       <div class="flex items-stretch gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
         <button
           type="button"
-          class="shrink-0 px-4 py-2.5 rounded-xl border text-sm font-medium transition cursor-pointer"
+          class="shrink-0 px-4 py-2 rounded-full border text-sm font-medium transition-all  cursor-pointer"
           :class="!selectedCategory
-            ? 'border-primary bg-primary/10 text-primary'
+            ? 'border-primary bg-primary text-inverted'
             : 'border-muted bg-default text-toned hover:(border-primary/40 bg-primary/5 text-primary)'"
           @click="clearCategory"
         >
@@ -77,127 +103,88 @@
           v-for="chip in chips"
           :key="chip.id"
           type="button"
-          class="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition cursor-pointer"
+          class="shrink-0 px-4 py-2 rounded-full border text-sm font-medium transition-all  cursor-pointer"
           :class="selectedCategory === chip.id
-            ? 'border-primary bg-primary/10 text-primary'
+            ? 'border-primary bg-primary text-inverted'
             : 'border-muted bg-default text-toned hover:(border-primary/40 bg-primary/5 text-primary)'"
           @click="selectCategory(chip.id)"
         >
-          <UIcon
-            :name="chip.icon"
-            class="size-4 shrink-0"
-          />
-          <span>{{ $t(chip.label) }}</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- Category promo cards (reference-style) -->
-    <section
-      v-if="!selectedCategory"
-      class="grid grid-cols-1 sm:grid-cols-3 gap-3"
-    >
-      <button
-        v-for="chip in promoChips"
-        :key="`promo-${chip.id}`"
-        type="button"
-        class="group text-start rounded-2xl border border-muted bg-muted/60 p-4 md:p-5 transition cursor-pointer hover:(border-primary/40 bg-primary/5)"
-        @click="selectCategory(chip.id)"
-      >
-        <div class="size-10 rounded-xl bg-primary/10 text-primary grid place-items-center mb-3 transition group-hover:bg-primary group-hover:text-inverted">
-          <UIcon
-            :name="chip.icon"
-            class="size-5"
-          />
-        </div>
-        <h3 class="text-sm font-bold text-highlighted mb-1">
           {{ $t(chip.label) }}
-        </h3>
-        <p class="text-xs text-muted leading-6">
-          {{ $t(chip.subtitle) }}
-        </p>
-      </button>
-    </section>
-
-    <!-- Empty -->
-    <div
-      v-if="!pagePosts.length"
-      class="text-center py-16 bg-default border border-muted rounded-2xl"
-    >
-      <UIcon
-        name="i-tabler-article-off"
-        class="size-14 text-dimmed mx-auto mb-4"
-      />
-      <p class="text-sm text-muted mb-4">
-        {{ $t('مطلبی در این دسته پیدا نشد') }}
-      </p>
-      <UButton
-        color="primary"
-        variant="soft"
-        class="cursor-pointer"
-        @click="clearCategory"
-      >
-        {{ $t('مشاهده همه مطالب') }}
-      </UButton>
-    </div>
-
-    <!-- Posts -->
-    <template v-else>
-      <TheBlogPostCard
-        v-if="featuredPost && page === 1 && !selectedCategory"
-        :post="featuredPost"
-        featured
-      />
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <TheBlogPostCard
-          v-for="post in gridPosts"
-          :key="post.id"
-          :post="post"
-        />
+        </button>
       </div>
 
       <div
-        v-if="totalPages > 1"
-        class="flex items-center justify-center gap-2 flex-wrap pt-2"
+        v-if="!pagePosts.length && (selectedCategory || searchQuery)"
+        class="text-center py-16 border border-muted rounded-2xl"
       >
+        <UIcon
+          name="i-tabler-article-off"
+          class="size-14 text-dimmed mx-auto mb-4"
+        />
+        <p class="text-sm text-muted mb-4">
+          {{ searchQuery ? $t('مطلبی با این جستجو پیدا نشد') : $t('مطلبی در این دسته پیدا نشد') }}
+        </p>
         <UButton
-          color="neutral"
+          color="primary"
           variant="soft"
-          size="sm"
-          icon="i-tabler-chevron-right"
           class="cursor-pointer"
-          :disabled="page <= 1"
-          @click="goPage(page - 1)"
+          @click="resetFilters"
         >
-          {{ $t('قبلی') }}
-        </UButton>
-        <div class="flex items-center gap-1">
-          <UButton
-            v-for="n in totalPages"
-            :key="n"
-            :color="n === page ? 'primary' : 'neutral'"
-            :variant="n === page ? 'solid' : 'ghost'"
-            size="sm"
-            class="cursor-pointer min-w-9 num"
-            @click="goPage(n)"
-          >
-            {{ n.toLocaleString('fa-IR') }}
-          </UButton>
-        </div>
-        <UButton
-          color="neutral"
-          variant="soft"
-          size="sm"
-          trailing-icon="i-tabler-chevron-left"
-          class="cursor-pointer"
-          :disabled="page >= totalPages"
-          @click="goPage(page + 1)"
-        >
-          {{ $t('بعدی') }}
+          {{ $t('مشاهده همه مطالب') }}
         </UButton>
       </div>
-    </template>
+
+      <template v-else-if="pagePosts.length">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
+          <TheBlogPostCard
+            v-for="post in pagePosts"
+            :key="post.id"
+            :post="post"
+          />
+        </div>
+
+        <div
+          v-if="totalPages > 1"
+          class="flex items-center justify-center gap-2 flex-wrap pt-2"
+        >
+          <UButton
+            color="neutral"
+            variant="soft"
+            size="sm"
+            icon="i-tabler-chevron-right"
+            class="cursor-pointer"
+            :disabled="page <= 1"
+            @click="goPage(page - 1)"
+          >
+            {{ $t('قبلی') }}
+          </UButton>
+          <div class="flex items-center gap-1">
+            <UButton
+              v-for="n in totalPages"
+              :key="n"
+              :color="n === page ? 'primary' : 'neutral'"
+              :variant="n === page ? 'solid' : 'ghost'"
+              size="sm"
+              class="cursor-pointer min-w-9 num"
+              @click="goPage(n)"
+            >
+              {{ n.toLocaleString('fa-IR') }}
+            </UButton>
+          </div>
+          <UButton
+            color="neutral"
+            variant="soft"
+            size="sm"
+            trailing-icon="i-tabler-chevron-left"
+            class="cursor-pointer"
+            :disabled="page >= totalPages"
+            @click="goPage(page + 1)"
+          >
+            {{ $t('بعدی') }}
+          </UButton>
+        </div>
+      </template>
+    </section>
   </div>
 </template>
 
@@ -208,6 +195,8 @@ import {
   collectBlogCategories,
   toStaticBlogPost,
 } from '~/data/seller-blog'
+
+const LATEST_COUNT = 4
 
 const route = useRoute()
 const router = useRouter()
@@ -221,12 +210,25 @@ const selectedCategory = computed(() => {
   return typeof value === 'string' && value.trim() ? value.trim() : ''
 })
 
+const searchQuery = computed(() => {
+  const raw = route.query.q
+  const value = Array.isArray(raw) ? raw[0] : raw
+  return typeof value === 'string' ? value.trim() : ''
+})
+
 const page = computed(() => {
   const raw = route.query.page
   const value = Array.isArray(raw) ? raw[0] : raw
   const n = Number.parseInt(String(value || '1'), 10)
   return Number.isFinite(n) && n > 0 ? n : 1
 })
+
+const searchDraft = ref(searchQuery.value)
+watch(searchQuery, (q) => {
+  searchDraft.value = q
+})
+
+const allPosts = computed(() => publishedPosts.value.map(toStaticBlogPost))
 
 const chips = computed(() => {
   const known = new Map(blogCategoryChips.map(c => [c.id, c]))
@@ -241,16 +243,37 @@ const chips = computed(() => {
   })
 })
 
-const promoChips = computed(() => blogCategoryChips.slice(0, 3))
+const showLatest = computed(() =>
+  !selectedCategory.value && !searchQuery.value && page.value === 1 && allPosts.value.length > 0,
+)
+
+const latestPosts = computed(() => allPosts.value.slice(0, LATEST_COUNT))
+const featuredPost = computed(() => latestPosts.value[0] ?? null)
+const sidePosts = computed(() => latestPosts.value.slice(1, LATEST_COUNT))
 
 const filtered = computed(() => {
-  const list = publishedPosts.value.map(toStaticBlogPost)
-  if (!selectedCategory.value) return list
-  return list.filter(p => p.category === selectedCategory.value)
-})
+  let list = allPosts.value
 
-const publishedCount = computed(() => publishedPosts.value.length)
-const categoryCount = computed(() => collectBlogCategories(publishedPosts.value).length)
+  if (selectedCategory.value) {
+    list = list.filter(p => p.category === selectedCategory.value)
+  }
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    list = list.filter((p) => {
+      const hay = [p.title, p.excerpt, p.category, p.author].join(' ').toLowerCase()
+      return hay.includes(q)
+    })
+  }
+
+  // On default first page, articles exclude the latest block posts
+  if (showLatest.value) {
+    const latestIds = new Set(latestPosts.value.map(p => p.id))
+    list = list.filter(p => !latestIds.has(p.id))
+  }
+
+  return list
+})
 
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(filtered.value.length / blogPageSize)),
@@ -261,33 +284,36 @@ const pagePosts = computed(() => {
   return filtered.value.slice(start, start + blogPageSize)
 })
 
-const featuredPost = computed(() => {
-  if (selectedCategory.value || page.value !== 1) return null
-  const popular = pagePosts.value.find(p => p.popular)
-  return popular ?? pagePosts.value[0] ?? null
-})
-
-const gridPosts = computed(() => {
-  if (!featuredPost.value) return pagePosts.value
-  return pagePosts.value.filter(p => p.id !== featuredPost.value!.id)
-})
+function pushBlogQuery(next: { category?: string, q?: string, page?: number }) {
+  const query: Record<string, string> = {}
+  const category = next.category ?? selectedCategory.value
+  const q = next.q !== undefined ? next.q : searchQuery.value
+  const pageNum = next.page ?? 1
+  if (category) query.category = category
+  if (q) query.q = q
+  if (pageNum > 1) query.page = String(pageNum)
+  void router.push({ path: '/blog', query })
+}
 
 function selectCategory(id: string) {
-  void router.push({
-    path: '/blog',
-    query: { category: id },
-  })
+  pushBlogQuery({ category: id, page: 1 })
 }
 
 function clearCategory() {
+  pushBlogQuery({ category: '', page: 1 })
+}
+
+function submitSearch() {
+  pushBlogQuery({ q: searchDraft.value.trim(), page: 1 })
+}
+
+function resetFilters() {
+  searchDraft.value = ''
   void router.push({ path: '/blog' })
 }
 
 function goPage(n: number) {
-  const query: Record<string, string> = {}
-  if (selectedCategory.value) query.category = selectedCategory.value
-  if (n > 1) query.page = String(n)
-  void router.push({ path: '/blog', query })
+  pushBlogQuery({ page: n })
   if (import.meta.client) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }

@@ -12,14 +12,22 @@
         <NuxtLink
           v-if="item.to"
           :to="item.to"
-          class="relative size-full flex flex-col items-center justify-center gap-0.5 transition no-underline"
+          class="relative size-full flex flex-col items-center justify-center gap-0.5 transition-all  no-underline"
           :class="isActive(item)
             ? 'text-primary font-semibold'
             : 'text-toned hover:text-primary'"
         >
           <span class="relative inline-flex">
+            <img
+              v-if="isSellerAdminIconImage(iconFor(item))"
+              :src="resolveMediaUrl(iconFor(item))"
+              alt=""
+              class="size-5 object-contain"
+              :class="item.badge === 'cart' && cartAnimating ? 'animate-cart-bump' : ''"
+            >
             <UIcon
-              :name="`i-tabler-${isActive(item) ? (item.iconActive || item.icon) : item.icon}`"
+              v-else
+              :name="resolveSellerAdminIconName(iconFor(item))"
               class="size-5"
               :class="[
                 isActive(item) ? 'text-primary' : '',
@@ -48,6 +56,11 @@
 
 <script setup lang="ts">
 import type { BottomNavItem } from '~/data/nav-links'
+import {
+  isSellerAdminIconImage,
+  resolveSellerAdminIconName,
+} from '~/data/seller-admin-icons'
+import { resolveMediaUrl } from '~/composables/fetch'
 
 const route = useRoute()
 const { cartCount, cartBump, isLoggedIn, ensureCartLoaded } = useShop()
@@ -89,6 +102,10 @@ watch(cartBump, () => {
 onBeforeUnmount(() => {
   if (bumpTimer) clearTimeout(bumpTimer)
 })
+
+function iconFor(item: BottomNavItem) {
+  return isActive(item) ? (item.iconActive || item.icon) : item.icon
+}
 
 function isActive(item: BottomNavItem) {
   if (!item.to) return false

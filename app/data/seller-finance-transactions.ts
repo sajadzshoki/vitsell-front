@@ -32,6 +32,7 @@ export type SellerFinanceTransaction = {
   orderId: string | null
   customerId: string | null
   customerName: string
+  customerPhone: string
   reference: string
   paymentId: string | null
   refundId: string | null
@@ -103,6 +104,7 @@ export function projectPaymentsToTransactions(payments: SellerPayment[]): Seller
     orderId: p.orderId,
     customerId: p.customerId,
     customerName: p.customerName,
+    customerPhone: p.customerPhone || '',
     reference: p.refId || p.authority || p.transactionId,
     paymentId: p.id,
     refundId: null,
@@ -126,6 +128,7 @@ export function projectRefundsToTransactions(refunds: SellerRefund[]): SellerFin
     orderId: r.orderId,
     customerId: null,
     customerName: r.customerName,
+    customerPhone: '',
     reference: r.transactionId,
     paymentId: null,
     refundId: r.id,
@@ -151,6 +154,7 @@ export function projectSettlementsToTransactions(settlements: SellerSettlement[]
       orderId: null,
       customerId: null,
       customerName: '—',
+      customerPhone: '',
       reference: s.reference,
       paymentId: null,
       refundId: null,
@@ -172,6 +176,7 @@ export function projectSettlementsToTransactions(settlements: SellerSettlement[]
         orderId: null,
         customerId: null,
         customerName: '—',
+        customerPhone: '',
         reference: s.reference,
         paymentId: null,
         refundId: null,
@@ -198,6 +203,7 @@ export function projectAdjustmentsToTransactions(adjustments: SellerFinanceAdjus
     orderId: a.orderId,
     customerId: null,
     customerName: a.actorName,
+    customerPhone: '',
     reference: a.id,
     paymentId: null,
     refundId: null,

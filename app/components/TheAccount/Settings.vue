@@ -10,7 +10,7 @@
           v-for="item in settingsLinkItems"
           :key="item.id"
           :to="item.to"
-          class="w-full flex items-center gap-3 px-4 py-3.5 text-start border-b border-muted transition hover:bg-muted/50 lg:px-5"
+          class="w-full flex items-center gap-3 px-4 py-3.5 text-start border-b border-muted transition-all  hover:bg-muted/50 lg:px-5"
         >
           <div class="size-9 rounded-xl grid place-items-center shrink-0 bg-muted text-toned">
             <UIcon :name="item.icon" class="size-5" />
@@ -46,7 +46,7 @@
 
         <button
           type="button"
-          class="w-full flex items-center gap-3 px-4 py-3.5 text-start transition hover:bg-error/5 lg:px-5"
+          class="w-full flex items-center gap-3 px-4 py-3.5 text-start transition-all  hover:bg-error/5 lg:px-5"
           @click="onLogout"
         >
           <div class="size-9 rounded-xl grid place-items-center shrink-0 bg-error/10 text-error">

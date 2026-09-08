@@ -175,6 +175,9 @@
         v-for="review in filteredReviews"
         :key="review.id"
         :review="review"
+        :all-reviews="allReviews"
+        :official-images="officialImages"
+        :product-title="product.title"
       />
       <div
         v-if="filteredReviews.length === 0"
@@ -229,4 +232,10 @@ const sortOptions: { label: string, value: ProductReviewSort }[] = [
   { label: 'بیشترین امتیاز', value: 'high' },
   { label: 'کمترین امتیاز', value: 'low' },
 ]
+
+const officialImages = computed(() => {
+  const gallery = props.product.gallery?.filter(Boolean) ?? []
+  if (gallery.length) return gallery
+  return props.product.image ? [props.product.image] : []
+})
 </script>

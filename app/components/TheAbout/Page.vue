@@ -16,7 +16,7 @@
         <nav class="text-xs text-inverted/70 flex items-center gap-2 flex-wrap mb-1">
           <NuxtLink
             to="/"
-            class="hover:text-inverted transition cursor-pointer"
+            class="hover:text-inverted transition-all  cursor-pointer"
           >
             {{ $t('خانه') }}
           </NuxtLink>
@@ -51,9 +51,16 @@
         :key="stat.id"
         class="bg-default border border-muted rounded-2xl p-4 md:p-5 flex flex-col items-center text-center"
       >
-        <div class="size-11 rounded-xl bg-primary/10 text-primary grid place-items-center mb-3">
+        <div class="size-11 rounded-xl bg-primary/10 text-primary grid place-items-center mb-3 overflow-hidden">
+          <img
+            v-if="isSellerAdminIconImage(stat.icon)"
+            :src="resolveMediaUrl(stat.icon)"
+            alt=""
+            class="size-5 object-contain"
+          >
           <UIcon
-            :name="stat.icon"
+            v-else
+            :name="resolveSellerAdminIconName(stat.icon)"
             class="size-5"
           />
         </div>
@@ -152,11 +159,18 @@
         <div
           v-for="item in about.values"
           :key="item.id"
-          class="bg-default border border-muted rounded-2xl p-5 transition hover:(border-primary/40 bg-primary/5)"
+          class="bg-default border border-muted rounded-2xl p-5 transition-all  hover:(border-primary/40 bg-primary/5)"
         >
-          <div class="size-11 rounded-xl bg-primary/10 text-primary grid place-items-center mb-3">
+          <div class="size-11 rounded-xl bg-primary/10 text-primary grid place-items-center mb-3 overflow-hidden">
+            <img
+              v-if="isSellerAdminIconImage(item.icon)"
+              :src="resolveMediaUrl(item.icon)"
+              alt=""
+              class="size-5 object-contain"
+            >
             <UIcon
-              :name="item.icon"
+              v-else
+              :name="resolveSellerAdminIconName(item.icon)"
               class="size-5"
             />
           </div>
@@ -313,6 +327,11 @@ import {
   looksLikeHtml,
   sanitizeBlogHtml,
 } from '~/data/seller-blog'
+import {
+  isSellerAdminIconImage,
+  resolveSellerAdminIconName,
+} from '~/data/seller-admin-icons'
+import { resolveMediaUrl } from '~/composables/fetch'
 
 const props = defineProps<{
   sectionVisibility?: AboutSectionVisibility | null

@@ -152,7 +152,7 @@ export class CategorySchema extends BaseModel {
   /**
    * Subcategory groups for MegaMenu / Search chips.
    * Shape: `{ name: string, items: string[], image?: string }[]`
-   * Front: shown inside TheSearchHeader when `/search?category=<id>`.
+   * Front: shown inside TheSearchHeader when `/search/category-<id>`.
    */
   @column()
   declare subs: any

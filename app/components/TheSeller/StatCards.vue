@@ -5,10 +5,10 @@
         v-for="stat in stats"
         :key="stat.label"
         :to="stat.to"
-        class="group flex flex-col items-center gap-1 p-3 sm:(gap-2 p-3) lg:(gap-2.5 p-4) text-center transition hover:bg-muted/60 min-w-0"
+        class="group flex flex-col items-center gap-1 p-3 sm:(gap-2 p-3) lg:(gap-2.5 p-4) text-center transition-all  hover:bg-muted/60 min-w-0"
       >
         <div
-          class="size-8 sm:size-10 lg:size-12 rounded-xl lg:rounded-2xl grid place-items-center transition shrink-0"
+          class="size-8 sm:size-10 lg:size-12 rounded-xl lg:rounded-2xl grid place-items-center transition-all  shrink-0"
           :class="stat.iconWrap"
         >
           <UIcon :name="stat.icon" class="size-4 sm:size-5 lg:size-6" />

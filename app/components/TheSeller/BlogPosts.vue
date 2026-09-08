@@ -241,7 +241,7 @@
               <div class="min-w-0">
                 <NuxtLink
                   :to="`/seller/blog/${post.id}`"
-                  class="text-sm font-medium text-highlighted line-clamp-2 block hover:text-primary transition cursor-pointer"
+                  class="text-sm font-medium text-highlighted line-clamp-2 block hover:text-primary transition-all  cursor-pointer"
                 >
                   {{ $t(post.title) }}
                 </NuxtLink>

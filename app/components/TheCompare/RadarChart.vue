@@ -74,7 +74,7 @@
         v-for="(seriesItem, seriesIndex) in series"
         :key="seriesItem.name"
         type="button"
-        class="flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-medium transition border-2"
+        class="flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-medium transition-all  border-2"
         :class="legendClass(seriesIndex)"
         :style="legendStyle(seriesIndex)"
         @mouseenter="activeSeries = seriesIndex"

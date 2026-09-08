@@ -18,6 +18,7 @@ export type SellerPayment = {
   orderId: string
   customerId: string | null
   customerName: string
+  customerPhone: string
   amount: number
   currency: string
   paymentMethod: string
@@ -79,6 +80,7 @@ export function paymentFromOrder(
     orderId: order.id,
     customerId: commerce.customerId,
     customerName: order.customerName,
+    customerPhone: order.customerPhone || '',
     amount: order.total,
     currency: 'IRR',
     paymentMethod: order.paymentMethod,

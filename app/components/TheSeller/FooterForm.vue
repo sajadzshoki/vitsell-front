@@ -149,11 +149,9 @@
               :label="$t('شناسه')"
               dir="ltr"
             />
-            <TheFormInput
+            <TheSellerIconPicker
               v-model="item.icon"
               :label="$t('آیکون')"
-              dir="ltr"
-              :help="$t('نام Tabler بدون i-tabler-')"
             />
             <TheFormInput
               v-model="item.title"
@@ -247,12 +245,10 @@
                 :label="linkIndex === 0 ? $t('عنوان') : undefined"
                 size="md"
               />
-              <TheFormInput
+              <TheSellerInternalLinkField
                 v-model="link.to"
                 class="flex-1"
                 :label="linkIndex === 0 ? $t('مسیر') : undefined"
-                dir="ltr"
-                size="md"
               />
               <UButton
                 type="button"
@@ -313,10 +309,9 @@
               v-model="item.label"
               :label="$t('عنوان')"
             />
-            <TheFormInput
+            <TheSellerIconPicker
               v-model="item.icon"
               :label="$t('آیکون')"
-              dir="ltr"
             />
             <TheFormInput
               v-model="item.href"
@@ -373,10 +368,9 @@
               v-model="item.label"
               :label="$t('عنوان')"
             />
-            <TheFormInput
+            <TheSellerIconPicker
               v-model="item.icon"
               :label="$t('آیکون')"
-              dir="ltr"
             />
             <TheFormInput
               v-model="item.href"
@@ -433,10 +427,9 @@
               v-model="item.label"
               :label="$t('عنوان')"
             />
-            <TheFormInput
+            <TheSellerIconPicker
               v-model="item.icon"
               :label="$t('آیکون')"
-              dir="ltr"
             />
           </div>
           <div class="mt-3 flex justify-end">

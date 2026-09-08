@@ -13,7 +13,7 @@
           @click="onSelect(s.id)"
         >
           <span
-            class="size-9 rounded-full grid place-items-center text-sm font-bold transition shrink-0"
+            class="size-9 rounded-full grid place-items-center text-sm font-bold transition-all  shrink-0"
             :class="step === i
               ? 'bg-primary text-inverted shadow-lg shadow-primary/30'
               : i < step
@@ -45,7 +45,7 @@
         </button>
         <div
           v-if="i < checkoutSteps.length - 1"
-          class="flex-1 h-0.5 rounded-full transition min-w-4"
+          class="flex-1 h-0.5 rounded-full transition-all  min-w-4"
           :class="i < step ? 'bg-success' : 'bg-muted'"
         />
       </template>

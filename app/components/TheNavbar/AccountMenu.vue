@@ -40,7 +40,7 @@
             v-for="item in links"
             :key="item.to"
             :to="item.to"
-            class="w-full flex items-center gap-3 px-3 py-2 mx-0 text-sm text-start text-toned hover:(bg-primary/10 text-primary) transition no-underline"
+            class="w-full flex items-center gap-3 px-3 py-2 mx-0 text-sm text-start text-toned hover:(bg-primary/10 text-primary) transition-all  no-underline"
             @click="close"
           >
             <span class="size-8 rounded-lg grid place-items-center shrink-0 bg-muted text-toned">

@@ -4,6 +4,7 @@ import {
   type SellerNotificationCampaign,
   type SellerNotificationFormValues,
 } from '~/data/seller-notifications'
+import { resolveSellerAdminIconName } from '~/data/seller-admin-icons'
 
 export type SellerNotificationsQuery = {
   q?: string
@@ -37,7 +38,9 @@ function formPayload(form: SellerNotificationFormValues) {
     title: form.title.trim(),
     description: form.description.trim(),
     link: form.link.trim() || null,
-    icon: form.icon.trim() || 'i-tabler-bell',
+    icon: form.icon.trim()
+      ? resolveSellerAdminIconName(form.icon.trim())
+      : 'i-tabler-bell',
     type: form.type,
     audienceType: form.audienceType,
     audienceGroup: form.audienceType === 'group' ? form.audienceGroup : null,

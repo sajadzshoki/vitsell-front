@@ -21,6 +21,8 @@
       v-model:sort="sort"
       v-model:layout="layout"
       :brands="brands"
+      :attributes="filterAttributes"
+      :price-ceiling="priceCeiling"
       :total="total"
       :active-count="activeFilterCount"
     />
@@ -29,13 +31,15 @@
       <aside class="hidden lg:block lg:col-span-3">
         <div class="sticky top-32 max-h-[calc(100dvh-9rem)] overflow-y-auto scrollbar-none">
           <TheSkeleton
-            v-if="pending && !brands.length"
+            v-if="pending && !brands.length && !filterAttributes.length"
             variant="search-filters"
           />
           <TheSearchFilters
             v-else
             v-model="filters"
             :brands="brands"
+            :attributes="filterAttributes"
+            :price-ceiling="priceCeiling"
           />
         </div>
       </aside>
@@ -87,6 +91,8 @@ const {
   heading,
   isSearchQuery,
   brands,
+  filterAttributes,
+  priceCeiling,
   filters,
   sort,
   layout,
@@ -105,7 +111,7 @@ const {
   goToPage,
 } = useSearchCatalog()
 
-/** Entered via main category (`?category=`) → subcategory chips inside header */
+/** Entered via main category path (`/search/category-{id}`) → subcategory chips inside header */
 const showSubcategories = computed(() =>
   Boolean(categoryId.value && category.value?.subs?.length),
 )

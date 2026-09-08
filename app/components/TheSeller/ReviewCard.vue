@@ -3,7 +3,7 @@
     <div class="flex items-start gap-3">
       <NuxtLink
         :to="`/product/${review.productId}`"
-        class="shrink-0"
+        class="shrink-0 cursor-pointer"
       >
         <img
           v-if="product.image"
@@ -37,12 +37,48 @@
             :class="star <= review.rating ? 'text-warning' : 'text-dimmed'"
           />
         </div>
-        <p class="text-sm text-toned leading-6 mt-2">
+
+        <div
+          v-if="editingText"
+          class="mt-2 space-y-2"
+        >
+          <UTextarea
+            v-model="textDraft"
+            :rows="3"
+            autoresize
+            class="w-full"
+          />
+          <div class="flex justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              class="cursor-pointer"
+              @click="editingText = false"
+            >
+              {{ $t('انصراف') }}
+            </UButton>
+            <UButton
+              color="primary"
+              size="xs"
+              class="cursor-pointer"
+              :loading="savingText"
+              @click="saveText"
+            >
+              {{ $t('ذخیره') }}
+            </UButton>
+          </div>
+        </div>
+        <p
+          v-else
+          class="text-sm text-toned leading-6 mt-2"
+        >
           {{ review.text }}
         </p>
+
         <NuxtLink
           :to="`/product/${review.productId}`"
-          class="text-[11px] text-muted hover:text-primary transition line-clamp-1 mt-1"
+          class="text-[11px] text-muted hover:text-primary transition-all  line-clamp-1 mt-1 cursor-pointer"
         >
           {{ product.title }}
         </NuxtLink>
@@ -55,7 +91,40 @@
             {{ $t('پاسخ فروشنده') }}
             <span class="text-muted font-normal"> · {{ $t('قابل‌نمایش برای مشتری') }}</span>
           </div>
-          {{ review.reply }}
+          <div
+            v-if="editingReply"
+            class="space-y-2"
+          >
+            <UTextarea
+              v-model="replyDraft"
+              :rows="2"
+              autoresize
+              class="w-full"
+            />
+            <div class="flex justify-end gap-2">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                class="cursor-pointer"
+                @click="editingReply = false"
+              >
+                {{ $t('انصراف') }}
+              </UButton>
+              <UButton
+                color="primary"
+                size="xs"
+                class="cursor-pointer"
+                :loading="savingReply"
+                @click="saveReplyEdit"
+              >
+                {{ $t('ذخیره') }}
+              </UButton>
+            </div>
+          </div>
+          <template v-else>
+            {{ review.reply }}
+          </template>
         </div>
 
         <div
@@ -91,6 +160,30 @@
           >
             {{ moderationLabel }}
           </UBadge>
+          <UButton
+            v-if="can('reviews.moderate')"
+            type="button"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            icon="i-tabler-edit"
+            class="cursor-pointer"
+            @click="startEditText"
+          >
+            {{ $t('ویرایش نظر') }}
+          </UButton>
+          <UButton
+            v-if="can('reviews.moderate') && review.reply"
+            type="button"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            icon="i-tabler-edit"
+            class="cursor-pointer"
+            @click="startEditReply"
+          >
+            {{ $t('ویرایش پاسخ') }}
+          </UButton>
           <UButton
             v-if="can('reviews.moderate')"
             type="button"
@@ -146,12 +239,20 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const toast = useAppToast()
 const { resolveProduct } = useSeller()
-const { reply } = useSellerReviews()
+const { reply, updateReview } = useSellerReviews()
 const { can } = useSellerPermissions()
 
 const product = computed(() => resolveProduct(props.review.productId))
 const draft = ref('')
 const sending = ref(false)
+
+const editingText = ref(false)
+const textDraft = ref('')
+const savingText = ref(false)
+
+const editingReply = ref(false)
+const replyDraft = ref('')
+const savingReply = ref(false)
 
 const moderationLabel = computed(() => {
   if (props.moderation === 'pending') return t('در انتظار')
@@ -159,6 +260,59 @@ const moderationLabel = computed(() => {
   if (props.moderation === 'hidden') return t('مخفی')
   return t('تأییدشده')
 })
+
+function startEditText() {
+  textDraft.value = props.review.text
+  editingText.value = true
+}
+
+function startEditReply() {
+  replyDraft.value = props.review.reply || ''
+  editingReply.value = true
+}
+
+async function saveText() {
+  const text = textDraft.value.trim()
+  if (text.length < 10) {
+    toast.error(t('متن نظر باید حداقل ۱۰ کاراکتر باشد'))
+    return
+  }
+  savingText.value = true
+  try {
+    const result = await updateReview(props.review.id, { text })
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    editingText.value = false
+    toast.success(t('نظر ویرایش شد'))
+  }
+  finally {
+    savingText.value = false
+  }
+}
+
+async function saveReplyEdit() {
+  const text = replyDraft.value.trim()
+  if (!text) {
+    toast.error(t('متن پاسخ خالی است'))
+    return
+  }
+  savingReply.value = true
+  try {
+    const result = await updateReview(props.review.id, { reply: text })
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    editingReply.value = false
+    toast.success(t('پاسخ ویرایش شد'))
+    emit('replied')
+  }
+  finally {
+    savingReply.value = false
+  }
+}
 
 async function onReply() {
   const text = draft.value.trim()

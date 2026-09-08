@@ -156,11 +156,9 @@
           :key="stat.id"
           class="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 rounded-xl border border-muted bg-muted/30"
         >
-          <TheFormInput
+          <TheSellerIconPicker
             v-model="stat.icon"
             :label="$t('آیکون')"
-            placeholder="i-tabler-..."
-            dir="ltr"
           />
           <TheFormInput
             v-model="stat.value"
@@ -211,11 +209,9 @@
           class="space-y-3 p-3 rounded-xl border border-muted bg-muted/30"
         >
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <TheFormInput
+            <TheSellerIconPicker
               v-model="item.icon"
               :label="$t('آیکون')"
-              placeholder="i-tabler-..."
-              dir="ltr"
             />
             <TheFormInput
               v-model="item.title"

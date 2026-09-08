@@ -12,6 +12,14 @@ description: Banner CRUD rules for the digishop seller (admin) panel.
 ```ts
 type SellerBannerType = 'main' | 'secondary'
 
+type SellerBannerLinkType =
+  | 'none'
+  | 'url'
+  | 'product'
+  | 'category'
+  | 'brand'
+  | 'campaign'
+
 type SellerBannerPlacement =
   | 'homepage_hero'
   | 'homepage_promo_strip'
@@ -27,6 +35,8 @@ type SellerBanner = {
   image: string
   imageMobile: string | null
   link: string
+  linkType: SellerBannerLinkType
+  buttonText: string | null
   type: SellerBannerType
   placement: SellerBannerPlacement
   categoryId: string | null
@@ -40,7 +50,7 @@ type SellerBanner = {
 ```
 
 منبع تایپ/seed: `app/data/seller-banners.ts`  
-منطق CRUD فرانت: `app/composables/useSellerBanners.ts` (فعلاً local state)
+منطق CRUD فرانت: `app/composables/useSellerBanners.ts`
 
 ## Validation
 
@@ -49,9 +59,10 @@ type SellerBanner = {
 | `id` | الزامی در create؛ `[a-z0-9-]+`؛ یکتا؛ روی edit قفل |
 | `image` | الزامی (دسکتاپ) |
 | `imageMobile` | اختیاری |
-| `link` | الزامی (مسیر نسبی یا URL) |
+| `link` / `linkType` | لینک اختیاری؛ `none` = بدون لینک و بدون دکمه |
+| `buttonText` | اختیاری؛ فقط وقتی لینک هست در اسلایدر نمایش داده می‌شود |
 | `type` | فقط `main` یا `secondary` |
-| `placement` | یکی از placementهای بالا |
+| `placement` | یکی از placementهای بالا — اسلایدر صفحه اصلی = `homepage_hero` |
 | `categoryId` | اختیاری؛ خالی → `null` |
 | `startsAt` / `endsAt` | اختیاری؛ ISO؛ پایان بعد از شروع |
 | `sortOrder` | عدد ≥ ۰ |
@@ -59,4 +70,4 @@ type SellerBanner = {
 
 ## Placement
 
-جایگاه باید صریح باشد — بنر بدون context آپلود نشود. لیست placement قابل گسترش است؛ در استورفرانت بعداً بر اساس `placement` فیلتر کنید.
+جایگاه باید صریح باشد — بنر بدون context آپلود نشود. برای اسلایدر هیرو حتماً `homepage_hero` و `active=true` باشد.

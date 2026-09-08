@@ -4,7 +4,7 @@
       <p class="font-700  leading-[26px]">
         {{ question }}
       </p>
-      <transition name="fade" mode="out-in" :duration="150">
+      <transition-all  name="fade" mode="out-in" :duration="150">
         <div
             v-if="expanded"
             @click="toggleArticle"
@@ -35,7 +35,7 @@
 
         {{ answer }}
       </p>
-      <transition name="fade">
+      <transition-all  name="fade">
         <div v-show="!expanded && !haveExpanded" class="bg-gradient-to-t from-screen to-transparent absolute inset-0"/>
       </transition>
     </div>

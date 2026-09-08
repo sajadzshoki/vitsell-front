@@ -297,6 +297,35 @@ export function useSellerQuestions() {
     return { ok: true as const, question: mapped }
   }
 
+  async function updateQuestion(
+    id: string,
+    payload: { question?: string, answerText?: string },
+  ) {
+    const body: Record<string, string> = {}
+    if (payload.question != null) body.question = payload.question.trim()
+    if (payload.answerText != null) body.answerText = payload.answerText.trim()
+    if (!Object.keys(body).length) {
+      return { ok: false as const, error: 'متن ویرایش خالی است' }
+    }
+
+    const { result, error } = await usePatch<ApiProductQuestion>(
+      `/seller/questions/${encodeURIComponent(id)}`,
+      body,
+      { headers: { 'no-error': true } },
+    )
+
+    if (error || !result?.id) {
+      return {
+        ok: false as const,
+        error: apiErrorMessage(error, 'ویرایش پرسش ناموفق بود'),
+      }
+    }
+
+    const mapped = toSellerQuestion(result, getById(id)?.productId ?? '')
+    upsert(mapped)
+    return { ok: true as const, question: mapped }
+  }
+
   async function setVerified(id: string, verified: boolean) {
     const { result, error } = await usePatch<ApiProductQuestion>(
       `/seller/questions/${encodeURIComponent(id)}/verified`,
@@ -346,6 +375,7 @@ export function useSellerQuestions() {
     getById,
     replyToQuestion,
     clearAnswer,
+    updateQuestion,
     setVerified,
     deleteQuestion,
   }

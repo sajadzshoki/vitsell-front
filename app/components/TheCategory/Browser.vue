@@ -15,7 +15,7 @@
         >
           <button
             type="button"
-            class="relative w-full flex flex-col items-center gap-1 px-1 py-3 text-center transition md:(flex-row gap-3 px-4 py-3 text-start)"
+            class="relative w-full flex flex-col items-center gap-1 px-1 py-3 text-center transition-all  md:(flex-row gap-3 px-4 py-3 text-start)"
             :class="c.id === activeId
               ? 'bg-default text-primary font-semibold'
               : 'text-toned hover:(bg-elevated text-primary)'"

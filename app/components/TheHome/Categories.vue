@@ -64,7 +64,7 @@
               <img
                 :src="imageFor(item)"
                 :alt="$t(item.name)"
-                class="absolute inset-0 size-full object-cover p-1.5 transition duration-300 group-hover:scale-110"
+                class="absolute inset-0 size-full object-cover p-1.5 transition-all  duration-300 group-hover:scale-110"
                 loading="lazy"
                 decoding="async"
               >
@@ -90,7 +90,7 @@
             <img
               :src="imageFor(category)"
               :alt="$t(category.name)"
-              class="absolute inset-0 size-full object-cover p-2.5 md:p-3 transition duration-300 group-hover:scale-110"
+              class="absolute inset-0 size-full object-cover p-2.5 md:p-3 transition-all  duration-300 group-hover:scale-110"
               loading="lazy"
               decoding="async"
             >

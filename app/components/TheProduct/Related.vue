@@ -8,6 +8,7 @@
         {{ $t('محصولات مشابه') }}
       </h2>
       <UButton
+        v-if="showViewAll"
         :to="{ name: 'category-catId', params: { catId: product.category } }"
         color="primary"
         variant="link"
@@ -37,4 +38,7 @@ const props = defineProps<{
 }>()
 
 const items = computed(() => props.related ?? [])
+
+/** Hide «مشاهده همه» when the row is sparse (desktop grid is 6 cols). */
+const showViewAll = computed(() => items.value.length >= 6)
 </script>

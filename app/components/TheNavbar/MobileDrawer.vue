@@ -27,7 +27,7 @@
           <div class="flex items-center">
             <NuxtLink
               :to="toCategoryRoute(c.id)"
-              class="flex flex-1 items-center gap-3 px-4 py-3.5 text-start hover:bg-muted transition min-w-0"
+              class="flex flex-1 items-center gap-3 px-4 py-3.5 text-start hover:bg-muted transition-all  min-w-0"
               @click="open = false"
             >
               <UIcon :name="getCategoryIcon(c.id)" class="size-5 text-muted shrink-0" />

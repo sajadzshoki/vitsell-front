@@ -2,28 +2,50 @@
   <main class="max-w-7xl mx-auto">
     <div
       v-if="items.length < 2"
-      class="max-w-2xl mx-auto py-10 md:py-16"
+      class="py-6 md:py-10"
     >
-      <div class="bg-default border border-muted rounded-3xl p-8 md:p-10 text-center">
-        <UIcon
-          name="i-tabler-arrows-diff"
-          class="size-16 text-dimmed mx-auto mb-5"
-        />
-        <h1 class="text-xl font-bold text-highlighted mb-2">
-          {{ $t('برای مقایسه حداقل ۲ محصول انتخاب کنید') }}
-        </h1>
-        <p class="text-sm text-muted leading-7 mb-6 max-w-sm mx-auto">
-          {{ $t('روی آیکون مقایسه در کارت محصولات کلیک کنید تا تا ۴ کالا را کنار هم مقایسه کنید.') }}
-        </p>
-        <UButton
-          color="primary"
-          size="xl"
-          class="font-bold shadow-lg shadow-primary/25"
-          to="/"
-        >
-          {{ $t('بازگشت به فروشگاه') }}
-        </UButton>
+      <div class="max-w-2xl mx-auto mb-8 md:mb-10">
+        <div class="bg-default border border-muted rounded-3xl p-8 md:p-10 text-center">
+          <UIcon
+            name="i-tabler-arrows-diff"
+            class="size-16 text-dimmed mx-auto mb-5"
+          />
+          <h1 class="text-xl font-bold text-highlighted mb-2">
+            {{
+              items.length === 1
+                ? $t('یک محصول دیگر برای مقایسه اضافه کنید')
+                : $t('برای مقایسه حداقل ۲ محصول انتخاب کنید')
+            }}
+          </h1>
+          <p class="text-sm text-muted leading-7 mb-6 max-w-sm mx-auto">
+            {{ $t('از محصولات پیشنهادی زیر همین صفحه انتخاب کنید یا در فروشگاه روی آیکون مقایسه بزنید.') }}
+          </p>
+
+          <div
+            v-if="items.length === 1 && items[0]"
+            class="max-w-xs mx-auto mb-6 text-start"
+          >
+            <TheProductCard :product="items[0]" />
+          </div>
+
+          <UButton
+            color="primary"
+            size="xl"
+            class="font-bold shadow-lg shadow-primary/25"
+            to="/"
+          >
+            {{ $t('بازگشت به فروشگاه') }}
+          </UButton>
+        </div>
       </div>
+
+      <TheCompareSuggestions
+        :title="$t('محصولات پیشنهادی برای مقایسه')"
+        :subtitle="$t('با زدن آیکون مقایسه روی کارت، محصول به لیست اضافه می‌شود')"
+        :products="suggestions"
+        :pending="suggestionsPending"
+        :view-all-to="suggestionsViewAllTo"
+      />
     </div>
 
     <template v-else>
@@ -153,7 +175,7 @@
       </h2>
       <div
         class="overflow-x-auto no-scrollbar mb-4 pb-1"
-        :class="items.length <= 2 ? '' : '-mx-1 px-1'"
+        :class="items.length <= 3 ? '' : '-mx-1 px-1'"
       >
         <div
           class="grid gap-3 sm:gap-4 items-stretch"
@@ -191,7 +213,7 @@
             </div>
             <NuxtLink
               :to="{ name: 'product-id', params: { id: product.id } }"
-              class="block text-start text-[13px] leading-6 text-highlighted line-clamp-2 min-h-12 hover:text-primary transition mb-2"
+              class="block text-start text-[13px] leading-6 text-highlighted line-clamp-2 min-h-12 hover:text-primary transition-all  mb-2"
             >
               {{ product.title }}
             </NuxtLink>
@@ -341,6 +363,14 @@
         </div>
       </div>
 
+      <TheCompareSuggestions
+        :title="$t('محصولات مشابه')"
+        :subtitle="$t('می‌توانید محصول دیگری را هم به مقایسه اضافه کنید')"
+        :products="suggestions"
+        :pending="suggestionsPending"
+        :view-all-to="suggestionsViewAllTo"
+      />
+
       <div class="mt-6 flex items-center justify-center gap-3 flex-wrap">
         <UButton
           color="neutral"
@@ -365,13 +395,15 @@ import {
   radarChartColors,
   radarCriteriaFor,
 } from '~/data/compare'
-import { formatPrice } from '~/data/products'
+import { formatPrice, type Product } from '~/data/products'
+import { toSearchRoute } from '~/data/categories'
 
 const { t } = useI18n()
 const router = useRouter()
 const compareStore = useCompareStore()
 const { toggleCompare } = useCompareActions()
 const { addToCart } = useShop()
+const { fetchProducts } = useProducts()
 
 useMobileBackwardTitle(() => t('مقایسه محصولات'))
 
@@ -379,10 +411,17 @@ const diffOnly = ref(false)
 const headerRef = ref<HTMLElement | null>(null)
 const tableRef = ref<HTMLElement | null>(null)
 const syncing = ref(false)
+const suggestions = ref<Product[]>([])
+const suggestionsPending = ref(false)
 
 const items = computed(() => compareStore.products)
 
 const primaryCategory = computed(() => items.value[0]?.category ?? '')
+
+const suggestionsViewAllTo = computed(() => {
+  if (!primaryCategory.value) return '/search'
+  return toSearchRoute({ category: primaryCategory.value })
+})
 
 watch(
   primaryCategory,
@@ -391,6 +430,33 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  () => [primaryCategory.value, compareStore.ids.join(',')].join('|'),
+  () => {
+    void loadSuggestions()
+  },
+  { immediate: true },
+)
+
+async function loadSuggestions() {
+  suggestionsPending.value = true
+  try {
+    const exclude = new Set(compareStore.ids)
+    const { result } = await fetchProducts({
+      ...(primaryCategory.value ? { category: primaryCategory.value } : {}),
+      sort: 'bestrated',
+      page: 1,
+      pageSize: 12,
+    })
+    suggestions.value = (result?.items ?? [])
+      .filter(product => !exclude.has(product.id))
+      .slice(0, 6)
+  }
+  finally {
+    suggestionsPending.value = false
+  }
+}
 
 const sections = computed(() => {
   const fromApi = compareStore.templates.sections as { title: string, rows: string[] }[]
@@ -416,9 +482,13 @@ const criteria = computed(() => {
 
 const summaryGridStyle = computed(() => {
   const n = items.value.length
-  if (n <= 2) {
+  /** Fixed card width when few products so they don't stretch full-bleed. */
+  const card = '14rem'
+  if (n <= 3) {
     return {
-      gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
+      gridTemplateColumns: `repeat(${n}, ${card})`,
+      justifyContent: 'center',
+      width: '100%',
     }
   }
   return {
@@ -430,7 +500,14 @@ const summaryGridStyle = computed(() => {
 const tableGridStyle = computed(() => {
   const n = items.value.length
   const label = 100
-  const col = 160
+  const col = n <= 3 ? 180 : 160
+  if (n <= 3) {
+    return {
+      gridTemplateColumns: `${label}px repeat(${n}, ${col}px)`,
+      width: 'max-content',
+      marginInline: 'auto',
+    }
+  }
   return {
     gridTemplateColumns: `${label}px repeat(${n}, minmax(${col}px, 1fr))`,
     minWidth: `${label + col * n}px`,

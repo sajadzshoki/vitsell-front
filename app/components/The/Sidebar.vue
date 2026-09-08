@@ -4,7 +4,7 @@
       @click.self="handleClose"
   >
     <div
-        class="bg-white w-65 h-full !z-20 py-4 px-6 flexCol gap-8 transition-all duration-500"
+        class="bg-white w-65 h-full !z-20 py-4 px-6 flexCol gap-8 transition-all duration-400"
         :class="showModal ? 'translate-x-0' : 'translate-x-70'"
     >
       <!-- Header -->

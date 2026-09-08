@@ -45,7 +45,7 @@
           <img
             :src="item.image"
             :alt="$t(item.title)"
-            class="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
+            class="absolute inset-0 size-full object-cover transition-all  duration-400 group-hover:scale-105"
             loading="lazy"
             decoding="async"
           >

@@ -106,29 +106,11 @@
           icon="i-tabler-id"
         />
 
-        <UFormField
+        <TheSellerIconPicker
+          v-model="form.icon"
           class="md:col-span-2"
           :label="$t('آیکون')"
-        >
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="icon in sellerNotificationIcons"
-              :key="icon"
-              type="button"
-              class="size-10 rounded-xl border grid place-items-center transition cursor-pointer"
-              :class="form.icon === icon
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-muted text-toned hover:(border-accented bg-elevated)'"
-              :aria-label="icon"
-              @click="form.icon = icon"
-            >
-              <UIcon
-                :name="icon"
-                class="size-5"
-              />
-            </button>
-          </div>
-        </UFormField>
+        />
       </div>
     </div>
 
@@ -165,7 +147,7 @@
           v-for="(meta, groupId) in sellerNotificationGroupMeta"
           :key="groupId"
           type="button"
-          class="rounded-2xl border p-3 text-start transition cursor-pointer"
+          class="rounded-2xl border p-3 text-start transition-all  cursor-pointer"
           :class="form.audienceGroup === groupId
             ? 'border-primary bg-primary/10'
             : 'border-muted hover:(border-accented bg-elevated)'"
@@ -254,7 +236,7 @@
           >
           <UIcon
             v-else
-            :name="form.icon || 'i-tabler-bell'"
+            :name="resolveSellerAdminIconName(form.icon || 'bell')"
             class="size-5"
           />
         </div>
@@ -325,12 +307,12 @@ import {
   resolveAudienceUsers,
   sellerNotificationAudienceMeta,
   sellerNotificationGroupMeta,
-  sellerNotificationIcons,
   sellerNotificationTypeMeta,
   type SellerNotificationAudienceType,
   type SellerNotificationFormValues,
   type SellerNotificationType,
 } from '~/data/seller-notifications'
+import { resolveSellerAdminIconName } from '~/data/seller-admin-icons'
 
 const { t } = useI18n()
 const toast = useAppToast()

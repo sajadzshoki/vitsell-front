@@ -90,7 +90,7 @@
               <div class="min-w-0">
                 <NuxtLink
                   :to="`/seller/blog/categories/${cat.id}`"
-                  class="text-sm font-medium text-highlighted truncate block hover:text-primary transition cursor-pointer"
+                  class="text-sm font-medium text-highlighted truncate block hover:text-primary transition-all  cursor-pointer"
                 >
                   {{ cat.name }}
                 </NuxtLink>

@@ -19,8 +19,8 @@ export type SellerDiscount = {
   value: number
   minOrder: number
   maxDiscount: number | null
-  startsAt: string
-  endsAt: string
+  startsAt: string | null
+  endsAt: string | null
   status: SellerDiscountStatus
   usageLimit: number | null
   usageCount: number
@@ -51,8 +51,6 @@ export type SellerDiscountFormValues = {
 export const discountIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 export function emptyDiscountForm(): SellerDiscountFormValues {
-  const start = new Date()
-  const end = new Date(start.getTime() + 14 * 24 * 3600_000)
   return {
     id: '',
     name: '',
@@ -61,8 +59,8 @@ export function emptyDiscountForm(): SellerDiscountFormValues {
     value: '10',
     minOrder: '0',
     maxDiscount: '',
-    startsAt: toDatetimeLocalValue(start),
-    endsAt: toDatetimeLocalValue(end),
+    startsAt: '',
+    endsAt: '',
     status: 'active',
     usageLimit: '',
     perCustomerLimit: '',
@@ -80,8 +78,8 @@ export function toDiscountForm(d: SellerDiscount): SellerDiscountFormValues {
     value: String(d.value),
     minOrder: String(d.minOrder),
     maxDiscount: d.maxDiscount == null ? '' : String(d.maxDiscount),
-    startsAt: toDatetimeLocalValue(new Date(d.startsAt)),
-    endsAt: toDatetimeLocalValue(new Date(d.endsAt)),
+    startsAt: d.startsAt ? toDatetimeLocalValue(new Date(d.startsAt)) : '',
+    endsAt: d.endsAt ? toDatetimeLocalValue(new Date(d.endsAt)) : '',
     status: d.status,
     usageLimit: d.usageLimit == null ? '' : String(d.usageLimit),
     perCustomerLimit: d.perCustomerLimit == null ? '' : String(d.perCustomerLimit),
@@ -110,8 +108,8 @@ export function formToDiscount(form: SellerDiscountFormValues, previous?: Seller
       : Math.max(0, Math.round(valueNum) || 0),
     minOrder: Math.max(0, Math.round(Number(form.minOrder) || 0)),
     maxDiscount: parseOptionalInt(form.maxDiscount),
-    startsAt: fromDatetimeLocalValue(form.startsAt),
-    endsAt: fromDatetimeLocalValue(form.endsAt),
+    startsAt: form.startsAt.trim() ? fromDatetimeLocalValue(form.startsAt) : null,
+    endsAt: form.endsAt.trim() ? fromDatetimeLocalValue(form.endsAt) : null,
     status: form.status,
     usageLimit: parseOptionalInt(form.usageLimit),
     usageCount: previous?.usageCount ?? 0,

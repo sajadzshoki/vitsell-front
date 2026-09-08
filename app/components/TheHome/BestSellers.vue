@@ -10,7 +10,7 @@
         </p>
       </div>
       <UButton
-        to="/search?category=mobile"
+        to="/search/category-mobile"
         color="primary"
         variant="link"
         size="sm"

@@ -33,7 +33,7 @@
       </span>
 
       <div
-        class="absolute bottom-2 inset-s-2 flex flex-col gap-2 transition opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100"
+        class="absolute bottom-2 inset-s-2 flex flex-col gap-2 transition-all  opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100"
         :class="{ 'sm:opacity-100': liked || inCompare }"
       >
         <UButton
@@ -84,7 +84,7 @@
       :class="isHorizontal ? 'py-0.5' : ''"
     >
       <h3
-        class="text-[13px] leading-6 text-default line-clamp-2 mb-2 transition group-hover:text-primary"
+        class="text-[13px] leading-6 text-default line-clamp-2 mb-2 transition-all  group-hover:text-primary"
         :class="isHorizontal ? '' : 'min-h-12'"
       >
         {{ product.title }}

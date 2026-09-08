@@ -171,7 +171,7 @@ export function emptyNotificationForm(): SellerNotificationFormValues {
     title: '',
     description: '',
     link: '',
-    icon: 'i-tabler-bell',
+    icon: 'bell',
     type: 'promotional',
     audienceType: 'all',
     audienceGroup: 'all_customers',

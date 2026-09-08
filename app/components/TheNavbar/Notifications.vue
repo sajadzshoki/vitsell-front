@@ -39,7 +39,7 @@
         <button
           v-if="notificationCount > 0"
           type="button"
-          class="text-[11px] text-muted hover:text-primary transition shrink-0 text-start"
+          class="text-[11px] text-muted hover:text-primary transition-all  shrink-0 text-start"
           @click="markAllNotificationsRead"
         >
           {{ $t('علامت‌گذاری همه به عنوان خوانده‌شده') }}
@@ -52,7 +52,7 @@
           v-for="item in notificationList"
           :key="item.id"
           type="button"
-          class="w-full flex items-start gap-3 px-4 py-3 text-start border-b border-muted last:border-b-0 transition hover:bg-muted/60"
+          class="w-full flex items-start gap-3 px-4 py-3 text-start border-b border-muted last:border-b-0 transition-all  hover:bg-muted/60"
           :class="!item.read ? 'bg-primary/5' : ''"
           @click="onItemClick(item)"
         >

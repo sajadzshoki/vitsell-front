@@ -160,7 +160,7 @@
               <div class="min-w-0">
                 <NuxtLink
                   :to="`/seller/discounts/${discount.id}`"
-                  class="text-sm font-medium text-highlighted truncate block hover:text-primary transition cursor-pointer"
+                  class="text-sm font-medium text-highlighted truncate block hover:text-primary transition-all  cursor-pointer"
                 >
                   {{ discount.name }}
                 </NuxtLink>
@@ -219,7 +219,14 @@
               </span>
               <span>·</span>
               <span class="num" dir="ltr">
-                {{ discount.startsAt.slice(0, 10) }} → {{ discount.endsAt.slice(0, 10) }}
+                <template v-if="discount.startsAt || discount.endsAt">
+                  {{ discount.startsAt ? discount.startsAt.slice(0, 10) : '—' }}
+                  →
+                  {{ discount.endsAt ? discount.endsAt.slice(0, 10) : '—' }}
+                </template>
+                <template v-else>
+                  {{ $t('بدون محدودیت زمانی') }}
+                </template>
               </span>
             </div>
 

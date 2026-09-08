@@ -164,7 +164,7 @@
       <article
         v-for="item in media"
         :key="item.id"
-        class="group relative rounded-2xl border border-muted bg-muted overflow-hidden cursor-pointer transition hover:(border-primary/40 ring-1 ring-primary/20)"
+        class="group relative rounded-2xl border border-muted bg-muted overflow-hidden cursor-pointer transition-all  hover:(border-primary/40 ring-1 ring-primary/20)"
         @click="openDetail(item)"
       >
         <div
@@ -216,7 +216,7 @@
       <article
         v-for="item in media"
         :key="item.id"
-        class="flex items-center gap-3 rounded-2xl border border-muted bg-muted p-3 cursor-pointer transition hover:(border-primary/40 bg-primary/5)"
+        class="flex items-center gap-3 rounded-2xl border border-muted bg-muted p-3 cursor-pointer transition-all  hover:(border-primary/40 bg-primary/5)"
         @click="openDetail(item)"
       >
         <div

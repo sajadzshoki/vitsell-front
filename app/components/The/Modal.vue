@@ -1,5 +1,5 @@
 <template>
-  <transition name="fade">
+  <transition-all  name="fade">
     <div
         v-if="visible"
         class="fixed inset-0 bg-black  backdrop-blur-1.5 z-30 transition-opacity duration-300 flex justify-center items-end"

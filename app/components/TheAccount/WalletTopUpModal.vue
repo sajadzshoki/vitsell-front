@@ -12,7 +12,7 @@
             v-for="preset in walletTopUpPresets"
             :key="preset"
             type="button"
-            class="rounded-xl border px-3 py-3 text-center transition cursor-pointer"
+            class="rounded-xl border px-3 py-3 text-center transition-all  cursor-pointer"
             :class="amount === preset
               ? 'border-primary bg-primary/10 text-primary'
               : 'border-muted bg-muted/40 text-toned hover:(border-primary/40 bg-primary/5)'"

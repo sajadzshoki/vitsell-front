@@ -86,7 +86,10 @@
     </div>
 
     <div class="flex items-center justify-between gap-3">
-      <p class="text-xs text-muted num">
+      <p
+        v-if="total > 0"
+        class="text-xs text-muted num"
+      >
         {{ total.toLocaleString('fa-IR') }} {{ $t('کالا پیدا شده') }}
       </p>
       <div class="flex items-center gap-1">
@@ -122,6 +125,8 @@
         <TheSearchFilters
           v-model="filters"
           :brands="brands"
+          :attributes="attributes"
+          :price-ceiling="priceCeiling"
           closable
           :focus="focusSection"
           @close="modalOpen = false"
@@ -135,8 +140,10 @@
           @click="modalOpen = false"
         >
           {{ $t('نمایش') }}
-          {{ total.toLocaleString('fa-IR') }}
-          {{ $t('کالا') }}
+          <template v-if="total > 0">
+            {{ total.toLocaleString('fa-IR') }}
+            {{ $t('کالا') }}
+          </template>
         </UButton>
       </template>
     </UModal>
@@ -144,10 +151,18 @@
 </template>
 
 <script setup lang="ts">
-import { searchSortOptions, type SearchFilters, type SearchLayout, type SearchSort } from '~/data/search'
+import {
+  searchSortOptions,
+  type SearchFilterAttribute,
+  type SearchFilters,
+  type SearchLayout,
+  type SearchSort,
+} from '~/data/search'
 
 const props = defineProps<{
   brands: string[]
+  attributes?: SearchFilterAttribute[]
+  priceCeiling?: number
   total: number
   activeCount: number
 }>()
@@ -158,6 +173,9 @@ const layout = defineModel<SearchLayout>('layout', { required: true })
 
 const modalOpen = ref(false)
 const focusSection = ref<'' | 'price' | 'brand'>('')
+
+const attributes = computed(() => props.attributes ?? [])
+const priceCeiling = computed(() => props.priceCeiling)
 
 const currentSortLabel = computed(() =>
   searchSortOptions.find(option => option.id === sort.value)?.label ?? 'مرتبط‌ترین',

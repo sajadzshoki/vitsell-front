@@ -19,7 +19,7 @@
         v-for="action in exportActions"
         :key="action.id"
         type="button"
-        class="bg-muted border border-muted rounded-2xl p-4 text-start hover:border-primary/40 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        class="bg-muted border border-muted rounded-2xl p-4 text-start hover:border-primary/40 transition-all  cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         :disabled="running === action.id"
         @click="runExport(action.id)"
       >

@@ -12,7 +12,7 @@
   >
     <!-- flex wrapper: icon must not overlap text in RTL (see Search.vue / ui-parity-qa) -->
     <div
-      class="group flex items-center gap-2.5 w-full rounded-xl border bg-default transition focus-within:border-primary"
+      class="group flex items-center gap-2.5 w-full rounded-xl border bg-default transition-all  focus-within:border-primary"
       :class="[
         sizeClass,
         error ? 'border-error focus-within:border-error' : 'border-default',
@@ -22,7 +22,7 @@
       <UIcon
         v-if="icon"
         :name="icon"
-        class="size-5 shrink-0 text-dimmed transition group-focus-within:text-primary"
+        class="size-5 shrink-0 text-dimmed transition-all  group-focus-within:text-primary"
       />
 
       <input

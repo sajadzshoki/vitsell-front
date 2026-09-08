@@ -1,7 +1,8 @@
 import type { NitroFetchOptions, NitroFetchRequest } from 'nitropack'
 
 /** Fallback when runtimeConfig is unavailable (e.g. early module load). Prefer getApiBase(). */
-export const BASE_URL = 'https://digishop-back.vistatest.top/api/v1'
+// export const BASE_URL = 'https://digishop-back.vistatest.top/api/v1'
+export const BASE_URL = 'http://127.0.0.1:3333/api/v1'
 export const APP_CODE = 'test'
 
 export function getApiBase() {
@@ -14,6 +15,34 @@ export function getApiBase() {
     /* outside Nuxt context */
   }
   return BASE_URL
+}
+
+/** Backend origin without `/api/v1` — for `/uploads/...` assets. */
+export function getUploadOrigin() {
+  const base = getApiBase().replace(/\/+$/, '')
+  return base.replace(/\/api\/v1$/i, '') || base
+}
+
+const UPLOAD_FILE_RE = /\/uploads\/([\w.-]+\.(?:jpe?g|png|webp|gif|mp4|webm|mov|pdf|txt|docx?))$/i
+
+/**
+ * Make media URLs loadable in the browser.
+ * Relative `/uploads/...` and legacy absolute hosts (e.g. 0.0.0.0) rewrite to the API origin.
+ */
+export function resolveMediaUrl(url: string) {
+  const raw = String(url || '').trim()
+  if (!raw) return ''
+  if (raw.startsWith('blob:') || raw.startsWith('data:')) return raw
+
+  const origin = getUploadOrigin()
+  const pathMatch = raw.match(UPLOAD_FILE_RE)
+  if (pathMatch && origin) {
+    return `${origin}/uploads/${pathMatch[1]}`
+  }
+  if (raw.startsWith('/') && origin) {
+    return `${origin}${raw}`
+  }
+  return raw
 }
 
 export function getAuthCookieName() {

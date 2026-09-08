@@ -1,5 +1,5 @@
 <template>
-  <main class="w-full py-2 md:py-4">
+  <main class="w-full">
     <TheBlogListing />
   </main>
 </template>

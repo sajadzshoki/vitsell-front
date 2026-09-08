@@ -3,7 +3,7 @@
     <div class="flex items-start gap-3">
       <NuxtLink
         :to="`/product/${question.productId}`"
-        class="shrink-0"
+        class="shrink-0 cursor-pointer"
       >
         <img
           v-if="product.image"
@@ -51,13 +51,47 @@
           </div>
         </div>
 
-        <p class="text-sm font-medium text-highlighted leading-6 mt-2">
+        <div
+          v-if="editingQuestion"
+          class="mt-2 space-y-2"
+        >
+          <UTextarea
+            v-model="questionDraft"
+            :rows="2"
+            autoresize
+            class="w-full"
+          />
+          <div class="flex justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              class="cursor-pointer"
+              @click="editingQuestion = false"
+            >
+              {{ $t('انصراف') }}
+            </UButton>
+            <UButton
+              color="primary"
+              size="xs"
+              class="cursor-pointer"
+              :loading="savingQuestion"
+              @click="saveQuestionText"
+            >
+              {{ $t('ذخیره') }}
+            </UButton>
+          </div>
+        </div>
+        <p
+          v-else
+          class="text-sm font-medium text-highlighted leading-6 mt-2"
+        >
           {{ question.question }}
         </p>
 
         <NuxtLink
           :to="`/product/${question.productId}`"
-          class="text-[11px] text-muted hover:text-primary transition line-clamp-1 mt-1"
+          class="text-[11px] text-muted hover:text-primary transition-all  line-clamp-1 mt-1 cursor-pointer"
         >
           {{ product.title }}
         </NuxtLink>
@@ -74,7 +108,40 @@
               {{ question.answer.date }}
             </div>
           </div>
-          {{ question.answer.text }}
+          <div
+            v-if="editingAnswer"
+            class="space-y-2"
+          >
+            <UTextarea
+              v-model="answerDraft"
+              :rows="2"
+              autoresize
+              class="w-full"
+            />
+            <div class="flex justify-end gap-2">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                class="cursor-pointer"
+                @click="editingAnswer = false"
+              >
+                {{ $t('انصراف') }}
+              </UButton>
+              <UButton
+                color="primary"
+                size="xs"
+                class="cursor-pointer"
+                :loading="savingAnswer"
+                @click="saveAnswerText"
+              >
+                {{ $t('ذخیره') }}
+              </UButton>
+            </div>
+          </div>
+          <template v-else>
+            {{ question.answer.text }}
+          </template>
         </div>
 
         <div
@@ -94,7 +161,7 @@
             <UButton
               color="primary"
               size="md"
-              class="font-medium"
+              class="font-medium cursor-pointer"
               :disabled="!draft.trim()"
               :loading="sending"
               @click="onReply"
@@ -107,10 +174,34 @@
         <div class="mt-3 flex items-center gap-2 flex-wrap">
           <UButton
             type="button"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            icon="i-tabler-edit"
+            class="cursor-pointer"
+            @click="startEditQuestion"
+          >
+            {{ $t('ویرایش پرسش') }}
+          </UButton>
+          <UButton
+            v-if="question.answer"
+            type="button"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            icon="i-tabler-edit"
+            class="cursor-pointer"
+            @click="startEditAnswer"
+          >
+            {{ $t('ویرایش پاسخ') }}
+          </UButton>
+          <UButton
+            type="button"
             :color="question.verified ? 'neutral' : 'success'"
             variant="ghost"
             size="xs"
             :icon="question.verified ? 'i-tabler-user-off' : 'i-tabler-user-check'"
+            class="cursor-pointer"
             @click="onToggleVerified"
           >
             {{ question.verified ? $t('لغو تأیید خریدار') : $t('تأیید خریدار') }}
@@ -121,7 +212,8 @@
             color="warning"
             variant="ghost"
             size="xs"
-            icon="i-tabler-pencil"
+            icon="i-tabler-trash"
+            class="cursor-pointer"
             @click="onClearAnswer"
           >
             {{ $t('حذف پاسخ') }}
@@ -132,6 +224,7 @@
             variant="ghost"
             size="xs"
             icon="i-tabler-trash"
+            class="cursor-pointer"
             @click="emit('delete', question)"
           >
             {{ $t('حذف پرسش') }}
@@ -156,11 +249,71 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const toast = useAppToast()
 const { resolveProduct } = useSeller()
-const { replyToQuestion, clearAnswer, setVerified } = useSellerQuestions()
+const { replyToQuestion, clearAnswer, setVerified, updateQuestion } = useSellerQuestions()
 
 const product = computed(() => resolveProduct(props.question.productId))
 const draft = ref('')
 const sending = ref(false)
+
+const editingQuestion = ref(false)
+const questionDraft = ref('')
+const savingQuestion = ref(false)
+
+const editingAnswer = ref(false)
+const answerDraft = ref('')
+const savingAnswer = ref(false)
+
+function startEditQuestion() {
+  questionDraft.value = props.question.question
+  editingQuestion.value = true
+}
+
+function startEditAnswer() {
+  answerDraft.value = props.question.answer?.text || ''
+  editingAnswer.value = true
+}
+
+async function saveQuestionText() {
+  const text = questionDraft.value.trim()
+  if (text.length < 10) {
+    toast.error(t('متن پرسش باید حداقل ۱۰ کاراکتر باشد'))
+    return
+  }
+  savingQuestion.value = true
+  try {
+    const result = await updateQuestion(props.question.id, { question: text })
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    editingQuestion.value = false
+    toast.success(t('پرسش ویرایش شد'))
+  }
+  finally {
+    savingQuestion.value = false
+  }
+}
+
+async function saveAnswerText() {
+  const text = answerDraft.value.trim()
+  if (text.length < 2) {
+    toast.error(t('متن پاسخ کوتاه است'))
+    return
+  }
+  savingAnswer.value = true
+  try {
+    const result = await updateQuestion(props.question.id, { answerText: text })
+    if (!result.ok) {
+      toast.error(t(result.error))
+      return
+    }
+    editingAnswer.value = false
+    toast.success(t('پاسخ ویرایش شد'))
+  }
+  finally {
+    savingAnswer.value = false
+  }
+}
 
 async function onReply() {
   const text = draft.value.trim()

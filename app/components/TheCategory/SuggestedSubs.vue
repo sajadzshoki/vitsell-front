@@ -13,7 +13,7 @@
         :to="searchRoute(item.query)"
         class="flex flex-col items-center gap-2 group"
       >
-        <div class="size-16 sm:size-20 rounded-full border-2 border-primary/30 p-0.5 bg-default transition group-hover:(border-primary shadow-sm)">
+        <div class="size-16 sm:size-20 rounded-full border-2 border-primary/30 p-0.5 bg-default transition-all  group-hover:(border-primary shadow-sm)">
           <div class="size-full rounded-full overflow-hidden bg-muted">
             <img
               :src="item.image"

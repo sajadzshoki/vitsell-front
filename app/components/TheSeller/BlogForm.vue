@@ -35,24 +35,25 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TheFormInput
-          v-model="form.id"
-          :label="$t('شناسه (انگلیسی)')"
-          :placeholder="$t('مثلاً buy-guide-phone')"
-          dir="ltr"
-          :disabled="isEdit"
-          :error="errors.id"
-          required
-          icon="i-tabler-id"
-          :help="isEdit ? $t('شناسه بعد از ایجاد قابل تغییر نیست') : $t('فقط حروف کوچک انگلیسی، عدد و خط تیره')"
-        />
-
-        <TheFormInput
           v-model="form.title"
           :label="$t('عنوان')"
           :placeholder="$t('عنوان مطلب')"
           :error="errors.title"
           required
           icon="i-tabler-heading"
+        />
+
+        <TheFormInput
+          v-model="form.id"
+          :label="$t('اسلاگ')"
+          :placeholder="$t('مثلاً buy-guide-phone')"
+          dir="ltr"
+          :disabled="isEdit"
+          :error="errors.id"
+          required
+          icon="i-tabler-link"
+          :help="isEdit ? $t('اسلاگ بعد از ایجاد قابل تغییر نیست') : $t('از عنوان ساخته می‌شود؛ می‌توانید ویرایش کنید')"
+          @update:model-value="slugTouched = true"
         />
 
         <TheFormInput
@@ -164,18 +165,28 @@
         <UFormField
           class="md:col-span-2"
           :label="$t('برچسب‌ها')"
-          :help="$t('برچسب موجود را انتخاب کنید یا نام جدید بنویسید')"
         >
+          <template #hint>
+            <NuxtLink
+              to="/seller/blog/tags"
+              class="text-xs text-primary cursor-pointer hover:underline"
+            >
+              {{ $t('مدیریت برچسب‌ها') }}
+            </NuxtLink>
+          </template>
           <USelectMenu
             v-model="form.tags"
             multiple
             create-item
             :items="tagOptions"
             value-key="value"
-            :placeholder="$t('انتخاب برچسب')"
+            :placeholder="$t('انتخاب یا نوشتن برچسب جدید')"
             class="w-full"
             @create="onCreateTag"
           />
+          <p class="text-[11px] text-muted mt-1.5 leading-5">
+            {{ $t('برچسب موجود را انتخاب کنید یا نام جدید بنویسید تا ساخته شود') }}
+          </p>
         </UFormField>
 
         <UFormField
@@ -369,6 +380,7 @@ import {
   type SellerBlogPost,
   type SellerBlogStatus,
 } from '~/data/seller-blog'
+import { slugifyLatin } from '~/data/seo'
 
 const props = defineProps<{
   initial?: SellerBlogPost | null
@@ -386,6 +398,7 @@ const blogTags = useSellerBlogTags()
 const isEdit = computed(() => Boolean(props.initial?.id))
 const saving = ref(false)
 const form = ref(props.initial ? toBlogForm(props.initial) : emptyBlogForm())
+const slugTouched = ref(Boolean(props.initial?.id))
 const errors = ref<Partial<Record<'id' | 'title' | 'excerpt' | 'image' | 'category' | 'author' | 'date' | 'readTime' | 'contentText' | 'scheduledAt', string>>>({})
 const savedSnapshot = ref(JSON.stringify(form.value))
 const draftHint = ref('')
@@ -458,7 +471,16 @@ watch(
       draftHint.value = ''
     }
     savedSnapshot.value = JSON.stringify(value ? toBlogForm(value) : emptyBlogForm())
+    slugTouched.value = Boolean(value?.id)
     errors.value = {}
+  },
+)
+
+watch(
+  () => form.value.title,
+  (title) => {
+    if (isEdit.value || slugTouched.value) return
+    form.value.id = slugifyLatin(title)
   },
 )
 
@@ -519,11 +541,11 @@ function removeHighlight(index: number) {
 
 function validate() {
   const next: typeof errors.value = {}
-  const id = form.value.id.trim()
+  const id = form.value.id.trim() || slugifyLatin(form.value.title)
 
   if (!isEdit.value) {
-    if (!id) next.id = t('شناسه الزامی است')
-    else if (!blogPostIdPattern.test(id)) next.id = t('شناسه فقط حروف کوچک، عدد و خط تیره')
+    if (!id) next.id = t('اسلاگ الزامی است')
+    else if (!blogPostIdPattern.test(id)) next.id = t('اسلاگ فقط حروف کوچک، عدد و خط تیره')
   }
   if (!form.value.title.trim()) next.title = t('عنوان الزامی است')
   if (!form.value.excerpt.trim()) next.excerpt = t('خلاصه الزامی است')
@@ -536,6 +558,8 @@ function validate() {
   if (form.value.status === 'scheduled' && !form.value.scheduledAt.trim()) {
     next.scheduledAt = t('زمان‌بندی الزامی است')
   }
+
+  if (!isEdit.value && id) form.value.id = id
 
   errors.value = next
   return !Object.keys(next).length

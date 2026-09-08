@@ -84,6 +84,6 @@ const showSkeleton = computed(() => (!ready.value || pending.value) && !products
 
 const viewAllTo = computed(() => {
   const cat = recCategories.value[0]
-  return cat ? `/search?category=${encodeURIComponent(cat)}` : '/search'
+  return cat ? `/search/category-${encodeURIComponent(cat)}` : '/search'
 })
 </script>

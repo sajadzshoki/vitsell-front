@@ -28,7 +28,7 @@
         <div class="flex items-start justify-between gap-2 flex-wrap">
           <NuxtLink
             :to="`/product/${question.productId}`"
-            class="text-sm font-medium text-highlighted hover:text-primary transition line-clamp-2 no-underline"
+            class="text-sm font-medium text-highlighted hover:text-primary transition-all  line-clamp-2 no-underline"
           >
             {{ question.productTitle }}
           </NuxtLink>

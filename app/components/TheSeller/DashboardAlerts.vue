@@ -17,7 +17,7 @@
         v-for="alert in alerts"
         :key="alert.id"
         :to="alert.to"
-        class="flex items-start gap-3 p-3 rounded-xl border border-muted hover:bg-muted/50 transition cursor-pointer"
+        class="flex items-start gap-3 p-3 rounded-xl border border-muted hover:bg-muted/50 transition-all  cursor-pointer"
       >
         <div
           class="size-9 rounded-xl grid place-items-center shrink-0"

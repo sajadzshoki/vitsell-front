@@ -165,7 +165,7 @@
                   v-for="post in section.items"
                   :key="post.id"
                   :to="getBlogPostPath(post.id)"
-                  class="group flex flex-col sm:flex-row sm:items-stretch gap-4 p-4 rounded-xl border border-muted transition hover:(border-primary/30 bg-primary/5)"
+                  class="group flex flex-col sm:flex-row sm:items-stretch gap-4 p-4 rounded-xl border border-muted transition-all  hover:(border-primary/30 bg-primary/5)"
                 >
                   <div class="w-full sm:w-36 md:w-44 shrink-0 rounded-xl overflow-hidden bg-muted aspect-16/10 sm:aspect-auto">
                     <img
@@ -187,7 +187,7 @@
                         · {{ $t(post.readTime) }}
                       </span>
                     </div>
-                    <h3 class="text-sm font-bold text-highlighted mb-1 transition group-hover:text-primary">
+                    <h3 class="text-sm font-bold text-highlighted mb-1 transition-all  group-hover:text-primary">
                       {{ $t(post.title) }}
                     </h3>
                     <p class="text-sm text-toned leading-7 mb-2">
@@ -207,7 +207,7 @@
                 <div
                   v-for="(job, jIndex) in section.items"
                   :key="jIndex"
-                  class="p-4 rounded-xl border border-muted transition hover:(border-primary/30 bg-primary/5)"
+                  class="p-4 rounded-xl border border-muted transition-all  hover:(border-primary/30 bg-primary/5)"
                 >
                   <div class="flex flex-col sm:flex-row sm:items-start gap-3">
                     <div class="flex-1 min-w-0">

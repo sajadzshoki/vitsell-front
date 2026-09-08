@@ -3,6 +3,37 @@
     <div class="flex flex-col gap-2 md:(flex-row items-start)">
       <!-- ستون عکس + بندانگشتی‌ها (عرض یکسان = هم‌تراز) -->
       <div class="order-1 md:order-2 flex-1 min-w-0 flex flex-col gap-2">
+        <div
+          v-if="buyerPhotos.length"
+          class="flex items-center gap-4 px-0.5"
+        >
+          <button
+            type="button"
+            class="relative pb-1.5 text-sm font-medium transition-all  cursor-pointer"
+            :class="galleryTab === 'official' ? 'text-highlighted' : 'text-muted hover:text-toned'"
+            @click="setGalleryTab('official')"
+          >
+            {{ $t('رسمی') }}
+            <span
+              v-if="galleryTab === 'official'"
+              class="absolute bottom-0 inset-x-0 h-0.5 rounded-full bg-primary"
+            />
+          </button>
+          <button
+            type="button"
+            class="relative pb-1.5 text-sm font-medium transition-all  cursor-pointer"
+            :class="galleryTab === 'buyers' ? 'text-highlighted' : 'text-muted hover:text-toned'"
+            @click="setGalleryTab('buyers')"
+          >
+            {{ $t('خریداران') }}
+            <span class="text-xs text-dimmed num ms-1">({{ buyerPhotos.length.toLocaleString('fa-IR') }})</span>
+            <span
+              v-if="galleryTab === 'buyers'"
+              class="absolute bottom-0 inset-x-0 h-0.5 rounded-full bg-primary"
+            />
+          </button>
+        </div>
+
         <div class="relative w-full rounded-2xl overflow-hidden bg-muted">
           <UCarousel
             ref="carousel"
@@ -44,7 +75,7 @@
           </UCarousel>
 
           <UBadge
-            v-if="discount > 0"
+            v-if="discount > 0 && galleryTab === 'official'"
             color="error"
             size="lg"
             class="absolute top-3 inset-e-3 font-bold num shadow-lg shadow-error/30 pointer-events-none z-10"
@@ -95,18 +126,20 @@
         <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
           <button
             v-for="(image, index) in gallery"
-            :key="`${image}-${index}`"
+            :key="`${galleryTab}-${image}-${index}`"
             type="button"
-            class="size-16 md:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition cursor-pointer"
+            class="size-16 md:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all  cursor-pointer"
             :class="active === index ? 'border-primary' : 'border-muted hover:border-accented'"
-            :aria-label="$t('تصویر محصول')"
+            :aria-label="galleryTab === 'buyers' ? $t('تصویر خریدار') : $t('تصویر محصول')"
             @click="select(index)"
           >
-            <TheIcon
-              :name="image || 'noImage.png'"
-              icon-type="img"
-              class="!size-full object-cover"
-            />
+            <img
+              :src="imageSrc(image)"
+              :alt="product.title"
+              class="size-full object-cover"
+              loading="lazy"
+              decoding="async"
+            >
           </button>
         </div>
 
@@ -191,7 +224,18 @@
       :product="product"
     />
 
+    <TheProductTabsReviewGalleryModal
+      v-if="buyerPhotos.length"
+      v-model:open="fullscreen"
+      :buyer-photos="buyerPhotos"
+      :official-images="officialGallery"
+      :product-title="product.title"
+      :initial-tab="galleryTab"
+      :start-index="active"
+    />
+
     <UModal
+      v-else
       v-model:open="fullscreen"
       fullscreen
       :title="$t('گالری تصاویر')"
@@ -264,7 +308,7 @@
               v-for="(image, index) in gallery"
               :key="`fs-${image}-${index}`"
               type="button"
-              class="size-14 sm:size-16 shrink-0 rounded-xl overflow-hidden border-2 transition cursor-pointer"
+              class="size-14 sm:size-16 shrink-0 rounded-xl overflow-hidden border-2 transition-all  cursor-pointer"
               :class="active === index ? 'border-primary' : 'border-inverted/20 hover:border-inverted/50'"
               :aria-label="$t('تصویر محصول')"
               @click="select(index)"
@@ -287,12 +331,14 @@
 <script setup lang="ts">
 import type { Product } from '~/data/products'
 import { products as localProducts } from '~/data/products'
+import { collectBuyerPhotos } from '~/data/product-detail'
 
 const props = defineProps<{
   product: Product
 }>()
 
 const { isInWishlist, toggleWishlist } = useShop()
+const { allReviews } = useProductDetail(() => props.product)
 
 const active = ref(0)
 const fullscreen = ref(false)
@@ -303,12 +349,15 @@ const stageRef = ref<HTMLElement | null>(null)
 const carousel = ref<{ emblaApi?: { scrollTo: (index: number) => void } | null } | null>(null)
 const fsCarousel = ref<{ emblaApi?: { scrollTo: (index: number) => void } | null } | null>(null)
 const dragMoved = ref(false)
+const galleryTab = ref<'official' | 'buyers'>('official')
 
 const liked = computed(() => isInWishlist(props.product.id))
 
 const colorMode = useColorMode()
 
-const gallery = computed(() => {
+const buyerPhotos = computed(() => collectBuyerPhotos(allReviews.value))
+
+const officialGallery = computed(() => {
   const fromProduct = props.product.gallery?.filter(Boolean) ?? []
   const fromLocal = localProducts
     .find(p => p.id === props.product.id)
@@ -322,6 +371,13 @@ const gallery = computed(() => {
   const light = props.product.image?.trim()
   const fallback = (colorMode.value === 'dark' && dark ? dark : light) || 'noImage.png'
   return [fallback]
+})
+
+const gallery = computed(() => {
+  if (galleryTab.value === 'buyers' && buyerPhotos.value.length) {
+    return buyerPhotos.value.map(p => p.url)
+  }
+  return officialGallery.value
 })
 
 const discount = computed(() => {
@@ -343,10 +399,25 @@ watch(() => props.product.id, () => {
   fullscreen.value = false
   priceChartOpen.value = false
   zooming.value = false
+  galleryTab.value = 'official'
 })
+
+watch(galleryTab, () => {
+  active.value = 0
+  nextTick(() => {
+    carousel.value?.emblaApi?.scrollTo(0)
+  })
+})
+
+function setGalleryTab(tab: 'official' | 'buyers') {
+  if (tab === 'buyers' && !buyerPhotos.value.length) return
+  galleryTab.value = tab
+}
 
 function imageSrc(name: string) {
   if (!name) return '/images/noImage.png'
+  const resolved = resolveMediaUrl(name)
+  if (resolved) return resolved
   if (name.startsWith('http') || name.startsWith('/')) return name
   if (name.includes('/')) return `/${name}`
   return `/images/${name}`

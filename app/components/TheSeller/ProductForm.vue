@@ -63,7 +63,7 @@
           v-for="category in categoryOptions"
           :key="category.id"
           type="button"
-          class="flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition cursor-pointer"
+          class="flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-all  cursor-pointer"
           :class="form.category === category.id
             ? 'border-primary bg-primary/10 text-primary'
             : 'border-muted bg-muted/40 text-toned hover:(border-accented bg-elevated)'"
@@ -327,7 +327,7 @@
                   v-for="color in sellerProductColorPresets"
                   :key="color.hex"
                   type="button"
-                  class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition cursor-pointer"
+                  class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-all  cursor-pointer"
                   :class="isColorSelected(color)
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-muted text-toned hover:border-accented'"

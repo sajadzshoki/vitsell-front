@@ -92,7 +92,7 @@
 
         <UFormField
           :label="$t('جایگاه نمایش')"
-          :help="$t('محل قرارگیری بنر در سایت')"
+          :help="$t('برای اسلایدر صفحه اصلی «هیرو صفحه اصلی» را انتخاب کنید')"
           required
         >
           <USelect
@@ -120,7 +120,7 @@
 
         <UFormField
           :label="$t('نوع لینک')"
-          required
+          :help="$t('بدون لینک = بدون دکمه در اسلایدر')"
         >
           <USelect
             v-model="form.linkType"
@@ -134,10 +134,10 @@
           v-if="form.linkType === 'url'"
           v-model="form.link"
           :label="$t('لینک')"
-          :placeholder="$t('مثلاً /search?category=mobile')"
+          :placeholder="$t('مثلاً /search/category-mobile')"
           dir="ltr"
           :error="errors.link"
-          required
+          :help="$t('اختیاری')"
           icon="i-tabler-link"
         />
 
@@ -198,7 +198,7 @@
         />
 
         <TheFormInput
-          v-if="form.linkType !== 'url'"
+          v-if="form.linkType !== 'url' && form.linkType !== 'none'"
           v-model="form.link"
           class="md:col-span-2"
           :label="$t('لینک پشتیبان')"
@@ -207,8 +207,17 @@
           icon="i-tabler-link"
         />
 
+        <TheFormInput
+          v-if="form.linkType !== 'none'"
+          v-model="form.buttonText"
+          :label="$t('متن دکمه')"
+          :placeholder="$t('مثلاً مشاهده و خرید')"
+          :help="$t('فقط وقتی لینک داشته باشد نمایش داده می‌شود')"
+          icon="i-tabler-click"
+        />
+
         <UFormField
-          v-if="form.linkType !== 'category'"
+          v-if="form.linkType !== 'category' && form.linkType !== 'none'"
           :label="$t('دسته‌بندی مرتبط')"
           :help="$t('اختیاری — برای فیلتر یا نمایش در صفحه دسته')"
         >
@@ -479,9 +488,6 @@ function validate() {
   }
   if (!image) next.image = t('تصویر الزامی است')
 
-  if (form.value.linkType === 'url' && !form.value.link.trim()) {
-    next.link = t('لینک الزامی است')
-  }
   if (form.value.linkType === 'product' && !form.value.productId.trim()) {
     next.productId = t('انتخاب محصول الزامی است')
   }

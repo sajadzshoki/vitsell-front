@@ -7,7 +7,7 @@
   >
     <NuxtLink
       to="/category"
-      class="inline-flex items-center gap-1.5 text-xs md:text-sm text-toned hover:text-primary transition whitespace-nowrap py-1"
+      class="inline-flex items-center gap-1.5 text-xs md:text-sm text-toned hover:text-primary transition-all  whitespace-nowrap py-1"
       @click="close"
     >
       <UIcon name="i-tabler-menu-2" class="size-4 shrink-0" />
@@ -74,7 +74,7 @@
               <li v-for="item in sub.items" :key="item">
                 <button
                   type="button"
-                  class="text-xs text-muted hover:text-primary transition text-start"
+                  class="text-xs text-muted hover:text-primary transition-all  text-start"
                   @click="goSearch(item)"
                 >
                   {{ item }}

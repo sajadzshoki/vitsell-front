@@ -5,7 +5,7 @@
       <p class="leading-6.5 font-500">{{ title }}</p>
       <TheNuxtIcon name="arrow-down-1" icon-type="svg" class="text-2xl mr-auto" :class="isOpen && 'rotate-180'" />
     </div>
-    <transition name='fade'>
+    <transition-all  name='fade'>
       <div v-show="isOpen"  class="text-(sm )  grid grid-cols-3 pb-2 border-b-(1 solid gray-200)">
 
             <p v-for="n in 3" >{{description}}</p>
@@ -23,7 +23,7 @@ defineProps<{
 }>()
 </script>
 <style >
-/* Add transition styles for fade */
+/* Add transition-all  styles for fade */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease-in-out;
