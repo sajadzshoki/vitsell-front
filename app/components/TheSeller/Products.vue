@@ -293,7 +293,10 @@
           />
         <!-- </div> -->
         <div class="ps-4 grow">
-          <TheSellerProductRow :listing="listing" />
+          <TheSellerProductRow
+            :listing="listing"
+            @delete="openDelete"
+          />
         </div>
       </div>
 
@@ -326,12 +329,63 @@
         />
       </div>
     </div>
+
+    <UModal
+      v-model:open="deleteOpen"
+      :title="bulkDeleteMode ? $t('حذف گروهی') : $t('حذف محصول')"
+      :description="$t('این عمل قابل بازگشت نیست.')"
+    >
+      <template #body>
+        <div
+          v-if="bulkDeleteMode"
+          class="text-sm text-toned"
+        >
+          {{ $t('{n} محصول حذف می‌شود', { n: selectedIds.length.toLocaleString('fa-IR') }) }}
+        </div>
+        <div
+          v-else-if="pendingDelete"
+          class="rounded-xl border border-muted bg-muted/40 p-4 text-sm space-y-2"
+        >
+          <div class="font-medium text-highlighted line-clamp-2">
+            {{ resolveProduct(pendingDelete.productId).title }}
+          </div>
+          <div
+            class="text-[11px] text-muted num"
+            dir="ltr"
+          >
+            {{ pendingDelete.productId }}
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex items-center gap-2 w-full justify-end">
+          <UButton
+            color="neutral"
+            variant="outline"
+            class="cursor-pointer"
+            :disabled="deleting"
+            @click="closeDelete"
+          >
+            {{ $t('انصراف') }}
+          </UButton>
+          <UButton
+            color="error"
+            class="font-bold cursor-pointer"
+            :loading="deleting"
+            @click="confirmDelete"
+          >
+            {{ $t('حذف') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { sellerProductFilterDefs } from '~/data/seller-filters'
 import { downloadSellerCsv } from '~/data/seller-export'
+import type { SellerListing } from '~/data/seller'
 
 const PAGE_SIZE = 10
 
@@ -344,6 +398,7 @@ const {
   fetchListings,
   fetchListingsExport,
   setListingStatus,
+  deleteListing,
 } = useSeller()
 const { can } = useSellerPermissions()
 const { saveCommerce } = useSellerProductCommerce()
@@ -366,6 +421,10 @@ const applyingFilters = ref(false)
 const selectedIds = ref<string[]>([])
 const bulkAction = ref('')
 const bulkRunning = ref(false)
+const deleteOpen = ref(false)
+const bulkDeleteMode = ref(false)
+const pendingDelete = ref<SellerListing | null>(null)
+const deleting = ref(false)
 
 type AdvancedDraft = {
   category: string
@@ -519,7 +578,7 @@ const bulkActionItems = computed(() => {
     )
   }
   if (can('products.delete')) {
-    items.push({ value: 'delete', label: t('حذف (غیرفعال)') })
+    items.push({ value: 'delete', label: t('حذف') })
   }
   return items
 })
@@ -602,14 +661,21 @@ async function clearAllFilters() {
 
 async function runBulk() {
   if (!bulkAction.value || !selectedIds.value.length) return
+
+  if (bulkAction.value === 'delete') {
+    if (!can('products.delete')) return
+    bulkDeleteMode.value = true
+    pendingDelete.value = null
+    deleteOpen.value = true
+    return
+  }
+
   bulkRunning.value = true
   try {
     const ids = [...selectedIds.value]
     for (const id of ids) {
       if (bulkAction.value === 'activate') await setListingStatus(id, 'active')
-      else if (bulkAction.value === 'deactivate' || bulkAction.value === 'delete') {
-        await setListingStatus(id, 'inactive')
-      }
+      else if (bulkAction.value === 'deactivate') await setListingStatus(id, 'inactive')
       else if (bulkAction.value === 'publish') {
         saveCommerce(id, { published: true })
         await setListingStatus(id, 'active')
@@ -628,6 +694,60 @@ async function runBulk() {
   }
   finally {
     bulkRunning.value = false
+  }
+}
+
+function openDelete(listing: SellerListing) {
+  bulkDeleteMode.value = false
+  pendingDelete.value = listing
+  deleteOpen.value = true
+}
+
+function closeDelete() {
+  deleteOpen.value = false
+  pendingDelete.value = null
+  bulkDeleteMode.value = false
+}
+
+async function confirmDelete() {
+  deleting.value = true
+  try {
+    if (bulkDeleteMode.value) {
+      const ids = [...selectedIds.value]
+      let okCount = 0
+      const errors: string[] = []
+      for (const id of ids) {
+        const result = await deleteListing(id)
+        if (result.ok) okCount += 1
+        else errors.push(result.error || id)
+      }
+      selectedIds.value = []
+      bulkAction.value = ''
+      closeDelete()
+      await loadProducts()
+      if (okCount) {
+        toast.success(t('{n} محصول حذف شد', { n: okCount.toLocaleString('fa-IR') }))
+      }
+      if (errors.length) {
+        toast.error(errors[0]!)
+      }
+      return
+    }
+
+    if (!pendingDelete.value) return
+    const id = pendingDelete.value.productId
+    const result = await deleteListing(id)
+    closeDelete()
+    if (!result.ok) {
+      toast.error(t(result.error || 'حذف محصول ناموفق بود'))
+      return
+    }
+    toast.success(t('محصول حذف شد'))
+    selectedIds.value = selectedIds.value.filter(x => x !== id)
+    await loadProducts()
+  }
+  finally {
+    deleting.value = false
   }
 }
 

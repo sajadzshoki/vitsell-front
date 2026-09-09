@@ -31,16 +31,33 @@ function apiErrorMessage(error: any, fallback: string) {
   )
 }
 
+function pickMediaUrl(raw: any): string {
+  const candidates = [
+    raw?.url,
+    raw?.path,
+    raw?.src,
+    raw?.fileUrl,
+    raw?.file?.url,
+    raw?.asset?.url,
+  ]
+  for (const value of candidates) {
+    const s = String(value || '').trim()
+    if (s) return s
+  }
+  return ''
+}
+
 function toItem(raw: any): SellerMediaItem {
   const mimeType = String(raw?.mimeType || 'application/octet-stream')
   const kind = (['image', 'video', 'document', 'other'].includes(raw?.kind)
     ? raw.kind
     : mediaKindFromMime(mimeType)) as SellerMediaKind
+  const rawUrl = pickMediaUrl(raw)
 
   return {
     id: String(raw?.id || ''),
-    url: resolveMediaUrl(String(raw?.url || '')),
-    filename: String(raw?.filename || filenameFromUrl(String(raw?.url || ''))),
+    url: resolveMediaUrl(rawUrl),
+    filename: String(raw?.filename || filenameFromUrl(rawUrl)),
     mimeType,
     kind,
     alt: String(raw?.alt || ''),
@@ -299,8 +316,13 @@ export function useSellerMedia() {
 function readImageDims(url: string): Promise<{ width: number, height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image()
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
-    img.onerror = () => reject(new Error('dim-fail'))
+    const done = (ok: boolean) => {
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+      if (ok) resolve({ width: img.naturalWidth, height: img.naturalHeight })
+      else reject(new Error('dim-fail'))
+    }
+    img.onload = () => done(true)
+    img.onerror = () => done(false)
     img.src = url
   })
 }

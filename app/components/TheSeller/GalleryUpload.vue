@@ -33,7 +33,7 @@
 
     <button
       type="button"
-      class="w-full rounded-2xl border border-dashed border-muted bg-muted/40 px-4 py-5 text-center transition-all  cursor-pointer hover:(border-primary/50 bg-primary/5)"
+      class="w-full rounded-2xl border border-dashed border-muted bg-muted/40 px-4 py-5 text-center transition-all cursor-pointer hover:(border-primary/50 bg-primary/5)"
       :class="dragOver && 'border-primary bg-primary/10'"
       :disabled="reading"
       @click="openPicker"
@@ -71,9 +71,11 @@
         class="relative aspect-square rounded-xl border border-muted overflow-hidden bg-muted group"
       >
         <img
-          :src="url"
+          :src="previewSrc(url)"
           :alt="`${$t('تصویر')} ${index + 1}`"
           class="size-full object-cover"
+          @load="onImgLoad(url, $event)"
+          @error="onImgError(url)"
         >
         <button
           type="button"
@@ -105,6 +107,8 @@
 </template>
 
 <script setup lang="ts">
+import { resolveMediaUrl } from '~/composables/fetch'
+
 withDefaults(defineProps<{
   label?: string
   hint?: string
@@ -116,12 +120,33 @@ const model = defineModel<string[]>({ default: () => [] })
 
 const { t } = useI18n()
 const toast = useAppToast()
+const { uploadFiles: uploadSellerMedia } = useSellerMedia()
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const reading = ref(false)
 const dragOver = ref(false)
 
+/** remote url → blob: preview (fallback when /uploads is not publicly readable) */
+const blobByUrl = ref<Record<string, string>>({})
+/** prefer blob until remote loads successfully */
+const preferBlob = ref<Record<string, boolean>>({})
+
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024
+
+function previewSrc(url: string) {
+  const blob = blobByUrl.value[url]
+  if (blob && preferBlob.value[url] !== false) return blob
+  return resolveMediaUrl(url) || blob || url
+}
+
+function revokeBlob(url: string) {
+  const blob = blobByUrl.value[url]
+  if (blob?.startsWith('blob:')) URL.revokeObjectURL(blob)
+  const { [url]: _b, ...restBlobs } = blobByUrl.value
+  blobByUrl.value = restBlobs
+  const { [url]: _p, ...restPrefer } = preferBlob.value
+  preferBlob.value = restPrefer
+}
 
 function openPicker() {
   if (reading.value) return
@@ -129,45 +154,88 @@ function openPicker() {
 }
 
 function removeAt(index: number) {
+  const url = model.value[index]
+  if (url) revokeBlob(url)
   model.value = model.value.filter((_, i) => i !== index)
 }
 
-async function uploadOne(file: File): Promise<string | null> {
-  if (!file.type.startsWith('image/')) {
-    toast.error(t('فقط فایل تصویری مجاز است'))
-    return null
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    toast.error(t('حداکثر حجم هر تصویر ۲ مگابایت است'))
-    return null
-  }
+function onImgLoad(url: string, event: Event) {
+  const img = event.target as HTMLImageElement
+  const src = img.currentSrc || img.src
+  if (!src || src.startsWith('blob:')) return
+  const blob = blobByUrl.value[url]
+  if (blob?.startsWith('blob:')) URL.revokeObjectURL(blob)
+  const { [url]: _b, ...restBlobs } = blobByUrl.value
+  blobByUrl.value = restBlobs
+  preferBlob.value = { ...preferBlob.value, [url]: false }
+}
 
-  const body = new FormData()
-  body.append('file', file)
-  const { result, error } = await usePost<{ url: string }, FormData>(
-    '/upload',
-    body,
-    { headers: { 'no-error': true } },
-  )
-  if (error || !result?.url) {
-    toast.error(t('آپلود تصویر ناموفق بود'))
-    return null
+function onImgError(url: string) {
+  if (blobByUrl.value[url]) {
+    preferBlob.value = { ...preferBlob.value, [url]: true }
   }
-  return result.url
 }
 
 async function uploadFiles(files: File[]) {
   if (!files.length) return
+
+  const valid: File[] = []
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('فقط فایل تصویری مجاز است'))
+      continue
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error(t('حداکثر حجم هر تصویر ۲ مگابایت است'))
+      continue
+    }
+    valid.push(file)
+  }
+  if (!valid.length) return
+
+  const blobs = valid.map(file => URL.createObjectURL(file))
   reading.value = true
   try {
-    const urls: string[] = []
-    for (const file of files) {
-      const url = await uploadOne(file)
-      if (url) urls.push(url)
+    const result = await uploadSellerMedia(valid)
+    if (!result.ok || !result.items.length) {
+      blobs.forEach(b => URL.revokeObjectURL(b))
+      toast.error(t(result.error || 'آپلود تصویر ناموفق بود'))
+      return
     }
+
+    const urls: string[] = []
+    result.items.forEach((item, i) => {
+      const url = String(item.url || '').trim()
+      const blob = blobs[i]
+      if (!url) {
+        if (blob) URL.revokeObjectURL(blob)
+        return
+      }
+      if (blob) {
+        blobByUrl.value = { ...blobByUrl.value, [url]: blob }
+        preferBlob.value = { ...preferBlob.value, [url]: true }
+      }
+      urls.push(url)
+    })
+    // Revoke unused blobs when fewer items returned than files
+    for (let i = result.items.length; i < blobs.length; i++) {
+      const blob = blobs[i]
+      if (blob) URL.revokeObjectURL(blob)
+    }
+
     if (urls.length) {
       model.value = [...model.value, ...urls]
     }
+    else {
+      toast.error(t('آپلود تصویر ناموفق بود'))
+    }
+    if (result.error) {
+      toast.error(t(result.error))
+    }
+  }
+  catch {
+    blobs.forEach(b => URL.revokeObjectURL(b))
+    toast.error(t('آپلود تصویر ناموفق بود'))
   }
   finally {
     reading.value = false
@@ -187,4 +255,8 @@ function onDrop(event: DragEvent) {
   const files = [...(event.dataTransfer?.files ?? [])].filter(f => f.type.startsWith('image/'))
   if (files.length) void uploadFiles(files)
 }
+
+onBeforeUnmount(() => {
+  Object.keys(blobByUrl.value).forEach(revokeBlob)
+})
 </script>

@@ -141,11 +141,12 @@
     </div>
 
     <div
-      v-if="selectedIds.length && can('categories.update')"
+      v-if="selectedIds.length && (can('categories.update') || can('categories.delete'))"
       class="mb-4 flex items-center gap-2 flex-wrap rounded-xl border border-primary/30 bg-primary/5 p-3"
     >
       <span class="text-xs num">{{ selectedIds.length.toLocaleString('fa-IR') }} {{ $t('انتخاب‌شده') }}</span>
       <UButton
+        v-if="can('categories.update')"
         type="button"
         color="success"
         variant="soft"
@@ -156,6 +157,7 @@
         {{ $t('فعال‌سازی') }}
       </UButton>
       <UButton
+        v-if="can('categories.update')"
         type="button"
         color="neutral"
         variant="soft"
@@ -164,6 +166,18 @@
         @click="bulkStatus('inactive')"
       >
         {{ $t('غیرفعال‌سازی') }}
+      </UButton>
+      <UButton
+        v-if="can('categories.delete')"
+        type="button"
+        color="error"
+        variant="soft"
+        size="xs"
+        icon="i-tabler-trash"
+        class="cursor-pointer"
+        @click="openBulkDelete"
+      >
+        {{ $t('حذف') }}
       </UButton>
       <UButton
         type="button"
@@ -394,12 +408,32 @@
 
     <UModal
       v-model:open="deleteOpen"
-      :title="$t('حذف دسته‌بندی')"
+      :title="bulkDeleteMode ? $t('حذف گروهی') : $t('حذف دسته‌بندی')"
       :description="$t('حذف فقط در صورت نبود فرزند و محصول وابسته مجاز است.')"
     >
       <template #body>
         <div
-          v-if="pendingDelete"
+          v-if="bulkDeleteMode"
+          class="space-y-3 text-sm"
+        >
+          <p class="text-toned">
+            {{ $t('{n} دسته‌بندی انتخاب شده است', { n: selectedIds.length.toLocaleString('fa-IR') }) }}
+          </p>
+          <p
+            v-if="bulkDeleteBlocked.length"
+            class="text-xs text-warning leading-5"
+          >
+            {{ $t('{n} مورد به‌خاطر فرزند یا محصول وابسته حذف نمی‌شوند', { n: bulkDeleteBlocked.length.toLocaleString('fa-IR') }) }}
+          </p>
+          <p
+            v-if="bulkDeleteEligible.length"
+            class="text-xs text-muted leading-5"
+          >
+            {{ $t('{n} مورد قابل حذف است', { n: bulkDeleteEligible.length.toLocaleString('fa-IR') }) }}
+          </p>
+        </div>
+        <div
+          v-else-if="pendingDelete"
           class="rounded-xl border border-muted bg-muted/40 p-4 text-sm space-y-2"
         >
           <div class="flex items-center justify-between gap-3">
@@ -434,7 +468,8 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
-            @click="deleteOpen = false"
+            :disabled="deleting"
+            @click="closeDelete"
           >
             {{ $t('انصراف') }}
           </UButton>
@@ -442,7 +477,7 @@
             color="error"
             class="font-bold cursor-pointer"
             :loading="deleting"
-            :disabled="!canDeletePending"
+            :disabled="bulkDeleteMode ? !bulkDeleteEligible.length : !canDeletePending"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -493,6 +528,7 @@ const viewMode = ref<'tree' | 'flat'>('tree')
 const collapsedMap = ref<Record<string, true>>({})
 const selectedIds = ref<string[]>([])
 const deleteOpen = ref(false)
+const bulkDeleteMode = ref(false)
 const pendingDelete = ref<SellerCategoryTreeRow | null>(null)
 const deleting = ref(false)
 const loading = ref(true)
@@ -587,11 +623,41 @@ const visibleRows = computed(() => {
   return filteredRows.value.filter(r => !hidden.has(r.id))
 })
 
-const canDeletePending = computed(() => {
-  if (!pendingDelete.value) return false
-  if (pendingDelete.value.childCount > 0) return false
-  if (productCount(pendingDelete.value.id) > 0) return false
+function canDeleteRow(row: SellerCategoryTreeRow | undefined) {
+  if (!row) return false
+  if (row.childCount > 0) return false
+  if (productCount(row.id) > 0) return false
   return true
+}
+
+const canDeletePending = computed(() => canDeleteRow(pendingDelete.value ?? undefined))
+
+const selectedRows = computed(() =>
+  selectedIds.value
+    .map(id => treeRows.value.find(r => r.id === id))
+    .filter((r): r is SellerCategoryTreeRow => Boolean(r)),
+)
+
+/** Deepest-first; parent is eligible only if all selected children are also eligible. */
+const bulkDeleteEligible = computed(() => {
+  const selected = new Set(selectedIds.value)
+  const byDepth = [...selectedRows.value].sort((a, b) => b.depth - a.depth)
+  const eligible = new Set<string>()
+
+  for (const row of byDepth) {
+    if (productCount(row.id) > 0) continue
+    const kids = treeRows.value.filter(r => r.parentId === row.id)
+    if (kids.some(k => !selected.has(k.id))) continue
+    if (kids.some(k => selected.has(k.id) && !eligible.has(k.id))) continue
+    eligible.add(row.id)
+  }
+
+  return byDepth.filter(r => eligible.has(r.id))
+})
+
+const bulkDeleteBlocked = computed(() => {
+  const eligible = new Set(bulkDeleteEligible.value.map(r => r.id))
+  return selectedRows.value.filter(r => !eligible.has(r.id))
 })
 
 function toggleCollapse(id: string) {
@@ -663,17 +729,59 @@ async function bulkStatus(next: SellerCategoryStatus) {
 }
 
 function openDelete(row: SellerCategoryTreeRow) {
+  bulkDeleteMode.value = false
   pendingDelete.value = row
   deleteOpen.value = true
 }
 
+function openBulkDelete() {
+  if (!selectedIds.value.length) return
+  bulkDeleteMode.value = true
+  pendingDelete.value = null
+  deleteOpen.value = true
+}
+
+function closeDelete() {
+  deleteOpen.value = false
+  pendingDelete.value = null
+  bulkDeleteMode.value = false
+}
+
 async function confirmDelete() {
-  if (!pendingDelete.value || !canDeletePending.value) return
   deleting.value = true
   try {
+    if (bulkDeleteMode.value) {
+      const targets = [...bulkDeleteEligible.value]
+      if (!targets.length) return
+
+      let okCount = 0
+      const errors: string[] = []
+      for (const row of targets) {
+        const result = await deleteCategory(row.id)
+        if (result.ok) okCount += 1
+        else errors.push(result.error || row.name)
+      }
+
+      const blocked = bulkDeleteBlocked.value.length
+      selectedIds.value = []
+      closeDelete()
+      await loadCategories()
+
+      if (okCount) {
+        toast.success(t('{n} دسته‌بندی حذف شد', { n: okCount.toLocaleString('fa-IR') }))
+      }
+      if (blocked) {
+        toast.warning(t('{n} مورد به‌خاطر وابستگی رد شد', { n: blocked.toLocaleString('fa-IR') }))
+      }
+      if (errors.length) {
+        toast.error(errors[0]!)
+      }
+      return
+    }
+
+    if (!pendingDelete.value || !canDeletePending.value) return
     const result = await deleteCategory(pendingDelete.value.id)
-    deleteOpen.value = false
-    pendingDelete.value = null
+    closeDelete()
     if (!result.ok) {
       toast.error(result.error)
       return

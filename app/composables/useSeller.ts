@@ -727,6 +727,34 @@ export function useSeller() {
     return true
   }
 
+  async function deleteListing(productId: string) {
+    const id = String(productId || '').trim()
+    if (!id) {
+      return { ok: false as const, error: 'شناسه محصول نامعتبر است' }
+    }
+
+    const { error } = await useDelete(`/seller/listings/${encodeURIComponent(id)}`, {
+      headers: { 'no-error': true },
+    })
+    if (error) {
+      const message
+        = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+          || error?.data?.message
+          || error?.message
+          || 'حذف محصول ناموفق بود'
+      return { ok: false as const, error: message }
+    }
+
+    listings.value = listings.value.filter(item => item.productId !== id)
+    if (listingsMeta.value.total > 0) {
+      listingsMeta.value = {
+        ...listingsMeta.value,
+        total: Math.max(0, listingsMeta.value.total - 1),
+      }
+    }
+    return { ok: true as const, error: null as null }
+  }
+
   type ListingProductExtras = {
     featured?: boolean
     published?: boolean
@@ -1259,6 +1287,7 @@ export function useSeller() {
     fetchListing,
     fetchProductPanel,
     setListingStatus,
+    deleteListing,
     updateListingProduct,
     updateListingStock,
     addListingProduct,

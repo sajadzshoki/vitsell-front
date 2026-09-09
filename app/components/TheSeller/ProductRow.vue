@@ -100,15 +100,17 @@
               class="cursor-pointer"
               :aria-label="$t('جزئیات محصول')"
             />
-            <!-- <UButton
-              :to="`/product/${listing.productId}`"
-              color="neutral"
+            <UButton
+              v-if="can('products.delete')"
+              type="button"
+              color="error"
               variant="ghost"
               size="xs"
-              icon="i-tabler-external-link"
+              icon="i-tabler-trash"
               class="cursor-pointer"
-              :aria-label="$t('مشاهده در فروشگاه')"
-            /> -->
+              :aria-label="$t('حذف')"
+              @click="emit('delete', listing)"
+            />
           </div>
         </div>
       </div>
@@ -122,6 +124,10 @@ import { formatPrice } from '~/data/products'
 
 const props = defineProps<{
   listing: SellerListing
+}>()
+
+const emit = defineEmits<{
+  delete: [listing: SellerListing]
 }>()
 
 const { setListingStatus, resolveProduct } = useSeller()
