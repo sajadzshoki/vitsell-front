@@ -135,16 +135,12 @@
       </div>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="movementsMeta.total"
-        :items-per-page="movementsMeta.pageSize || pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="movementsMeta.total"
+      :page-size-options="[15, 30, 50, 100]"
+    />
   </div>
 </template>
 
@@ -163,13 +159,13 @@ const {
   fetchMovements,
   getWarehouse,
 } = useSellerInventory()
-const { search, status: typeFilter, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status: typeFilter, page, pageSize, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
   statusKey: 'type',
+  defaultPageSize: 15,
 })
 
 const loading = ref(true)
-const pageSize = 15
 
 ensureWarehouses()
 
@@ -207,9 +203,6 @@ const typeTabs = computed(() => {
   return tabs
 })
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((movementsMeta.value.total || 0) / (movementsMeta.value.pageSize || pageSize))),
-)
 
 function onTypeChange(id: string) {
   typeFilter.value = id
@@ -245,7 +238,7 @@ async function loadMovements() {
       type: typeFilter.value || undefined,
       warehouseId: warehouseFilter.value !== 'all' ? warehouseFilter.value : undefined,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری گردش موجودی ناموفق بود')))

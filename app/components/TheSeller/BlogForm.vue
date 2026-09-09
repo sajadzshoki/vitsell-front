@@ -323,7 +323,7 @@
       :preview-url="form.id ? `/blog/${form.id}` : ''"
     />
 
-    <div class="flex items-center gap-3 flex-wrap pb-2">
+    <TheSellerFormActions>
       <UButton
         v-if="canSave"
         type="button"
@@ -364,7 +364,7 @@
       >
         {{ draftHint }}
       </span>
-    </div>
+    </TheSellerFormActions>
   </div>
 </template>
 

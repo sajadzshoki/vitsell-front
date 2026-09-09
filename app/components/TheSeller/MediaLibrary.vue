@@ -268,16 +268,12 @@
       </article>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="listMeta.total"
-        :items-per-page="listMeta.pageSize || pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="listMeta.total"
+      :page-size-options="[12, 24, 48, 96]"
+    />
 
     <UModal
       v-model:open="detailOpen"
@@ -530,12 +526,12 @@ const {
   updateMedia,
   deleteMedia,
 } = useSellerMedia()
-const { search, status: kindFilter, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { search, status: kindFilter, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
   statusKey: 'kind',
+  defaultPageSize: 24,
 })
 
-const pageSize = 24
 const loading = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -564,9 +560,6 @@ const kindTabs = computed(() => {
   ]
 })
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 const pageIds = computed(() => media.value.map(m => m.id))
 
@@ -594,7 +587,7 @@ async function loadList() {
       q: search.value || undefined,
       kind: kindFilter.value,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(t(apiErrorMessage(error, 'بارگذاری رسانه ناموفق بود')))
@@ -755,7 +748,7 @@ async function confirmBulkDelete() {
 }
 
 watch(
-  [search, kindFilter, page],
+  [search, kindFilter, page, pageSize],
   () => {
     void loadList()
   },

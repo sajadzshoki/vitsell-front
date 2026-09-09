@@ -159,16 +159,11 @@
         </div>
       </div>
 
-      <div
-        v-if="pageCount > 1"
-        class="mt-5 flex justify-center"
-      >
-        <UPagination
-          v-model:page="page"
-          :total="filtered.length"
-          :items-per-page="pageSize"
-        />
-      </div>
+      <TheSellerPagination
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :total="filtered.length"
+      />
     </template>
 
     <UModal
@@ -278,7 +273,6 @@ import {
   type SellerSettlementStatus,
 } from '~/data/seller-finance-settlements'
 
-const PAGE_SIZE = 10
 const actor = { id: 'admin', name: 'ادمین' }
 const { t } = useI18n()
 const toast = useAppToast()
@@ -293,11 +287,11 @@ const {
   ensureLoaded,
 } = useSellerFinance()
 
-const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
-const pageSize = PAGE_SIZE
 const createOpen = ref(false)
 const createBusy = ref(false)
 const statusConfirmOpen = ref(false)
@@ -363,11 +357,10 @@ const filtered = computed(() => {
   })
 })
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
 
 const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
+  const start = (page.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
 })
 
 type StatusAction = {

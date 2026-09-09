@@ -195,16 +195,11 @@
             </div>
           </div>
 
-          <div
-            v-if="pageCount > 1"
-            class="mt-5 flex justify-center"
-          >
-            <UPagination
-              v-model:page="page"
-              :total="listMeta.total"
-              :items-per-page="listMeta.pageSize || pageSize"
-            />
-          </div>
+          <TheSellerPagination
+            v-model:page="page"
+            v-model:page-size="pageSize"
+            :total="listMeta.total"
+          />
         </template>
       </div>
 
@@ -301,16 +296,11 @@
             </div>
           </div>
 
-          <div
-            v-if="pageCount > 1"
-            class="mt-5 flex justify-center"
-          >
-            <UPagination
-              v-model:page="page"
-              :total="listMeta.total"
-              :items-per-page="listMeta.pageSize || pageSize"
-            />
-          </div>
+          <TheSellerPagination
+            v-model:page="page"
+            v-model:page-size="pageSize"
+            :total="listMeta.total"
+          />
         </template>
       </div>
     </div>
@@ -364,8 +354,6 @@ import {
   sellerScheduleStatusMeta,
 } from '~/data/seller-marketing-shared'
 
-const pageSize = 10
-
 const { t } = useI18n()
 const toast = useAppToast()
 const route = useRoute()
@@ -382,8 +370,9 @@ const {
   deletePromo,
   setPromoActive,
 } = useSellerPromotions()
-const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
 type TabId = 'codes' | 'promos'
@@ -420,10 +409,6 @@ const statusTabs = computed(() => {
     { id: 'inactive', label: t('غیرفعال'), count: Number(c.inactive) || 0 },
   ]
 })
-
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 const deleteLabel = computed(() => {
   if (deleteMode.value === 'code') return pendingCode.value?.code ?? ''
@@ -464,7 +449,7 @@ async function loadList() {
       q: search.value || undefined,
       status: status.value || undefined,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     }
     const { ok, error } = activeTab.value === 'codes'
       ? await fetchCodesList(query)
@@ -576,10 +561,10 @@ onMounted(async () => {
   await loadList()
   // Warm the inactive tab so badge counts stay available
   if (activeTab.value === 'codes') {
-    void fetchPromosList({ page: 1, pageSize }, { trackPending: false })
+    void fetchPromosList({ page: 1, pageSize: pageSize.value }, { trackPending: false })
   }
   else {
-    void fetchCodesList({ page: 1, pageSize }, { trackPending: false })
+    void fetchCodesList({ page: 1, pageSize: pageSize.value }, { trackPending: false })
   }
 })
 </script>

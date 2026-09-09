@@ -266,16 +266,12 @@
       </div>
     </template>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="inventoryMeta.total"
-        :items-per-page="inventoryMeta.pageSize || pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="inventoryMeta.total"
+      :page-size-options="[15, 30, 50, 100]"
+    />
   </div>
 </template>
 
@@ -296,15 +292,15 @@ const {
   adjustStock,
 } = useSellerInventory()
 const { currentAdminUser, ensureLoaded: ensureAdmins } = useSellerAdmins()
-const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 15,
 })
 
 const route = useRoute()
 const loading = ref(true)
 const savingId = ref<string | null>(null)
 const stockDrafts = ref<Record<string, number>>({})
-const pageSize = 15
 
 ensureWarehouses()
 ensureAdmins()
@@ -367,9 +363,6 @@ const hasActiveFiltersCombined = computed(() =>
   hasActiveFilters.value || hasExtraFilters.value,
 )
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((inventoryMeta.value.total || 0) / (inventoryMeta.value.pageSize || pageSize))),
-)
 
 function onStatusChange(id: string) {
   status.value = id
@@ -454,7 +447,7 @@ async function loadInventory() {
       category: categoryFilter.value !== 'all' ? categoryFilter.value : undefined,
       brand: brandFilter.value !== 'all' ? brandFilter.value : undefined,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری موجودی ناموفق بود')))

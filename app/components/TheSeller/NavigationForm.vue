@@ -154,10 +154,7 @@
         </div>
       </section>
 
-      <div
-        v-if="canEdit && dirty"
-        class="flex gap-2 flex-wrap"
-      >
+      <TheSellerFormActions v-if="canEdit && dirty">
         <UButton
           color="primary"
           size="lg"
@@ -176,7 +173,7 @@
         >
           {{ $t('انصراف') }}
         </UButton>
-      </div>
+      </TheSellerFormActions>
     </template>
   </div>
 </template>

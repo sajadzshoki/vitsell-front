@@ -274,16 +274,11 @@
       </div>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="listMeta.total"
-        :items-per-page="pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="listMeta.total"
+    />
 
     <UModal
       v-model:open="deleteOpen"
@@ -352,11 +347,11 @@ const {
   deleteAttribute,
   setStatus,
 } = useSellerAttributes()
-const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
-const pageSize = 10
 const loading = ref(true)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerAttribute | null>(null)
@@ -420,9 +415,6 @@ const hasAnyFilters = computed(() =>
 )
 
 const paged = computed(() => attributes.value)
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 const allPageSelected = computed(() =>
   paged.value.length > 0 && paged.value.every(a => selectedIds.value.includes(a.id)),
@@ -482,7 +474,7 @@ async function loadAttributes() {
         type: typeFilter.value || undefined,
         trait: traitFilter.value || undefined,
         page: page.value,
-        pageSize,
+        pageSize: pageSize.value,
       },
     })
     if (!ok) {

@@ -89,7 +89,10 @@ function buildQuery(input?: SellerCategoriesQuery) {
   if (!input) return params
   if (input.q?.trim()) params.q = input.q.trim()
   if (input.status && input.status !== 'all') params.status = input.status
-  if (input.parentId && input.parentId !== 'all') params.parentId = input.parentId
+  // __root__ = only top-level; send empty parentId for backends that treat blank as roots
+  if (input.parentId && input.parentId !== 'all') {
+    params.parentId = input.parentId === '__root__' ? '' : input.parentId
+  }
   return params
 }
 

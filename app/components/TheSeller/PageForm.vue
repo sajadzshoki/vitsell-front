@@ -195,7 +195,7 @@
       :preview-url="form.path"
     />
 
-    <div class="flex items-center gap-3 flex-wrap pb-2">
+    <TheSellerFormActions>
       <UButton
         v-if="canSave"
         type="button"
@@ -216,7 +216,7 @@
       >
         {{ $t('انصراف') }}
       </UButton>
-    </div>
+    </TheSellerFormActions>
   </div>
 </template>
 

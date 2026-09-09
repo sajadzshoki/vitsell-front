@@ -131,16 +131,12 @@
       </div>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="listMeta.total"
-        :items-per-page="listMeta.pageSize || pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="listMeta.total"
+      :page-size-options="[8, 16, 24, 50]"
+    />
   </div>
 </template>
 
@@ -152,11 +148,11 @@ const toast = useAppToast()
 const { can } = useSellerPermissions()
 const { admins, listMeta, fetchList } = useSellerAdmins()
 const { getById: getRole, ensureLoaded: ensureRoles } = useSellerRoles()
-const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 8,
 })
 
-const pageSize = 8
 const loading = ref(false)
 
 const statusTabs = computed(() => {
@@ -169,9 +165,6 @@ const statusTabs = computed(() => {
   ]
 })
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 async function loadList() {
   loading.value = true
@@ -181,7 +174,7 @@ async function loadList() {
       q: search.value || undefined,
       status: status.value,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(t(
@@ -201,7 +194,7 @@ function roleName(roleId: string) {
 }
 
 watch(
-  [search, status, page],
+  [search, status, page, pageSize],
   () => {
     void loadList()
   },

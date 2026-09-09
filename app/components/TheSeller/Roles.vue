@@ -145,16 +145,11 @@
       </div>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="listMeta.total"
-        :items-per-page="listMeta.pageSize || pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="listMeta.total"
+    />
   </div>
 </template>
 
@@ -174,11 +169,11 @@ const {
 } = useSellerRoles()
 const { admins, ensureLoaded: ensureAdmins, currentAdminUser } = useSellerAdmins()
 const { appendLog } = useSellerAudit()
-const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 20,
 })
 
-const pageSize = 20
 const loading = ref(false)
 
 const statusTabs = computed(() => {
@@ -190,9 +185,6 @@ const statusTabs = computed(() => {
   ]
 })
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 function roleAdminCount(role: SellerRole) {
   if (role.adminCount != null) return role.adminCount
@@ -216,7 +208,7 @@ async function loadList() {
       q: search.value || undefined,
       status: status.value,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(t(apiErrorMessage(error, 'بارگذاری نقش‌ها ناموفق بود')))
@@ -248,7 +240,7 @@ async function onClone(id: string) {
 }
 
 watch(
-  [search, status, page],
+  [search, status, page, pageSize],
   () => {
     void loadList()
   },

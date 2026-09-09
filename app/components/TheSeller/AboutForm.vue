@@ -420,7 +420,7 @@
         preview-url="/about"
       />
 
-      <div class="flex items-center gap-3 flex-wrap pb-2">
+      <TheSellerFormActions>
         <UButton
           v-if="can('about.update')"
           type="button"
@@ -455,7 +455,7 @@
         >
           {{ $t('مشاهده صفحه') }}
         </UButton>
-      </div>
+      </TheSellerFormActions>
     </template>
   </div>
 </template>

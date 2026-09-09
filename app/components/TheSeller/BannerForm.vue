@@ -350,7 +350,7 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-3 flex-wrap pb-2">
+    <TheSellerFormActions>
       <UButton
         type="button"
         color="primary"
@@ -371,7 +371,7 @@
       >
         {{ $t('انصراف') }}
       </UButton>
-    </div>
+    </TheSellerFormActions>
   </div>
 </template>
 

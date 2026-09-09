@@ -271,16 +271,11 @@
         </div>
       </div>
 
-      <div
-        v-if="pageCount > 1"
-        class="mt-5 flex justify-center"
-      >
-        <UPagination
-          v-model:page="page"
-          :total="listMeta.total"
-          :items-per-page="listMeta.pageSize || pageSize"
-        />
-      </div>
+      <TheSellerPagination
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :total="listMeta.total"
+      />
     </div>
 
     <UModal
@@ -341,7 +336,6 @@ import {
 import type { SellerPermission } from '~/data/seller-permissions'
 import { sellerPermissionCatalog } from '~/data/seller-permissions'
 
-const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -357,8 +351,9 @@ const {
   bulkSetStatus,
   bulkDelete,
 } = useSellerDiscounts()
-const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
 const loading = ref(true)
@@ -422,9 +417,6 @@ const statusTabs = computed(() => {
   ]
 })
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 function scheduleMeta(discount: SellerDiscount) {
   const key = deriveScheduleStatus({
@@ -464,7 +456,7 @@ async function loadDiscounts() {
       status: status.value || undefined,
       type: typeFilter.value !== 'all' ? typeFilter.value : undefined,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری تخفیف‌ها ناموفق بود')))

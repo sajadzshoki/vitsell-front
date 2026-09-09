@@ -120,16 +120,12 @@
       </div>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="listMeta.total || 0"
-        :items-per-page="pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="listMeta.total"
+      :page-size-options="[12, 24, 50, 100]"
+    />
   </div>
 </template>
 
@@ -161,7 +157,7 @@ const entityFilter = ref('all')
 const dateFrom = ref('')
 const dateTo = ref('')
 const page = ref(1)
-const pageSize = 12
+const pageSize = ref(12)
 const loading = ref(false)
 
 const actorItems = computed(() => [
@@ -198,9 +194,6 @@ const hasFilters = computed(() =>
   ),
 )
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 function clearFilters() {
   search.value = ''
@@ -233,7 +226,7 @@ async function loadList() {
       dateTo: dateTo.value || undefined,
       mode: props.mode,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(t(apiErrorMessage(error, 'بارگذاری لاگ ناموفق بود')))
@@ -245,7 +238,7 @@ async function loadList() {
 }
 
 watch(
-  [search, actorFilter, actionFilter, entityFilter, dateFrom, dateTo, page, () => props.mode],
+  [search, actorFilter, actionFilter, entityFilter, dateFrom, dateTo, page, pageSize, () => props.mode],
   () => {
     void loadList()
   },

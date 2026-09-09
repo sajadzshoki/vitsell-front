@@ -73,12 +73,12 @@
         />
       </UFormField>
 
-      <div class="mt-6 flex items-center gap-3 flex-wrap">
+      <TheSellerFormActions>
         <UButton
           type="button"
           color="primary"
           size="lg"
-          class="font-bold"
+          class="font-bold cursor-pointer"
           :loading="saving"
           @click="onSave"
         >
@@ -89,11 +89,12 @@
           color="neutral"
           variant="outline"
           size="lg"
+          class="cursor-pointer"
           @click="onCancel"
         >
           {{ $t('انصراف') }}
         </UButton>
-      </div>
+      </TheSellerFormActions>
     </div>
   </div>
 </template>

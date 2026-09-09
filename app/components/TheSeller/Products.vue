@@ -277,7 +277,7 @@
           @update:model-value="toggleSelectPage(!!$event)"
         />
         <span class="num">
-          {{ $t('صفحه') }} {{ page.toLocaleString('fa-IR') }} / {{ totalPages.toLocaleString('fa-IR') }}
+          {{ $t('صفحه') }} {{ page.toLocaleString('fa-IR') }}
         </span>
       </div>
 
@@ -300,34 +300,11 @@
         </div>
       </div>
 
-      <div
-        v-if="totalPages > 1"
-        class="flex items-center justify-center gap-2 pt-2"
-      >
-        <UButton
-          type="button"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          icon="i-tabler-chevron-right"
-          class="cursor-pointer"
-          :disabled="page <= 1"
-          @click="page = page - 1"
-        />
-        <span class="text-xs text-muted num">
-          {{ page.toLocaleString('fa-IR') }} / {{ totalPages.toLocaleString('fa-IR') }}
-        </span>
-        <UButton
-          type="button"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          icon="i-tabler-chevron-left"
-          class="cursor-pointer"
-          :disabled="page >= totalPages"
-          @click="page = page + 1"
-        />
-      </div>
+      <TheSellerPagination
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :total="listingsMeta.total"
+      />
     </div>
 
     <UModal
@@ -340,7 +317,8 @@
           v-if="bulkDeleteMode"
           class="text-sm text-toned"
         >
-          {{ $t('{n} محصول حذف می‌شود', { n: selectedIds.length.toLocaleString('fa-IR') }) }}
+          {{ selectedIds.length.toLocaleString('fa-IR') }}
+          {{ $t('محصول حذف می‌شود') }}
         </div>
         <div
           v-else-if="pendingDelete"
@@ -387,8 +365,6 @@ import { sellerProductFilterDefs } from '~/data/seller-filters'
 import { downloadSellerCsv } from '~/data/seller-export'
 import type { SellerListing } from '~/data/seller'
 
-const PAGE_SIZE = 10
-
 const { t } = useI18n()
 const toast = useAppToast()
 const {
@@ -406,9 +382,10 @@ const { brands, ensureLoaded: ensureBrands } = useSellerBrands()
 const { categories, ensureLoaded: ensureCategories } = useSellerCategories()
 const route = useRoute()
 
-const { search, status, sort, page, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status, sort, page, pageSize, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
   defaultSort: 'newest',
+  defaultPageSize: 10,
 })
 
 const filterDefs = computed(() => sellerProductFilterDefs)
@@ -496,7 +473,7 @@ function buildServerQuery() {
     published: fv.published === true ? true : undefined,
     sort: sort.value || 'newest',
     page: page.value,
-    pageSize: PAGE_SIZE,
+    pageSize: pageSize.value,
   }
 }
 
@@ -618,9 +595,6 @@ function onStatusChange(id: string) {
 
 /** Server already filtered / sorted / paginated */
 const filtered = computed(() => listings.value)
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil((listingsMeta.value.total || 0) / PAGE_SIZE)),
-)
 const paged = computed(() => listings.value)
 
 const allPageSelected = computed(() =>
@@ -726,7 +700,7 @@ async function confirmDelete() {
       closeDelete()
       await loadProducts()
       if (okCount) {
-        toast.success(t('{n} محصول حذف شد', { n: okCount.toLocaleString('fa-IR') }))
+        toast.success(`${okCount.toLocaleString('fa-IR')} ${t('محصول حذف شد')}`)
       }
       if (errors.length) {
         toast.error(errors[0]!)

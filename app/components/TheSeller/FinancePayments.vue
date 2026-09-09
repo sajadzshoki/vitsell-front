@@ -151,16 +151,11 @@
         </NuxtLink>
       </div>
 
-      <div
-        v-if="pageCount > 1"
-        class="mt-5 flex justify-center"
-      >
-        <UPagination
-          v-model:page="page"
-          :total="filtered.length"
-          :items-per-page="pageSize"
-        />
-      </div>
+      <TheSellerPagination
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :total="filtered.length"
+      />
     </template>
   </div>
 </template>
@@ -170,7 +165,6 @@ import { downloadSellerCsv } from '~/data/seller-export'
 import { formatPrice } from '~/data/products'
 import { sellerFinancePaymentStatusMeta } from '~/data/seller-finance-payments'
 
-const PAGE_SIZE = 10
 const { t } = useI18n()
 const toast = useAppToast()
 const route = useRoute()
@@ -184,11 +178,11 @@ const {
   ensureLoaded,
 } = useSellerFinance()
 
-const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
-const pageSize = PAGE_SIZE
 const canExport = computed(() => can('transactions.export') || can('payments.view'))
 const gatewayFilter = computed(() => String(route.query.gateway ?? 'all'))
 
@@ -249,11 +243,10 @@ const summaryCards = computed(() => {
   ]
 })
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
 
 const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
+  const start = (page.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
 })
 
 function onGatewayChange(value: string | number) {

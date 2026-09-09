@@ -79,7 +79,7 @@
         :preview-description="form.description"
       />
 
-      <div class="flex items-center gap-3 flex-wrap mt-6">
+      <TheSellerFormActions>
         <UButton
           type="button"
           color="primary"
@@ -99,7 +99,7 @@
         >
           {{ $t('انصراف') }}
         </UButton>
-      </div>
+      </TheSellerFormActions>
     </div>
   </div>
 </template>

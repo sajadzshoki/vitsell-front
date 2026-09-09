@@ -255,16 +255,11 @@
         </div>
       </div>
 
-      <div
-        v-if="pageCount > 1"
-        class="mt-5 flex justify-center"
-      >
-        <UPagination
-          v-model:page="page"
-          :total="listMeta.total"
-          :items-per-page="listMeta.pageSize || pageSize"
-        />
-      </div>
+      <TheSellerPagination
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :total="listMeta.total"
+      />
     </div>
 
     <UModal
@@ -329,7 +324,6 @@ import {
   sellerScheduleStatusMeta,
 } from '~/data/seller-marketing-shared'
 
-const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -344,8 +338,9 @@ const {
   setActiveMany,
 } = useSellerBanners()
 const { categories, fetchCategories, getCategoryById } = useCategories()
-const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
 const loading = ref(true)
@@ -376,9 +371,6 @@ const statusTabs = computed(() => {
   ]
 })
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 function apiErrorMessage(error: any, fallback: string) {
   return (
@@ -426,7 +418,7 @@ async function loadList() {
       status: status.value || undefined,
       placement: placementFilter.value !== 'all' ? placementFilter.value : undefined,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری بنرها ناموفق بود')))

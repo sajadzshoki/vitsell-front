@@ -249,16 +249,11 @@
         </div>
       </div>
 
-      <div
-        v-if="pageCount > 1"
-        class="mt-5 flex justify-center"
-      >
-        <UPagination
-          v-model:page="page"
-          :total="listMeta.total"
-          :items-per-page="listMeta.pageSize || pageSize"
-        />
-      </div>
+      <TheSellerPagination
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :total="listMeta.total"
+      />
     </div>
 
     <UModal
@@ -323,7 +318,6 @@ import {
 } from '~/data/seller-marketing-shared'
 import { formatPrice } from '~/data/products'
 
-const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -339,8 +333,9 @@ const {
 } = useSellerDeals()
 const { resolveProduct, fetchSeller } = useSeller()
 const { fetchProducts, getCachedProduct } = useProducts()
-const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
 const loading = ref(true)
@@ -367,9 +362,6 @@ const statusTabs = computed(() => {
   ]
 })
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 function apiErrorMessage(error: any, fallback: string) {
   return (
@@ -400,7 +392,7 @@ async function loadList() {
       q: search.value || undefined,
       status: status.value || undefined,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری شگفت‌انگیزها ناموفق بود')))

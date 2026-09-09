@@ -163,16 +163,11 @@
       </div>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="listMeta.total"
-        :items-per-page="listMeta.pageSize || pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="listMeta.total"
+    />
 
     <UModal
       v-model:open="deleteOpen"
@@ -219,7 +214,6 @@ import {
   type SellerPageStatus,
 } from '~/data/seller-pages'
 
-const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -231,8 +225,9 @@ const {
   fetchList,
   deletePage,
 } = useSellerPages()
-const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
 const loading = ref(true)
@@ -252,9 +247,6 @@ const statusTabs = computed(() => {
   ]
 })
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 function viewHref(path: string) {
   if (!isAdminApp) return path
@@ -278,7 +270,7 @@ async function loadList() {
       q: search.value || undefined,
       status: status.value,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(t(apiErrorMessage(error, 'بارگذاری صفحات ناموفق بود')))
@@ -313,7 +305,7 @@ async function confirmDelete() {
   }
 }
 
-watch([search, status, page], () => {
+watch([search, status, page, pageSize], () => {
   void loadList()
 })
 

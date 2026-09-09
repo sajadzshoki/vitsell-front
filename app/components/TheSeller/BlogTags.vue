@@ -110,16 +110,12 @@
       </div>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="filtered.length"
-        :items-per-page="pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="filtered.length"
+      :page-size-options="[15, 30, 50, 100]"
+    />
 
     <UModal
       v-model:open="formOpen"
@@ -212,11 +208,12 @@ const { t } = useI18n()
 const toast = useAppToast()
 const { can } = useSellerPermissions()
 const { tags, ensureLoaded, createTag, updateTag, deleteTag } = useSellerBlogTags()
-const { search, page, hasActiveFilters, clearFilters } = useSellerListQuery()
+const { search, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
+  defaultPageSize: 15,
+})
 
 ensureLoaded()
 
-const pageSize = 15
 const formOpen = ref(false)
 const editing = ref<SellerBlogTag | null>(null)
 const form = ref<SellerBlogTagForm>(emptyBlogTagForm())
@@ -237,10 +234,9 @@ const filtered = computed(() => {
   })
 })
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)))
 const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
+  const start = (page.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
 })
 
 function openCreate() {

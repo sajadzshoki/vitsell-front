@@ -87,9 +87,8 @@
           </div>
         </div>
 
-        <div class="mt-6 flex items-center gap-3 flex-wrap">
+        <TheSellerFormActions v-if="can('seo.update')">
           <UButton
-            v-if="can('seo.update')"
             type="button"
             color="primary"
             size="lg"
@@ -99,7 +98,7 @@
           >
             {{ $t('ذخیره تنظیمات') }}
           </UButton>
-        </div>
+        </TheSellerFormActions>
       </template>
 
       <template v-else>

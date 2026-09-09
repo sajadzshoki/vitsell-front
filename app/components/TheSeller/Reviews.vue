@@ -144,16 +144,11 @@
         </div>
       </div>
 
-      <div
-        v-if="pageCount > 1"
-        class="mt-5 flex justify-center"
-      >
-        <UPagination
-          v-model:page="page"
-          :total="listMeta.total"
-          :items-per-page="listMeta.pageSize || pageSize"
-        />
-      </div>
+      <TheSellerPagination
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :total="listMeta.total"
+      />
     </div>
   </div>
 </template>
@@ -162,7 +157,6 @@
 import { downloadSellerCsv } from '~/data/seller-export'
 import type { SellerReview, SellerReviewModeration } from '~/data/seller'
 
-const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -177,8 +171,9 @@ const {
   setModeration,
   bulkSetModeration,
 } = useSellerReviews()
-const { search, status, page, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
 const loading = ref(true)
@@ -214,9 +209,6 @@ const ratingItems = computed(() => [
   ...[5, 4, 3, 2, 1].map(n => ({ value: String(n), label: `${n.toLocaleString('fa-IR')} ★` })),
 ])
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 function apiErrorMessage(error: any, fallback: string) {
   return (
@@ -253,7 +245,7 @@ async function loadReviews() {
       status: status.value || undefined,
       rating: ratingFilter.value !== 'all' ? ratingFilter.value : undefined,
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری نظرات ناموفق بود')))

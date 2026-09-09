@@ -132,9 +132,14 @@ function resolveSeo(raw: Partial<SellerCategory>): SeoMeta | null {
 export function toSellerCategory(raw: Partial<SellerCategory> & { id: string, name: string } & Record<string, unknown>): SellerCategory {
   const status: SellerCategoryStatus = raw.status === 'inactive' ? 'inactive' : 'active'
   const parentRaw = raw.parentId ?? raw.parent_id
-  const parentId = parentRaw == null || parentRaw === ''
-    ? null
-    : String(parentRaw)
+  let parentId: string | null = null
+  if (parentRaw != null && parentRaw !== '') {
+    const asString = String(parentRaw).trim()
+    // Form sentinel / some backends use __root__ for top-level
+    if (asString && asString !== SELLER_CATEGORY_ROOT_PARENT && asString !== 'null' && asString !== 'undefined') {
+      parentId = asString
+    }
+  }
   return {
     id: raw.id,
     name: raw.name,

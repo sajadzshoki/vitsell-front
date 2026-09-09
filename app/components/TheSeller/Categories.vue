@@ -243,7 +243,7 @@
           />
 
           <button
-            v-if="viewMode === 'tree' && hasVisibleChildren(row.id)"
+            v-if="viewMode === 'tree' "
             type="button"
             class="size-8 rounded-lg grid place-items-center text-toned hover:bg-elevated cursor-pointer shrink-0 mt-4"
             :aria-expanded="!isCollapsed(row.id)"
@@ -255,10 +255,10 @@
               class="size-4"
             />
           </button>
-          <div
+          <!-- <div
             v-else-if="viewMode === 'tree'"
             class="size-8 shrink-0"
-          />
+          /> -->
 
           <div class="size-14 sm:size-16 rounded-xl bg-default border border-muted grid place-items-center shrink-0 overflow-hidden">
             <img
@@ -417,19 +417,22 @@
           class="space-y-3 text-sm"
         >
           <p class="text-toned">
-            {{ $t('{n} دسته‌بندی انتخاب شده است', { n: selectedIds.length.toLocaleString('fa-IR') }) }}
+            {{ selectedIds.length.toLocaleString('fa-IR') }}
+            {{ $t('دسته‌بندی انتخاب شده است') }}
           </p>
           <p
             v-if="bulkDeleteBlocked.length"
             class="text-xs text-warning leading-5"
           >
-            {{ $t('{n} مورد به‌خاطر فرزند یا محصول وابسته حذف نمی‌شوند', { n: bulkDeleteBlocked.length.toLocaleString('fa-IR') }) }}
+            {{ bulkDeleteBlocked.length.toLocaleString('fa-IR') }}
+            {{ $t('مورد به‌خاطر فرزند یا محصول وابسته حذف نمی‌شوند') }}
           </p>
           <p
             v-if="bulkDeleteEligible.length"
             class="text-xs text-muted leading-5"
           >
-            {{ $t('{n} مورد قابل حذف است', { n: bulkDeleteEligible.length.toLocaleString('fa-IR') }) }}
+            {{ bulkDeleteEligible.length.toLocaleString('fa-IR') }}
+            {{ $t('مورد قابل حذف است') }}
           </p>
         </div>
         <div
@@ -558,9 +561,14 @@ const treeRows = computed(() => {
   const byId = new Map(listItems.value.map(c => [c.id, c]))
   return rows.map((row) => {
     const raw = byId.get(row.id)
+    const serverChildren = Number(raw?.childCount)
     return {
       ...row,
-      childCount: raw?.childCount ?? row.childCount,
+      // Never let a missing/zero server count hide real children in the current list
+      childCount: Math.max(
+        Number.isFinite(serverChildren) ? serverChildren : 0,
+        row.childCount,
+      ),
       parentName: raw?.parentName ?? row.parentName,
       productCount: Number(raw?.productCount) || 0,
     }
@@ -611,9 +619,18 @@ const visibleRows = computed(() => {
   if (viewMode.value === 'flat') {
     return [...filteredRows.value].sort((a, b) => a.name.localeCompare(b.name, 'fa'))
   }
+
+  // Search / parent filter: show all matches (no collapse). Normalize indent if subtree was cut.
   if (search.value.trim() || (parentFilter.value && parentFilter.value !== 'all')) {
-    return filteredRows.value
+    const rows = filteredRows.value
+    if (!rows.length) return rows
+    const minDepth = Math.min(...rows.map(r => r.depth))
+    if (minDepth > 0) {
+      return rows.map(r => ({ ...r, depth: r.depth - minDepth }))
+    }
+    return rows
   }
+
   const hidden = new Set<string>()
   for (const row of filteredRows.value) {
     if (row.parentId && (collapsedMap.value[row.parentId] || hidden.has(row.parentId))) {
@@ -768,10 +785,10 @@ async function confirmDelete() {
       await loadCategories()
 
       if (okCount) {
-        toast.success(t('{n} دسته‌بندی حذف شد', { n: okCount.toLocaleString('fa-IR') }))
+        toast.success(`${okCount.toLocaleString('fa-IR')} ${t('دسته‌بندی حذف شد')}`)
       }
       if (blocked) {
-        toast.warning(t('{n} مورد به‌خاطر وابستگی رد شد', { n: blocked.toLocaleString('fa-IR') }))
+        toast.warning(`${blocked.toLocaleString('fa-IR')} ${t('مورد به‌خاطر وابستگی رد شد')}`)
       }
       if (errors.length) {
         toast.error(errors[0]!)

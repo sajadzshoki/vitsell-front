@@ -101,7 +101,7 @@
           />
         </UFormField>
 
-        <div class="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+        <TheSellerFormActions justify="end">
           <UButton
             to="/seller/warehouses"
             color="neutral"
@@ -119,7 +119,7 @@
           >
             {{ isEdit ? $t('ذخیره تغییرات') : $t('ایجاد انبار') }}
           </UButton>
-        </div>
+        </TheSellerFormActions>
       </form>
     </div>
   </div>

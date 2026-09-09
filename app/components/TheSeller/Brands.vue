@@ -272,16 +272,11 @@
       </div>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="listMeta.total"
-        :items-per-page="pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="listMeta.total"
+    />
 
     <UModal
       v-model:open="deleteOpen"
@@ -348,8 +343,9 @@ const {
   deleteBrand,
   setStatus,
 } = useSellerBrands()
-const { search, status, page, hasActiveFilters, clearFilters } = useSellerListQuery({
+const { search, status, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
+  defaultPageSize: 10,
 })
 
 function openBrandStorefront(brand: SellerBrand) {
@@ -357,7 +353,6 @@ function openBrandStorefront(brand: SellerBrand) {
   if (import.meta.client) window.open(href, '_blank', 'noopener,noreferrer')
 }
 
-const pageSize = 10
 const loading = ref(true)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerBrand | null>(null)
@@ -388,9 +383,6 @@ function productCountFor(brand: SellerBrand) {
 
 /** Server already filtered + paged */
 const paged = computed(() => brands.value)
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 const allPageSelected = computed(() =>
   paged.value.length > 0 && paged.value.every(b => selectedIds.value.includes(b.id)),
@@ -433,7 +425,7 @@ async function loadBrands() {
         q: search.value || undefined,
         status: status.value || undefined,
         page: page.value,
-        pageSize,
+        pageSize: pageSize.value,
       },
     })
     if (!ok) {

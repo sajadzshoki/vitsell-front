@@ -143,7 +143,7 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-3 flex-wrap">
+      <TheSellerFormActions>
         <UButton
           v-if="canEdit && !isSystemSuper"
           type="button"
@@ -176,7 +176,7 @@
         >
           {{ $t('حذف نقش') }}
         </UButton>
-      </div>
+      </TheSellerFormActions>
     </div>
   </div>
 </template>

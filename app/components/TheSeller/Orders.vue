@@ -236,27 +236,11 @@
         </div>
       </div>
 
-      <div
-        v-if="totalPages > 1"
-        class="mt-6 flex flex-col sm:(flex-row items-center justify-between) gap-3"
-      >
-        <div class="text-xs text-muted num text-center sm:text-start">
-          {{ $t('صفحه') }}
-          {{ page.toLocaleString('fa-IR') }}
-          {{ $t('از') }}
-          {{ totalPages.toLocaleString('fa-IR') }}
-        </div>
-        <UPagination
-          :page="page"
-          :total="ordersMeta.total"
-          :items-per-page="ordersMeta.pageSize || pageSize"
-          :sibling-count="1"
-          show-edges
-          color="neutral"
-          active-color="primary"
-          @update:page="page = $event"
-        />
-      </div>
+      <TheSellerPagination
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :total="ordersMeta.total"
+      />
     </template>
 
     <UModal
@@ -330,9 +314,10 @@ const {
 } = useSeller()
 const { can } = useSellerPermissions()
 
-const { search, status, sort, page, clearFilters } = useSellerListQuery({
+const { search, status, sort, page, pageSize, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
   defaultSort: 'newest',
+  defaultPageSize: sellerOrdersPageSize,
 })
 const filters = useSellerFilters(computed(() => sellerOrderFilterDefs))
 
@@ -342,7 +327,6 @@ const bulkAction = ref('')
 const bulkRunning = ref(false)
 const loading = ref(true)
 const exporting = ref(false)
-const pageSize = sellerOrdersPageSize
 const deleteOpen = ref(false)
 const deleting = ref(false)
 const pendingDelete = ref<SellerOrder | null>(null)
@@ -415,10 +399,6 @@ const hasAnyFilters = computed(() =>
   || (sort.value && sort.value !== 'newest'),
 )
 
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil((ordersMeta.value.total || 0) / (ordersMeta.value.pageSize || pageSize))),
-)
-
 const allPageSelected = computed(() =>
   orders.value.length > 0 && orders.value.every(o => selectedIds.value.includes(o.id)),
 )
@@ -447,7 +427,7 @@ function currentQuery() {
     hasRefund: filters.values.hasRefund === true ? true : undefined,
     hasReturn: filters.values.hasReturn === true ? true : undefined,
     page: page.value,
-    pageSize,
+    pageSize: pageSize.value,
   }
 }
 

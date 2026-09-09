@@ -402,7 +402,7 @@
         </template>
       </UTabs>
 
-      <div class="flex items-center justify-between gap-3 flex-wrap pb-2 pt-2">
+      <TheSellerFormActions justify="between">
         <UButton
           v-if="isEdit"
           color="neutral"
@@ -460,7 +460,7 @@
             </UButton>
           </template>
         </div>
-      </div>
+      </TheSellerFormActions>
     </template>
 
     <div

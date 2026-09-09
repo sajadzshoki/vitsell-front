@@ -219,16 +219,11 @@
       </div>
     </div>
 
-    <div
-      v-if="pageCount > 1"
-      class="mt-5 flex justify-center"
-    >
-      <UPagination
-        v-model:page="page"
-        :total="listMeta.total"
-        :items-per-page="listMeta.pageSize || pageSize"
-      />
-    </div>
+    <TheSellerPagination
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :total="listMeta.total"
+    />
 
     <UModal
       v-model:open="confirmOpen"
@@ -269,16 +264,16 @@ import {
 } from '~/data/seller-customers'
 import { formatPrice } from '~/data/products'
 
-const pageSize = 10
 
 const { t } = useI18n()
 const toast = useAppToast()
 const route = useRoute()
 const { can } = useSellerPermissions()
 const { customers, listMeta, pending, fetchList, bulkSetStatus } = useSellerCustomers()
-const { search, status, sort, page, clearFilters, patchQuery } = useSellerListQuery({
+const { search, status, sort, page, pageSize, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
   defaultSort: 'newest',
+  defaultPageSize: 10,
 })
 
 const loading = ref(true)
@@ -337,9 +332,6 @@ const hasAnyFilters = computed(() =>
   ),
 )
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((listMeta.value.total || 0) / (listMeta.value.pageSize || pageSize))),
-)
 
 const allPageSelected = computed(() =>
   customers.value.length > 0 && customers.value.every(c => selectedIds.value.includes(c.id)),
@@ -432,7 +424,7 @@ async function loadCustomers() {
       spendMax: spendMax.value || undefined,
       sort: sort.value || 'newest',
       page: page.value,
-      pageSize,
+      pageSize: pageSize.value,
     })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری مشتریان ناموفق بود')))
