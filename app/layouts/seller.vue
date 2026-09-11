@@ -45,6 +45,17 @@
             <span class="text-dimmed">/</span>
             <span class="text-toned">{{ $t(pageTitle || '') }}</span>
           </template>
+          <template v-else-if="isMegaMenuCreate || isMegaMenuEdit">
+            <span class="text-dimmed">/</span>
+            <NuxtLink
+              to="/seller/mega-menus"
+              class="hover:text-primary transition"
+            >
+              {{ $t('مگا منو') }}
+            </NuxtLink>
+            <span class="text-dimmed">/</span>
+            <span class="text-toned">{{ $t(pageTitle || '') }}</span>
+          </template>
           <template v-else-if="isBannerCreate || isBannerEdit">
             <span class="text-dimmed">/</span>
             <NuxtLink
@@ -209,6 +220,8 @@ const {
   isProductDetail,
   isCategoryCreate,
   isCategoryEdit,
+  isMegaMenuCreate,
+  isMegaMenuEdit,
   isBannerCreate,
   isBannerEdit,
   isBlogCreate,

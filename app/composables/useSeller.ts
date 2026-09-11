@@ -17,6 +17,20 @@ import {
 } from '~/data/seller'
 import type { Product } from '~/data/products'
 
+function listingApiError(error: unknown, fallback: string) {
+  if (!error || typeof error !== 'object') return fallback
+  const data = 'data' in error
+    ? (error as { data?: { errors?: Array<{ message?: string }>, message?: string } }).data
+    : undefined
+  const fromFields = data?.errors?.map(e => e.message).filter(Boolean).join(' ، ')
+  if (fromFields) return fromFields
+  if (data?.message) return data.message
+  if ('message' in error && typeof (error as { message?: unknown }).message === 'string') {
+    return (error as { message: string }).message
+  }
+  return fallback
+}
+
 const emptyShop = (): SellerShop => ({ ...defaultSellerShop })
 
 export function useSeller() {
@@ -802,9 +816,11 @@ export function useSeller() {
     stock: number,
     status?: SellerProductStatus,
     extras?: ListingProductExtras,
-  ) {
+  ): Promise<{ ok: true } | { ok: false, error: string }> {
     const listing = getListing(productId)
-    if (!listing) return false
+    if (!listing) {
+      return { ok: false, error: 'محصول یافت نشد' }
+    }
 
     const nextStatus = status
       ?? (stock <= 0 && listing.status === 'active' ? 'out_of_stock' : listing.status)
@@ -820,12 +836,15 @@ export function useSeller() {
     )
 
     if (error || !result?.listing) {
-      return false
+      return {
+        ok: false,
+        error: listingApiError(error, 'ذخیره محصول ناموفق بود'),
+      }
     }
 
     remember([result.product ?? { ...product, id: productId }])
     upsertListing({ ...result.listing, product: result.product })
-    return true
+    return { ok: true }
   }
 
   async function updateListingStock(productId: string, stock: number) {
@@ -834,7 +853,8 @@ export function useSeller() {
     const status: SellerProductStatus = stock <= 0
       ? (listing.status === 'inactive' ? 'inactive' : 'out_of_stock')
       : (listing.status === 'out_of_stock' ? 'active' : listing.status)
-    return updateListingProduct(productId, resolveProduct(productId), stock, status)
+    const result = await updateListingProduct(productId, resolveProduct(productId), stock, status)
+    return result.ok
   }
 
   async function addListingProduct(
@@ -842,7 +862,7 @@ export function useSeller() {
     stock: number,
     status: SellerProductStatus = 'pending',
     extras?: ListingProductExtras,
-  ) {
+  ): Promise<{ ok: true, productId: string } | { ok: false, error: string }> {
     const { result, error } = await usePost<{ listing: SellerListing, product: Product }>(
       '/seller/listings',
       {
@@ -852,7 +872,12 @@ export function useSeller() {
       },
       { headers: { 'no-error': true } },
     )
-    if (error || !result) return null
+    if (error || !result) {
+      return {
+        ok: false,
+        error: listingApiError(error, 'ثبت محصول ناموفق بود'),
+      }
+    }
 
     remember([result.product ?? product])
     const listing = result.listing ?? {
@@ -866,7 +891,7 @@ export function useSeller() {
     if (result.product) {
       syncCommerceFromListing({ ...listing, product: result.product as ListingApiItem['product'] })
     }
-    return listing.productId
+    return { ok: true, productId: listing.productId }
   }
 
   function upsertOrder(order: SellerOrder) {

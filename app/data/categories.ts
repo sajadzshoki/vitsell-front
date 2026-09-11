@@ -160,6 +160,9 @@ export function toSearchRoute(query: {
   q?: string
   category?: string
   brands?: string | string[]
+  minPrice?: number
+  maxPrice?: number
+  attrs?: Record<string, string[]>
 }) {
   const q = query.q?.trim()
   const category = query.category?.trim()
@@ -167,14 +170,25 @@ export function toSearchRoute(query: {
   const brands = (Array.isArray(brandsRaw) ? brandsRaw : brandsRaw ? [brandsRaw] : [])
     .map(b => String(b || '').trim())
     .filter(Boolean)
+  const minPrice = Number(query.minPrice || 0) || 0
+  const maxPrice = Number(query.maxPrice || 0) || 0
+  const attrs = query.attrs || {}
+  const attrsClean: Record<string, string[]> = {}
+  for (const [slug, values] of Object.entries(attrs)) {
+    const list = (values || []).map(v => String(v).trim()).filter(Boolean)
+    if (slug.trim() && list.length) attrsClean[slug.trim()] = list
+  }
 
-  const searchQuery = {
+  const searchQuery: Record<string, string> = {
     ...(q ? { q } : {}),
     ...(brands.length === 1
-      ? { brands: brands[0] }
+      ? { brands: brands[0]! }
       : brands.length
         ? { brands: brands.join(',') }
         : {}),
+    ...(minPrice > 0 ? { minPrice: String(minPrice) } : {}),
+    ...(maxPrice > 0 ? { maxPrice: String(maxPrice) } : {}),
+    ...(Object.keys(attrsClean).length ? { attrs: JSON.stringify(attrsClean) } : {}),
   }
 
   if (category) {

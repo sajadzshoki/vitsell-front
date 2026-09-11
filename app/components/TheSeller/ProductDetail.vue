@@ -801,8 +801,8 @@ async function saveQuick() {
       stock,
       statusInput.value,
     )
-    if (!ok) {
-      toast.error(t('ذخیره ناموفق بود'))
+    if (!ok.ok) {
+      toast.error(t(ok.error))
       return
     }
     toast.success(t('تغییرات ذخیره شد'))
@@ -835,8 +835,8 @@ async function savePrice() {
       listing.value.stock,
       listing.value.status,
     )
-    if (!ok) {
-      toast.error(t('ذخیره قیمت ناموفق بود'))
+    if (!ok.ok) {
+      toast.error(t(ok.error))
       return
     }
     if (previous.price !== price || (previous.oldPrice ?? null) !== (oldPrice ?? null)) {

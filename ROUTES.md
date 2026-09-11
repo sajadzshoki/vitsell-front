@@ -22,6 +22,15 @@
 | `GET` | `/categories` | — |
 | `GET` | `/categories/:id` | — |
 | `GET` | `/category-pages/:id` | — |
+| `GET` | `/mega-menu` | — storefront mega menu tree |
+| `GET` | `/mega-menu/resolve?path=` | — resolve SEO path → filter |
+| `GET` | `/navigation` | — quick/bottom links |
+| `GET\|POST` | `/seller/mega-menus` | ✅ admin |
+| `GET\|PUT\|DELETE` | `/seller/mega-menus/:id` | ✅ admin |
+| `PATCH` | `/seller/mega-menus/:id/status` | ✅ admin |
+| `POST` | `/seller/mega-menus/reorder` | ✅ admin |
+| `POST\|PUT\|DELETE` | `/seller/mega-menu-sections[...]` | ✅ admin — status + reorder |
+| `POST\|PUT\|DELETE` | `/seller/mega-menu-items[...]` | ✅ admin — status + reorder |
 | `GET\|POST` | `/seller/categories` | ✅ admin — GET: `q`, `status`, `parentId` |
 | `GET\|PUT\|DELETE` | `/seller/categories/:id` | ✅ admin |
 | `GET\|POST` | `/seller/brands` | ✅ admin — GET: `q`, `status`, `page`, `pageSize` |
@@ -55,10 +64,12 @@
 
 | UI | Route | Notes |
 |----|-------|-------|
-| MegaMenu — دسته اصلی | `/search/category-<id>` | `toSearchRoute({ category })` — نه `/category/:id`؛ نه `?category=` |
-| MegaMenu — آیتم برگ | `/search/category-<id>?q=<term>` | |
+| MegaMenu — ریشه | از `GET /mega-menu` | نه `Category.subs` |
+| MegaMenu — category item | `/category/<menu>/<section>/…` یا `/search/category-<id>` | `href` از API / fallback `toSearchRoute` |
+| MegaMenu — filter item | `/category/<menu>/<section>/…/<item-slug>` مثلاً `/category/mobile/mobile-phone/price-up-to-30ml` | resolve: `GET /mega-menu/resolve?path=` |
+| MegaMenu — link item | URL ذخیره‌شده | داخلی یا خارجی |
 | Search — زیردسته‌ها | همان path دسته | داخل `TheSearchHeader` وقتی category از path ست است؛ عکس از `CategorySchema.image` / `subs[].image` |
-| فیلتر محصولات | `GET /products?category=&q=` | |
+| فیلتر محصولات | `GET /products?category=&q=&brands=&minPrice=&maxPrice=&attrs=` | |
 
 ## Cart / wishlist / account / checkout (auth مگر خلافش گفته شود)
 

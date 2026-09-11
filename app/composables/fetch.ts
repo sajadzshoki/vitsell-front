@@ -27,7 +27,8 @@ const UPLOAD_FILE_RE = /\/uploads\/([\w.-]+\.(?:jpe?g|png|webp|gif|mp4|webm|mov|
 
 /**
  * Make media URLs loadable in the browser.
- * Relative `/uploads/...` and legacy absolute hosts (e.g. 0.0.0.0) rewrite to the API origin.
+ * - `/uploads/...` (and legacy absolute upload hosts) → API origin
+ * - `/images/...` and other storefront public assets stay same-origin
  */
 export function resolveMediaUrl(url: string) {
   const raw = String(url || '').trim()
@@ -35,13 +36,29 @@ export function resolveMediaUrl(url: string) {
   if (raw.startsWith('blob:') || raw.startsWith('data:')) return raw
 
   const origin = getUploadOrigin()
+
+  // Absolute or relative upload paths → API host
   const pathMatch = raw.match(UPLOAD_FILE_RE)
   if (pathMatch && origin) {
     return `${origin}/uploads/${pathMatch[1]}`
   }
-  if (raw.startsWith('/') && origin) {
-    return `${origin}${raw}`
+
+  // Storefront public assets (mock products, static icons, etc.)
+  if (
+    raw.startsWith('/images/')
+    || raw.startsWith('/icons/')
+    || raw.startsWith('/fonts/')
+    || raw.startsWith('/favicon')
+    || raw.startsWith('/_nuxt/')
+  ) {
+    return raw
   }
+
+  // Any other site-relative path stays on the current origin
+  if (raw.startsWith('/')) {
+    return raw
+  }
+
   return raw
 }
 

@@ -109,7 +109,7 @@ const {
   suggestedCategories,
   loadMore,
   goToPage,
-} = useSearchCatalog()
+} = await useSearchCatalog()
 
 /** Entered via main category path (`/search/category-{id}`) → subcategory chips inside header */
 const showSubcategories = computed(() =>

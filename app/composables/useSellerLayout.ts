@@ -100,6 +100,14 @@ export function useSellerLayout() {
   )
   const isRoleChild = computed(() => isRoleCreate.value || isRoleDetail.value)
 
+  const isMegaMenuCreate = computed(() =>
+    route.path === '/seller/mega-menus/new' || route.path === '/seller/mega-menus/new/',
+  )
+
+  const isMegaMenuEdit = computed(() =>
+    /^\/seller\/mega-menus\/[^/]+/.test(route.path) && !isMegaMenuCreate.value,
+  )
+
   const pageTitle = computed(() => {
     if (isDashboard.value) {
       return 'پیشخوان مدیریت'
@@ -122,6 +130,12 @@ export function useSellerLayout() {
     }
     if (isCategoryEdit.value) {
       return 'ویرایش دسته‌بندی'
+    }
+    if (isMegaMenuCreate.value) {
+      return 'افزودن مگا منو'
+    }
+    if (isMegaMenuEdit.value) {
+      return 'ویرایش مگا منو'
     }
     if (isBannerCreate.value) {
       return 'افزودن بنر'
@@ -173,6 +187,8 @@ export function useSellerLayout() {
     isProductDetail,
     isCategoryCreate,
     isCategoryEdit,
+    isMegaMenuCreate,
+    isMegaMenuEdit,
     isBannerCreate,
     isBannerEdit,
     isBlogCreate,

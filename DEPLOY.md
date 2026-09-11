@@ -189,9 +189,29 @@ VALUES ('09XXXXXXXXX', 'admin', '<bcrypt-hash>', NOW(), NOW());
 
 ```env
 NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1
+NUXT_PUBLIC_STORE_URL=https://digishop.vistatest.top
+NUXT_PUBLIC_ADMIN_URL=https://digishop-admin.vistatest.top
 ```
 
-در `nuxt.config.ts` و `.env.store` / `.env.admin` همین مقدار ست می‌شود (ادمین و فروشگاه هر دو به یک بک‌اند وصل‌اند).
+فایل‌های آماده:
+
+| محیط | فروشگاه | ادمین |
+|------|---------|-------|
+| لوکال | `.env.store` | `.env.admin` |
+| سرور (vistatest) | `.env.store.production` | `.env.admin.production` |
+
+```bash
+# بیلد / generate برای سرور (vistatest)
+npm run build:store:prod
+npm run build:admin:prod
+npm run generate:store
+npm run generate:admin
+```
+
+`generate` / `generate:store` / `generate:admin` از `.env.*.production` می‌خوانند.
+برای لوکال: `generate:store:local` / `generate:admin:local`.
+
+در `nuxt.config.ts` و `.env.store` / `.env.admin` (لوکال) و `*.production` همین کلیدها ست می‌شود.
 
 `app/composables/fetch.ts` از `getApiBase()` همین مقدار را می‌خواند.
 
@@ -202,10 +222,10 @@ NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1
 ```bash
 cd digishop
 npm ci
-# store
-NUXT_PUBLIC_APP_MODE=store NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1 npm run build
-# admin
-NUXT_PUBLIC_APP_MODE=admin NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1 npm run build:admin
+# store (سرور)
+npm run build:store:prod
+# admin (سرور)
+npm run build:admin:prod
 ```
 
 پیش‌نمایش لوکال:

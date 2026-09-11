@@ -162,6 +162,10 @@ export type SellerPermission =
   | 'system.manage'
   | 'navigation.view'
   | 'navigation.update'
+  | 'mega_menu.view'
+  | 'mega_menu.create'
+  | 'mega_menu.update'
+  | 'mega_menu.delete'
   | 'imports.view'
   | 'imports.create'
   | 'imports.manage'
@@ -402,6 +406,10 @@ export const sellerPermissionCatalog: SellerPermissionMeta[] = [
   { key: 'system.manage', label: 'مدیریت پیکربندی سیستم', group: 'system', expandsTo: ['settings.update', 'navigation.update'] },
   { key: 'navigation.view', label: 'مشاهده منوی عمومی', group: 'system' },
   { key: 'navigation.update', label: 'ویرایش منوی عمومی', group: 'system' },
+  { key: 'mega_menu.view', label: 'مشاهده مگا منو', group: 'system' },
+  { key: 'mega_menu.create', label: 'ایجاد مگا منو', group: 'system' },
+  { key: 'mega_menu.update', label: 'ویرایش مگا منو', group: 'system' },
+  { key: 'mega_menu.delete', label: 'حذف مگا منو', group: 'system' },
   { key: 'imports.view', label: 'مشاهده مرکز ورود', group: 'system' },
   { key: 'imports.create', label: 'ایجاد ورود داده', group: 'system' },
   { key: 'imports.manage', label: 'مدیریت ورود داده', group: 'system', expandsTo: ['imports.view', 'imports.create'] },
@@ -474,6 +482,7 @@ export const sellerNavPermissionMap: Record<string, SellerPermission> = {
   settings: 'settings.view',
   system: 'system.view',
   navigation: 'navigation.view',
+  mega_menu: 'mega_menu.view',
   imports: 'imports.view',
   exports: 'exports.view',
   permissions: 'permissions.view',
@@ -521,6 +530,7 @@ export const sellerRoutePermissionMap: { prefix: string, permission: SellerPermi
   { prefix: '/seller/system', permission: 'system.view' },
   { prefix: '/seller/settings', permission: 'settings.view' },
   { prefix: '/seller/navigation', permission: 'navigation.view' },
+  { prefix: '/seller/mega-menus', permission: 'mega_menu.view' },
   { prefix: '/seller/imports', permission: 'imports.view' },
   { prefix: '/seller/exports', permission: 'exports.view' },
   { prefix: '/seller/roles/permissions', permission: 'permissions.view' },
@@ -564,6 +574,7 @@ export const sellerDefaultRolePermissions: Record<SellerSystemRoleKey, SellerPer
     'inventory.view', 'inventory.update',
     'warehouses.view', 'warehouses.create', 'warehouses.update', 'warehouses.delete',
     'media.view', 'media.manage', 'seo.view', 'seo.update',
+    'mega_menu.view', 'mega_menu.create', 'mega_menu.update', 'mega_menu.delete',
   ],
   ORDER_MANAGER: [
     'dashboard.view',
@@ -583,6 +594,8 @@ export const sellerDefaultRolePermissions: Record<SellerSystemRoleKey, SellerPer
     'footer.view', 'footer.update',
     'banners.view', 'banners.create', 'banners.update', 'banners.delete',
     'seo.view', 'seo.update',
+    'mega_menu.view', 'mega_menu.create', 'mega_menu.update', 'mega_menu.delete',
+    'navigation.view', 'navigation.update',
   ],
   MARKETING_MANAGER: [
     'dashboard.view', 'analytics.view',

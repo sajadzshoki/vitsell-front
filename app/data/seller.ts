@@ -46,6 +46,7 @@ export type SellerTabId =
   | 'settings'
   | 'system'
   | 'navigation'
+  | 'mega_menu'
   | 'imports'
   | 'exports'
 
@@ -281,6 +282,7 @@ export const sellerNavGroups: SellerNavGroup[] = [
       { id: 'products', label: 'محصولات', icon: 'i-tabler-package', to: '/seller/products' },
       { id: 'product_tags', label: 'برچسب‌ها', icon: 'i-tabler-tags', to: '/seller/products/tags' },
       { id: 'categories', label: 'دسته‌بندی‌ها', icon: 'i-tabler-category', to: '/seller/categories' },
+      { id: 'mega_menu', label: 'مگا منو', icon: 'i-tabler-layout-navbar', to: '/seller/mega-menus' },
       { id: 'brands', label: 'برندها', icon: 'i-tabler-trademark', to: '/seller/brands' },
       { id: 'attributes', label: 'ویژگی‌ها', icon: 'i-tabler-list-details', to: '/seller/attributes' },
       { id: 'inventory', label: 'موجودی', icon: 'i-tabler-packages', to: '/seller/inventory' },

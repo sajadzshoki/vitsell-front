@@ -15,6 +15,7 @@ import {
   getCategoryPageMeta,
   type CategoryPageMeta,
 } from '~/data/category-pages'
+import type { MegaMenuResolvePayload } from '~/data/mega-menu'
 
 type CategoryPagePayload = {
   meta: CategoryPageMeta | null
@@ -57,7 +58,7 @@ export async function fetchSearchCatalog(query: SearchCatalogQuery): Promise<Sea
   }
 }
 
-export function useSearchCatalog() {
+export async function useSearchCatalog() {
   const route = useRoute()
   const { t } = useI18n()
   const { categories, getCategoryById, fetchCategories } = useCategories()
@@ -75,11 +76,47 @@ export function useSearchCatalog() {
   const categorySeo = ref<CategoryPageMeta['seo'] | null>(null)
   const skipNextFilterWatch = ref(false)
 
-  const q = computed(() => String(route.query.q ?? '').trim())
-  /** Path `/search/category-{id}` (preferred) or legacy `?category=` */
+  const megaPathKey = computed(() => {
+    const catId = String(route.params.catId ?? '').trim()
+    const rawPath = route.params.path
+    if (!catId || rawPath == null || rawPath === '') return ''
+    const parts = Array.isArray(rawPath)
+      ? rawPath.map(p => String(p).trim()).filter(Boolean)
+      : String(rawPath).split('/').map(p => p.trim()).filter(Boolean)
+    if (!parts.length) return ''
+    return [catId, ...parts].join('/')
+  })
+
+  const { data: megaResolved } = await useAsyncData<MegaMenuResolvePayload | null>(
+    () => `mega-menu-resolve:${megaPathKey.value || 'none'}`,
+    async () => {
+      const key = megaPathKey.value
+      if (!key) return null
+      const { result, error } = await useGet<MegaMenuResolvePayload>(
+        `/mega-menu/resolve?path=${encodeURIComponent(key)}`,
+        { headers: { 'no-error': true } },
+      )
+      if (error || !result) return null
+      return result
+    },
+    { watch: [megaPathKey] },
+  )
+
+  const q = computed(() => {
+    const fromQuery = String(route.query.q ?? '').trim()
+    if (fromQuery) return fromQuery
+    return String(megaResolved.value?.filter?.q || '').trim()
+  })
+
+  /** Path `/search/category-{id}` (preferred) or legacy `?category=` or mega SEO path */
   const categoryId = computed(() => {
+    if (megaResolved.value?.category) return megaResolved.value.category
     const fromParam = String(route.params.id ?? '').trim()
     if (fromParam) return fromParam
+    const fromCatId = String(route.params.catId ?? '').trim()
+    if (fromCatId && megaPathKey.value) {
+      return megaResolved.value?.filter?.category || fromCatId
+    }
     return String(route.query.category ?? '').trim()
   })
   const category = computed(() => getCategoryById(categoryId.value))
@@ -91,6 +128,8 @@ export function useSearchCatalog() {
   )
 
   function brandsFromRoute(): string[] {
+    const fromMega = megaResolved.value?.filter?.brands
+    if (fromMega?.length) return [...fromMega]
     const raw = route.query.brands ?? route.query.brand
     if (Array.isArray(raw)) {
       return raw.flatMap(v => String(v).split(',')).map(s => s.trim()).filter(Boolean)
@@ -99,13 +138,71 @@ export function useSearchCatalog() {
     return String(raw).split(',').map(s => s.trim()).filter(Boolean)
   }
 
-  const routeBrands = computed(() => brandsFromRoute())
+  function attrsFromRoute(): Record<string, string[]> {
+    const fromMega = megaResolved.value?.filter?.attrs
+    if (fromMega && Object.keys(fromMega).length) return { ...fromMega }
+    const raw = route.query.attrs
+    if (raw == null || raw === '') return {}
+    const text = Array.isArray(raw) ? String(raw[0] || '') : String(raw)
+    try {
+      const parsed = JSON.parse(text) as unknown
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+      const out: Record<string, string[]> = {}
+      for (const [slug, values] of Object.entries(parsed as Record<string, unknown>)) {
+        const list = Array.isArray(values)
+          ? values.map(v => String(v).trim()).filter(Boolean)
+          : String(values || '').split(',').map(v => v.trim()).filter(Boolean)
+        if (slug.trim() && list.length) out[slug.trim()] = list
+      }
+      return out
+    }
+    catch {
+      return {}
+    }
+  }
 
-  if (routeBrands.value.length) {
-    filters.value = { ...cloneSearchFilters(filters.value), brands: [...routeBrands.value] }
+  function priceFromRoute(key: 'minPrice' | 'maxPrice') {
+    const fromMega = megaResolved.value?.filter?.[key]
+    if (fromMega && fromMega > 0) return fromMega
+    const raw = route.query[key]
+    const value = Number(Array.isArray(raw) ? raw[0] : raw)
+    return Number.isFinite(value) && value > 0 ? value : 0
+  }
+
+  const routeBrands = computed(() => brandsFromRoute())
+  const routeFilterKey = computed(() => JSON.stringify({
+    mega: megaPathKey.value,
+    brands: brandsFromRoute(),
+    minPrice: priceFromRoute('minPrice'),
+    maxPrice: priceFromRoute('maxPrice'),
+    attrs: attrsFromRoute(),
+    q: q.value,
+  }))
+
+  if (
+    routeBrands.value.length
+    || priceFromRoute('minPrice')
+    || priceFromRoute('maxPrice')
+    || Object.keys(attrsFromRoute()).length
+    || megaResolved.value?.filter?.onlyDiscount
+    || megaResolved.value?.filter?.fastDelivery
+    || megaResolved.value?.filter?.onlyInStock
+  ) {
+    filters.value = {
+      ...cloneSearchFilters(filters.value),
+      brands: [...routeBrands.value],
+      minPrice: priceFromRoute('minPrice'),
+      maxPrice: priceFromRoute('maxPrice') || filters.value.maxPrice,
+      attrs: attrsFromRoute(),
+      onlyDiscount: Boolean(megaResolved.value?.filter?.onlyDiscount),
+      fastDelivery: Boolean(megaResolved.value?.filter?.fastDelivery),
+      onlyInStock: Boolean(megaResolved.value?.filter?.onlyInStock),
+      minRating: Number(megaResolved.value?.filter?.minRating || 0) || 0,
+    }
   }
 
   const heading = computed(() => {
+    if (megaResolved.value?.title) return megaResolved.value.title
     if (q.value) return q.value
     if (category.value) return category.value.name
     if (categoryId.value) return categoryId.value
@@ -163,13 +260,18 @@ export function useSearchCatalog() {
       attributes: Array.isArray(next.attributes) ? next.attributes : [],
     }
 
-    // Align price slider ceiling to full search result set (not page limit).
+    // Align price slider ceiling; preserve shareable URL filters from mega menu / deep links.
+    const urlMin = priceFromRoute('minPrice')
+    const urlMax = priceFromRoute('maxPrice')
+    const urlAttrs = attrsFromRoute()
+    const urlBrands = brandsFromRoute()
     skipNextFilterWatch.value = true
     filters.value = {
       ...cloneSearchFilters(filters.value),
-      attrs: {},
-      minPrice: 0,
-      maxPrice: ceiling,
+      brands: urlBrands.length ? urlBrands : filters.value.brands,
+      attrs: Object.keys(urlAttrs).length ? urlAttrs : {},
+      minPrice: urlMin,
+      maxPrice: urlMax > 0 ? urlMax : ceiling,
     }
   }
 
@@ -268,12 +370,28 @@ export function useSearchCatalog() {
   )
 
   watch(
-    routeBrands,
-    (next) => {
-      const current = filters.value.brands
-      const same = next.length === current.length && next.every((b, i) => b === current[i])
+    routeFilterKey,
+    () => {
+      const nextBrands = brandsFromRoute()
+      const nextMin = priceFromRoute('minPrice')
+      const nextMax = priceFromRoute('maxPrice')
+      const nextAttrs = attrsFromRoute()
+      const same
+        = nextMin === filters.value.minPrice
+          && (nextMax === filters.value.maxPrice || (nextMax === 0 && filters.value.maxPrice === priceCeiling.value))
+          && JSON.stringify(nextAttrs) === JSON.stringify(filters.value.attrs)
+          && nextBrands.length === filters.value.brands.length
+          && nextBrands.every((b, i) => b === filters.value.brands[i])
       if (same) return
-      filters.value = { ...filters.value, brands: [...next] }
+      skipNextFilterWatch.value = true
+      filters.value = {
+        ...filters.value,
+        brands: [...nextBrands],
+        minPrice: nextMin,
+        maxPrice: nextMax > 0 ? nextMax : priceCeiling.value,
+        attrs: nextAttrs,
+      }
+      void resetAndLoad()
     },
   )
 

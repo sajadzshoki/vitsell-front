@@ -776,15 +776,15 @@ async function onSubmit(sendForReview: boolean) {
       }
       const product = withCategoryLabel(built)
       const listing = getListing(props.productId)
-      const ok = await updateListingProduct(
+      const result = await updateListingProduct(
         props.productId,
         product,
         stock,
         listing?.status,
         listingExtras(),
       )
-      if (!ok) {
-        toast.error(t('ذخیره محصول ناموفق بود'))
+      if (!result.ok) {
+        toast.error(t(result.error))
         return
       }
       persistCommerce(props.productId)
@@ -816,11 +816,12 @@ async function onSubmit(sendForReview: boolean) {
     const status = sendForReview
       ? 'pending' as const
       : (stock > 0 ? 'inactive' as const : 'out_of_stock' as const)
-    const productId = await addListingProduct(product, stock, status, listingExtras())
-    if (!productId) {
-      toast.error(t('ثبت محصول ناموفق بود'))
+    const created = await addListingProduct(product, stock, status, listingExtras())
+    if (!created.ok) {
+      toast.error(t(created.error))
       return
     }
+    const productId = created.productId
 
     commerce.value.slug = normalizeProductSlug(commerce.value.slug) || productId
     persistCommerce(productId)
