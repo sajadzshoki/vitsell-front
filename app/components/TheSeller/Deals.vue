@@ -7,20 +7,44 @@
         :count-label="!loading ? `${listMeta.total.toLocaleString('fa-IR')} ${$t('مورد')}` : undefined"
       >
         <template #actions>
-          <UButton
-            to="/seller/deals/new"
-            color="primary"
-            size="sm"
-            icon="i-tabler-plus"
-            class="font-medium cursor-pointer"
-          >
-            {{ $t('افزودن شگفت‌انگیز') }}
-          </UButton>
+          <div class="flex items-center gap-2 flex-wrap">
+            <UButton
+              type="button"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-stack-2"
+              class="cursor-pointer"
+              @click="bulkCreateOpen = true"
+            >
+              {{ $t('ایجاد گروهی') }}
+            </UButton>
+            <UButton
+              to="/seller/deals/new"
+              color="primary"
+              size="sm"
+              icon="i-tabler-plus"
+              class="font-medium cursor-pointer"
+            >
+              {{ $t('افزودن شگفت‌انگیز') }}
+            </UButton>
+          </div>
         </template>
       </TheSellerPageHeader>
     </div>
 
-    <div class="lg:hidden mb-4">
+    <div class="lg:hidden mb-4 space-y-2">
+      <UButton
+        type="button"
+        color="neutral"
+        variant="soft"
+        block
+        icon="i-tabler-stack-2"
+        class="cursor-pointer"
+        @click="bulkCreateOpen = true"
+      >
+        {{ $t('ایجاد گروهی') }}
+      </UButton>
       <UButton
         to="/seller/deals/new"
         color="primary"
@@ -303,6 +327,11 @@
         </div>
       </template>
     </UModal>
+
+    <TheSellerDealBulkCreate
+      v-model:open="bulkCreateOpen"
+      @created="onBulkCreated"
+    />
   </div>
 </template>
 
@@ -341,6 +370,7 @@ const { search, status, page, pageSize, hasActiveFilters, clearFilters } = useSe
 const loading = ref(true)
 const selectedIds = ref<string[]>([])
 const bulkRunning = ref(false)
+const bulkCreateOpen = ref(false)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerAmazingDeal | null>(null)
 const deleting = ref(false)
@@ -401,6 +431,10 @@ async function loadList() {
   finally {
     loading.value = false
   }
+}
+
+async function onBulkCreated() {
+  await loadList()
 }
 
 function toggleSelect(id: string, on: boolean) {

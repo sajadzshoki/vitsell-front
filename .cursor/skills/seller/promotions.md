@@ -1,6 +1,6 @@
 ---
 name: seller-promotions
-description: Discount codes and content promos admin UI for digishop seller panel.
+description: Discount codes and content promos admin UI for vitsell seller panel.
 ---
 
 # Seller — تخفیف و پروموشن (مرجع)

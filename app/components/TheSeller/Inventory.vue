@@ -15,26 +15,40 @@
         :count-label="!loading ? `${inventoryMeta.total.toLocaleString('fa-IR')} ${$t('ردیف')}` : undefined"
       >
         <template #actions>
-          <UButton
-            to="/seller/inventory/movements"
-            color="neutral"
-            variant="soft"
-            size="sm"
-            icon="i-tabler-arrows-exchange"
-            class="cursor-pointer"
-          >
-            {{ $t('گردش موجودی') }}
-          </UButton>
-          <UButton
-            to="/seller/warehouses"
-            color="neutral"
-            variant="soft"
-            size="sm"
-            icon="i-tabler-building-warehouse"
-            class="cursor-pointer"
-          >
-            {{ $t('انبارها') }}
-          </UButton>
+          <div class="flex items-center gap-2 flex-wrap">
+            <UButton
+              v-if="can('inventory.update')"
+              type="button"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-file-import"
+              class="cursor-pointer"
+              @click="importOpen = true"
+            >
+              {{ $t('ورود داده') }}
+            </UButton>
+            <UButton
+              to="/seller/inventory/movements"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-arrows-exchange"
+              class="cursor-pointer"
+            >
+              {{ $t('گردش موجودی') }}
+            </UButton>
+            <UButton
+              to="/seller/warehouses"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-building-warehouse"
+              class="cursor-pointer"
+            >
+              {{ $t('انبارها') }}
+            </UButton>
+          </div>
         </template>
       </TheSellerPageHeader>
     </div>
@@ -272,6 +286,12 @@
       :total="inventoryMeta.total"
       :page-size-options="[15, 30, 50, 100]"
     />
+
+    <TheSellerCsvImportPanel
+      v-model:open="importOpen"
+      entity="inventory"
+      create-permission="inventory.update"
+    />
   </div>
 </template>
 
@@ -299,6 +319,7 @@ const { search, status, page, pageSize, hasActiveFilters, clearFilters, patchQue
 
 const route = useRoute()
 const loading = ref(true)
+const importOpen = ref(false)
 const savingId = ref<string | null>(null)
 const stockDrafts = ref<Record<string, number>>({})
 

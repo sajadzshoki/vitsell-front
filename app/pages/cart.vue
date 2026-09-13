@@ -118,6 +118,7 @@
 
 <script setup lang="ts">
 import { checkoutSteps } from '~/data/checkout'
+import { formatPrice } from '~/data/products'
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -134,7 +135,10 @@ const {
   clearDiscount,
   hydrateShop,
   isLoggedIn,
+  requireAuth,
 } = useShop()
+const { site, currencyLabel, fetchSite } = useSiteSettings()
+await fetchSite()
 
 if (import.meta.client && isLoggedIn.value) {
   await Promise.all([hydrateShop(), store.fetchAddresses()])
@@ -168,6 +172,21 @@ const crumbs = computed(() =>
 
 async function onNext() {
   if (!canProceed.value) return
+
+  if (step.value === 0) {
+    if (site.value.guestCheckoutEnabled === false && !requireAuth()) {
+      toast.error(t('برای ادامه خرید وارد شوید'))
+      return
+    }
+    const minOrder = Number(site.value.minOrderAmount) || 0
+    if (minOrder > 0 && cartSubtotal.value < minOrder) {
+      toast.error(
+        `${t('حداقل مبلغ سفارش')} ${formatPrice(minOrder)} ${currencyLabel.value}`,
+      )
+      return
+    }
+  }
+
   if (step.value < 4) {
     store.nextStep()
     return

@@ -170,13 +170,13 @@
           {{ $t('ادمین‌ها') }}
         </UButton>
         <UButton
-          to="/seller/imports"
+          to="/seller/products"
           color="neutral"
           variant="soft"
-          icon="i-tabler-file-import"
+          icon="i-tabler-package"
           class="cursor-pointer"
         >
-          {{ $t('ورود داده') }}
+          {{ $t('محصولات') }}
         </UButton>
       </div>
     </template>

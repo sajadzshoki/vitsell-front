@@ -1,6 +1,6 @@
 ---
 name: seller-banners
-description: Banner CRUD rules for the digishop seller (admin) panel.
+description: Banner CRUD rules for the vitsell seller (admin) panel.
 ---
 
 # Seller — Banners CRUD (مرجع)

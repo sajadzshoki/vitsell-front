@@ -44,6 +44,15 @@ function toSettings(raw: any): SellerPlatformSettings {
     shippingMethodsVisible: Boolean(
       src.shippingMethodsVisible ?? defaultPlatformSettings.shippingMethodsVisible,
     ),
+    onlinePaymentEnabled: Boolean(
+      src.onlinePaymentEnabled ?? defaultPlatformSettings.onlinePaymentEnabled,
+    ),
+    codPaymentEnabled: Boolean(
+      src.codPaymentEnabled ?? defaultPlatformSettings.codPaymentEnabled,
+    ),
+    installmentPaymentEnabled: Boolean(
+      src.installmentPaymentEnabled ?? defaultPlatformSettings.installmentPaymentEnabled,
+    ),
     outOfStockBehavior:
       src.outOfStockBehavior === 'hide'
       || src.outOfStockBehavior === 'allow_backorder'
@@ -117,7 +126,14 @@ export function useSellerPlatformSettings() {
   ) {
     pending.value = true
     try {
-      const payload = toSettings({ ...settings.value, ...patch })
+      const merged = toSettings({ ...settings.value, ...patch })
+      // Explicit null so bodyparser/vine keep clear intent for image fields
+      const payload = {
+        ...merged,
+        logoUrl: merged.logoUrl.trim() ? merged.logoUrl.trim() : null,
+        faviconUrl: merged.faviconUrl.trim() ? merged.faviconUrl.trim() : null,
+        defaultOgImage: merged.defaultOgImage.trim() ? merged.defaultOgImage.trim() : null,
+      }
       const { result, error } = await usePut<SellerPlatformSettings>('/seller/settings', payload, {
         headers: { 'no-error': true },
       })

@@ -318,7 +318,26 @@ const seededProducts: Product[] = catalogSeeds.map((seed) => ({
 
 export const products: Product[] = [...featuredProducts, ...seededProducts]
 
-export const formatPrice = (n: number) => n.toLocaleString('fa-IR')
+export const formatPrice = (n: number) => {
+  let locale = 'fa-IR'
+  try {
+    locale = useState<string>('platform-number-format', () => 'fa-IR').value || 'fa-IR'
+  }
+  catch {
+    // outside Nuxt request context
+  }
+  return n.toLocaleString(locale)
+}
+
+/** Storefront currency label from platform settings (fallback: تومان). */
+export const getCurrencyLabel = () => {
+  try {
+    return useState<string>('platform-currency-label', () => 'تومان').value || 'تومان'
+  }
+  catch {
+    return 'تومان'
+  }
+}
 
 export const dealsOfTheDay = products.filter(p => p.oldPrice).slice(0, 6)
 

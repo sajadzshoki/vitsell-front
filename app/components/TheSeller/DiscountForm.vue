@@ -91,24 +91,22 @@
           :help="$t('خالی = بدون سقف')"
         />
 
-        <TheFormInput
-          v-model="form.startsAt"
-          type="datetime-local"
-          :label="$t('شروع')"
-          dir="ltr"
-          :error="errors.startsAt"
-          :help="$t('اختیاری')"
-          icon="i-tabler-calendar-event"
+        <TheIRDatePicker
+          :model-value="form.startsAt || null"
+          type="datetime"
+          :header="$t('شروع')"
+          :placeholder="$t('انتخاب تاریخ')"
+          :validation="Boolean(errors.startsAt)"
+          @update:model-value="form.startsAt = $event || ''"
         />
 
-        <TheFormInput
-          v-model="form.endsAt"
-          type="datetime-local"
-          :label="$t('پایان')"
-          dir="ltr"
-          :error="errors.endsAt"
-          :help="$t('اختیاری')"
-          icon="i-tabler-calendar-due"
+        <TheIRDatePicker
+          :model-value="form.endsAt || null"
+          type="datetime"
+          :header="$t('پایان')"
+          :placeholder="$t('انتخاب تاریخ')"
+          :validation="Boolean(errors.endsAt)"
+          @update:model-value="form.endsAt = $event || ''"
         />
 
         <TheFormInput

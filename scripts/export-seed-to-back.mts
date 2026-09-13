@@ -47,7 +47,7 @@ const productMockQuestions = extractExportArray(productDetailSrc, 'productMockQu
 const staticSrc = readFileSync('./app/data/static-pages.ts', 'utf8')
 const blogPosts = extractExportArray(staticSrc, 'blogPosts')
 
-const outDir = 'D:/digishop-back/database/seed_data'
+const outDir = 'D:/vitsell-back/database/seed_data'
 mkdirSync(outDir, { recursive: true })
 
 function write(name: string, data: unknown) {

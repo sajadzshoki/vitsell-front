@@ -1,9 +1,9 @@
 ---
 name: nuxt-ui
-description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, i18n, RTL, and app.config.ts defaults. Use when creating or editing pages, layouts, Vue components, styles, or any UI in this project. Also covers digi-clone as the UX/feature reference for digishop.
+description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, i18n, RTL, and app.config.ts defaults. Use when creating or editing pages, layouts, Vue components, styles, or any UI in this project. Also covers digi-clone as the UX/feature reference for vitsell.
 ---
 
-# Nuxt UI — digishop
+# Nuxt UI — vitsell
 
 قبل از نوشتن یا تغییر UI این فایل را رعایت کن.
 
@@ -12,13 +12,13 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 مسیر مرجع: `C:\Users\Sajad-Vista\WebstormProjects\digi-clone`
 
 - digi-clone رفرنس دقیق **صفحات، فیچرها، جریان UX، چیدمان و سلسله‌مراتب بصری** است.
-- digishop همان محصول را می‌سازد، ولی باید **تمیزتر، مرتب‌تر، بهینه‌تر، کامپوننت‌بندی‌شده‌تر و کاملاً داینامیک** باشد تا به پروژه واقعی تبدیل شود.
+- vitsell همان محصول را می‌سازد، ولی باید **تمیزتر، مرتب‌تر، بهینه‌تر، کامپوننت‌بندی‌شده‌تر و کاملاً داینامیک** باشد تا به پروژه واقعی تبدیل شود.
 - کپی کور Tailwind کلاس‌های digi-clone (مثل `bg-white`, `text-slate-*`, `bg-rose-*`) ممنوع است؛ معادل semantic Nuxt UI را بزن.
-- برند digi-clone قرمز/rose است؛ برند digishop **teal** است. هر جایی که در digi-clone accent قرمز دیده می‌شود، در digishop از `primary` (teal) استفاده کن. تخفیف/خطا همچنان `error` بماند.
+- برند digi-clone قرمز/rose است؛ برند vitsell **teal** است. هر جایی که در digi-clone accent قرمز دیده می‌شود، در vitsell از `primary` (teal) استفاده کن. تخفیف/خطا همچنان `error` بماند.
 
 ### نقشه صفحات و فیچر (از digi-clone)
 
-| صفحه / فیچر | مرجع digi-clone | هدف digishop |
+| صفحه / فیچر | مرجع digi-clone | هدف vitsell |
 |---|---|---|
 | خانه | `src/pages/Home.tsx` | هیرو، دسته‌ها، پیشنهاد روز، پرفروش، جدید — همه از داده داینامیک |
 | جزئیات محصول | `src/pages/ProductDetail.tsx` | گالری، رنگ، مشخصات، قیمت، افزودن به سبد |
@@ -33,7 +33,7 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 
 کامپوننت‌های دامنه مرجع: `ProductCard`, `ProductGrid`, `HeroCarousel`, `FilterSidebar`.
 
-## کیفیت digishop (اجباری)
+## کیفیت vitsell (اجباری)
 
 - داده و منطق را از UI جدا کن (`data/`, composable، store). کارت/صفحه mock سخت‌کد نگیرد مگر برای placeholder موقت.
 - کامپوننت‌های دامنه زیر `The*`؛ کنترل‌های عمومی = Nuxt UI.
@@ -53,7 +53,7 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 
 منبع حقیقت:
 
-| نقش | فایل | مقدار فعلی digishop |
+| نقش | فایل | مقدار فعلی vitsell |
 |---|---|---|
 | alias رنگ‌ها | `app/app.config.ts` → `ui.colors` | `primary: teal`, `secondary: cyan`, `success: green`, `info: sky`, `warning: amber`, `error: rose`, `neutral: slate` |
 | توکن light/dark | `app/assets/css/main.css` | `--ui-*` از `--ui-color-*` |
@@ -84,9 +84,9 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 
 روی کامپوننت‌های Nuxt UI از propهای `color` و `variant` استفاده کن (`primary`, `neutral`, `error`, …) نه کلاس رنگ خام.
 
-معادل‌های رایج digi-clone → digishop:
+معادل‌های رایج digi-clone → vitsell:
 
-| digi-clone | digishop |
+| digi-clone | vitsell |
 |---|---|
 | `bg-white` / `text-slate-900` | `bg-default` / `text-highlighted` |
 | `text-slate-800` / `700` | `text-default` / `text-toned` |

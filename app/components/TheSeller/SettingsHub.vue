@@ -333,6 +333,32 @@
         v-else-if="activeTab === 'payments'"
         class="space-y-4"
       >
+        <div class="bg-muted border border-muted rounded-2xl p-4 space-y-3">
+          <div class="font-medium text-highlighted">
+            {{ $t('روش‌های پرداخت در فروشگاه') }}
+          </div>
+          <p class="text-[11px] text-muted leading-5">
+            {{ $t('روش‌های فعال در مرحله پرداخت سبد خرید نمایش داده می‌شوند.') }}
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <UCheckbox
+              v-model="platform.onlinePaymentEnabled"
+              :label="$t('پرداخت آنلاین')"
+              :disabled="!canSave"
+            />
+            <UCheckbox
+              v-model="platform.codPaymentEnabled"
+              :label="$t('پرداخت در محل')"
+              :disabled="!canSave"
+            />
+            <UCheckbox
+              v-model="platform.installmentPaymentEnabled"
+              :label="$t('پرداخت اقساطی')"
+              :disabled="!canSave"
+            />
+          </div>
+        </div>
+
         <div
           v-if="systemPending"
           class="py-8 grid place-items-center"
@@ -717,33 +743,37 @@ const prefTabs: PlatformSettingsTabId[] = [
   'commerce',
   'orders',
   'shipping',
+  'payments',
   'notifications',
   'branding',
   'contact',
 ]
 const isPrefTab = computed(() => prefTabs.includes(activeTab.value))
 const isLinkOnlyTab = computed(() =>
-  ['payments', 'seo', 'footer', 'integrations', 'security'].includes(activeTab.value),
+  ['seo', 'footer', 'integrations', 'security'].includes(activeTab.value),
 )
 
 const shopForm = ref<SellerShop>({ ...shop.value })
 const platform = ref<SellerPlatformSettings>({ ...settings.value })
-const snapshot = ref(serialize())
-
-watch(shop, (v) => {
-  shopForm.value = { ...v }
-  snapshot.value = serialize()
-})
-watch(settings, (v) => {
-  platform.value = { ...v }
-  snapshot.value = serialize()
-})
 
 function serialize() {
   return JSON.stringify({ shop: shopForm.value, platform: platform.value })
 }
 
+const snapshot = ref(serialize())
 const dirty = computed(() => serialize() !== snapshot.value)
+
+watch(shop, (v) => {
+  if (dirty.value) return
+  shopForm.value = { ...v }
+  snapshot.value = serialize()
+})
+watch(settings, (v) => {
+  // Don't clobber in-progress edits (e.g. cleared logo before save)
+  if (dirty.value) return
+  platform.value = { ...v }
+  snapshot.value = serialize()
+})
 
 const localeItems = [
   { value: 'fa', label: t('فارسی') },
@@ -916,6 +946,21 @@ async function onSave() {
       supportEmail: platform.value.supportEmail,
       address: platform.value.address,
       workingHours: platform.value.workingHours,
+      defaultLocale: platform.value.defaultLocale,
+      currencyLabel: platform.value.currencyLabel,
+      dateFormatHint: platform.value.dateFormatHint,
+      numberFormatHint: platform.value.numberFormatHint,
+      timezone: platform.value.timezone,
+      minOrderAmount: platform.value.minOrderAmount,
+      guestCheckoutEnabled: platform.value.guestCheckoutEnabled,
+      outOfStockBehavior: platform.value.outOfStockBehavior,
+      taxDisplay: platform.value.taxDisplay,
+      freeShippingThreshold: platform.value.freeShippingThreshold,
+      deliveryEstimateText: platform.value.deliveryEstimateText,
+      shippingMethodsVisible: platform.value.shippingMethodsVisible,
+      onlinePaymentEnabled: platform.value.onlinePaymentEnabled,
+      codPaymentEnabled: platform.value.codPaymentEnabled,
+      installmentPaymentEnabled: platform.value.installmentPaymentEnabled,
     })
     try {
       await fetchFooter({ force: true, admin: true })

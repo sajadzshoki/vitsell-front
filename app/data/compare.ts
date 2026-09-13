@@ -108,7 +108,7 @@ export const radarCriteriaByCategory: Record<string, string[]> = {
   beauty: ['کیفیت', 'پایداری', 'بسته‌بندی', 'ارزش خرید'],
 }
 
-/** Chart series colors aligned with digishop brand tokens */
+/** Chart series colors aligned with vitsell brand tokens */
 export const radarChartColors = ['#2563EB', '#111827', '#16a34a', '#f59e0b'] as const
 
 export function radarCriteriaFor(categories: string[]): string[] {

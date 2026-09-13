@@ -60,14 +60,13 @@
           />
         </UFormField>
 
-        <TheFormInput
-          v-model="form.scheduledAt"
-          type="datetime-local"
-          :label="$t('زمان‌بندی ارسال')"
-          dir="ltr"
-          icon="i-tabler-calendar-time"
-          :help="$t('خالی = ارسال فوری')"
-          :error="errors.scheduledAt"
+        <TheIRDatePicker
+          :model-value="form.scheduledAt || null"
+          type="datetime"
+          :header="$t('زمان‌بندی ارسال')"
+          :placeholder="$t('خالی = ارسال فوری')"
+          :validation="Boolean(errors.scheduledAt)"
+          @update:model-value="form.scheduledAt = $event || ''"
         />
 
         <TheFormInput

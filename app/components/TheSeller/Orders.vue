@@ -118,18 +118,16 @@
         digits-only
         @update:model-value="filters.setFilter('amountMax', $event || null)"
       />
-      <TheFormInput
-        :model-value="String(filters.values.dateFrom || '')"
-        :label="$t('از تاریخ')"
-        type="date"
-        dir="ltr"
+      <TheIRDatePicker
+        :model-value="(filters.values.dateFrom as string) || null"
+        :header="$t('از تاریخ')"
+        :placeholder="$t('انتخاب تاریخ')"
         @update:model-value="filters.setFilter('dateFrom', $event || null)"
       />
-      <TheFormInput
-        :model-value="String(filters.values.dateTo || '')"
-        :label="$t('تا تاریخ')"
-        type="date"
-        dir="ltr"
+      <TheIRDatePicker
+        :model-value="(filters.values.dateTo as string) || null"
+        :header="$t('تا تاریخ')"
+        :placeholder="$t('انتخاب تاریخ')"
         @update:model-value="filters.setFilter('dateTo', $event || null)"
       />
       <div class="flex flex-col gap-2 justify-end">

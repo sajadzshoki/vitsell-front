@@ -1,6 +1,6 @@
 ---
 name: seller-categories
-description: Detailed category CRUD rules for the digishop seller (admin) panel.
+description: Detailed category CRUD rules for the vitsell seller (admin) panel.
 ---
 
 # Seller — Categories CRUD (مرجع)

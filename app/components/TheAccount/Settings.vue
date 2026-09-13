@@ -61,7 +61,7 @@
     <footer class="text-center py-8 lg:py-10">
       <div class="inline-flex items-center gap-2 text-primary font-bold text-lg mb-1">
         <UIcon name="i-tabler-shopping-bag" class="size-6" />
-        <span>{{ $t('دیجی‌شاپ') }}</span>
+        <span>{{ $t('ویتسل') }}</span>
       </div>
       <div class="text-[11px] text-dimmed num">
         {{ $t('نسخه') }} {{ appVersion }}

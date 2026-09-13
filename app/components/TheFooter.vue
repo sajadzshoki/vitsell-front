@@ -350,7 +350,7 @@ const hasContact = computed(() =>
 const siteName = computed(() =>
   site.value.brandName?.trim()
   || site.value.name?.trim()
-  || t('دیجی‌شاپ'),
+  || t('ویتسل'),
 )
 
 const aboutSegments = computed(() => {

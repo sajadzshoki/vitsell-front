@@ -47,8 +47,6 @@ export type SellerTabId =
   | 'system'
   | 'navigation'
   | 'mega_menu'
-  | 'imports'
-  | 'exports'
 
 export type SellerNavItem = {
   id: SellerTabId
@@ -228,6 +226,23 @@ export type SellerShop = {
   supportEmail?: string
   address?: string
   workingHours?: string
+  /** Localization (platform settings) */
+  defaultLocale?: string
+  currencyLabel?: string
+  dateFormatHint?: string
+  numberFormatHint?: string
+  timezone?: string
+  /** Commerce (platform settings) */
+  minOrderAmount?: number
+  guestCheckoutEnabled?: boolean
+  outOfStockBehavior?: 'hide' | 'show_unavailable' | 'allow_backorder'
+  taxDisplay?: 'inclusive' | 'exclusive' | 'none'
+  freeShippingThreshold?: number
+  deliveryEstimateText?: string
+  shippingMethodsVisible?: boolean
+  onlinePaymentEnabled?: boolean
+  codPaymentEnabled?: boolean
+  installmentPaymentEnabled?: boolean
 }
 
 export type SellerSalesPoint = {
@@ -255,13 +270,13 @@ export function toSellerSalesPoint(raw: Partial<SellerSalesPoint>): SellerSalesP
 }
 
 export const defaultSellerShop: SellerShop = {
-  name: 'دیجی‌شاپ',
-  slug: 'digishop',
+  name: 'ویتسل',
+  slug: 'vitsell',
   phone: '',
-  email: 'info@digishop.ir',
+  email: 'info@vitsell.ir',
   city: 'تهران',
   about:
-    'دیجی‌شاپ بزرگ‌ترین فروشگاه اینترنتی محصولات دیجیتال با گارانتی اصالت کالا و ارسال سریع به سراسر ایران.',
+    'ویتسل بزرگ‌ترین فروشگاه اینترنتی محصولات دیجیتال با گارانتی اصالت کالا و ارسال سریع به سراسر ایران.',
   rating: 0,
   reviewCount: 0,
   joinDate: '',
@@ -356,8 +371,6 @@ export const sellerNavGroups: SellerNavGroup[] = [
       // { id: 'permissions', label: 'کاتالوگ دسترسی‌ها', icon: 'i-tabler-key', to: '/seller/roles/permissions' },
       { id: 'audit', label: 'لاگ حسابرسی', icon: 'i-tabler-clipboard-list', to: '/seller/audit' },
       { id: 'activity', label: 'لاگ فعالیت', icon: 'i-tabler-history', to: '/seller/activity' },
-      { id: 'imports', label: 'مرکز ورود داده', icon: 'i-tabler-file-import', to: '/seller/imports' },
-      { id: 'exports', label: 'مرکز خروجی', icon: 'i-tabler-file-export', to: '/seller/exports' },
     ],
   },
   {

@@ -6,9 +6,13 @@
           <div class="flex items-center gap-2 text-xs text-toned">
             <span
               class="size-2 rounded-full shrink-0"
-              :class="outOfStock ? 'bg-error' : 'bg-success'"
+              :class="outOfStock && !allowBackorder ? 'bg-error' : allowBackorder && outOfStock ? 'bg-warning' : 'bg-success'"
             />
-            {{ outOfStock ? $t('ناموجود') : $t('موجود در انبار') }}
+            {{ outOfStock && !allowBackorder
+              ? $t('ناموجود')
+              : allowBackorder && outOfStock
+                ? $t('قابل سفارش (پیش‌فروش)')
+                : $t('موجود در انبار') }}
           </div>
         </div>
         <div class="flex flex-col gap-1">
@@ -32,26 +36,25 @@
             <span class="text-2xl font-black text-highlighted num">
               {{ formatPrice(product.price) }}
             </span>
-            <span class="text-xs text-muted">{{ $t('تومان') }}</span>
+            <span class="text-xs text-muted">{{ currencyLabel }}</span>
           </div>
         </div>
       </div>
 
-      <template v-if="outOfStock">
+      <template v-if="outOfStock && !allowBackorder">
         <UButton
           type="button"
-          :color="subscribed ? 'neutral' : 'primary'"
-          :variant="subscribed ? 'soft' : 'solid'"
+          color="primary"
           size="xl"
           block
           class="mb-1 font-bold"
-          :icon="subscribed ? 'i-tabler-bell-check' : 'i-tabler-bell'"
-          @click="onNotify"
+          icon="i-tabler-phone-call"
+          @click="onConsult"
         >
-          {{ subscribed ? $t('اطلاع‌رسانی فعال شد') : $t('موجود شد بهم اطلاع بده') }}
+          {{ $t('دریافت مشاوره') }}
         </UButton>
       </template>
-      <template v-else>
+      <template v-else-if="canPurchase">
         <div
           v-if="qty > 0"
           class="flex items-center justify-between bg-default rounded-xl p-2 mb-3 border border-primary shadow-md shadow-primary/10"
@@ -166,9 +169,7 @@
 
     <TheProductMobileBuyBar
       :product="product"
-      :subscribed="subscribed"
       @add="onAdd"
-      @notify="onNotify"
     />
   </div>
 </template>
@@ -183,15 +184,29 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useToast()
 const { addToCart, getCartQty, updateQty } = useShop()
+const { currencyLabel, site, fetchSite } = useSiteSettings()
+await fetchSite()
 const compareStore = useCompareStore()
 const { toggleCompare } = useCompareActions()
-const { requireAuth } = useProductDetail(() => props.product)
 
-const stockNotifyById = useState<Record<string, boolean>>('product-stock-notify', () => ({}))
-
-const buyNotes = computed(() => props.product.buyNotes ?? [])
+const buyNotes = computed(() => {
+  const notes = [...(props.product.buyNotes ?? [])]
+  const eta = site.value.deliveryEstimateText?.trim()
+  if (eta && !notes.some(n => n.text.includes(eta))) {
+    notes.unshift({ icon: 'truck-delivery', text: eta })
+  }
+  return notes
+})
 const outOfStock = computed(() => props.product.inStock === false)
-const subscribed = computed(() => !!stockNotifyById.value[props.product.id])
+const allowBackorder = computed(() => site.value.outOfStockBehavior === 'allow_backorder')
+const canPurchase = computed(() => !outOfStock.value || allowBackorder.value)
+
+const supportTelHref = computed(() => {
+  const raw = site.value.supportPhone?.trim() || site.value.phone?.trim() || ''
+  if (!raw) return undefined
+  const digits = raw.replace(/\D/g, '')
+  return `tel:${digits || raw}`
+})
 
 const qty = computed(() => getCartQty(props.product.id))
 const inCompare = computed(() => compareStore.isInCompare(props.product.id))
@@ -232,26 +247,16 @@ function onAdd() {
   notifyAdded()
 }
 
-function onNotify() {
-  if (!outOfStock.value) return
-  if (!requireAuth()) return
-  if (subscribed.value) {
+function onConsult() {
+  if (!supportTelHref.value) {
     toast.add({
-      title: t('اطلاع‌رسانی از قبل فعال است'),
-      color: 'info',
-      icon: 'i-tabler-bell-check',
+      title: t('شماره پشتیبانی تنظیم نشده است'),
+      color: 'warning',
+      icon: 'i-tabler-phone-off',
     })
     return
   }
-  stockNotifyById.value = {
-    ...stockNotifyById.value,
-    [props.product.id]: true,
-  }
-  toast.add({
-    title: t('به محض موجود شدن خبرتان می‌کنیم'),
-    color: 'success',
-    icon: 'i-tabler-bell-ringing',
-  })
+  window.location.href = supportTelHref.value
 }
 
 function onToggleCompare() {

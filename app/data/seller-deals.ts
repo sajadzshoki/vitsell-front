@@ -160,9 +160,10 @@ export function applyDealOverlay(
   }
 }
 
+/** ISO string for TheIRDatePicker (compat name kept from datetime-local era). */
 export function toDatetimeLocalValue(date: Date) {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString()
 }
 
 export function fromDatetimeLocalValue(value: string) {

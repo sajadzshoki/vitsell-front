@@ -1,6 +1,6 @@
 # Admin Phase 5 — Marketing, Promotions, Discounts, Banners & Notifications
 
-Frontend-first Marketing & Merchandising for the digishop seller panel.
+Frontend-first Marketing & Merchandising for the vitsell seller panel.
 
 ## Mapping
 

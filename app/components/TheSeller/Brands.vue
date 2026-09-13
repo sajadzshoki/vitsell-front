@@ -9,6 +9,18 @@
         <template #actions>
           <div class="flex items-center gap-2 flex-wrap">
             <UButton
+              v-if="can('brands.create')"
+              type="button"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-file-import"
+              class="cursor-pointer"
+              @click="importOpen = true"
+            >
+              {{ $t('ورود داده') }}
+            </UButton>
+            <UButton
               v-if="can('brands.view')"
               type="button"
               color="neutral"
@@ -322,6 +334,12 @@
         </div>
       </template>
     </UModal>
+
+    <TheSellerCsvImportPanel
+      v-model:open="importOpen"
+      entity="brands"
+      create-permission="brands.create"
+    />
   </div>
 </template>
 
@@ -354,6 +372,7 @@ function openBrandStorefront(brand: SellerBrand) {
 }
 
 const loading = ref(true)
+const importOpen = ref(false)
 const deleteOpen = ref(false)
 const pendingDelete = ref<SellerBrand | null>(null)
 const deleting = ref(false)

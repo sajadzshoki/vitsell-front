@@ -1,6 +1,6 @@
 ---
 name: seller-finance
-description: Financial administration for the digishop seller (admin) panel — single-vendor, not marketplace.
+description: Financial administration for the vitsell seller (admin) panel — single-vendor, not marketplace.
 ---
 
 # Seller — Finance (مرجع)

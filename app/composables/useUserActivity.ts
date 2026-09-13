@@ -21,7 +21,7 @@ type RecommendationsPayload = {
   categories: string[]
 }
 
-const STORAGE_KEY = 'digishop-user-activity'
+const STORAGE_KEY = 'vitsell-user-activity'
 const MAX_LOCAL_EVENTS = 120
 
 const EVENT_WEIGHTS: Record<ActivityEventType, number> = {

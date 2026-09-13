@@ -207,7 +207,7 @@ import {
   type StaticBlogPost,
 } from '~/data/static-pages'
 
-const BOOKMARK_KEY = 'digishop-blog-bookmarks'
+const BOOKMARK_KEY = 'vitsell-blog-bookmarks'
 
 const props = defineProps<{
   post: StaticBlogPost

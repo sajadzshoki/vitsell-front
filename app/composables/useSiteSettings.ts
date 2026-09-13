@@ -1,10 +1,27 @@
 import type { SellerShop } from '~/data/seller'
 import { defaultSellerShop } from '~/data/seller'
+import { defaultPlatformSettings } from '~/data/seller-platform-settings'
 
 export type SiteSettings = SellerShop
 
+function syncPlatformPrefs(site: SiteSettings) {
+  try {
+    useState('platform-currency-label', () => defaultPlatformSettings.currencyLabel).value =
+      site.currencyLabel || defaultPlatformSettings.currencyLabel
+    useState('platform-number-format', () => defaultPlatformSettings.numberFormatHint).value =
+      site.numberFormatHint || defaultPlatformSettings.numberFormatHint
+    useState('platform-default-locale', () => defaultPlatformSettings.defaultLocale).value =
+      site.defaultLocale || defaultPlatformSettings.defaultLocale
+  }
+  catch {
+    // outside Nuxt context
+  }
+}
+
 function normalizeSite(raw: Partial<SiteSettings> | null | undefined): SiteSettings {
-  return {
+  const stock = String(raw?.outOfStockBehavior || '')
+  const tax = String(raw?.taxDisplay || '')
+  const next: SiteSettings = {
     ...defaultSellerShop,
     ...(raw && typeof raw === 'object' ? raw : {}),
     name: String(raw?.name ?? defaultSellerShop.name),
@@ -26,7 +43,32 @@ function normalizeSite(raw: Partial<SiteSettings> | null | undefined): SiteSetti
     supportEmail: String(raw?.supportEmail ?? ''),
     address: String(raw?.address ?? ''),
     workingHours: String(raw?.workingHours ?? ''),
+    defaultLocale: String(raw?.defaultLocale ?? defaultPlatformSettings.defaultLocale),
+    currencyLabel: String(raw?.currencyLabel ?? defaultPlatformSettings.currencyLabel),
+    dateFormatHint: String(raw?.dateFormatHint ?? defaultPlatformSettings.dateFormatHint),
+    numberFormatHint: String(raw?.numberFormatHint ?? defaultPlatformSettings.numberFormatHint),
+    timezone: String(raw?.timezone ?? defaultPlatformSettings.timezone),
+    minOrderAmount: Math.max(0, Number(raw?.minOrderAmount) || 0),
+    guestCheckoutEnabled: raw?.guestCheckoutEnabled !== false,
+    outOfStockBehavior:
+      stock === 'hide' || stock === 'allow_backorder' || stock === 'show_unavailable'
+        ? stock
+        : defaultPlatformSettings.outOfStockBehavior,
+    taxDisplay:
+      tax === 'inclusive' || tax === 'exclusive' || tax === 'none'
+        ? tax
+        : defaultPlatformSettings.taxDisplay,
+    freeShippingThreshold: Math.max(0, Number(raw?.freeShippingThreshold) || 0),
+    deliveryEstimateText: String(
+      raw?.deliveryEstimateText ?? defaultPlatformSettings.deliveryEstimateText,
+    ),
+    shippingMethodsVisible: raw?.shippingMethodsVisible !== false,
+    onlinePaymentEnabled: raw?.onlinePaymentEnabled !== false,
+    codPaymentEnabled: raw?.codPaymentEnabled !== false,
+    installmentPaymentEnabled: raw?.installmentPaymentEnabled !== false,
   }
+  syncPlatformPrefs(next)
+  return next
 }
 
 export function useSiteSettings() {
@@ -43,7 +85,9 @@ export function useSiteSettings() {
         headers: { 'no-error': true },
       })
       if (error || !result) {
-        if (!loaded.value) site.value = { ...defaultSellerShop }
+        if (!loaded.value) {
+          site.value = normalizeSite(defaultSellerShop)
+        }
         return site.value
       }
       site.value = normalizeSite(result)
@@ -61,10 +105,15 @@ export function useSiteSettings() {
     return site.value
   }
 
+  const currencyLabel = computed(
+    () => site.value.currencyLabel || defaultPlatformSettings.currencyLabel,
+  )
+
   return {
     site,
     loaded,
     pending,
+    currencyLabel,
     fetchSite,
     applySite,
   }

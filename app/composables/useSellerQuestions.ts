@@ -255,7 +255,7 @@ export function useSellerQuestions() {
     return items.value.find(q => q.id === id)
   }
 
-  async function replyToQuestion(id: string, text: string, author = 'کارشناس دیجی‌شاپ') {
+  async function replyToQuestion(id: string, text: string, author = 'کارشناس ویتسل') {
     const trimmed = text.trim()
     if (!trimmed) {
       return { ok: false as const, error: 'متن پاسخ خالی است' }

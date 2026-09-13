@@ -12,6 +12,9 @@ import {
 import type { ShopOrder } from '~/data/account'
 
 export const useCheckoutStore = defineStore('checkout', () => {
+  const { site } = useSiteSettings()
+  const { cartSubtotal } = useShop()
+
   const step = ref<CheckoutStepId>(0)
   const addresses = ref<CheckoutAddress[]>([])
   const selectedAddressId = ref('')
@@ -32,11 +35,40 @@ export const useCheckoutStore = defineStore('checkout', () => {
     checkoutShippingOptions.find(o => o.id === shippingMethod.value),
   )
 
-  const paymentOption = computed(() =>
-    checkoutPaymentOptions.find(o => o.id === paymentMethod.value),
+  const paymentOptions = computed(() =>
+    checkoutPaymentOptions.filter((option) => {
+      if (option.id === 'online') return site.value.onlinePaymentEnabled !== false
+      if (option.id === 'cod') return site.value.codPaymentEnabled !== false
+      if (option.id === 'installment') return site.value.installmentPaymentEnabled !== false
+      return true
+    }),
   )
 
-  const shippingCost = computed(() => shippingOption.value?.price ?? 0)
+  const paymentOption = computed(() =>
+    paymentOptions.value.find(o => o.id === paymentMethod.value),
+  )
+
+  watch(
+    paymentOptions,
+    (options) => {
+      if (!options.length) return
+      if (!options.some(o => o.id === paymentMethod.value)) {
+        paymentMethod.value = options[0]!.id
+      }
+    },
+    { immediate: true },
+  )
+
+  const shippingCost = computed(() => {
+    const base = shippingOption.value?.price ?? 0
+    if (!base || shippingMethod.value === 'pickup') return 0
+    const threshold = Number(site.value.freeShippingThreshold) || 0
+    if (threshold > 0 && cartSubtotal.value >= threshold) {
+      if (shippingMethod.value === 'express') return Math.min(base, 45_000)
+      return 0
+    }
+    return base
+  })
 
   async function fetchAddresses() {
     const { result, error } = await useGet<CheckoutAddress[]>('/account/addresses', {
@@ -68,7 +100,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
     if (step.value === 0) return cartHasItems
     if (step.value === 1) return !!selectedAddressId.value
     if (step.value === 2) return !!shippingMethod.value
-    if (step.value === 3) return !!paymentMethod.value
+    if (step.value === 3) return !!paymentMethod.value && paymentOptions.value.length > 0
     return true
   }
 
@@ -207,6 +239,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
     addressesLoaded,
     selectedAddress,
     shippingOption,
+    paymentOptions,
     paymentOption,
     shippingCost,
     fetchAddresses,

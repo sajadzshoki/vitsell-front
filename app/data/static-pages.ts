@@ -177,7 +177,7 @@ export const faqItems: StaticFaqItem[] = [
   {
     categoryId: 'product',
     question: 'چطور از اصل بودن کالا مطمئن شوم؟',
-    answer: 'دیجی‌شاپ فقط از تامین‌کنندگان رسمی خرید می‌کند و کد رجیستری / سریال کالا در فاکتور درج می‌شود.',
+    answer: 'ویتسل فقط از تامین‌کنندگان رسمی خرید می‌کند و کد رجیستری / سریال کالا در فاکتور درج می‌شود.',
   },
 ]
 
@@ -203,7 +203,7 @@ export const blogPosts: StaticBlogPost[] = [
     date: '۱۵ مرداد ۱۴۰۵',
     category: 'راهنمای خرید',
     readTime: '۸ دقیقه',
-    author: 'تیم دیجی‌شاپ',
+    author: 'تیم ویتسل',
     image: '/images/mock/iphone16pro-desert.jpg',
     relatedCategories: ['mobile'],
     content: [
@@ -266,7 +266,7 @@ export const blogPosts: StaticBlogPost[] = [
     date: '۲۵ تیر ۱۴۰۵',
     category: 'اخبار',
     readTime: '۴ دقیقه',
-    author: 'تیم دیجی‌شاپ',
+    author: 'تیم ویتسل',
     image: '/images/mock/hero-tech-ecosystem.jpg',
     relatedCategories: [],
     content: [
@@ -282,7 +282,7 @@ export const blogPosts: StaticBlogPost[] = [
     date: '۱۸ تیر ۱۴۰۵',
     category: 'راهنمای خرید',
     readTime: '۷ دقیقه',
-    author: 'تیم دیجی‌شاپ',
+    author: 'تیم ویتسل',
     image: '/images/mock/sony-xm5-midnight.jpg',
     relatedCategories: ['audio'],
     content: [
@@ -324,7 +324,7 @@ export const blogPosts: StaticBlogPost[] = [
     date: '۲ تیر ۱۴۰۵',
     category: 'بررسی محصول',
     readTime: '۹ دقیقه',
-    author: 'تیم دیجی‌شاپ',
+    author: 'تیم ویتسل',
     image: '/images/mock/ps5-pro.jpg',
     relatedCategories: ['gaming'],
     content: [
@@ -414,7 +414,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
   about: {
     id: 'about',
     path: staticPagePaths.about,
-    title: 'درباره دیجی‌شاپ',
+    title: 'درباره ویتسل',
     subtitle: 'بزرگ‌ترین فروشگاه اینترنتی محصولات دیجیتال',
     icon: 'i-tabler-building-store',
     sections: [
@@ -430,7 +430,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
       {
         type: 'paragraphs',
         items: [
-          'دیجی‌شاپ از سال ۱۳۹۵ با هدف ارائه تجربه‌ای مطمئن، سریع و شفاف در خرید آنلاین محصولات دیجیتال فعالیت خود را آغاز کرد. امروز هزاران محصول اصل از برندهای معتبر در اختیار مشتریان سراسر کشور قرار دارد.',
+          'ویتسل از سال ۱۳۹۵ با هدف ارائه تجربه‌ای مطمئن، سریع و شفاف در خرید آنلاین محصولات دیجیتال فعالیت خود را آغاز کرد. امروز هزاران محصول اصل از برندهای معتبر در اختیار مشتریان سراسر کشور قرار دارد.',
           'ما با تمرکز بر اصالت کالا، پشتیبانی پاسخ‌گو و لجستیک بهینه، تلاش می‌کنیم هر سفارش در کوتاه‌ترین زمان و با بالاترین کیفیت به دست شما برسد.',
         ],
       },
@@ -458,7 +458,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
         type: 'contact-block',
         items: [
           { icon: 'i-tabler-phone', label: 'تلفن پشتیبانی', value: '۰۲۱-۶۱۹۳۰۰۰۰', href: 'tel:02161930000' },
-          { icon: 'i-tabler-mail', label: 'ایمیل', value: 'support@digishop.ir', href: 'mailto:support@digishop.ir' },
+          { icon: 'i-tabler-mail', label: 'ایمیل', value: 'support@vitsell.ir', href: 'mailto:support@vitsell.ir' },
           { icon: 'i-tabler-map-pin', label: 'آدرس', value: 'تهران، خیابان ولیعصر، بالاتر از پارک ساعی' },
           { icon: 'i-tabler-clock', label: 'ساعات پاسخگویی', value: 'هر روز ۹:۰۰ تا ۲۱:۰۰' },
         ],
@@ -476,13 +476,13 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
     id: 'careers',
     path: staticPagePaths.careers,
     title: 'فرصت‌های شغلی',
-    subtitle: 'به تیم دیجی‌شاپ بپیوندید',
+    subtitle: 'به تیم ویتسل بپیوندید',
     icon: 'i-tabler-briefcase',
     sections: [
       {
         type: 'paragraphs',
         items: [
-          'در دیجی‌شاپ به دنبال افراد مشتاق، یادگیرنده و مسئولیت‌پذیر هستیم. اگر به دنیای تجارت الکترونیک و فناوری علاقه دارید، موقعیت‌های زیر را بررسی کنید.',
+          'در ویتسل به دنبال افراد مشتاق، یادگیرنده و مسئولیت‌پذیر هستیم. اگر به دنیای تجارت الکترونیک و فناوری علاقه دارید، موقعیت‌های زیر را بررسی کنید.',
         ],
       },
       {
@@ -521,7 +521,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
       {
         type: 'paragraphs',
         items: [
-          'رزومه خود را به careers@digishop.ir ارسال کنید و عنوان موقعیت شغلی را در موضوع ایمیل ذکر نمایید.',
+          'رزومه خود را به careers@vitsell.ir ارسال کنید و عنوان موقعیت شغلی را در موضوع ایمیل ذکر نمایید.',
         ],
       },
     ],
@@ -530,7 +530,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
   blog: {
     id: 'blog',
     path: staticPagePaths.blog,
-    title: 'بلاگ دیجی‌شاپ',
+    title: 'بلاگ ویتسل',
     subtitle: 'راهنما، بررسی و اخبار دنیای تکنولوژی',
     icon: 'i-tabler-news',
     sections: [
@@ -566,7 +566,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
       {
         type: 'paragraphs',
         items: [
-          'مشتریان دیجی‌شاپ می‌توانند تا ۷ روز پس از دریافت کالا، در صورت عدم رضایت یا مغایرت، درخواست مرجوعی ثبت کنند.',
+          'مشتریان ویتسل می‌توانند تا ۷ روز پس از دریافت کالا، در صورت عدم رضایت یا مغایرت، درخواست مرجوعی ثبت کنند.',
         ],
       },
       {
@@ -596,13 +596,13 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
     id: 'terms',
     path: staticPagePaths.terms,
     title: 'شرایط استفاده',
-    subtitle: 'قوانین و مقررات استفاده از دیجی‌شاپ',
+    subtitle: 'قوانین و مقررات استفاده از ویتسل',
     icon: 'i-tabler-file-text',
     sections: [
       {
         type: 'paragraphs',
         items: [
-          'استفاده از وب‌سایت و خدمات دیجی‌شاپ به منزله پذیرش شرایط زیر است. لطفاً پیش از ثبت سفارش این موارد را مطالعه کنید.',
+          'استفاده از وب‌سایت و خدمات ویتسل به منزله پذیرش شرایط زیر است. لطفاً پیش از ثبت سفارش این موارد را مطالعه کنید.',
         ],
       },
       {
@@ -616,7 +616,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
       },
       {
         type: 'list',
-        title: 'تعهدات دیجی‌شاپ',
+        title: 'تعهدات ویتسل',
         items: [
           'ارائه اطلاعات دقیق محصولات و قیمت‌ها',
           'ارسال کالای سالم و مطابق با سفارش',
@@ -626,7 +626,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
       {
         type: 'paragraphs',
         items: [
-          'دیجی‌شاپ حق تغییر قیمت‌ها و شرایط فروش را بدون اطلاع قبلی برای سفارش‌های جدید محفوظ می‌دارد. سفارش‌های ثبت‌شده طبق شرایط زمان ثبت پردازش می‌شوند.',
+          'ویتسل حق تغییر قیمت‌ها و شرایط فروش را بدون اطلاع قبلی برای سفارش‌های جدید محفوظ می‌دارد. سفارش‌های ثبت‌شده طبق شرایط زمان ثبت پردازش می‌شوند.',
         ],
       },
     ],
@@ -642,7 +642,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
       {
         type: 'paragraphs',
         items: [
-          'دیجی‌شاپ به حفظ حریم خصوصی کاربران متعهد است. اطلاعات شخصی شما صرفاً برای ارائه خدمات، پردازش سفارش و بهبود تجربه خرید استفاده می‌شود.',
+          'ویتسل به حفظ حریم خصوصی کاربران متعهد است. اطلاعات شخصی شما صرفاً برای ارائه خدمات، پردازش سفارش و بهبود تجربه خرید استفاده می‌شود.',
         ],
       },
       {
@@ -676,7 +676,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
     id: 'guide-order',
     path: staticPagePaths['guide-order'],
     title: 'نحوه ثبت سفارش',
-    subtitle: 'راهنمای گام‌به‌گام خرید از دیجی‌شاپ',
+    subtitle: 'راهنمای گام‌به‌گام خرید از ویتسل',
     icon: 'i-tabler-shopping-cart',
     sections: [
       {
@@ -752,7 +752,7 @@ export const staticPages: Record<StaticPageId, StaticPage> = {
       {
         type: 'paragraphs',
         items: [
-          'تمامی پرداخت‌های آنلاین از درگاه امن بانکی انجام می‌شود و دیجی‌شاپ اطلاعات کارت شما را ذخیره نمی‌کند.',
+          'تمامی پرداخت‌های آنلاین از درگاه امن بانکی انجام می‌شود و ویتسل اطلاعات کارت شما را ذخیره نمی‌کند.',
           'در صورت ناموفق بودن تراکنش، مبلغ حداکثر تا ۷۲ ساعت به حساب شما بازمی‌گردد.',
         ],
       },

@@ -51,7 +51,7 @@
           v-model="value"
           :editable="true"
           :format="type === 'time' ? 'HH.mm' : 'YYYY-MM-DDTHH:mm:ssZ'"
-          display-format="jYYYY-jMM-jDD HH:mm"
+          :display-format="type === 'datetime' ? 'jYYYY-jMM-jDD HH:mm' : type === 'time' ? 'HH:mm' : 'jYYYY-jMM-jDD'"
           :locale="locale"
           :range="range"
           auto-submit
@@ -109,6 +109,9 @@ const inputId = `ir-date-${useId().replace(/:/g, '')}`
 const displayValue = computed(() => {
   if (!value.value || props.range) return ''
   if (props.type === 'time') return String(value.value).replace('.', ':')
+  if (props.type === 'datetime') {
+    return moment(value.value).locale(props.locale).format('jYYYY/jMM/jDD HH:mm')
+  }
   return moment(value.value).locale(props.locale).format('jYYYY/jMM/jDD')
 })
 

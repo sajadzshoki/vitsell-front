@@ -3,17 +3,16 @@
     class="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-muted bg-default/95 backdrop-blur-md px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_24px_-8px] shadow-inverted/10"
   >
     <div class="flex items-center justify-between gap-3 max-w-8xl mx-auto">
-      <template v-if="outOfStock">
+      <template v-if="outOfStock && !allowBackorder">
         <UButton
           type="button"
-          :color="subscribed ? 'neutral' : 'primary'"
-          :variant="subscribed ? 'soft' : 'solid'"
+          color="primary"
           size="xl"
           class="flex-1 font-bold h-12 rounded-xl"
-          :icon="subscribed ? 'i-tabler-bell-check' : 'i-tabler-bell'"
-          @click="emit('notify')"
+          icon="i-tabler-phone-call"
+          @click="onConsult"
         >
-          {{ subscribed ? $t('اطلاع‌رسانی فعال شد') : $t('موجود شد بهم اطلاع بده') }}
+          {{ $t('دریافت مشاوره') }}
         </UButton>
       </template>
       <template v-else-if="qty > 0">
@@ -76,7 +75,7 @@
           <span class="text-lg font-black text-highlighted num">
             {{ formatPrice(product.price) }}
           </span>
-          <span class="text-[11px] text-muted">{{ $t('تومان') }}</span>
+          <span class="text-[11px] text-muted">{{ currencyLabel }}</span>
         </div>
       </div>
     </div>
@@ -86,26 +85,45 @@
 <script setup lang="ts">
 import { formatPrice, type Product } from '~/data/products'
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   product: Product
-  subscribed?: boolean
-}>(), {
-  subscribed: false,
-})
+}>()
 
 const emit = defineEmits<{
   add: []
-  notify: []
 }>()
 
+const { t } = useI18n()
+const toast = useToast()
 const { getCartQty, updateQty } = useShop()
+const { currencyLabel, site } = useSiteSettings()
 
 const qty = computed(() => getCartQty(props.product.id))
 const outOfStock = computed(() => props.product.inStock === false)
+const allowBackorder = computed(() => site.value.outOfStockBehavior === 'allow_backorder')
+
+const supportTelHref = computed(() => {
+  const raw = site.value.supportPhone?.trim() || site.value.phone?.trim() || ''
+  if (!raw) return undefined
+  const digits = raw.replace(/\D/g, '')
+  return `tel:${digits || raw}`
+})
 
 const discount = computed(() => {
   const { oldPrice, price } = props.product
   if (!oldPrice) return 0
   return Math.round(((oldPrice - price) / oldPrice) * 100)
 })
+
+function onConsult() {
+  if (!supportTelHref.value) {
+    toast.add({
+      title: t('شماره پشتیبانی تنظیم نشده است'),
+      color: 'warning',
+      icon: 'i-tabler-phone-off',
+    })
+    return
+  }
+  window.location.href = supportTelHref.value
+}
 </script>

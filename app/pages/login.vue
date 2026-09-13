@@ -5,13 +5,13 @@
       <NuxtLink
         to="/"
         class="size-14 rounded-2xl bg-primary grid place-items-center text-inverted shadow-lg shadow-primary/20 transition-all  hover:brightness-110"
-        :aria-label="$t('دیجی‌شاپ')"
+        :aria-label="$t('ویتسل')"
       >
         <UIcon name="i-tabler-shopping-bag" class="size-7" />
       </NuxtLink>
       <div>
         <h1 class="text-2xl font-extrabold text-highlighted tracking-tight">
-          {{ $t('دیجی‌شاپ') }}
+          {{ $t('ویتسل') }}
         </h1>
         <p class="mt-1 text-sm text-muted">
           {{ subtitle }}
@@ -443,7 +443,7 @@ const devCode = ref<string | null>(null)
 const subtitle = computed(() => {
   if (isAdminApp) {
     if (step.value === 'password') return t('ورود مدیر سایت')
-    return t('پنل مدیریت دیجی‌شاپ')
+    return t('پنل مدیریت ویتسل')
   }
   if (step.value === 'password') return t('ورود با رمز عبور')
   if (step.value === 'otp' && otpPurpose.value === 'reset') return t('بازیابی رمز عبور')
@@ -714,7 +714,7 @@ async function submitOtp() {
     clearTimer()
     toast.success(
       t('ورود موفق'),
-      t('به دیجی‌شاپ خوش آمدید'),
+      t('به ویتسل خوش آمدید'),
       'i-tabler-check',
     )
     await navigateTo(redirectAfterLogin())
@@ -747,7 +747,7 @@ async function submitPasswordLogin() {
     await login(result.token, result.profile)
     toast.success(
       t('ورود موفق'),
-      t('به دیجی‌شاپ خوش آمدید'),
+      t('به ویتسل خوش آمدید'),
       'i-tabler-check',
     )
     await navigateTo(redirectAfterLogin())

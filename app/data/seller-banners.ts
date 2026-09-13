@@ -115,7 +115,7 @@ export const bannerIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 function categoryIdFromLink(link: string): string | null {
   try {
-    const url = new URL(link, 'https://digishop.local')
+    const url = new URL(link, 'https://vitsell.local')
     const category = url.searchParams.get('category')?.trim()
     return category || null
   }
@@ -264,8 +264,8 @@ export function toBannerForm(banner: SellerBanner): SellerBannerFormValues {
     placement: banner.placement ?? defaultPlacementForType(banner.type),
     categoryId: banner.categoryId || '__none__',
     active: banner.active,
-    startsAt: banner.startsAt ? banner.startsAt.slice(0, 16) : '',
-    endsAt: banner.endsAt ? banner.endsAt.slice(0, 16) : '',
+    startsAt: banner.startsAt || '',
+    endsAt: banner.endsAt || '',
     sortOrder: banner.sortOrder ?? 0,
     priority: banner.priority ?? 100,
   }

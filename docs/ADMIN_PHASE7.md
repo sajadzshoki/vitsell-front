@@ -1,6 +1,6 @@
 # Admin Phase 7 — Finance, Payments, Transactions & Settlements
 
-Single-vendor financial administration for digishop seller + storefront integration points.
+Single-vendor financial administration for vitsell seller + storefront integration points.
 
 ## Mapping
 

@@ -247,24 +247,22 @@
           :help="$t('عدد کوچکتر = اولویت بالاتر')"
         />
 
-        <TheFormInput
-          v-model="form.startsAt"
-          type="datetime-local"
-          :label="$t('شروع نمایش')"
-          dir="ltr"
-          icon="i-tabler-calendar"
-          :help="$t('اختیاری')"
-          :error="errors.startsAt"
+        <TheIRDatePicker
+          :model-value="form.startsAt || null"
+          type="datetime"
+          :header="$t('شروع نمایش')"
+          :placeholder="$t('انتخاب تاریخ')"
+          :validation="Boolean(errors.startsAt)"
+          @update:model-value="form.startsAt = $event || ''"
         />
 
-        <TheFormInput
-          v-model="form.endsAt"
-          type="datetime-local"
-          :label="$t('پایان نمایش')"
-          dir="ltr"
-          icon="i-tabler-calendar-off"
-          :help="$t('اختیاری')"
-          :error="errors.endsAt"
+        <TheIRDatePicker
+          :model-value="form.endsAt || null"
+          type="datetime"
+          :header="$t('پایان نمایش')"
+          :placeholder="$t('انتخاب تاریخ')"
+          :validation="Boolean(errors.endsAt)"
+          @update:model-value="form.endsAt = $event || ''"
         />
 
         <div class="flex items-end pb-1">

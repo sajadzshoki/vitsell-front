@@ -1,6 +1,6 @@
 ---
 name: seller-about
-description: About page content editor for the digishop seller (admin) panel.
+description: About page content editor for the vitsell seller (admin) panel.
 ---
 
 # Seller — About page (مرجع)

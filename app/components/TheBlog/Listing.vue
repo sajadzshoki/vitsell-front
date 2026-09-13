@@ -17,7 +17,7 @@
         </nav>
 
         <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-highlighted leading-tight">
-          {{ $t('بلاگ دیجی‌شاپ') }}
+          {{ $t('بلاگ ویتسل') }}
         </h1>
         <p class="text-sm md:text-base text-muted leading-8 max-w-2xl">
           {{ $t('راهنمای خرید، بررسی محصولات و تازه‌ترین اخبار دنیای تکنولوژی؛ هوشمندانه‌تر انتخاب کنید.') }}
@@ -60,7 +60,7 @@
       class="flex flex-col gap-5"
     >
       <h2 class="text-lg md:text-xl font-bold text-highlighted text-start">
-        {{ $t('آخرین‌های دیجی‌شاپ') }}
+        {{ $t('آخرین‌های ویتسل') }}
       </h2>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6">

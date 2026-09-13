@@ -3,6 +3,7 @@ import {
   formToAmazingDealPayload,
   toAmazingDeal,
   type SellerAmazingDeal,
+  type SellerAmazingDealApiPayload,
   type SellerAmazingDealFormValues,
 } from '~/data/seller-deals'
 import { deriveScheduleStatus } from '~/data/seller-marketing-shared'
@@ -231,6 +232,34 @@ export function useSellerDeals() {
     return { ok: true as const, count: okCount }
   }
 
+  async function createBulk(payloadItems: SellerAmazingDealApiPayload[]) {
+    const { result, error } = await usePost<{
+      created: SellerAmazingDeal[]
+      errors: { index: number, productId: string, message: string }[]
+      createdCount: number
+      errorCount: number
+    }>('/seller/deals/bulk', { items: payloadItems }, {
+      headers: { 'no-error': true },
+    })
+    if (error || !result) {
+      return {
+        ok: false as const,
+        error: apiErrorMessage(error, 'ثبت گروهی ناموفق بود'),
+        createdCount: 0,
+        errors: [] as { index: number, productId: string, message: string }[],
+      }
+    }
+    for (const raw of result.created || []) {
+      upsertLocal(toAmazingDeal(raw))
+    }
+    if (result.created?.length) seeded.value = true
+    return {
+      ok: true as const,
+      createdCount: Number(result.createdCount) || (result.created?.length ?? 0),
+      errors: Array.isArray(result.errors) ? result.errors : [],
+    }
+  }
+
   return {
     deals,
     items,
@@ -242,6 +271,7 @@ export function useSellerDeals() {
     fetchDeal,
     getById,
     createDeal,
+    createBulk,
     updateDeal,
     deleteDeal,
     setActive,

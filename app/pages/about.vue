@@ -15,14 +15,14 @@ await ensureLoaded()
 
 useEntitySeo(() => ({
   entity: about.value.seo,
-  fallbackTitle: about.value.title || t('درباره دیجی‌شاپ'),
+  fallbackTitle: about.value.title || t('درباره ویتسل'),
   fallbackDescription: about.value.subtitle || '',
   fallbackImage: about.value.heroImage || '',
   path: '/about',
 }))
 
 useJsonLd(() => organizationJsonLd({
-  name: settings.value.siteName || about.value.title || 'Digishop',
+  name: settings.value.siteName || about.value.title || 'vitsell',
   description: about.value.seo?.metaDescription || about.value.subtitle,
   url: settings.value.siteUrl || undefined,
   logo: about.value.heroImage || settings.value.defaultOgImage || undefined,

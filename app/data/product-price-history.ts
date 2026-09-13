@@ -73,7 +73,7 @@ export function getProductPriceHistory(product: Product, days = 45): ProductPric
       label: toPersianDayLabel(d),
       price: Math.max(Math.round(end * 0.85), price),
       inStock,
-      seller: 'فروشگاه رسمی دیجی‌شاپ',
+      seller: 'فروشگاه رسمی ویتسل',
       warranty: '۱۸ ماه گارانتی اصالت و سلامت فیزیکی',
     })
   }

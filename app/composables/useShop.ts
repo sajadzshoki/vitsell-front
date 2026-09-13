@@ -347,5 +347,6 @@ export function useShop() {
     fetchNotifications,
     hydrateShop,
     ensureCartLoaded,
+    requireAuth,
   }
 }

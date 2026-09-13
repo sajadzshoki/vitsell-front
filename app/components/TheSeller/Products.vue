@@ -8,6 +8,18 @@
         <template #actions>
           <div class="flex items-center gap-2 flex-wrap">
             <UButton
+              v-if="can('products.create')"
+              type="button"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-file-import"
+              class="cursor-pointer"
+              @click="importOpen = true"
+            >
+              {{ $t('ورود داده') }}
+            </UButton>
+            <UButton
               v-if="can('products.view')"
               type="button"
               color="neutral"
@@ -46,6 +58,18 @@
         class="cursor-pointer font-medium"
       >
         {{ $t('افزودن محصول') }}
+      </UButton>
+      <UButton
+        v-if="can('products.create')"
+        type="button"
+        color="neutral"
+        variant="soft"
+        block
+        icon="i-tabler-file-import"
+        class="cursor-pointer"
+        @click="importOpen = true"
+      >
+        {{ $t('ورود داده') }}
       </UButton>
       <UButton
         type="button"
@@ -357,6 +381,12 @@
         </div>
       </template>
     </UModal>
+
+    <TheSellerCsvImportPanel
+      v-model:open="importOpen"
+      entity="products"
+      create-permission="products.create"
+    />
   </div>
 </template>
 
@@ -393,6 +423,7 @@ const filters = useSellerFilters(filterDefs)
 
 const loading = ref(true)
 const exporting = ref(false)
+const importOpen = ref(false)
 const showAdvanced = ref(false)
 const applyingFilters = ref(false)
 const selectedIds = ref<string[]>([])

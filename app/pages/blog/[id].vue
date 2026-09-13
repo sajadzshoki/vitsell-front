@@ -110,7 +110,7 @@ useEntitySeo(() => {
       ogImage: p?.seo?.ogImage || p?.image || '',
       twitterImage: p?.seo?.twitterImage || p?.seo?.ogImage || p?.image || '',
     },
-    fallbackTitle: p?.title ?? t('بلاگ دیجی‌شاپ'),
+    fallbackTitle: p?.title ?? t('بلاگ ویتسل'),
     fallbackDescription: p?.excerpt ?? '',
     fallbackImage: p?.image ?? '',
     path: postPath.value,

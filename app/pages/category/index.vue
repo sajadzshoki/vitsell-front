@@ -19,6 +19,6 @@ await fetchCategories({ withCounts: true })
 
 useSeoMeta({
   title: () => 'دسته‌بندی کالاها',
-  description: () => 'مرور همه دسته‌بندی‌ها و زیردسته‌های دیجی‌شاپ',
+  description: () => 'مرور همه دسته‌بندی‌ها و زیردسته‌های ویتسل',
 })
 </script>

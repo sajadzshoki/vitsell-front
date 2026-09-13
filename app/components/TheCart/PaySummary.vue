@@ -40,7 +40,7 @@
         <span class="text-lg font-black text-highlighted num">
           {{ formatPrice(total) }}
         </span>
-        <span class="text-[10px] text-muted">{{ $t('تومان') }}</span>
+        <span class="text-[10px] text-muted">{{ currencyLabel }}</span>
       </div>
     </div>
 
@@ -59,6 +59,7 @@ import { formatPrice } from '~/data/products'
 
 const store = useCheckoutStore()
 const { shippingCost } = storeToRefs(store)
+const { currencyLabel } = useSiteSettings()
 
 const { cartSubtotal, cartLines, discountAmount } = useShop()
 

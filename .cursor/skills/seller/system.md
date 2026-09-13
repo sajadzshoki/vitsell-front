@@ -1,6 +1,6 @@
 ---
 name: seller-system
-description: Super admin system settings, RBAC, search, import/export for digishop seller panel.
+description: Super admin system settings, RBAC, search, import/export for vitsell seller panel.
 ---
 
 # Seller — System / Super Admin (مرجع)
@@ -23,5 +23,5 @@ description: Super admin system settings, RBAC, search, import/export for digish
 | `/seller/system` | نمای سیستم |
 | `/seller/settings` | هاب تنظیمات |
 | `/seller/navigation` | منوی عمومی |
-| `/seller/imports` / `/exports` | ورود/خروج |
+| `/seller/products` و … | ورود/خروج CSV داخل همان صفحات (مراکز جدا حذف شدند) |
 | Ctrl+K | جستجوی سراسری با RBAC |

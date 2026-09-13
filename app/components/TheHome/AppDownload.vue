@@ -8,7 +8,7 @@
           <UIcon name="i-tabler-shopping-bag" class="size-6 text-inverted" />
         </div>
         <p class="font-bold text-sm md:text-base text-inverted truncate">
-          {{ $t('دانلود اپلیکیشن دیجی‌شاپ') }}
+          {{ $t('دانلود اپلیکیشن ویتسل') }}
         </p>
       </div>
 

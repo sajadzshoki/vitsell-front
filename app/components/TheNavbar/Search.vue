@@ -2,7 +2,7 @@
   <div ref="wrapRef" class="relative flex-1 w-full md:max-w-xl">
     <!-- Border on wrapper so global input{border:none} cannot kill it; flex = icon/text align -->
     <label
-      class="group flex items-center gap-2.5 h-12 w-full ps-4 pe-4 rounded-2xl bg-elevated hover:bg-muted focus-within:bg-default border-2 border-default focus-within:border-primary transition-all  cursor-text"
+      class="group flex items-center gap-2.5 md:h-12 h-10 w-full ps-4 md:pe-4 rounded-xl md:rounded-2xl  bg-elevated hover:bg-muted focus-within:bg-default border-2 border-default focus-within:border-primary transition-all  cursor-text"
     >
       <UIcon
         name="i-tabler-search"
@@ -11,8 +11,8 @@
       <input
         v-model="query"
         type="search"
-        :placeholder="$t('جستجو در دیجی‌شاپ...')"
-        class="flex-1 min-w-0 h-full bg-transparent border-0 text-sm leading-none text-default placeholder:text-dimmed"
+        :placeholder="$t('جستجو در ویتسل...')"
+        class="flex-1 min-w-0 h-full bg-transparent border-0 text-sm leading-none  text-default placeholder:text-dimmed"
         @focus="open = true"
         @keydown.enter="doSearch"
       >
@@ -96,7 +96,7 @@ const query = defineModel<string>({ default: '' })
 
 const open = ref(false)
 const wrapRef = ref<HTMLElement | null>(null)
-const recentSearches = useLocalStorage<string[]>('digishop-recent-searches', [])
+const recentSearches = useLocalStorage<string[]>('vitsell-recent-searches', [])
 const suggestions = ref<Product[]>([])
 const { fetchProducts } = useProducts()
 

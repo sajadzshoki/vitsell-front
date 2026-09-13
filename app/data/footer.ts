@@ -71,7 +71,7 @@ export const footerTrustItems: FooterTrustItem[] = [
 ]
 
 export const footerAbout =
-  'دیجی‌شاپ بزرگ‌ترین فروشگاه اینترنتی محصولات دیجیتال با گارانتی اصالت کالا و ارسال سریع به سراسر ایران.'
+  'ویتسل بزرگ‌ترین فروشگاه اینترنتی محصولات دیجیتال با گارانتی اصالت کالا و ارسال سریع به سراسر ایران.'
 
 export const footerSocials: FooterSocial[] = [
   { id: 'instagram', label: 'اینستاگرام', icon: 'brand-instagram', href: '#' },
@@ -86,8 +86,8 @@ export const footerContact: FooterContact = {
     { label: '۰۲۱-۹۱۰۰۱۲۳۴', href: 'tel:02191001234' },
   ],
   email: {
-    label: 'support@digishop.ir',
-    href: 'mailto:support@digishop.ir',
+    label: 'support@vitsell.ir',
+    href: 'mailto:support@vitsell.ir',
   },
 }
 
@@ -139,11 +139,11 @@ export const footerColumns: FooterColumn[] = [
     id: 'about',
     title: 'درباره ما',
     links: [
-      { label: 'درباره دیجی‌شاپ', to: staticPagePaths.about },
+      { label: 'درباره ویتسل', to: staticPagePaths.about },
       { label: 'فرصت‌های شغلی', to: staticPagePaths.careers },
       { label: 'پاسخ به سوالات متداول', to: staticPagePaths.faq },
       { label: 'تماس با ما', to: staticPagePaths.contact },
-      { label: 'بلاگ دیجی‌شاپ', to: staticPagePaths.blog },
+      { label: 'بلاگ ویتسل', to: staticPagePaths.blog },
     ],
   },
   {
@@ -175,9 +175,9 @@ export const footerColumns: FooterColumn[] = [
       { label: 'شرایط استفاده', to: staticPagePaths.terms },
       { label: 'حریم خصوصی', to: staticPagePaths.privacy },
       { label: 'قوانین مرجوعی', to: staticPagePaths.returns },
-      { label: 'چرا دیجی‌شاپ؟', to: staticPagePaths.about },
+      { label: 'چرا ویتسل؟', to: staticPagePaths.about },
     ],
   },
 ]
 
-export const footerCopyright = '© ۱۴۰۵ فروشگاه اینترنتی دیجی‌شاپ. تمامی حقوق محفوظ است.'
+export const footerCopyright = '© ۱۴۰۵ فروشگاه اینترنتی ویتسل. تمامی حقوق محفوظ است.'

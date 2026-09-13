@@ -1,5 +1,8 @@
 <template>
-  <Html dir="rtl">
+  <Html
+    :dir="htmlDir"
+    :lang="htmlLang"
+  >
   <Body>
   <NuxtLoadingIndicator/>
   <UApp
@@ -22,6 +25,11 @@ import { fa_ir } from '@nuxt/ui/locale'
 const network = useNetwork()
 const appConfig = useAppConfig()
 const route = useRoute()
+const { site, fetchSite } = useSiteSettings()
+await fetchSite()
+
+const htmlLang = computed(() => site.value.defaultLocale || 'fa')
+const htmlDir = computed(() => (site.value.defaultLocale === 'en' ? 'ltr' : 'rtl'))
 
 const toaster = computed(() => {
   const isProductPage = /^\/product\//.test(route.path)

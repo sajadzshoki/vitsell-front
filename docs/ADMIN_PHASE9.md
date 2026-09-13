@@ -1,6 +1,6 @@
 # Admin Phase 9 — Production Readiness
 
-Frontend QA / UX polish / security boundaries for the digishop Super Admin panel (`/seller`). No architecture rewrite; no new feature dump.
+Frontend QA / UX polish / security boundaries for the vitsell Super Admin panel (`/seller`). No architecture rewrite; no new feature dump.
 
 ## Status
 

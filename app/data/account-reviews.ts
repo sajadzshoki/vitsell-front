@@ -71,7 +71,7 @@ export const defaultMyReviews: AccountMyReview[] = [
       },
       {
         id: 'arr-2',
-        author: 'پشتیبانی دیجی‌شاپ',
+        author: 'پشتیبانی ویتسل',
         date: '۱۴۰۳/۰۹/۱۴',
         text: 'اگر سوالی درباره گارانتی داشتید، از طریق تیکت با ما در ارتباط باشید.',
         role: 'support',
@@ -138,7 +138,7 @@ export const defaultMyQuestions: AccountMyQuestion[] = [
     question: 'آیا این محصول دارای گارانتی رسمی است؟',
     verified: true,
     answer: {
-      author: 'کارشناس دیجی‌شاپ',
+      author: 'کارشناس ویتسل',
       date: '۱۴۰۳/۰۹/۱۵',
       text: 'بله، این محصول دارای ۱۸ ماه گارانتی رسمی شرکتی است و کارت گارانتی در بسته‌بندی قرار دارد.',
       role: 'support',
@@ -164,7 +164,7 @@ export const defaultMyQuestions: AccountMyQuestion[] = [
     question: 'باتری در حالت GPS فعال چند ساعت دوام می‌آورد؟',
     verified: true,
     answer: {
-      author: 'کارشناس دیجی‌شاپ',
+      author: 'کارشناس ویتسل',
       date: '۱۴۰۳/۰۷/۰۶',
       text: 'در حالت تمرین با GPS حدود ۳۶ ساعت و در حالت کم‌مصرف تا ۷۲ ساعت دوام دارد.',
       role: 'support',

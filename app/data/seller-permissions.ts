@@ -410,11 +410,6 @@ export const sellerPermissionCatalog: SellerPermissionMeta[] = [
   { key: 'mega_menu.create', label: 'ایجاد مگا منو', group: 'system' },
   { key: 'mega_menu.update', label: 'ویرایش مگا منو', group: 'system' },
   { key: 'mega_menu.delete', label: 'حذف مگا منو', group: 'system' },
-  { key: 'imports.view', label: 'مشاهده مرکز ورود', group: 'system' },
-  { key: 'imports.create', label: 'ایجاد ورود داده', group: 'system' },
-  { key: 'imports.manage', label: 'مدیریت ورود داده', group: 'system', expandsTo: ['imports.view', 'imports.create'] },
-  { key: 'exports.view', label: 'مشاهده مرکز خروجی', group: 'system' },
-  { key: 'exports.create', label: 'ایجاد خروجی', group: 'system' },
 ]
 
 const catalogByKey = Object.fromEntries(
@@ -483,8 +478,6 @@ export const sellerNavPermissionMap: Record<string, SellerPermission> = {
   system: 'system.view',
   navigation: 'navigation.view',
   mega_menu: 'mega_menu.view',
-  imports: 'imports.view',
-  exports: 'exports.view',
   permissions: 'permissions.view',
   seo: 'seo.view',
   account: 'dashboard.view',
@@ -531,8 +524,6 @@ export const sellerRoutePermissionMap: { prefix: string, permission: SellerPermi
   { prefix: '/seller/settings', permission: 'settings.view' },
   { prefix: '/seller/navigation', permission: 'navigation.view' },
   { prefix: '/seller/mega-menus', permission: 'mega_menu.view' },
-  { prefix: '/seller/imports', permission: 'imports.view' },
-  { prefix: '/seller/exports', permission: 'exports.view' },
   { prefix: '/seller/roles/permissions', permission: 'permissions.view' },
   { prefix: '/seller/activity', permission: 'activity.view' },
   { prefix: '/seller/shop', permission: 'settings.view' },
@@ -676,6 +667,36 @@ export function setHasPermission(set: Set<SellerPermission>, permission: SellerP
   // coupons ↔ promotions (codes live under promotions)
   if (permission.startsWith('coupons.') && set.has(permission.replace('coupons.', 'promotions.') as SellerPermission)) return true
   if (permission.startsWith('promotions.') && set.has(permission.replace('promotions.', 'coupons.') as SellerPermission)) return true
+  // Legacy import/export hubs → section permissions
+  if (permission === 'imports.view' || permission === 'imports.create' || permission === 'imports.manage') {
+    if (
+      setHasPermission(set, 'products.create')
+      || setHasPermission(set, 'categories.create')
+      || setHasPermission(set, 'brands.create')
+      || setHasPermission(set, 'inventory.update')
+    ) return true
+  }
+  if (permission === 'exports.view' || permission === 'exports.create') {
+    if (
+      setHasPermission(set, 'products.view')
+      || setHasPermission(set, 'orders.view')
+      || setHasPermission(set, 'orders.export')
+      || setHasPermission(set, 'customers.view')
+      || setHasPermission(set, 'customers.export')
+    ) return true
+  }
+  // Reverse: legacy hub grants on related section actions
+  if (
+    (permission === 'products.create'
+      || permission === 'categories.create'
+      || permission === 'brands.create'
+      || permission === 'inventory.update')
+    && (set.has('imports.create') || set.has('imports.manage') || set.has('imports.view'))
+  ) return true
+  if (
+    (permission === 'orders.export' || permission === 'customers.export')
+    && (set.has('exports.create') || set.has('exports.view'))
+  ) return true
   // admin_users.* ↔ admins.*
   if (permission.startsWith('admin_users.')) {
     const mapped = permission.replace('admin_users.', 'admins.') as SellerPermission

@@ -12,8 +12,8 @@ export type SellerSeoSiteSettings = {
 
 export function defaultSeoSiteSettings(): SellerSeoSiteSettings {
   return {
-    siteName: 'Digishop',
-    siteUrl: 'https://digishop.local',
+    siteName: 'vitsell',
+    siteUrl: 'https://vitsell.local',
     titlePattern: '{title} | {site}',
     defaultRobots: 'index,follow',
     defaultOgImage: '',

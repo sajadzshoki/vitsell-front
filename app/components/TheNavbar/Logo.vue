@@ -51,7 +51,7 @@ await fetchSite()
 const siteName = computed(() =>
   site.value.brandName?.trim()
   || site.value.name?.trim()
-  || t('دیجی‌شاپ'),
+  || t('ویتسل'),
 )
 const logoUrl = computed(() => site.value.logoUrl?.trim() || '')
 const tagline = computed(() => t('فروشگاه پرمیوم'))

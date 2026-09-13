@@ -4,8 +4,8 @@
 
 | خروجی | دامنه نمونه | دستور | کوکی |
 |--------|-------------|--------|------|
-| فروشگاه | `https://digishop.ir` | `npm run build:store` / `npm run generate:store` | `token` |
-| پنل ادمین | `https://admin.digishop.ir` | `npm run build:admin` / `npm run generate:admin` | `admin_token` |
+| فروشگاه | `https://vitsell.ir` | `npm run build:store` / `npm run generate:store` | `token` |
+| پنل ادمین | `https://admin.vitsell.ir` | `npm run build:admin` / `npm run generate:admin` | `admin_token` |
 
 ## لوکال
 

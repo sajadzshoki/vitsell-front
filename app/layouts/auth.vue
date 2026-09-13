@@ -14,7 +14,7 @@
     </main>
 
     <footer class="relative z-10 px-4 pb-6 text-center text-xs text-dimmed sm:px-6">
-      {{ $t('تمامی حقوق برای دیجی‌شاپ محفوظ است') }}
+      {{ $t('تمامی حقوق برای ویتسل محفوظ است') }}
     </footer>
   </div>
 </template>

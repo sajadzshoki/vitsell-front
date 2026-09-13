@@ -1,9 +1,9 @@
 ---
-description: After every UI task, run this digishop layout/RTL/align QA checklist before finishing.
+description: After every UI task, run this vitsell layout/RTL/align QA checklist before finishing.
 alwaysApply: true
 ---
 
-# UI parity QA (digishop)
+# UI parity QA (vitsell)
 
 بعد از هر تسک UI، قبل از اعلام اتمام، این چک را خودت انجام بده. منتظر گزارش کاربر نمان.
 
@@ -11,7 +11,7 @@ alwaysApply: true
 
 - Skill: `.cursor/skills/nuxt-ui/SKILL.md`
 - **Nuxt UI v4 فقط** (`@nuxt/ui` در package.json؛ docs = https://ui.nuxt.com) — نه v3 / `ui3.nuxt.com`
-- رنگ‌ها فقط semantic Nuxt UI؛ برند digishop = `primary` → `brand` (`#2563EB`، ثابت در لایت/دارک)؛ سطوح = `neutral: gray` (نه slate آبی)
+- رنگ‌ها فقط semantic Nuxt UI؛ برند vitsell = `primary` → `brand` (`#2563EB`، ثابت در لایت/دارک)؛ سطوح = `neutral: gray` (نه slate آبی)
 
 ## چک‌لیست اجباری
 

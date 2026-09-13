@@ -92,9 +92,16 @@
         <span class="text-xl font-black text-highlighted num">
           {{ formatPrice(total) }}
         </span>
-        <span class="text-xs text-muted">{{ $t('تومان') }}</span>
+        <span class="text-xs text-muted">{{ currencyLabel }}</span>
       </div>
     </div>
+
+    <p
+      v-if="taxHint"
+      class="text-[11px] text-dimmed text-center"
+    >
+      {{ taxHint }}
+    </p>
 
     <div class="hidden md:block">
       <UButton
@@ -126,8 +133,10 @@
 <script setup lang="ts">
 import { formatPrice } from '~/data/products'
 
+const { t } = useI18n()
 const store = useCheckoutStore()
 const { shippingCost } = storeToRefs(store)
+const { currencyLabel, site } = useSiteSettings()
 
 const {
   cartSubtotal,
@@ -146,6 +155,12 @@ const itemCount = computed(() => cartLines.value.length)
 const total = computed(() =>
   Math.max(0, cartSubtotal.value - discountAmount.value + shippingCost.value),
 )
+
+const taxHint = computed(() => {
+  if (site.value.taxDisplay === 'exclusive') return t('مالیات در قیمت لحاظ نشده است')
+  if (site.value.taxDisplay === 'none') return t('بدون مالیات')
+  return ''
+})
 
 function onApply() {
   if (!code.value.trim()) return

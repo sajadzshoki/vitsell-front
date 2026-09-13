@@ -1,6 +1,6 @@
 ---
 name: seller-blog
-description: Blog CRUD rules for the digishop seller (admin) panel.
+description: Blog CRUD rules for the vitsell seller (admin) panel.
 ---
 
 # Seller — Blog CRUD (مرجع)

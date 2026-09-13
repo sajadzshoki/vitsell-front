@@ -110,15 +110,14 @@
           />
         </UFormField>
 
-        <TheFormInput
+        <TheIRDatePicker
           v-if="form.status === 'scheduled'"
-          v-model="form.scheduledAt"
-          type="datetime-local"
-          :label="$t('زمان‌بندی انتشار')"
-          dir="ltr"
-          :error="errors.scheduledAt"
-          icon="i-tabler-calendar-time"
-          required
+          :model-value="form.scheduledAt || null"
+          type="datetime"
+          :header="$t('زمان‌بندی انتشار')"
+          :placeholder="$t('انتخاب تاریخ')"
+          :validation="Boolean(errors.scheduledAt)"
+          @update:model-value="form.scheduledAt = $event || ''"
         />
 
         <TheFormInput

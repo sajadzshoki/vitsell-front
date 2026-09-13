@@ -1,6 +1,6 @@
 ---
 name: seller-deals
-description: Amazing deals (شگفت‌انگیز) CRUD for the digishop seller admin panel.
+description: Amazing deals (شگفت‌انگیز) CRUD for the vitsell seller admin panel.
 ---
 
 # Seller — شگفت‌انگیزها (مرجع)
@@ -34,8 +34,9 @@ CRUD فرانت: `app/composables/useSellerDeals.ts`
 
 ## UI
 
-- لیست: تصویر محصول، درصد، بازه، وضعیت، قیمت قبل/بعد
-- فرم: select جستجوپذیر محصول، درصد، datetime-local شروع/پایان، چک‌باکس فعال
+- لیست: تصویر محصول، درصد، بازه، وضعیت، قیمت قبل/بعد؛ bulk فعال/غیرفعال
+- فرم تکی: select جستجوپذیر محصول، درصد، `TheIRDatePicker` شروع/پایان، چک‌باکس فعال
+- **ایجاد گروهی:** مودال — انتخاب چند محصول با درصد/بازه مشترک، یا آپلود CSV (`productId,discountPercent,startsAt,endsAt,active`)
 - seed اولیه از محصولات دارای `oldPrice`
 
 ## بک‌اند
@@ -43,6 +44,7 @@ CRUD فرانت: `app/composables/useSellerDeals.ts`
 | Method | Path |
 |--------|------|
 | `GET\|POST` | `/seller/deals` |
+| `POST` | `/seller/deals/bulk` |
 | `GET\|PUT\|DELETE` | `/seller/deals/:id` |
 | `PATCH` | `/seller/deals/:id/active` |
 

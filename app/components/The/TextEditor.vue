@@ -114,7 +114,7 @@
             required
             dir="ltr"
             icon="i-tabler-link"
-            :help="$t('مثال: https://digishop.ir/blog/guide یا /search/category-mobile')"
+            :help="$t('مثال: https://vitsell.ir/blog/guide یا /search/category-mobile')"
             @keydown.enter.prevent="confirmLink"
           />
         </div>

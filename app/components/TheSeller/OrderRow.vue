@@ -56,11 +56,11 @@
               v-if="item.product?.image"
               :src="item.product.image"
               :alt="item.product.title"
-              class="size-12 rounded-xl border-2 border-default object-cover bg-default"
+              class="size-12 rounded-xl border-1 border-default object-cover bg-default"
             >
             <div
               v-else
-              class="size-12 rounded-xl border-2 border-default bg-elevated grid place-items-center"
+              class="size-12 rounded-xl border-1 border-default bg-elevated grid place-items-center"
             >
               <TheIcon
                 icon-type="img"

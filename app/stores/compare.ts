@@ -1,7 +1,7 @@
 import { COMPARE_MAX } from '~/data/compare'
 import type { Product } from '~/data/products'
 
-const STORAGE_KEY = 'digishop-compare'
+const STORAGE_KEY = 'vitsell-compare'
 
 function readStoredIds(): string[] {
   if (!import.meta.client) return []

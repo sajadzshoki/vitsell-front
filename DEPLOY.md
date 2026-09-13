@@ -1,12 +1,12 @@
-# Digishop — راهنمای دیپلوی (Frontend + Backend)
+# vitsell — راهنمای دیپلوی (Frontend + Backend)
 
 این سند برای استقرار **production** نوشته شده است.  
 ریپوها:
 
 | بخش | مسیر | استک |
 |-----|------|------|
-| Backend API | `digishop-back` | AdonisJS 7 + Lucid + PostgreSQL |
-| Frontend | `digishop` | Nuxt 4 (SPA, `ssr: false`) + Nuxt UI 4 |
+| Backend API | `vitsell-back` | AdonisJS 7 + Lucid + PostgreSQL |
+| Frontend | `vitsell` | Nuxt 4 (SPA, `ssr: false`) + Nuxt UI 4 |
 
 API prefix: `/api/v1`
 
@@ -46,7 +46,7 @@ Browser
 
 ---
 
-## ۱) Backend (`digishop-back`)
+## ۱) Backend (`vitsell-back`)
 
 ### ۱.۱ متغیرهای محیطی Production
 
@@ -69,13 +69,13 @@ SESSION_DRIVER=cookie
 
 DB_HOST=<postgres-host>
 DB_PORT=5432
-DB_USER=digishop
+DB_USER=vitsell
 DB_PASSWORD=<strong-password>
-DB_DATABASE=digishop
+DB_DATABASE=vitsell
 
 # OTP — اجباری در production
 KAVENEGAR_API_KEY=<real-key>
-KAVENEGAR_OTP_TEMPLATE=digishop-verify
+KAVENEGAR_OTP_TEMPLATE=vitsell-verify
 ALLOW_OTP_MOCK=false
 
 # Payment — اجباری در production
@@ -90,13 +90,13 @@ ALLOW_PAYMENT_MOCK=false
 ### ۱.۲ دیپلوی بدون Docker (پیشنهادی برای VPS)
 
 ```bash
-cd digishop-back
+cd vitsell-back
 cp .env.example .env   # سپس مقادیر production را تنظیم کنید
 npm ci
 
-# مایگریشن + seed (فقط اولین بار / وقتی لازم است)
+# مایگریشن (seed خودکار نیست — فقط دستی در صورت نیاز)
 node ace migration:run
-node ace db:seed
+# node ace db:seed
 
 # build
 npm run build
@@ -110,7 +110,7 @@ node bin/server.js
 با PM2:
 
 ```bash
-pm2 start build/bin/server.js --name digishop-api
+pm2 start build/bin/server.js --name vitsell-api
 pm2 save
 ```
 
@@ -118,7 +118,7 @@ Health check سریع:
 
 ```bash
 curl -s https://api.example.com/
-# {"name":"digishop-api","version":"1"}
+# {"name":"vitsell-api","version":"1"}
 ```
 
 ### ۱.۳ دیپلوی با Docker Compose
@@ -140,7 +140,7 @@ node bin/server.js   # از داخل پوشه build، یا بعد از copy arti
 لوکال با Compose فعلی (dev):
 
 ```bash
-cd digishop-back
+cd vitsell-back
 docker compose up -d --build
 # Postgres روی host: 5433 → container: 5432
 # API: http://localhost:3333
@@ -181,16 +181,16 @@ VALUES ('09XXXXXXXXX', 'admin', '<bcrypt-hash>', NOW(), NOW());
 
 ---
 
-## ۲) Frontend (`digishop`)
+## ۲) Frontend (`vitsell`)
 
 ### ۲.۱ متغیر محیطی
 
 فقط این برای اتصال به API لازم است:
 
 ```env
-NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1
-NUXT_PUBLIC_STORE_URL=https://digishop.vistatest.top
-NUXT_PUBLIC_ADMIN_URL=https://digishop-admin.vistatest.top
+NUXT_PUBLIC_API_BASE=https://vitsell-back.vistatest.top/api/v1
+NUXT_PUBLIC_STORE_URL=https://vitsell.vistatest.top
+NUXT_PUBLIC_ADMIN_URL=https://vitsell-admin.vistatest.top
 ```
 
 فایل‌های آماده:
@@ -220,7 +220,7 @@ npm run generate:admin
 چون `ssr: false` است، خروجی عمدتاً SPA است.
 
 ```bash
-cd digishop
+cd vitsell
 npm ci
 # store (سرور)
 npm run build:store:prod
@@ -231,7 +231,7 @@ npm run build:admin:prod
 پیش‌نمایش لوکال:
 
 ```bash
-NUXT_PUBLIC_API_BASE=https://digishop-back.vistatest.top/api/v1 npm run preview
+NUXT_PUBLIC_API_BASE=https://vitsell-back.vistatest.top/api/v1 npm run preview
 ```
 
 اجرای production با Node (Nitro):
@@ -297,7 +297,7 @@ server {
 - [ ] `ZARINPAL_SANDBOX=false` برای پرداخت واقعی
 - [ ] `ZARINPAL_CALLBACK_URL` عمومی و قابل دسترس از اینترنت
 - [ ] `APP_URL` / `FRONTEND_URL` دامنه‌های نهایی
-- [ ] `NUXT_PUBLIC_API_BASE` = `https://digishop-back.vistatest.top/api/v1` (ادمین و فروشگاه)
+- [ ] `NUXT_PUBLIC_API_BASE` = `https://vitsell-back.vistatest.top/api/v1` (ادمین و فروشگاه)
 - [ ] Migration روی DB production اجرا شده
 - [ ] Seed فقط در صورت نیاز (مراقب overwrite داده واقعی باشید)
 - [ ] OTP واقعی تست شده (بدون `devCode` در response)

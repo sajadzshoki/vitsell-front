@@ -3,7 +3,7 @@ name: nuxt-ui
 description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, i18n, RTL, and app.config.ts defaults. Use when creating or editing pages, layouts, Vue components, styles, or any UI in this project.
 ---
 
-# Nuxt UI — digishop
+# Nuxt UI — vitsell
 
 قبل از نوشتن یا تغییر UI این فایل را رعایت کن.
 
@@ -15,7 +15,7 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 - قبل از کپی نمونه از وب، نسخهٔ صفحه را چک کن؛ اگر v3 بود، معادل v4 را در ui.nuxt.com پیدا کن.
 - در RTL برای `UCarousel`: آیکون prev/next را صریح بگذار تا با موقعیت فیزیکی دکمه هم‌جهت باشد (`prev` در `start` → chevron رو به start؛ `next` در `end` → chevron رو به end). به auto-swap پیش‌فرض v4 تکیه نکن اگر `Html dir="rtl"` با `useLocale().dir` هم‌خوان نیست.
 
-## کیفیت digishop (اجباری)
+## کیفیت vitsell (اجباری)
 
 - داده و منطق را از UI جدا کن (`data/`، composable، store). کارت/صفحه mock سخت‌کد نگیرد مگر برای placeholder موقت.
 - کامپوننت‌های دامنه زیر `The*`؛ کنترل‌های عمومی = Nuxt UI.
@@ -34,7 +34,7 @@ description: Builds Vue/Nuxt UI with Nuxt UI components, semantic theme tokens, 
 
 منبع حقیقت:
 
-| نقش | فایل | مقدار فعلی digishop |
+| نقش | فایل | مقدار فعلی vitsell |
 |---|---|---|
 | پالت برند | `app/assets/css/main.css` → `@theme` `--color-brand-*` | `brand-500` = `#2563EB` |
 | alias رنگ‌ها | `app/app.config.ts` → `ui.colors` | `primary: 'brand'`, `secondary: cyan`, `success: green`, `info: sky`, `warning: amber`, `error: rose`, `neutral: gray` |

@@ -3,9 +3,18 @@
     <h2 class="font-bold text-highlighted mb-5">
       {{ $t('انتخاب روش پرداخت') }}
     </h2>
-    <div class="space-y-3">
+    <div
+      v-if="!paymentOptions.length"
+      class="rounded-2xl border border-warning/30 bg-warning/5 p-4 text-sm text-toned leading-6"
+    >
+      {{ $t('در حال حاضر روش پرداخت فعالی تعریف نشده است. با پشتیبانی فروشگاه تماس بگیرید.') }}
+    </div>
+    <div
+      v-else
+      class="space-y-3"
+    >
       <button
-        v-for="option in checkoutPaymentOptions"
+        v-for="option in paymentOptions"
         :key="option.id"
         type="button"
         class="w-full flex items-center gap-4 p-4 rounded-2xl border text-start cursor-pointer transition"
@@ -62,8 +71,8 @@
 </template>
 
 <script setup lang="ts">
-import { checkoutGateways, checkoutPaymentOptions } from '~/data/checkout'
+import { checkoutGateways } from '~/data/checkout'
 
 const store = useCheckoutStore()
-const { paymentMethod } = storeToRefs(store)
+const { paymentMethod, paymentOptions } = storeToRefs(store)
 </script>

@@ -84,11 +84,11 @@ export default defineNuxtConfig({
 
     runtimeConfig: {
         public: {
-            apiBase: process.env.NUXT_PUBLIC_API_BASE || "https://digishop-back.vistatest.top/api/v1",
+            apiBase: process.env.NUXT_PUBLIC_API_BASE || "https://vitsell-back.vistatest.top/api/v1",
             /** store = فروشگاه | admin = پنل مدیریت روی دامنه جدا */
             appMode: process.env.NUXT_PUBLIC_APP_MODE || "store",
-            storeUrl: process.env.NUXT_PUBLIC_STORE_URL || "https://digishop.vistatest.top",
-            adminUrl: process.env.NUXT_PUBLIC_ADMIN_URL || "https://digishop-admin.vistatest.top",
+            storeUrl: process.env.NUXT_PUBLIC_STORE_URL || "https://vitsell.ir",
+            adminUrl: process.env.NUXT_PUBLIC_ADMIN_URL || "https://seller.vitsell.ir",
         },
     },
 

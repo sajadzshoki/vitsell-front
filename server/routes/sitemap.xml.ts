@@ -73,7 +73,7 @@ export default defineEventHandler(async (event) => {
     return urlEntry(loc, lastmod, 'weekly', priority)
   })
 
-  const posts = await loadPublicBlogPosts(apiBase || 'https://digishop-back.vistatest.top/api/v1')
+  const posts = await loadPublicBlogPosts(apiBase || 'https://vitsell-back.vistatest.top/api/v1')
   for (const post of posts) {
     const loc = joinSiteUrl(base, `/blog/${post.id}`)
     const postLastmod = toLastmod(post.updatedAt || post.publishedAt || post.date)

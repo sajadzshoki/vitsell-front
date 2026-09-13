@@ -1,6 +1,6 @@
 ---
 name: seller-pages
-description: Static pages CMS for the digishop seller (admin) panel.
+description: Static pages CMS for the vitsell seller (admin) panel.
 ---
 
 # Seller — Static pages (مرجع)

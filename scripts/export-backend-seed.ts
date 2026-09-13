@@ -29,7 +29,7 @@ import {
 } from '../app/data/seller.ts'
 import { blogPosts, staticPages } from '../app/data/static-pages.ts'
 
-const outDir = join(process.cwd(), '../digishop-back/database/seed_data')
+const outDir = join(process.cwd(), '../vitsell-back/database/seed_data')
 mkdirSync(outDir, { recursive: true })
 
 function write(name: string, data: unknown) {

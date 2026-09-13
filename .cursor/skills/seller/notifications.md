@@ -1,6 +1,6 @@
 ---
 name: seller-notifications
-description: Admin notification broadcast UI for digishop seller panel.
+description: Admin notification broadcast UI for vitsell seller panel.
 ---
 
 # Seller — اعلان‌ها (مرجع)

@@ -34,20 +34,22 @@
             value-key="value"
             class="min-w-36"
           />
-          <UFormField :label="$t('از تاریخ')">
-            <UInput
-              v-model="dateFrom"
-              type="date"
-              class="min-w-36"
+          <div class="w-40 min-w-36">
+            <TheIRDatePicker
+              :model-value="dateFrom || null"
+              :header="$t('از تاریخ')"
+              :placeholder="$t('انتخاب تاریخ')"
+              @update:model-value="dateFrom = $event || ''"
             />
-          </UFormField>
-          <UFormField :label="$t('تا تاریخ')">
-            <UInput
-              v-model="dateTo"
-              type="date"
-              class="min-w-36"
+          </div>
+          <div class="w-40 min-w-36">
+            <TheIRDatePicker
+              :model-value="dateTo || null"
+              :header="$t('تا تاریخ')"
+              :placeholder="$t('انتخاب تاریخ')"
+              @update:model-value="dateTo = $event || ''"
             />
-          </UFormField>
+          </div>
           <UButton
             v-if="hasFilters"
             type="button"

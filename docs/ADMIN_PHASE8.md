@@ -1,6 +1,6 @@
 # Admin Phase 8 — Super Administration & Platform Configuration
 
-Completes the digishop Super Admin foundation (single-vendor site admin under `/seller`).
+Completes the vitsell Super Admin foundation (single-vendor site admin under `/seller`).
 
 ## Mapping
 

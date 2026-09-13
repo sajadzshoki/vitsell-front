@@ -1,6 +1,6 @@
 ---
 name: seller-footer
-description: Footer content editing rules for the digishop seller (admin) panel.
+description: Footer content editing rules for the vitsell seller (admin) panel.
 ---
 
 # Seller — Footer (مرجع)

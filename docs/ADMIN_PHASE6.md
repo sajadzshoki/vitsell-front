@@ -1,6 +1,6 @@
 # Admin Phase 6 — CMS, Blog, Static Pages & Complete SEO
 
-Frontend-first CMS and SEO completion for digishop seller + storefront.
+Frontend-first CMS and SEO completion for vitsell seller + storefront.
 
 ## Mapping
 

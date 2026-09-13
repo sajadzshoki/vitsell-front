@@ -140,23 +140,21 @@
           icon="i-tabler-list-numbers"
         />
 
-        <TheFormInput
-          v-model="form.startsAt"
-          :label="$t('شروع')"
-          type="datetime-local"
-          dir="ltr"
-          :error="errors.startsAt"
-          :help="$t('اختیاری')"
-          icon="i-tabler-calendar-event"
+        <TheIRDatePicker
+          :model-value="form.startsAt || null"
+          type="datetime"
+          :header="$t('شروع')"
+          :placeholder="$t('انتخاب تاریخ')"
+          :validation="Boolean(errors.startsAt)"
+          @update:model-value="form.startsAt = $event || ''"
         />
-        <TheFormInput
-          v-model="form.endsAt"
-          :label="$t('پایان')"
-          type="datetime-local"
-          dir="ltr"
-          :error="errors.endsAt"
-          :help="$t('اختیاری')"
-          icon="i-tabler-calendar-due"
+        <TheIRDatePicker
+          :model-value="form.endsAt || null"
+          type="datetime"
+          :header="$t('پایان')"
+          :placeholder="$t('انتخاب تاریخ')"
+          :validation="Boolean(errors.endsAt)"
+          @update:model-value="form.endsAt = $event || ''"
         />
 
         <div class="flex flex-col gap-3 justify-end pb-1 md:col-span-2">

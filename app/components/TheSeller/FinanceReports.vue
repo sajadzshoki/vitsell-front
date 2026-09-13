@@ -50,20 +50,22 @@
             v-if="period === 'custom'"
             class="flex items-center gap-2 flex-wrap"
           >
-            <TheFormInput
-              v-model="customStart"
-              type="date"
-              :label="$t('از تاریخ')"
-              class="w-40"
-              dir="ltr"
-            />
-            <TheFormInput
-              v-model="customEnd"
-              type="date"
-              :label="$t('تا تاریخ')"
-              class="w-40"
-              dir="ltr"
-            />
+            <div class="w-40">
+              <TheIRDatePicker
+                :model-value="customStart || null"
+                :header="$t('از تاریخ')"
+                :placeholder="$t('انتخاب تاریخ')"
+                @update:model-value="customStart = $event || ''"
+              />
+            </div>
+            <div class="w-40">
+              <TheIRDatePicker
+                :model-value="customEnd || null"
+                :header="$t('تا تاریخ')"
+                :placeholder="$t('انتخاب تاریخ')"
+                @update:model-value="customEnd = $event || ''"
+              />
+            </div>
           </div>
         </div>
 

@@ -20,10 +20,47 @@
 
     <div
       v-if="model.scope === 'products'"
-      class="space-y-2"
+      class="space-y-3"
     >
-      <div class="text-xs font-medium text-toned">
-        {{ $t('محصولات') }}
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div class="text-xs font-medium text-toned">
+          {{ $t('محصولات') }}
+          <span
+            v-if="model.productIds.length"
+            class="num text-muted ms-1"
+          >({{ model.productIds.length.toLocaleString('fa-IR') }})</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <UButton
+            type="button"
+            size="xs"
+            color="neutral"
+            variant="soft"
+            icon="i-tabler-download"
+            class="cursor-pointer"
+            @click="downloadProductIdsTemplate"
+          >
+            {{ $t('قالب CSV') }}
+          </UButton>
+          <UButton
+            type="button"
+            size="xs"
+            color="primary"
+            variant="soft"
+            icon="i-tabler-upload"
+            class="cursor-pointer"
+            @click="productCsvInput?.click()"
+          >
+            {{ $t('ورود CSV') }}
+          </UButton>
+          <input
+            ref="productCsvInput"
+            type="file"
+            accept=".csv,text/csv"
+            class="sr-only"
+            @change="onProductCsv"
+          >
+        </div>
       </div>
       <USelectMenu
         :model-value="model.productIds"
@@ -31,9 +68,31 @@
         value-key="value"
         multiple
         class="w-full"
-        :placeholder="$t('انتخاب محصول')"
+        :placeholder="$t('جستجو و انتخاب محصول')"
         @update:model-value="patch({ productIds: ($event as string[]) || [] })"
       />
+      <div class="max-h-48 overflow-y-auto rounded-xl border border-muted p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2 mb-1">
+          <span class="text-[11px] text-muted">{{ $t('انتخاب گروهی از لیست') }}</span>
+          <UButton
+            type="button"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            class="cursor-pointer"
+            @click="toggleAllProducts"
+          >
+            {{ allProductsSelected ? $t('لغو همه') : $t('انتخاب همه') }}
+          </UButton>
+        </div>
+        <UCheckbox
+          v-for="item in productItems"
+          :key="item.value"
+          :model-value="model.productIds.includes(item.value)"
+          :label="item.label"
+          @update:model-value="toggleList('productIds', item.value, !!$event)"
+        />
+      </div>
     </div>
 
     <div
@@ -115,6 +174,8 @@
 
 <script setup lang="ts">
 import type { SellerMarketingTargeting } from '~/data/seller-marketing-shared'
+import { parseCsvText } from '~/data/seller-import'
+import { downloadSellerCsv } from '~/data/seller-export'
 
 const props = withDefaults(defineProps<{
   modelValue: SellerMarketingTargeting
@@ -128,6 +189,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const toast = useAppToast()
 const { listings, resolveProduct, fetchListings } = useSeller()
 const { categories, ensureLoaded: ensureCats } = useSellerCategories()
 const { brands, ensureLoaded: ensureBrands } = useSellerBrands()
@@ -137,6 +199,7 @@ void ensureBrands()
 void fetchListings()
 
 const model = computed(() => props.modelValue)
+const productCsvInput = ref<HTMLInputElement | null>(null)
 
 const scopeItems = computed(() => [
   { value: 'store', label: t('کل فروشگاه') },
@@ -155,6 +218,11 @@ const productItems = computed(() =>
   }),
 )
 
+const allProductsSelected = computed(() =>
+  productItems.value.length > 0
+  && productItems.value.every(p => model.value.productIds.includes(p.value)),
+)
+
 function patch(partial: Partial<SellerMarketingTargeting>) {
   emit('update:modelValue', { ...model.value, ...partial })
 }
@@ -167,5 +235,40 @@ function toggleList(
   const current = [...(model.value[key] || [])]
   const next = on ? [...new Set([...current, id])] : current.filter(x => x !== id)
   patch({ [key]: next })
+}
+
+function toggleAllProducts() {
+  if (allProductsSelected.value) {
+    patch({ productIds: [] })
+    return
+  }
+  patch({ productIds: productItems.value.map(p => p.value) })
+}
+
+function downloadProductIdsTemplate() {
+  downloadSellerCsv(
+    'discount-product-ids.csv',
+    ['productId'],
+    [['iphone-16-pro']],
+  )
+}
+
+async function onProductCsv(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  const text = await file.text()
+  const { rows } = parseCsvText(text)
+  const ids = rows
+    .map(r => (r.productId || r.id || Object.values(r)[0] || '').trim())
+    .filter(Boolean)
+  if (!ids.length) {
+    toast.error(t('شناسه‌ای در فایل یافت نشد'))
+    input.value = ''
+    return
+  }
+  patch({ productIds: [...new Set([...model.value.productIds, ...ids])] })
+  toast.success(`${ids.length.toLocaleString('fa-IR')} ${t('محصول اضافه شد')}`)
+  input.value = ''
 }
 </script>

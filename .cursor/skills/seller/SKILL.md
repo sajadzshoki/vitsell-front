@@ -1,12 +1,12 @@
 ---
 name: seller
 description: >-
-  Builds and extends the digishop seller panel (/seller), which is the site admin
+  Builds and extends the vitsell seller panel (/seller), which is the site admin
   panel (not a multi-vendor marketplace). Use when adding seller/admin pages,
   category CRUD, products, orders, shop settings, or any /seller UI, nav, or API wiring.
 ---
 
-# Seller panel — digishop (ادمین سایت)
+# Seller panel — vitsell (ادمین سایت)
 
 قبل از ساخت یا تغییر هر بخش `/seller` این فایل را بخوان. برای UI عمومی حتماً اسکیل [nuxt-ui](../nuxt-ui/SKILL.md) را هم رعایت کن.
 

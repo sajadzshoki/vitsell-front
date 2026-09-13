@@ -11,7 +11,7 @@ const { ensureLoaded, publishedPosts } = useBlog()
 await ensureLoaded()
 
 useEntitySeo(() => ({
-  fallbackTitle: t('بلاگ دیجی‌شاپ'),
+  fallbackTitle: t('بلاگ ویتسل'),
   fallbackDescription: t('راهنمای خرید، بررسی محصول و اخبار دنیای تکنولوژی'),
   path: '/blog',
 }))

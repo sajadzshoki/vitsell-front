@@ -9,6 +9,18 @@
         <template #actions>
           <div class="flex items-center gap-2 flex-wrap">
             <UButton
+              v-if="can('categories.create')"
+              type="button"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-file-import"
+              class="cursor-pointer"
+              @click="importOpen = true"
+            >
+              {{ $t('ورود داده') }}
+            </UButton>
+            <UButton
               type="button"
               color="neutral"
               variant="soft"
@@ -488,6 +500,12 @@
         </div>
       </template>
     </UModal>
+
+    <TheSellerCsvImportPanel
+      v-model:open="importOpen"
+      entity="categories"
+      create-permission="categories.create"
+    />
   </div>
 </template>
 
@@ -535,6 +553,7 @@ const bulkDeleteMode = ref(false)
 const pendingDelete = ref<SellerCategoryTreeRow | null>(null)
 const deleting = ref(false)
 const loading = ref(true)
+const importOpen = ref(false)
 
 const parentFilter = computed({
   get: () => String(route.query.parentId ?? 'all'),

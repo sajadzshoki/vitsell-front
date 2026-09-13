@@ -40,6 +40,10 @@ export type SellerPlatformSettings = {
   freeShippingThreshold: number
   deliveryEstimateText: string
   shippingMethodsVisible: boolean
+  // Payments (storefront checkout methods)
+  onlinePaymentEnabled: boolean
+  codPaymentEnabled: boolean
+  installmentPaymentEnabled: boolean
 }
 
 export const defaultPlatformSettings: SellerPlatformSettings = {
@@ -76,6 +80,9 @@ export const defaultPlatformSettings: SellerPlatformSettings = {
   freeShippingThreshold: 0,
   deliveryEstimateText: '۱ تا ۳ روز کاری',
   shippingMethodsVisible: true,
+  onlinePaymentEnabled: true,
+  codPaymentEnabled: true,
+  installmentPaymentEnabled: true,
 }
 
 export const platformSettingsTabs = [

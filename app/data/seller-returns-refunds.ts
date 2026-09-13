@@ -171,7 +171,7 @@ export function buildDefaultShippingMethods(): SellerShippingMethod[] {
     {
       id: 'ship-express',
       name: 'پیک اکسپرس',
-      carrier: 'دیجی‌شاپ',
+      carrier: 'ویتسل',
       estimatedDays: '۱–۲ روز',
       baseCost: 0,
       status: 'active',

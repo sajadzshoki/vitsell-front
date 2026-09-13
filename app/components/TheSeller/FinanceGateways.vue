@@ -72,7 +72,7 @@
 
             <div
               v-if="can('finance.manage')"
-              class="flex items-center gap-3 shrink-0 flex-wrap"
+              class="flex items-end gap-5 shrink-0 flex-wrap"
             >
               <UFormField :label="$t('اولویت')">
                 <UInput

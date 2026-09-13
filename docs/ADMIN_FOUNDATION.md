@@ -1,6 +1,6 @@
 # Admin panel foundation
 
-Frontend Super Admin foundations for digishop. Routes stay under `/seller`; identity remains site admin (single vendor), not marketplace.
+Frontend Super Admin foundations for vitsell. Routes stay under `/seller`; identity remains site admin (single vendor), not marketplace.
 
 See also: [ADMIN_SEPARATION.md](./ADMIN_SEPARATION.md), [ROUTES.md](./ROUTES.md), `.cursor/skills/seller/SKILL.md`.
 

@@ -1,7 +1,7 @@
-# مستند Routeهای Digishop
+# مستند Routeهای vitsell
 
 مرجع مسیرهای فرانت (Nuxt) و API بک‌اند (AdonisJS).  
-Base API: `/api/v1` — پیش‌فرض پروداکشن: `https://digishop-back.vistatest.top/api/v1`
+Base API: `/api/v1` — پیش‌فرض پروداکشن: `https://vitsell-back.vistatest.top/api/v1`
 
 ---
 
@@ -113,14 +113,14 @@ Shell اختصاصی بدون Navbar/Footer فروشگاه.
 
 ## ۲. API بک‌اند (`/api/v1`)
 
-منبع: `digishop-back/start/routes.ts`  
+منبع: `vitsell-back/start/routes.ts`  
 Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 
 ### ریشه
 
 | Method | Path | Auth | توضیح |
 |--------|------|------|--------|
-| `GET` | `/` | — | `{ name: digishop-api, version: 1 }` (خارج از prefix v1) |
+| `GET` | `/` | — | `{ name: vitsell-api, version: 1 }` (خارج از prefix v1) |
 
 ### Auth — `/api/v1/auth`
 
@@ -376,7 +376,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 
 | موضوع | مسیر |
 |--------|------|
-| تعریف routeهای API | `digishop-back/start/routes.ts` |
-| صفحات Nuxt | `digishop-front/app/pages/` |
-| middleware لاگین | `digishop-front/app/middleware/auth.ts` |
-| base URL فرانت | `digishop-front/app/composables/fetch.ts` |
+| تعریف routeهای API | `vitsell-back/start/routes.ts` |
+| صفحات Nuxt | `vitsell-front/app/pages/` |
+| middleware لاگین | `vitsell-front/app/middleware/auth.ts` |
+| base URL فرانت | `vitsell-front/app/composables/fetch.ts` |

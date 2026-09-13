@@ -1,6 +1,6 @@
 ---
 name: seller-questions
-description: Product Q&A moderation for the digishop seller (admin) panel.
+description: Product Q&A moderation for the vitsell seller (admin) panel.
 ---
 
 # Seller — پرسش و پاسخ (مرجع)

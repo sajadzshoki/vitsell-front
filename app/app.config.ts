@@ -16,7 +16,7 @@ export default defineAppConfig({
       neutral: 'gray',
     },
     button: {
-      base: 'cursor-pointer justify-center rounded-lg',
+      base: 'cursor-pointer justify-center rounded-lg !ring-0',
       slots: {
         label: 'font-600',
       },
@@ -107,7 +107,7 @@ export default defineAppConfig({
     // Checkbox/slider also draw their outline with ring; ring is killed in main.css
     checkbox: {
       slots: {
-        base: 'border border-accented bg-default data-[state=checked]:border-primary data-[state=indeterminate]:border-primary',
+        base: 'border border-accented !ring-0 bg-default data-[state=checked]:border-primary data-[state=indeterminate]:border-primary',
       },
       compoundVariants: [
         { color: 'primary', highlight: true, class: { base: 'border-primary' } },
@@ -137,6 +137,9 @@ export default defineAppConfig({
     },
     // Replace ring-as-border with real border (see main.css ring kill)
     input: {
+      slots:{
+        base:"!ring-0"
+      },
       variants: {
         variant: {
           outline: 'bg-default text-highlighted border border-default focus-visible:border-primary',
@@ -154,6 +157,9 @@ export default defineAppConfig({
       ],
     },
     textarea: {
+      slots:{
+        base:'!ring-0'
+      },
       variants: {
         variant: {
           outline: 'bg-default text-highlighted border border-default focus-visible:border-primary',
@@ -166,7 +172,11 @@ export default defineAppConfig({
         { highlight: true, color: 'neutral', class: 'border-inverted' },
       ],
     },
+
     select: {
+      slots: {
+        base: '!ring-0 h-12 rounded-xl',
+      },
       variants: {
         variant: {
           outline: 'bg-default text-highlighted border border-default focus-visible:border-primary',
@@ -180,6 +190,9 @@ export default defineAppConfig({
       ],
     },
     selectMenu: {
+      slots: {
+        base: '!ring-0 h-12 rounded-xl',
+      },
       variants: {
         variant: {
           outline: 'bg-default text-highlighted border border-default focus-visible:border-primary',
@@ -227,6 +240,11 @@ export default defineAppConfig({
       },
       defaultVariants: {
         color: 'primary',
+      },
+    },
+    badge: {
+      slots: {
+        base: '!ring-0',
       },
     },
   },

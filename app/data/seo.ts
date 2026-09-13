@@ -114,7 +114,7 @@ export function joinSiteUrl(siteUrl: string, path: string): string {
 
 export function applyTitlePattern(pattern: string, title: string, siteName: string): string {
   const t = title.trim()
-  const name = siteName.trim() || 'Digishop'
+  const name = siteName.trim() || 'vitsell'
   if (!pattern.trim()) return t || name
   return pattern
     .replaceAll('{title}', t || name)
@@ -157,7 +157,7 @@ export type ResolvedSeo = {
 export function resolveSeoMeta(input: ResolveSeoInput): ResolvedSeo {
   const entity = input.entity || {}
   const defaults = input.defaults || {}
-  const siteName = defaults.siteName || 'Digishop'
+  const siteName = defaults.siteName || 'vitsell'
   const siteUrl = defaults.siteUrl || ''
   const fallbackTitle = (input.fallbackTitle || '').trim()
   const fallbackDescription = (input.fallbackDescription || '').trim()
