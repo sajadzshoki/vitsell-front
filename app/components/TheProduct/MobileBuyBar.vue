@@ -55,7 +55,10 @@
         {{ $t('افزودن به سبد خرید') }}
       </UButton>
 
-      <div class="shrink-0 text-end">
+      <div
+        v-if="!(outOfStock && !allowBackorder)"
+        class="shrink-0 text-end"
+      >
         <div
           v-if="product.oldPrice"
           class="flex items-center gap-1.5 justify-end mb-0.5"

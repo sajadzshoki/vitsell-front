@@ -468,6 +468,15 @@ const form = ref<SellerCategoryFormValues>(
   props.initial ? toCategoryForm(props.initial) : buildCreateForm(),
 )
 const errors = ref<Partial<Record<'id' | 'name' | 'icon', string>>>({})
+const savedSnapshot = ref('')
+const isDirty = computed(() => JSON.stringify(form.value) !== savedSnapshot.value)
+const { allowNextNavigation } = useSellerUnsavedGuard(isDirty)
+
+function captureSnapshot() {
+  savedSnapshot.value = JSON.stringify(form.value)
+}
+
+captureSnapshot()
 
 const canAssignAttrs = computed(() => can('attributes.update'))
 const categoryKey = computed(() => props.initial?.id || form.value.id.trim())
@@ -522,6 +531,7 @@ watch(
   (value) => {
     form.value = value ? toCategoryForm(value) : buildCreateForm()
     errors.value = {}
+    captureSnapshot()
   },
 )
 
@@ -530,7 +540,10 @@ watch(
   () => [isEdit.value, parentIdFromQuery()] as const,
   ([editing, parentFromQuery]) => {
     if (editing) return
-    form.value.parentId = parentFromQuery || SELLER_CATEGORY_ROOT_PARENT
+    const nextParent = parentFromQuery || SELLER_CATEGORY_ROOT_PARENT
+    if (form.value.parentId === nextParent) return
+    form.value.parentId = nextParent
+    captureSnapshot()
   },
 )
 
@@ -594,6 +607,8 @@ async function onSave() {
     }
 
     toast.success(isEdit.value ? t('دسته‌بندی به‌روز شد') : t('دسته‌بندی اضافه شد'))
+    allowNextNavigation()
+    captureSnapshot()
     const savedId = result.category?.id || props.initial?.id || form.value.id.trim()
     if (savedId) {
       await navigateTo(`/seller/categories/${savedId}`)

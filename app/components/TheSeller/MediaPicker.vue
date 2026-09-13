@@ -178,7 +178,7 @@ const pickerDescription = computed(() =>
 )
 
 const acceptMime = computed(() => {
-  if (props.kind === 'image') return 'image/jpeg,image/png,image/webp,image/gif'
+  if (props.kind === 'image') return 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml'
   if (props.kind === 'video') return 'video/*'
   if (props.kind === 'document') return '.pdf,.doc,.docx,.txt'
   return undefined

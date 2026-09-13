@@ -111,12 +111,15 @@
 
       <p
         v-if="product.inStock === false"
-        class="text-[11px] text-error mb-2"
+        class="mt-auto text-sm font-bold text-error"
       >
         {{ $t('ناموجود') }}
       </p>
 
-      <div class="mt-auto flex flex-col items-end gap-0.5">
+      <div
+        v-else
+        class="mt-auto flex flex-col items-end gap-0.5"
+      >
         <p
           v-if="product.reviews % 7 === 0"
           class="text-[9px] text-error ms-auto"

@@ -15,7 +15,10 @@
                 : $t('موجود در انبار') }}
           </div>
         </div>
-        <div class="flex flex-col gap-1">
+        <div
+          v-if="canPurchase"
+          class="flex flex-col gap-1"
+        >
           <div
             v-if="product.oldPrice"
             class="flex items-center gap-2 mr-auto w-fit mb-1"

@@ -20,7 +20,7 @@
     <input
       ref="inputRef"
       type="file"
-      accept="image/jpeg,image/png,image/webp,image/gif"
+      accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
       class="sr-only"
       @change="onFileChange"
     >
@@ -90,7 +90,7 @@
         >
           {{ $t('کلیک کنید یا تصویر را اینجا رها کنید') }}
           <br>
-          {{ $t('JPG، PNG یا WebP — حداکثر ۲ مگابایت') }}
+          {{ $t('JPG، PNG، WebP یا SVG — حداکثر ۲ مگابایت') }}
         </span>
       </div>
 
