@@ -255,7 +255,7 @@
 
 <script setup lang="ts">
 import type { StaticPage, StaticPageId } from '~/data/static-pages'
-import { getBlogPostPath, staticPagePaths } from '~/data/static-pages'
+import { getBlogPostPath, staticPagePaths, staticPages } from '~/data/static-pages'
 import {
   contentToHtml,
   isRichBlogContent,
@@ -283,16 +283,22 @@ const { data: page, pending } = await useAsyncData<StaticPage | null>(
   `static-page-${props.pageId}`,
   async () => {
     const { result, error: fetchError } = await fetchStaticPage(props.pageId, { force: true })
-    if (fetchError || !result) {
-      if (import.meta.client) {
-        toast.error(t('بارگذاری صفحه ناموفق بود'))
+    if (result) return result
+    // Fallback to local seed so /faq (and other static pages) still render
+    const seed = staticPages[props.pageId]
+    if (seed) {
+      if (import.meta.client && fetchError) {
+        // soft: keep UX without blocking the seeded content
       }
-      return null
+      return seed
     }
-    return result
+    if (import.meta.client) {
+      toast.error(t('بارگذاری صفحه ناموفق بود'))
+    }
+    return null
   },
   {
-    default: () => getPage(props.pageId),
+    default: () => getPage(props.pageId) ?? staticPages[props.pageId] ?? null,
   },
 )
 

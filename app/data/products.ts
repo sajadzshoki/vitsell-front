@@ -1,4 +1,8 @@
 import type { SeoMeta } from '~/data/seo'
+import type {
+  SellerProductVariant,
+  SellerProductVariantAxis,
+} from '~/data/seller-product-variants'
 
 export type ProductColor = {
   name: string
@@ -45,7 +49,13 @@ export type Product = {
   published?: boolean
   hasVariants?: boolean
   sku?: string
+  barcode?: string
+  weight?: string
+  /** موجودی انبار (از listing)؛ برای هشدار کم‌موجودی روی کارت */
+  stock?: number
   lowStockThreshold?: number
+  variantAxes?: SellerProductVariantAxis[]
+  variants?: SellerProductVariant[]
 }
 
 export const categoryLabels: Record<string, string> = {

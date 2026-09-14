@@ -25,9 +25,14 @@ export function useSellerProductCommerce() {
       ...data,
       productId,
       seo: data.seo ? { ...emptySeoMeta(), ...data.seo } : previous.seo,
-      variants: data.variants ? data.variants.map(v => ({ ...v })) : previous.variants,
-      variantAxes: data.variantAxes ? data.variantAxes.map(a => ({ ...a })) : previous.variantAxes,
-      tags: data.tags ? [...data.tags] : previous.tags,
+      // `[]` is truthy — use !== undefined so explicit empty clears, omitted keeps previous
+      variants: data.variants !== undefined
+        ? data.variants.map(v => ({ ...v }))
+        : previous.variants,
+      variantAxes: data.variantAxes !== undefined
+        ? data.variantAxes.map(a => ({ ...a }))
+        : previous.variantAxes,
+      tags: data.tags !== undefined ? [...data.tags] : previous.tags,
     }
     map.value = { ...map.value, [productId]: next }
     return next

@@ -201,6 +201,8 @@ export function useSellerPages() {
     }
     const page = toPage(result)
     upsertLocal(page)
+    const { invalidate } = useStaticPages()
+    invalidate(page.id as any)
     return { ok: true as const, page, error: null as null }
   }
 
@@ -217,6 +219,8 @@ export function useSellerPages() {
     }
     const page = toPage(result)
     upsertLocal(page)
+    const { invalidate } = useStaticPages()
+    invalidate(page.id as any)
     return { ok: true as const, page, error: null as null }
   }
 

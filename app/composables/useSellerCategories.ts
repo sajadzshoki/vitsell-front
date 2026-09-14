@@ -161,6 +161,13 @@ export function useSellerCategories() {
       }
       seeded.value = true
       syncStorefront()
+      try {
+        const { addIcons } = useSellerCustomIcons()
+        addIcons(items.value.map(c => c.icon).filter(Boolean))
+      }
+      catch {
+        // picker library optional during SSR / early boot
+      }
       return items.value
     }
     finally {

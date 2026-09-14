@@ -17,6 +17,7 @@ import {
   type SellerShop,
 } from '~/data/seller'
 import type { Product } from '~/data/products'
+import type { SellerProductCommerce } from '~/data/seller-product-variants'
 
 function listingApiError(error: unknown, fallback: string) {
   if (!error || typeof error !== 'object') return fallback
@@ -118,7 +119,11 @@ export function useSeller() {
       published?: boolean
       hasVariants?: boolean
       sku?: string | null
+      barcode?: string | null
+      weight?: string | null
       lowStockThreshold?: number
+      variantAxes?: SellerProductCommerce['variantAxes']
+      variants?: SellerProductCommerce['variants']
     }
     createdAt?: string | null
     updatedAt?: string | null
@@ -376,16 +381,20 @@ export function useSeller() {
   function syncCommerceFromListing(item: ListingApiItem) {
     if (!item.product) return
     const { saveCommerce } = useSellerProductCommerce()
-    const patch: Record<string, unknown> = {
-      featured: Boolean(item.product.featured),
-      published: item.product.published !== false,
-      sku: item.product.sku || '',
-      lowStockThreshold: Number(item.product.lowStockThreshold) || sellerLowStockThreshold,
-    }
-    if (!item.product.hasVariants) {
-      patch.variants = []
-    }
-    saveCommerce(item.productId, patch as any)
+    const p = item.product
+    const apiSku = String(p.sku || '').trim()
+    const apiBarcode = String(p.barcode || '').trim()
+    const apiWeight = String(p.weight || '').trim()
+    saveCommerce(item.productId, {
+      featured: Boolean(p.featured),
+      published: p.published !== false,
+      sku: apiSku,
+      barcode: apiBarcode,
+      weight: apiWeight,
+      lowStockThreshold: Number(p.lowStockThreshold) || sellerLowStockThreshold,
+      ...(Array.isArray(p.variantAxes) ? { variantAxes: p.variantAxes } : {}),
+      ...(Array.isArray(p.variants) ? { variants: p.variants } : {}),
+    })
   }
 
   function normalizeShop(raw: Partial<SellerShop> | null | undefined): SellerShop {
@@ -645,7 +654,10 @@ export function useSeller() {
       views: item.views,
       status: normalizeSellerProductStatus(item.status),
     }
-    if (item.product) remember([item.product])
+    if (item.product) {
+      remember([item.product])
+      syncCommerceFromListing(item)
+    }
     const exists = listings.value.some(l => l.productId === listing.productId)
     listings.value = exists
       ? listings.value.map(l => (l.productId === listing.productId ? listing : l))
@@ -775,7 +787,11 @@ export function useSeller() {
     published?: boolean
     hasVariants?: boolean
     sku?: string | null
+    barcode?: string | null
+    weight?: string | null
     lowStockThreshold?: number
+    variantAxes?: SellerProductCommerce['variantAxes']
+    variants?: SellerProductCommerce['variants']
   }
 
   function buildListingProductPayload(
@@ -807,7 +823,11 @@ export function useSeller() {
       published: extras?.published,
       hasVariants: extras?.hasVariants,
       sku: extras?.sku,
+      barcode: extras?.barcode,
+      weight: extras?.weight,
       lowStockThreshold: extras?.lowStockThreshold,
+      variantAxes: extras?.variantAxes,
+      variants: extras?.variants,
       seo: product.seo ?? null,
       tags: Array.isArray(product.tags) ? product.tags : [],
     }

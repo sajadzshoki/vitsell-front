@@ -84,7 +84,21 @@
       </div>
     </div>
 
-    <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 space-y-4">
+    <div
+      v-if="showFaqEditor"
+      class="space-y-1"
+    >
+      <TheSellerFaqEditor
+        ref="faqEditorRef"
+        v-model:categories="form.faqCategories"
+        v-model:items="form.faqItems"
+      />
+    </div>
+
+    <div
+      v-if="!showFaqEditor"
+      class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 space-y-4"
+    >
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h3 class="font-bold text-highlighted">
@@ -131,7 +145,10 @@
       </div>
     </div>
 
-    <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 space-y-4">
+    <div
+      v-if="!showFaqEditor"
+      class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 space-y-4"
+    >
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <h3 class="font-bold text-highlighted">
           {{ $t('فهرست‌ها') }}
@@ -223,12 +240,14 @@
 <script setup lang="ts">
 import {
   emptyPageForm,
+  isFaqPage,
   sellerPageStatusMeta,
   sellerPageTemplates,
   toPageForm,
   type SellerManagedPage,
   type SellerPageStatus,
 } from '~/data/seller-pages'
+import { faqCategories, faqItems } from '~/data/static-pages'
 import { slugifyLatin } from '~/data/seo'
 
 const props = defineProps<{
@@ -249,6 +268,9 @@ const errors = ref<Partial<Record<'title' | 'path', string>>>({})
 const savedSnapshot = ref(JSON.stringify(form.value))
 const isDirty = computed(() => JSON.stringify(form.value) !== savedSnapshot.value)
 const { allowNextNavigation } = useSellerUnsavedGuard(isDirty)
+const faqEditorRef = ref<{ validate: () => boolean } | null>(null)
+
+const showFaqEditor = computed(() => isFaqPage(form.value))
 
 const canSave = computed(() =>
   isEdit.value ? can('pages.update') : can('pages.create'),
@@ -277,6 +299,19 @@ watch(
 )
 
 watch(
+  () => form.value.template,
+  (template) => {
+    if (template !== 'faq') return
+    if (!form.value.faqCategories.length) {
+      form.value.faqCategories = faqCategories.map(c => ({ ...c }))
+    }
+    if (!form.value.faqItems.length) {
+      form.value.faqItems = faqItems.map(i => ({ ...i }))
+    }
+  },
+)
+
+watch(
   () => form.value.title,
   (title) => {
     if (isEdit.value || pathTouched.value) return
@@ -293,6 +328,10 @@ function validate() {
   if (path && !path.startsWith('/')) form.value.path = `/${path}`
   else if (path) form.value.path = path
   errors.value = next
+  if (showFaqEditor.value) {
+    const faqOk = faqEditorRef.value?.validate() ?? false
+    if (!faqOk) return false
+  }
   return !Object.keys(next).length
 }
 

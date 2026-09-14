@@ -3,16 +3,26 @@
     <div class="hidden lg:block bg-default rounded-2xl border border-muted p-5 shadow-sm">
       <div class="flex items-start justify-between">
         <div class="space-y-2.5 mb-4 pb-4">
-          <div class="flex items-center gap-2 text-xs text-toned">
+          <!-- فعلاً «ناموجود» در جزئیات محصول نمایش داده نشود -->
+          <div
+            v-if="!(outOfStock && !allowBackorder)"
+            class="flex items-center gap-2 text-xs text-toned"
+          >
             <span
               class="size-2 rounded-full shrink-0"
-              :class="outOfStock && !allowBackorder ? 'bg-error' : allowBackorder && outOfStock ? 'bg-warning' : 'bg-success'"
+              :class="allowBackorder && outOfStock ? 'bg-warning' : 'bg-success'"
             />
+            {{ allowBackorder && outOfStock
+              ? $t('قابل سفارش (پیش‌فروش)')
+              : $t('موجود در انبار') }}
+            <!--
+            قبلاً:
             {{ outOfStock && !allowBackorder
               ? $t('ناموجود')
               : allowBackorder && outOfStock
                 ? $t('قابل سفارش (پیش‌فروش)')
                 : $t('موجود در انبار') }}
+            -->
           </div>
         </div>
         <div

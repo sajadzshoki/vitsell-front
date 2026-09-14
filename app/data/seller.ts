@@ -11,6 +11,7 @@ export type SellerTabId =
   | 'blog'
   | 'pages'
   | 'about'
+  | 'faq'
   | 'media'
   | 'deals'
   | 'promotions'
@@ -351,6 +352,7 @@ export const sellerNavGroups: SellerNavGroup[] = [
     items: [
       { id: 'blog', label: 'وبلاگ', icon: 'i-tabler-news', to: '/seller/blog' },
       { id: 'pages', label: 'صفحات ثابت', icon: 'i-tabler-file-text', to: '/seller/pages' },
+      { id: 'faq', label: 'سوالات متداول', icon: 'i-tabler-help-circle', to: '/seller/faq' },
       { id: 'about', label: 'درباره ما', icon: 'i-tabler-building-store', to: '/seller/about' },
       { id: 'media', label: 'کتابخانه رسانه', icon: 'i-tabler-photo-cog', to: '/seller/media' },
       { id: 'footer', label: 'فوتر', icon: 'i-tabler-layout-bottombar', to: '/seller/footer' },

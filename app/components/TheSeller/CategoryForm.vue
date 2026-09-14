@@ -24,10 +24,17 @@
           </p>
         </div>
         <div
-          v-if="iconPreview"
-          class="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0"
+          v-if="form.icon"
+          class="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0 overflow-hidden"
         >
+          <img
+            v-if="iconIsImage"
+            :src="iconImageSrc"
+            alt=""
+            class="size-7 object-contain"
+          >
           <UIcon
+            v-else
             :name="iconPreview"
             class="size-6"
           />
@@ -376,6 +383,8 @@ import {
   type SellerCategoryFormValues,
 } from '~/data/seller-categories'
 import { categoryStorefrontHref } from '~/data/categories'
+import { isSellerAdminIconImage } from '~/data/seller-admin-icons'
+import { resolveMediaUrl } from '~/composables/fetch'
 
 const props = defineProps<{
   initial?: SellerCategory | null
@@ -427,6 +436,10 @@ function captureSnapshot() {
 captureSnapshot()
 
 const iconPreview = computed(() => resolveCategoryIconName(form.value.icon))
+const iconIsImage = computed(() => isSellerAdminIconImage(form.value.icon))
+const iconImageSrc = computed(() =>
+  iconIsImage.value ? resolveMediaUrl(form.value.icon) : '',
+)
 
 const parentOptions = computed(() =>
   categoryParentOptions(categories.value, props.initial?.id),

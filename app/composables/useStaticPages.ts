@@ -22,6 +22,16 @@ export function useStaticPages() {
     return !!pendingMap.value[id]
   }
 
+  function invalidate(id?: StaticPageId) {
+    if (!id) {
+      cache.value = {}
+      return
+    }
+    const next = { ...cache.value }
+    delete next[id]
+    cache.value = next
+  }
+
   async function fetchStaticPage(id: StaticPageId, options?: { force?: boolean }) {
     if (cache.value[id] && !options?.force) {
       return { result: cache.value[id]!, error: null as null }
@@ -61,6 +71,7 @@ export function useStaticPages() {
     cache,
     getPage,
     isPending,
+    invalidate,
     fetchStaticPage,
   }
 }

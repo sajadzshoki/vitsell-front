@@ -109,22 +109,15 @@
         </span>
       </div>
 
-      <p
-        v-if="product.inStock === false"
-        class="mt-auto text-sm font-bold text-error"
-      >
-        {{ $t('ناموجود') }}
-      </p>
-
       <div
-        v-else
+        v-if="showPrice"
         class="mt-auto flex flex-col items-end gap-0.5"
       >
         <p
-          v-if="product.reviews % 7 === 0"
-          class="text-[9px] text-error ms-auto"
+          v-if="isLowStock"
+          class="text-[10px] text-error ms-auto"
         >
-          {{ $t('تنها ۱ عدد در انبار باقی مانده') }}
+          {{ (stockCount ?? 0).toLocaleString('fa-IR') }} {{ $t('محصول در انبار باقی مانده') }}
         </p>
         <div class="flex items-center gap-1.5">
           <span
@@ -178,6 +171,27 @@ const discount = computed(() => {
     ((props.product.oldPrice - props.product.price) / props.product.oldPrice) * 100,
   )
 })
+
+const inStock = computed(() => props.product.inStock !== false)
+const showPrice = computed(() => inStock.value)
+
+const stockCount = computed(() => {
+  const n = props.product.stock
+  return typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : null
+})
+
+const lowStockThreshold = computed(() => {
+  const n = props.product.lowStockThreshold
+  return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : 5
+})
+
+/** موجود و تعداد ≤ آستانه کم‌موجودی (هم‌راستا با پنل انبار) */
+const isLowStock = computed(() =>
+  inStock.value
+  && stockCount.value != null
+  && stockCount.value > 0
+  && stockCount.value <= lowStockThreshold.value,
+)
 
 const categoryLabel = computed(() =>
   props.product.categoryLabel

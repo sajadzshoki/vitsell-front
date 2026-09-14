@@ -95,7 +95,7 @@
             <div class="flex items-start justify-between gap-2 flex-wrap">
               <div class="min-w-0">
                 <NuxtLink
-                  :to="`/seller/pages/${pageItem.id}`"
+                  :to="pageItem.id === 'faq' ? '/seller/faq' : `/seller/pages/${pageItem.id}`"
                   class="text-sm font-medium text-highlighted truncate block hover:text-primary transition-all  cursor-pointer"
                 >
                   {{ pageItem.title }}
@@ -124,7 +124,7 @@
             <div class="mt-3 flex items-center gap-2 flex-wrap">
               <UButton
                 v-if="can('pages.update')"
-                :to="`/seller/pages/${pageItem.id}`"
+                :to="pageItem.id === 'faq' ? '/seller/faq' : `/seller/pages/${pageItem.id}`"
                 color="primary"
                 variant="soft"
                 size="xs"

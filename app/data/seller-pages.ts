@@ -5,7 +5,11 @@ import {
   textToContent,
 } from '~/data/seller-blog'
 import {
+  faqCategories as defaultFaqCategories,
+  faqItems as defaultFaqItems,
   staticPages,
+  type StaticFaqCategory,
+  type StaticFaqItem,
   type StaticPage,
   type StaticPageId,
   type StaticSection,
@@ -24,6 +28,9 @@ export type SellerManagedPage = Omit<StaticPage, 'id'> & {
   updatedAt: string
 }
 
+export type SellerFaqCategoryForm = StaticFaqCategory
+export type SellerFaqItemForm = StaticFaqItem
+
 export type SellerPageFormValues = {
   id: string
   path: string
@@ -37,6 +44,8 @@ export type SellerPageFormValues = {
   /** فقط سکشن‌های paragraphs / list برای ویرایش ساده */
   paragraphSections: { itemsText: string }[]
   listSections: { title: string, itemsText: string }[]
+  faqCategories: SellerFaqCategoryForm[]
+  faqItems: SellerFaqItemForm[]
 }
 
 export const sellerPageStatusMeta: Record<
@@ -55,6 +64,31 @@ export const sellerPageTemplates = [
   { value: 'faq', label: 'سوالات متداول' },
 ] as const
 
+export function emptyFaqCategory(): SellerFaqCategoryForm {
+  return { id: '', label: '', icon: 'i-tabler-help-circle' }
+}
+
+export function emptyFaqItem(categoryId = ''): SellerFaqItemForm {
+  return { categoryId, question: '', answer: '' }
+}
+
+export function extractFaqFromSections(sections: StaticSection[]): {
+  categories: SellerFaqCategoryForm[]
+  items: SellerFaqItemForm[]
+} {
+  const faq = sections.find((s): s is Extract<StaticSection, { type: 'faq' }> => s.type === 'faq')
+  if (!faq) {
+    return {
+      categories: defaultFaqCategories.map(c => ({ ...c })),
+      items: defaultFaqItems.map(i => ({ ...i })),
+    }
+  }
+  return {
+    categories: faq.categories.map(c => ({ ...c })),
+    items: faq.items.map(i => ({ ...i })),
+  }
+}
+
 function sectionsToEditable(sections: StaticSection[]) {
   const paragraphSections: { itemsText: string }[] = []
   const listSections: { title: string, itemsText: string }[] = []
@@ -70,11 +104,40 @@ function sectionsToEditable(sections: StaticSection[]) {
     }
   }
   if (!paragraphSections.length) paragraphSections.push({ itemsText: '' })
-  return { paragraphSections, listSections }
+  const faq = extractFaqFromSections(sections)
+  return {
+    paragraphSections,
+    listSections,
+    faqCategories: faq.categories,
+    faqItems: faq.items,
+  }
+}
+
+function buildFaqSection(form: SellerPageFormValues): Extract<StaticSection, { type: 'faq' }> | null {
+  const categories = form.faqCategories
+    .map(c => ({
+      id: c.id.trim(),
+      label: c.label.trim(),
+      icon: c.icon.trim() || 'i-tabler-help-circle',
+    }))
+    .filter(c => c.id && c.label)
+  const categoryIds = new Set(categories.map(c => c.id))
+  const items = form.faqItems
+    .map(i => ({
+      categoryId: i.categoryId.trim(),
+      question: i.question.trim(),
+      answer: i.answer.trim(),
+    }))
+    .filter(i => i.question && i.answer && categoryIds.has(i.categoryId))
+
+  if (!categories.length && !items.length) return null
+  return { type: 'faq', categories, items }
 }
 
 function editableToSections(form: SellerPageFormValues, previous?: StaticSection[]): StaticSection[] {
-  const preserved = (previous || []).filter(s => s.type !== 'paragraphs' && s.type !== 'list')
+  const preserved = (previous || []).filter(
+    s => s.type !== 'paragraphs' && s.type !== 'list' && s.type !== 'faq',
+  )
   const paragraphs: StaticSection[] = form.paragraphSections
     .map((s) => {
       const items = textToContent(s.itemsText)
@@ -91,7 +154,13 @@ function editableToSections(form: SellerPageFormValues, previous?: StaticSection
         .filter(Boolean),
     }))
     .filter(s => s.items.length)
-  return [...paragraphs, ...lists, ...preserved]
+  const faq = buildFaqSection(form)
+  const faqSections: StaticSection[] = faq ? [faq] : []
+  // FAQ template: Q&A first; other templates keep paragraphs/lists then FAQ if present
+  if (form.template === 'faq' || form.id === 'faq') {
+    return [...faqSections, ...paragraphs, ...lists, ...preserved]
+  }
+  return [...paragraphs, ...lists, ...faqSections, ...preserved]
 }
 
 export function normalizeStaticPage(page: StaticPage): SellerManagedPage {
@@ -132,6 +201,8 @@ export function emptyPageForm(): SellerPageFormValues {
     seo: emptySeoMeta(),
     paragraphSections: [{ itemsText: '' }],
     listSections: [],
+    faqCategories: [],
+    faqItems: [],
   }
 }
 
@@ -149,7 +220,13 @@ export function toPageForm(page: SellerManagedPage): SellerPageFormValues {
     seo: { ...emptySeoMeta(), ...page.seo },
     paragraphSections: editable.paragraphSections,
     listSections: editable.listSections,
+    faqCategories: editable.faqCategories,
+    faqItems: editable.faqItems,
   }
+}
+
+export function isFaqPage(page: Pick<SellerPageFormValues, 'id' | 'template'> | SellerManagedPage) {
+  return page.id === 'faq' || page.template === 'faq'
 }
 
 export function formToSellerPage(

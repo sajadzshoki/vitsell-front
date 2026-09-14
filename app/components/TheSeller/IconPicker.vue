@@ -45,7 +45,7 @@
             icon="i-tabler-icons"
             class="cursor-pointer"
             :disabled="disabled"
-            @click="open = true"
+            @click="openPicker"
           >
             {{ $t('انتخاب آیکون') }}
           </UButton>
@@ -92,28 +92,85 @@
             icon="i-tabler-search"
           />
 
-          <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-72 overflow-y-auto scrollbar-none pe-1">
-            <button
-              v-for="key in filtered"
-              :key="key"
-              type="button"
-              class="aspect-square rounded-xl border grid place-items-center transition-all cursor-pointer"
-              :class="model === key
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-muted bg-muted/40 text-toned hover:(border-accented bg-elevated)'"
-              :title="key"
-              :aria-label="key"
-              @click="pick(key)"
+          <div
+            v-if="filteredCustomImages.length"
+            class="space-y-2"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-xs font-medium text-toned">
+                {{ $t('آیکون‌های آپلودشده') }}
+              </p>
+              <span class="text-[10px] text-dimmed num">
+                {{ filteredCustomImages.length.toLocaleString('fa-IR') }}
+              </span>
+            </div>
+            <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-40 overflow-y-auto scrollbar-none pe-1">
+              <div
+                v-for="url in filteredCustomImages"
+                :key="url"
+                class="relative aspect-square"
+              >
+                <button
+                  type="button"
+                  class="size-full rounded-xl border grid place-items-center transition-all cursor-pointer overflow-hidden p-1.5"
+                  :class="model === url
+                    ? 'border-primary bg-primary/10'
+                    : 'border-muted bg-muted/40 hover:(border-accented bg-elevated)'"
+                  :title="url"
+                  :aria-label="$t('انتخاب آیکون آپلودشده')"
+                  @click="pick(url)"
+                >
+                  <img
+                    :src="resolveMediaUrl(url)"
+                    alt=""
+                    class="size-full object-contain"
+                  >
+                </button>
+                <button
+                  type="button"
+                  class="absolute -top-1 -end-1 size-5 rounded-full bg-default border border-muted text-toned hover:text-error grid place-items-center cursor-pointer shadow-sm"
+                  :aria-label="$t('حذف از لیست')"
+                  @click.stop="removeCustom(url)"
+                >
+                  <UIcon
+                    name="i-tabler-x"
+                    class="size-3"
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <p
+              v-if="filteredCustomImages.length"
+              class="text-xs font-medium text-toned"
             >
-              <UIcon
-                :name="resolveSellerAdminIconName(key)"
-                class="size-5"
-              />
-            </button>
+              {{ $t('آیکون‌های آماده') }}
+            </p>
+            <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-72 overflow-y-auto scrollbar-none pe-1">
+              <button
+                v-for="key in filteredKeys"
+                :key="key"
+                type="button"
+                class="aspect-square rounded-xl border grid place-items-center transition-all cursor-pointer"
+                :class="model === key
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-muted bg-muted/40 text-toned hover:(border-accented bg-elevated)'"
+                :title="key"
+                :aria-label="key"
+                @click="pick(key)"
+              >
+                <UIcon
+                  :name="resolveSellerAdminIconName(key)"
+                  class="size-5"
+                />
+              </button>
+            </div>
           </div>
 
           <p
-            v-if="!filtered.length"
+            v-if="!filteredKeys.length && !filteredCustomImages.length"
             class="text-xs text-muted text-center py-4"
           >
             {{ $t('آیکونی پیدا نشد') }}
@@ -225,6 +282,7 @@ const model = defineModel<string>({ default: '' })
 const { t } = useI18n()
 const toast = useAppToast()
 const { uploadFiles } = useSellerMedia()
+const { imageIcons, keyIcons, hydrate, addIcon, removeIcon } = useSellerCustomIcons()
 
 const open = ref(false)
 const search = ref('')
@@ -232,19 +290,28 @@ const customKey = ref('')
 const uploading = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
-const extraKeys = useState<string[]>('seller-icon-picker-extras', () => [])
-
 const allKeys = computed(() => {
-  const set = new Set<string>([...sellerAdminIconKeys, ...extraKeys.value])
+  const set = new Set<string>([...sellerAdminIconKeys, ...keyIcons.value])
   const current = normalizeSellerAdminIconKey(model.value)
   if (current && !isSellerAdminIconImage(current)) set.add(current)
   return [...set]
 })
 
-const filtered = computed(() => {
+const filteredKeys = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return allKeys.value
   return allKeys.value.filter(key => key.toLowerCase().includes(q))
+})
+
+const filteredCustomImages = computed(() => {
+  const list = [...imageIcons.value]
+  const current = String(model.value || '').trim()
+  if (current && isSellerAdminIconImage(current) && !list.includes(current)) {
+    list.unshift(current)
+  }
+  const q = search.value.trim().toLowerCase()
+  if (!q) return list
+  return list.filter(url => url.toLowerCase().includes(q))
 })
 
 const isImage = computed(() => isSellerAdminIconImage(model.value))
@@ -257,8 +324,17 @@ const displayValue = computed(() => {
   return normalizeSellerAdminIconKey(raw)
 })
 
+function openPicker() {
+  hydrate()
+  open.value = true
+}
+
 function pick(key: string) {
-  model.value = normalizeSellerAdminIconKey(key)
+  const next = isSellerAdminIconImage(key)
+    ? String(key).trim()
+    : normalizeSellerAdminIconKey(key)
+  model.value = next
+  if (next) addIcon(next)
   open.value = false
 }
 
@@ -273,12 +349,15 @@ function openFilePicker() {
 function addCustomKey() {
   const key = normalizeSellerAdminIconKey(customKey.value)
   if (!key || isSellerAdminIconImage(key)) return
-  if (!extraKeys.value.includes(key)) {
-    extraKeys.value = [...extraKeys.value, key]
-  }
+  addIcon(key)
   model.value = key
   customKey.value = ''
   open.value = false
+}
+
+function removeCustom(url: string) {
+  removeIcon(url)
+  if (model.value === url) model.value = ''
 }
 
 async function onFileChange(event: Event) {
@@ -299,11 +378,20 @@ async function onFileChange(event: Event) {
       toast.error(t(result.error || 'آپلود آیکون ناموفق بود'))
       return
     }
-    model.value = result.items[0].url
+    const url = result.items[0].url
+    addIcon(url)
+    model.value = url
+    toast.success(t('آیکون به لیست اضافه شد'))
     open.value = false
   }
   finally {
     uploading.value = false
   }
 }
+
+onMounted(() => {
+  hydrate()
+  const current = String(model.value || '').trim()
+  if (current) addIcon(current)
+})
 </script>

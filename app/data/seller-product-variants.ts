@@ -29,7 +29,7 @@ export type SellerProductVariantAxis = {
   valueIds: string[]
 }
 
-/** Extended product commerce fields (frontend until backend variants exist) */
+/** Extended product commerce fields (persisted via listing product payload) */
 export type SellerProductCommerce = {
   productId: string
   slug: string

@@ -652,13 +652,34 @@ const tabItems = computed(() => [
 
 function hydrateCommerceFromProduct(productId: string, product = resolveProduct(productId)) {
   const existing = getCommerce(productId)
+  const apiSku = String(product.sku || '').trim()
+  const apiBarcode = String(product.barcode || '').trim()
+  const apiWeight = String(product.weight || '').trim()
+  const apiThreshold = Number(product.lowStockThreshold)
+  const apiAxes = Array.isArray(product.variantAxes) ? product.variantAxes : null
+  const apiVariants = Array.isArray(product.variants) ? product.variants : null
   commerce.value = {
     ...existing,
     productId,
-    tags: Array.isArray(product.tags) ? [...product.tags] : [...(existing.tags || [])],
+    sku: apiSku || existing.sku || '',
+    barcode: apiBarcode || existing.barcode || '',
+    weight: apiWeight || existing.weight || '',
+    lowStockThreshold: Number.isFinite(apiThreshold) && apiThreshold >= 0
+      ? apiThreshold
+      : (existing.lowStockThreshold || 5),
+    featured: Boolean(product.featured),
+    published: product.published !== false,
+    variantAxes: (apiAxes?.length ? apiAxes : existing.variantAxes)?.map(a => ({ ...a })) ?? [],
+    variants: (apiVariants?.length ? apiVariants : existing.variants)?.map(v => ({ ...v })) ?? [],
+    warehouseId: existing.warehouseId ?? null,
+    slug: existing.slug?.trim() || productId,
+    tags: Array.isArray(product.tags) && product.tags.length
+      ? [...product.tags]
+      : [...(existing.tags || [])],
     seo: {
       ...emptySeoMeta(),
-      ...(product.seo || existing.seo || {}),
+      ...(existing.seo || {}),
+      ...(product.seo || {}),
     },
   }
 }
@@ -694,6 +715,9 @@ else {
 watch(
   () => [props.mode, props.productId, getListing(props.productId || '')?.stock, resolveProduct(props.productId || '').title] as const,
   () => {
+    // Skip while saving — updateListingProduct mutates listing/product and would
+    // rehydrate from a stale commerce map mid-submit.
+    if (submitting.value) return
     if (props.mode === 'edit' && props.productId) {
       const listing = getListing(props.productId)
       const product = resolveProduct(props.productId)
@@ -844,7 +868,11 @@ function listingExtras() {
     published: commerce.value.published,
     hasVariants: commerce.value.variants.length > 0,
     sku: commerce.value.sku.trim() || undefined,
+    barcode: commerce.value.barcode.trim() || undefined,
+    weight: commerce.value.weight.trim() || undefined,
     lowStockThreshold: Number(commerce.value.lowStockThreshold) || 5,
+    variantAxes: commerce.value.variantAxes,
+    variants: commerce.value.variants,
   }
 }
 
@@ -900,6 +928,9 @@ async function onSubmit(publish: boolean) {
       }
       const product = withCategoryLabel(built)
       const listing = getListing(props.productId)
+      // Persist commerce overlay BEFORE listing PATCH — PATCH updates stock/title and
+      // would otherwise trigger the form watch against a stale commerce map.
+      persistCommerce(props.productId)
       const result = await updateListingProduct(
         props.productId,
         product,
@@ -911,7 +942,9 @@ async function onSubmit(publish: boolean) {
         toast.error(t(result.error))
         return
       }
+      // Re-apply local overlay after API sync (sku may refresh from response)
       persistCommerce(props.productId)
+      captureSnapshot()
       bumpUsage(previousTags, -1)
       bumpUsage(commerce.value.tags, 1)
       void loadCategorySpecKeys(form.value.category)
