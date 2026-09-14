@@ -143,7 +143,7 @@
               class="w-32"
               :placeholder="$t('قیمت گروهی')"
               dir="ltr"
-              digits-only
+              thousand-sep
             />
             <TheFormInput
               v-model="bulkStock"
@@ -217,17 +217,17 @@
               @update:model-value="patchVariant(vIndex, { barcode: $event })"
             />
             <TheFormInput
-              :model-value="String(variant.price || '')"
+              :model-value="variant.price ? formatPriceInput(variant.price) : ''"
               :label="$t('قیمت')"
               dir="ltr"
-              digits-only
+              thousand-sep
               @update:model-value="patchVariant(vIndex, { price: Number($event.replace(/\D/g, '') || 0) })"
             />
             <TheFormInput
-              :model-value="variant.salePrice != null ? String(variant.salePrice) : ''"
+              :model-value="variant.salePrice != null ? formatPriceInput(variant.salePrice) : ''"
               :label="$t('قیمت فروش')"
               dir="ltr"
-              digits-only
+              thousand-sep
               @update:model-value="patchVariant(vIndex, { salePrice: $event ? Number($event.replace(/\D/g, '') || 0) : null })"
             />
             <TheFormInput
@@ -282,7 +282,7 @@ import {
   type SellerProductVariant,
   type SellerProductVariantAxis,
 } from '~/data/seller-product-variants'
-import { parsePriceInput } from '~/data/seller-product-form'
+import { formatPriceInput, parsePriceInput } from '~/data/seller-product-form'
 
 const props = defineProps<{
   axes: SellerProductVariantAxis[]

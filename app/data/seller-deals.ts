@@ -73,7 +73,7 @@ export function isDealLive(deal: SellerAmazingDeal, now = Date.now()) {
 function parseOptionalNumber(raw: string): number | null {
   const t = raw.trim()
   if (!t) return null
-  const n = Math.round(Number(t))
+  const n = Math.round(Number(t.replace(/[^\d]/g, '') || 'NaN'))
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
@@ -124,7 +124,7 @@ export function toAmazingDealForm(deal: SellerAmazingDeal): SellerAmazingDealFor
     endsAt: toDatetimeLocalValue(new Date(deal.endsAt)),
     active: deal.active,
     name: deal.name || '',
-    specialPrice: deal.specialPrice == null ? '' : String(deal.specialPrice),
+    specialPrice: deal.specialPrice == null ? '' : deal.specialPrice.toLocaleString('en-US'),
     maxQuantity: deal.maxQuantity == null ? '' : String(deal.maxQuantity),
     perCustomerLimit: deal.perCustomerLimit == null ? '' : String(deal.perCustomerLimit),
     priority: deal.priority ?? 100,

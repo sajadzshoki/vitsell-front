@@ -21,7 +21,7 @@
           :ui="{
             item: 'basis-1/3 ps-3',
             container: 'ms-0 items-center',
-            viewport: 'px-8',
+            viewport: 'md:px-8 ',
             prev: 'start-0 z-20 shadow-sm',
             next: 'end-0 z-20 shadow-sm',
           }"

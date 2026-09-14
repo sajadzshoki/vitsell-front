@@ -70,14 +70,15 @@ export function emptyDiscountForm(): SellerDiscountFormValues {
 }
 
 export function toDiscountForm(d: SellerDiscount): SellerDiscountFormValues {
+  const money = (n: number) => n.toLocaleString('en-US')
   return {
     id: d.id,
     name: d.name,
     description: d.description,
     type: d.type,
-    value: String(d.value),
-    minOrder: String(d.minOrder),
-    maxDiscount: d.maxDiscount == null ? '' : String(d.maxDiscount),
+    value: d.type === 'fixed' ? money(d.value) : String(d.value),
+    minOrder: money(d.minOrder),
+    maxDiscount: d.maxDiscount == null ? '' : money(d.maxDiscount),
     startsAt: d.startsAt ? toDatetimeLocalValue(new Date(d.startsAt)) : '',
     endsAt: d.endsAt ? toDatetimeLocalValue(new Date(d.endsAt)) : '',
     status: d.status,
@@ -91,13 +92,13 @@ export function toDiscountForm(d: SellerDiscount): SellerDiscountFormValues {
 function parseOptionalInt(raw: string): number | null {
   const t = raw.trim()
   if (!t) return null
-  const n = Math.round(Number(t))
+  const n = Math.round(Number(t.replace(/[^\d]/g, '') || 'NaN'))
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
 export function formToDiscount(form: SellerDiscountFormValues, previous?: SellerDiscount): SellerDiscount {
   const now = new Date().toISOString()
-  const valueNum = Number(form.value)
+  const valueNum = Number(String(form.value).replace(/[^\d]/g, '') || '0')
   return {
     id: form.id.trim() || previous?.id || `disc-${Date.now()}`,
     name: form.name.trim(),
@@ -106,7 +107,7 @@ export function formToDiscount(form: SellerDiscountFormValues, previous?: Seller
     value: form.type === 'percent'
       ? Math.min(99, Math.max(1, Math.round(valueNum) || 1))
       : Math.max(0, Math.round(valueNum) || 0),
-    minOrder: Math.max(0, Math.round(Number(form.minOrder) || 0)),
+    minOrder: Math.max(0, Math.round(Number(String(form.minOrder).replace(/[^\d]/g, '') || '0') || 0)),
     maxDiscount: parseOptionalInt(form.maxDiscount),
     startsAt: form.startsAt.trim() ? fromDatetimeLocalValue(form.startsAt) : null,
     endsAt: form.endsAt.trim() ? fromDatetimeLocalValue(form.endsAt) : null,

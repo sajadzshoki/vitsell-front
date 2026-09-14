@@ -86,7 +86,7 @@
           :label="$t('قیمت ویژه (تومان)')"
           :placeholder="$t('اختیاری — خالی = از درصد')"
           dir="ltr"
-          digits-only
+          thousand-sep
           :error="errors.specialPrice"
           icon="i-tabler-cash"
         />

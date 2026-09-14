@@ -222,7 +222,7 @@
             v-model="createForm.amount"
             :label="$t('مبلغ بازپرداخت (تومان)')"
             dir="ltr"
-            digits-only
+            thousand-sep
             required
           />
           <TheFormInput

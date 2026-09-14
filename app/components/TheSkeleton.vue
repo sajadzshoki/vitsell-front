@@ -65,10 +65,10 @@ const n = computed(() => props.count ?? defaults[props.variant])
 </script>
 
 <template>
-  <!-- Hero carousel -->
+  <!-- Hero carousel — same frame as TheHeroCarousel (4:1 / 2:1) -->
   <USkeleton
     v-if="variant === 'hero'"
-    class="w-full h-[220px] sm:h-[280px] md:h-auto md:min-h-[440px] rounded-none"
+    class="w-full aspect-[4/1] <md:aspect-[2/1] rounded-none"
   />
 
   <!-- Circle strip -->

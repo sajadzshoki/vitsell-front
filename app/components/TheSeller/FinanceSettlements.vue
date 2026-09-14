@@ -179,14 +179,14 @@
             v-model="createForm.amount"
             :label="$t('مبلغ (تومان)')"
             dir="ltr"
-            digits-only
+            thousand-sep
             required
           />
           <TheFormInput
             v-model="createForm.fees"
             :label="$t('کارمزد (تومان)')"
             dir="ltr"
-            digits-only
+            thousand-sep
           />
           <UFormField :label="$t('منبع')">
             <USelect

@@ -184,19 +184,20 @@ export function toDiscountCode(
 }
 
 export function toDiscountCodeForm(item: SellerDiscountCode): SellerDiscountCodeForm {
+  const money = (n: number) => n.toLocaleString('en-US')
   return {
     code: item.code,
     percent: String(item.percent),
     active: item.active,
     startsAt: toDatetimeLocalValue(new Date(item.startsAt)),
     endsAt: toDatetimeLocalValue(new Date(item.endsAt)),
-    minAmount: String(item.minAmount),
+    minAmount: money(item.minAmount),
     oncePerUser: item.oncePerUser,
     name: item.name || '',
     description: item.description || '',
     discountType: item.discountType || 'percent',
-    fixedAmount: String(item.fixedAmount ?? 0),
-    maxDiscount: item.maxDiscount == null ? '' : String(item.maxDiscount),
+    fixedAmount: money(item.fixedAmount ?? 0),
+    maxDiscount: item.maxDiscount == null ? '' : money(item.maxDiscount),
     usageLimit: item.usageLimit == null ? '' : String(item.usageLimit),
     perCustomerLimit: item.perCustomerLimit == null ? '' : String(item.perCustomerLimit),
     priority: item.priority ?? 100,
@@ -205,6 +206,10 @@ export function toDiscountCodeForm(item: SellerDiscountCode): SellerDiscountCode
       : emptyMarketingTargeting(),
     seo: item.seo ? { ...emptySeoMeta(), ...item.seo } : emptySeoMeta(),
   }
+}
+
+function moneyDigits(raw: string): number {
+  return Math.max(0, Math.round(Number(String(raw).replace(/[^\d]/g, '') || '0') || 0))
 }
 
 export function formToDiscountCodePayload(
@@ -218,7 +223,7 @@ export function formToDiscountCodePayload(
     active: form.active,
     startsAt: fromDatetimeLocalValue(form.startsAt),
     endsAt: fromDatetimeLocalValue(form.endsAt),
-    minAmount: Math.max(0, Math.round(Number(form.minAmount) || 0)),
+    minAmount: moneyDigits(form.minAmount),
     oncePerUser: form.oncePerUser || Number(form.perCustomerLimit) === 1,
   }
 }
@@ -236,10 +241,10 @@ export function applyCouponOverlay(
     name: form.name.trim(),
     description: form.description.trim(),
     discountType: form.discountType,
-    fixedAmount: Math.max(0, Math.round(Number(form.fixedAmount) || 0)),
-    maxDiscount: maxRaw ? Math.max(0, Math.round(Number(maxRaw) || 0)) : null,
-    usageLimit: usageRaw ? Math.max(0, Math.round(Number(usageRaw) || 0)) : null,
-    perCustomerLimit: perRaw ? Math.max(0, Math.round(Number(perRaw) || 0)) : null,
+    fixedAmount: moneyDigits(form.fixedAmount),
+    maxDiscount: maxRaw ? moneyDigits(maxRaw) : null,
+    usageLimit: usageRaw ? Math.max(0, Math.round(Number(usageRaw.replace(/[^\d]/g, '') || '0') || 0)) : null,
+    perCustomerLimit: perRaw ? Math.max(0, Math.round(Number(perRaw.replace(/[^\d]/g, '') || '0') || 0)) : null,
     priority: Math.max(0, Math.round(Number(form.priority) || 0)),
     targeting: { ...emptyMarketingTargeting(), ...form.targeting },
     seo: { ...emptySeoMeta(), ...form.seo },

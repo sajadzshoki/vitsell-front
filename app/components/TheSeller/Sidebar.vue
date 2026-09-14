@@ -134,6 +134,13 @@
         />
         <span class="text-error">{{ $t('خروج از حساب') }}</span>
       </button>
+
+      <div
+        class="px-3 pt-2 pb-1 text-xs text-toned text-center tracking-wide select-none"
+        :title="versionTitle"
+      >
+        {{ combinedVersion }}
+      </div>
     </nav>
   </div>
 </template>
@@ -148,8 +155,18 @@ const { shop, shopInitial, newOrdersCount, unansweredReviews } = useSeller()
 const { unansweredCount: unansweredQuestions, ensureLoaded } = useSellerQuestions()
 const { can } = useSellerPermissions()
 const { isDark, toggle: toggleColorMode } = useColorModeTransition()
+const { frontVersion, backVersion, combinedVersion, fetchBackVersion } = useAppVersion()
 
 void ensureLoaded()
+onMounted(() => {
+  void fetchBackVersion()
+})
+
+const versionTitle = computed(() => {
+  const front = frontVersion.value
+  const back = backVersion.value || '…'
+  return `front: ${front} · back: ${back}`
+})
 
 const visibleGroups = computed(() => {
   return sellerNavGroups

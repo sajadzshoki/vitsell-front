@@ -159,13 +159,13 @@
           v-model="draft.priceMin"
           :label="$t('حداقل قیمت')"
           dir="ltr"
-          digits-only
+          thousand-sep
         />
         <TheFormInput
           v-model="draft.priceMax"
           :label="$t('حداکثر قیمت')"
           dir="ltr"
-          digits-only
+          thousand-sep
         />
         <TheIRDatePicker
           v-model="draft.dateFrom"
@@ -494,8 +494,8 @@ function buildServerQuery() {
     category: filters.getString('category') || undefined,
     brand: filters.getString('brand') || undefined,
     stock: filters.getString('stock') || undefined,
-    priceMin: fv.priceMin ? Number(fv.priceMin) : undefined,
-    priceMax: fv.priceMax ? Number(fv.priceMax) : undefined,
+    priceMin: fv.priceMin ? Number(String(fv.priceMin).replace(/\D/g, '')) || undefined : undefined,
+    priceMax: fv.priceMax ? Number(String(fv.priceMax).replace(/\D/g, '')) || undefined : undefined,
     dateFrom: String(fv.dateFrom || '') || undefined,
     dateTo: String(fv.dateTo || '') || undefined,
     hasDiscount: fv.hasDiscount === true ? true : undefined,

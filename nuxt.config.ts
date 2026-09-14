@@ -89,6 +89,8 @@ export default defineNuxtConfig({
             appMode: process.env.NUXT_PUBLIC_APP_MODE || "store",
             storeUrl: process.env.NUXT_PUBLIC_STORE_URL || "https://vitsell.ir",
             adminUrl: process.env.NUXT_PUBLIC_ADMIN_URL || "https://seller.vitsell.ir",
+            /** Front app version `{channel}.{major}.{minor}` e.g. beta.0.1 — combine with API APP_VERSION in admin sidebar */
+            appVersion: process.env.NUXT_PUBLIC_APP_VERSION || "beta.0.1",
         },
     },
 

@@ -204,9 +204,9 @@
               <TheFormInput
                 v-model="form.price"
                 :label="$t('قیمت فروش (تومان)')"
-                :placeholder="$t('مثلاً 25000000')"
+                :placeholder="$t('مثلاً 25,000,000')"
                 dir="ltr"
-                digits-only
+                thousand-sep
                 :error="errors.price"
                 required
                 icon="i-tabler-cash"
@@ -216,7 +216,7 @@
                 :label="$t('قیمت قبلی / مقایسه‌ای')"
                 :placeholder="$t('برای نمایش تخفیف')"
                 dir="ltr"
-                digits-only
+                thousand-sep
                 :error="errors.oldPrice"
               />
               <TheFormInput
@@ -281,66 +281,135 @@
 
         <template #specs>
           <div class="space-y-5">
-            <div
-              v-for="group in attributeGroups"
-              :key="group.title"
-            >
-              <h4 class="text-sm font-bold text-toned mb-3 flex items-center gap-2">
-                <span class="size-1.5 rounded-full bg-primary shrink-0" />
-                {{ $t(group.title) }}
-              </h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <template
-                  v-for="field in group.fields"
-                  :key="field.key"
-                >
-                  <TheFormSelect
-                    v-if="field.type === 'select'"
-                    v-model="form.attrs[field.key]"
-                    :label="$t(field.label)"
-                    :items="field.options || []"
-                    :placeholder="$t(field.placeholder || 'انتخاب کنید')"
-                    :required="field.required"
-                    :error="errors[`attr:${field.key}`]"
-                  />
-                  <TheFormInput
-                    v-else
-                    v-model="form.attrs[field.key]"
-                    :label="$t(field.label)"
-                    :placeholder="$t(field.placeholder || '')"
-                    :required="field.required"
-                    :error="errors[`attr:${field.key}`]"
-                  />
-                </template>
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h4 class="text-sm font-bold text-toned">
+                  {{ $t('مشخصات محصول') }}
+                </h4>
+                <p class="text-xs text-muted mt-1 leading-6">
+                  {{ $t('عنوان و مقدار هر مشخصه را وارد کنید؛ کلیدهای قبلی همین دسته پیشنهاد می‌شوند.') }}
+                </p>
               </div>
+              <UButton
+                type="button"
+                color="primary"
+                variant="soft"
+                size="sm"
+                icon="i-tabler-plus"
+                class="cursor-pointer"
+                @click="addSpecRow"
+              >
+                {{ $t('افزودن مشخصه') }}
+              </UButton>
             </div>
 
-            <div>
-              <h4 class="text-sm font-bold text-toned mb-2">
-                {{ $t('رنگ‌های نمایشی (میراث)') }}
+            <div class="overflow-x-auto rounded-2xl border border-muted">
+              <table class="w-full min-w-md text-sm">
+                <thead class="bg-muted/60 text-toned">
+                  <tr class="text-start">
+                    <th class="px-3 py-2.5 font-medium w-[40%]">
+                      {{ $t('عنوان') }}
+                    </th>
+                    <th class="px-3 py-2.5 font-medium">
+                      {{ $t('مقدار') }}
+                    </th>
+                    <th class="px-3 py-2.5 font-medium w-12" />
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(row, index) in form.specs"
+                    :key="index"
+                    class="border-t border-muted"
+                  >
+                    <td class="px-3 py-2 align-top">
+                      <UInput
+                        v-model="row.key"
+                        :placeholder="$t('مثلاً مدل')"
+                        class="w-full"
+                      />
+                      <div
+                        v-if="unusedSpecKeySuggestions.length"
+                        class="flex flex-wrap gap-1.5 mt-1.5"
+                      >
+                        <button
+                          v-for="key in unusedSpecKeySuggestions.slice(0, 8)"
+                          :key="key"
+                          type="button"
+                          class="rounded-lg bg-muted px-2 py-0.5 text-[11px] text-toned hover:(bg-primary/10 text-primary) cursor-pointer"
+                          @click="applySpecKeySuggestion(index, key)"
+                        >
+                          {{ key }}
+                        </button>
+                      </div>
+                      <p
+                        v-if="errors[`spec:${index}:key`]"
+                        class="text-[11px] text-error mt-1"
+                      >
+                        {{ $t(errors[`spec:${index}:key`]) }}
+                      </p>
+                    </td>
+                    <td class="px-3 py-2 align-top">
+                      <UInput
+                        v-model="row.value"
+                        :placeholder="$t('مثلاً سامسونگ')"
+                        class="w-full"
+                      />
+                      <p
+                        v-if="errors[`spec:${index}:value`]"
+                        class="text-[11px] text-error mt-1"
+                      >
+                        {{ $t(errors[`spec:${index}:value`]) }}
+                      </p>
+                    </td>
+                    <td class="px-2 py-2 align-top">
+                      <UButton
+                        type="button"
+                        color="error"
+                        variant="ghost"
+                        size="sm"
+                        icon="i-tabler-trash"
+                        class="cursor-pointer"
+                        :disabled="form.specs.length <= 1"
+                        :aria-label="$t('حذف')"
+                        @click="removeSpecRow(index)"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div
+              v-if="derivedColors.length"
+              class="rounded-2xl border border-muted bg-muted/30 p-4"
+            >
+              <h4 class="text-sm font-bold text-toned mb-1">
+                {{ $t('رنگ‌های محصول') }}
               </h4>
-              <p class="text-xs text-muted mb-3">
-                {{ $t('برای واریانت واقعی از تب واریانت استفاده کنید. این بخش برای سازگاری با دادهٔ فعلی است.') }}
+              <p class="text-xs text-muted mb-3 leading-6">
+                {{ $t('از محور رنگ در تب واریانت خوانده می‌شود.') }}
               </p>
               <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="color in sellerProductColorPresets"
-                  :key="color.hex"
-                  type="button"
-                  class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-all  cursor-pointer"
-                  :class="isColorSelected(color)
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-muted text-toned hover:border-accented'"
-                  @click="toggleColor(color)"
+                <span
+                  v-for="color in derivedColors"
+                  :key="`${color.name}-${color.hex}`"
+                  class="inline-flex items-center gap-2 rounded-xl border border-muted px-3 py-2 text-xs text-toned"
                 >
                   <span
                     class="size-4 rounded-full border border-default shrink-0"
                     :style="{ backgroundColor: color.hex }"
                   />
                   {{ $t(color.name) }}
-                </button>
+                </span>
               </div>
             </div>
+            <p
+              v-else
+              class="text-xs text-muted leading-6"
+            >
+              {{ $t('برای نمایش رنگ در فروشگاه، در تب واریانت یک ویژگی رنگ اضافه کنید.') }}
+            </p>
           </div>
         </template>
 
@@ -481,24 +550,22 @@
 <script setup lang="ts">
 import {
   buildSellerProductFromForm,
+  colorsFromVariantAxes,
   emptySellerProductForm,
+  emptySpecRow,
   getBrandOptions,
-  getCategoryAttributeFields,
   normalizeProductSlug,
   parsePriceInput,
   productToSellerForm,
   sellerCategoriesToFormOptions,
   sellerProductBadges,
   SELLER_BADGE_NONE,
-  sellerProductColorPresets,
   slugifyProductTitle,
   validateSellerProductForm,
-  type SellerProductField,
   type SellerProductFormValues,
 } from '~/data/seller-product-form'
 import { emptyProductCommerce, type SellerProductCommerce } from '~/data/seller-product-variants'
-import { htmlToPlainText } from '~/data/seo'
-import type { ProductColor } from '~/data/products'
+import { emptySeoMeta, htmlToPlainText, sanitizeSeoMeta } from '~/data/seo'
 
 const props = withDefaults(defineProps<{
   mode?: 'create' | 'edit'
@@ -538,16 +605,22 @@ const {
   ensureLoaded: ensureCategories,
   getById: getSellerCategory,
 } = useSellerCategories()
+const {
+  attributes,
+  ensureLoaded: ensureAttributes,
+} = useSellerAttributes()
 
 ensureBrands()
 ensureWarehouses()
 ensureProductTags()
 void ensureCategories()
+void ensureAttributes({ force: false })
 
 const isEdit = computed(() => props.mode === 'edit' && Boolean(props.productId))
 const form = ref<SellerProductFormValues>(emptySellerProductForm())
 const commerce = ref<SellerProductCommerce>(emptyProductCommerce())
 const slugManual = ref(false)
+const categorySpecKeys = ref<string[]>([])
 const categoryOptions = computed(() =>
   sellerCategoriesToFormOptions(categories.value, {
     includeInactiveIds: form.value.category ? [form.value.category] : [],
@@ -577,16 +650,41 @@ const tabItems = computed(() => [
   { label: t('سئو'), value: 'seo', slot: 'seo' as const, icon: 'i-tabler-world-search' },
 ])
 
-function loadCommerce(productId: string) {
-  commerce.value = { ...getCommerce(productId), seo: { ...getCommerce(productId).seo } }
+function hydrateCommerceFromProduct(productId: string, product = resolveProduct(productId)) {
+  const existing = getCommerce(productId)
+  commerce.value = {
+    ...existing,
+    productId,
+    tags: Array.isArray(product.tags) ? [...product.tags] : [...(existing.tags || [])],
+    seo: {
+      ...emptySeoMeta(),
+      ...(product.seo || existing.seo || {}),
+    },
+  }
+}
+
+async function loadCategorySpecKeys(categoryId: string) {
+  if (!categoryId) {
+    categorySpecKeys.value = []
+    return
+  }
+  const { result } = await useGet<{ items: Array<{ key: string }> }>(
+    `/seller/categories/${encodeURIComponent(categoryId)}/spec-keys`,
+    { headers: { 'no-error': true } },
+  )
+  const items = Array.isArray(result?.items) ? result.items : []
+  const keys = items.map(item => String(item.key || '').trim()).filter(Boolean)
+  const fromForm = form.value.specs.map(s => s.key.trim()).filter(Boolean)
+  categorySpecKeys.value = [...new Set([...keys, ...fromForm])]
 }
 
 if (isEdit.value && props.productId) {
   const listing = getListing(props.productId)
   const product = resolveProduct(props.productId)
   form.value = productToSellerForm(product, listing?.stock ?? 0)
-  loadCommerce(props.productId)
+  hydrateCommerceFromProduct(props.productId, product)
   slugManual.value = Boolean(commerce.value.slug?.trim())
+  void loadCategorySpecKeys(form.value.category)
   captureSnapshot()
 }
 else {
@@ -600,9 +698,10 @@ watch(
       const listing = getListing(props.productId)
       const product = resolveProduct(props.productId)
       form.value = productToSellerForm(product, listing?.stock ?? 0)
-      loadCommerce(props.productId)
+      hydrateCommerceFromProduct(props.productId, product)
       slugManual.value = Boolean(commerce.value.slug?.trim())
       errors.value = {}
+      void loadCategorySpecKeys(form.value.category)
     }
   },
 )
@@ -612,6 +711,13 @@ watch(
   (title) => {
     if (slugManual.value) return
     commerce.value.slug = title.trim() ? slugifyProductTitle(title) : ''
+  },
+)
+
+watch(
+  () => form.value.category,
+  (categoryId) => {
+    void loadCategorySpecKeys(categoryId)
   },
 )
 
@@ -656,19 +762,18 @@ const warehouseItems = computed(() =>
   warehouses.value.map(w => ({ value: w.id, label: w.name })),
 )
 
-const attributeFields = computed(() =>
-  getCategoryAttributeFields(form.value.category),
+const unusedSpecKeySuggestions = computed(() => {
+  const used = new Set(form.value.specs.map(s => s.key.trim()).filter(Boolean))
+  return categorySpecKeys.value.filter(key => !used.has(key))
+})
+
+const derivedColors = computed(() =>
+  colorsFromVariantAxes(commerce.value.variantAxes, attributes.value),
 )
 
-const attributeGroups = computed(() => {
-  const map = new Map<string, SellerProductField[]>()
-  for (const field of attributeFields.value) {
-    const list = map.get(field.group) ?? []
-    list.push(field)
-    map.set(field.group, list)
-  }
-  return [...map.entries()].map(([title, fields]) => ({ title, fields }))
-})
+watch(derivedColors, (colors) => {
+  form.value.colors = colors
+}, { immediate: true })
 
 const badgeItems = computed(() =>
   sellerProductBadges.map(badge => ({
@@ -684,12 +789,30 @@ const discountPercent = computed(() => {
   return Math.round(((oldPrice - price) / oldPrice) * 100)
 })
 
-function resetAttrsForCategory(categoryId: string) {
-  const next: Record<string, string> = {}
-  for (const field of getCategoryAttributeFields(categoryId)) {
-    next[field.key] = form.value.attrs[field.key] ?? ''
+function addSpecRow() {
+  form.value.specs = [...form.value.specs, emptySpecRow()]
+}
+
+function removeSpecRow(index: number) {
+  if (form.value.specs.length <= 1) return
+  form.value.specs = form.value.specs.filter((_, i) => i !== index)
+}
+
+function applySpecKeySuggestion(index: number, key: string) {
+  const next = [...form.value.specs]
+  const row = next[index]
+  if (!row) return
+  next[index] = { ...row, key }
+  form.value.specs = next
+  onCreateSpecKey(key)
+}
+
+function onCreateSpecKey(item: string) {
+  const key = String(item || '').trim()
+  if (!key) return
+  if (!categorySpecKeys.value.includes(key)) {
+    categorySpecKeys.value = [key, ...categorySpecKeys.value]
   }
-  form.value.attrs = next
 }
 
 function onCategorySelect(categoryId: string) {
@@ -697,21 +820,9 @@ function onCategorySelect(categoryId: string) {
   form.value.category = categoryId
   form.value.brand = ''
   form.value.colors = []
-  resetAttrsForCategory(categoryId)
+  form.value.specs = [emptySpecRow()]
   errors.value = {}
   activeTab.value = 'basic'
-}
-
-function isColorSelected(color: ProductColor) {
-  return form.value.colors.some(item => item.hex === color.hex)
-}
-
-function toggleColor(color: ProductColor) {
-  if (isColorSelected(color)) {
-    form.value.colors = form.value.colors.filter(item => item.hex !== color.hex)
-    return
-  }
-  form.value.colors = [...form.value.colors, color]
 }
 
 function persistCommerce(productId: string) {
@@ -721,6 +832,8 @@ function persistCommerce(productId: string) {
     ...commerce.value,
     productId,
     slug,
+    tags: [...commerce.value.tags],
+    seo: { ...emptySeoMeta(), ...commerce.value.seo },
     published: commerce.value.published,
   })
 }
@@ -742,14 +855,28 @@ function withCategoryLabel<T extends { categoryLabel: string, category: string }
   return { ...product, categoryLabel: label }
 }
 
+function buildProductPayload(base?: ReturnType<typeof resolveProduct>, id?: string) {
+  const colors = colorsFromVariantAxes(commerce.value.variantAxes, attributes.value)
+  form.value.colors = colors
+  return buildSellerProductFromForm(form.value, {
+    id,
+    base,
+    seo: sanitizeSeoMeta(commerce.value.seo),
+    tags: commerce.value.tags,
+    colors,
+  })
+}
+
 async function onSubmit(sendForReview: boolean) {
   commerce.value.slug = normalizeProductSlug(commerce.value.slug || form.value.title)
-  errors.value = validateSellerProductForm(form.value, attributeFields.value)
+  errors.value = validateSellerProductForm(form.value)
   if (Object.keys(errors.value).length) {
     toast.error(t('لطفاً فیلدهای الزامی را تکمیل کنید'))
     activeTab.value = errors.value.category || errors.value.title
       ? 'basic'
-      : (errors.value.price || errors.value.stock ? 'pricing' : 'basic')
+      : (errors.value.price || errors.value.stock
+          ? 'pricing'
+          : (Object.keys(errors.value).some(k => k.startsWith('spec:')) ? 'specs' : 'basic'))
     return
   }
 
@@ -761,15 +888,12 @@ async function onSubmit(sendForReview: boolean) {
       : Number.parseInt(form.value.stock.replace(/[^\d]/g, '') || '0', 10)
 
     const previousTags = isEdit.value && props.productId
-      ? [...(getCommerce(props.productId).tags || [])]
+      ? [...(resolveProduct(props.productId).tags || getCommerce(props.productId).tags || [])]
       : []
 
     if (isEdit.value && props.productId) {
       const previous = resolveProduct(props.productId)
-      const built = buildSellerProductFromForm(form.value, {
-        id: props.productId,
-        base: previous,
-      })
+      const built = buildProductPayload(previous, props.productId)
       if (!built) {
         toast.error(t('اطلاعات محصول معتبر نیست'))
         return
@@ -790,6 +914,7 @@ async function onSubmit(sendForReview: boolean) {
       persistCommerce(props.productId)
       bumpUsage(previousTags, -1)
       bumpUsage(commerce.value.tags, 1)
+      void loadCategorySpecKeys(form.value.category)
       if (previous.price !== product.price || (previous.oldPrice ?? null) !== (product.oldPrice ?? null)) {
         pushChange(
           props.productId,
@@ -803,7 +928,7 @@ async function onSubmit(sendForReview: boolean) {
       return
     }
 
-    const built = buildSellerProductFromForm(form.value)
+    const built = buildProductPayload()
     if (!built) {
       toast.error(t('اطلاعات محصول معتبر نیست'))
       return

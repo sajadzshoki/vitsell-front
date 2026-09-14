@@ -72,6 +72,16 @@
           </div>
           <div class="flex items-center gap-2">
             <UButton
+              :to="`/product/${listing.productId}`"
+              target="_blank"
+              color="neutral"
+              variant="soft"
+              size="xs"
+              icon="i-tabler-external-link"
+              class="cursor-pointer"
+              :aria-label="$t('مشاهده در فروشگاه')"
+            />
+            <UButton
               v-if="can('products.update') && listing.status === 'active'"
               color="neutral"
               variant="soft"

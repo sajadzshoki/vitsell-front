@@ -4,7 +4,7 @@
   </section>
 
   <section v-else-if="columns.length">
-    <div class="bg-default border border-muted rounded-2xl p-4 md:p-5">
+    <div class="bg-default border border-muted rounded-2xl py-4 px-2  md:p-5">
       <div class="flex items-center gap-2 mb-4">
         <UIcon name="i-tabler-flame" class="size-5 text-warning shrink-0" />
         <h2 class="text-base md:text-lg font-bold text-highlighted">

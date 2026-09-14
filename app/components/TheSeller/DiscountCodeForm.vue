@@ -84,9 +84,9 @@
           v-else
           v-model="form.fixedAmount"
           :label="$t('مبلغ ثابت (تومان)')"
-          placeholder="50000"
+          placeholder="50,000"
           dir="ltr"
-          digits-only
+          thousand-sep
           :error="errors.fixedAmount"
           required
           icon="i-tabler-cash"
@@ -98,7 +98,7 @@
           :label="$t('سقف تخفیف (تومان)')"
           :placeholder="$t('اختیاری')"
           dir="ltr"
-          digits-only
+          thousand-sep
           icon="i-tabler-chart-arrows"
         />
 
@@ -107,7 +107,7 @@
           :label="$t('حداقل مبلغ سفارش (تومان)')"
           placeholder="0"
           dir="ltr"
-          digits-only
+          thousand-sep
           :error="errors.minAmount"
           required
           icon="i-tabler-cash"
@@ -259,8 +259,8 @@ function validate() {
   const next: typeof errors.value = {}
   const code = form.value.code.trim().toUpperCase()
   const percent = Number(form.value.percent)
-  const fixedAmount = Number(form.value.fixedAmount)
-  const minAmount = Number(form.value.minAmount)
+  const fixedAmount = Number(String(form.value.fixedAmount).replace(/\D/g, '') || '0')
+  const minAmount = Number(String(form.value.minAmount).replace(/\D/g, '') || '0')
 
   if (!isEdit.value) {
     if (!code) next.code = t('کد الزامی است')

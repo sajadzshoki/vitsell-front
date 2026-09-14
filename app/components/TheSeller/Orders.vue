@@ -108,14 +108,14 @@
         :model-value="String(filters.values.amountMin || '')"
         :label="$t('حداقل مبلغ')"
         dir="ltr"
-        digits-only
+        thousand-sep
         @update:model-value="filters.setFilter('amountMin', $event || null)"
       />
       <TheFormInput
         :model-value="String(filters.values.amountMax || '')"
         :label="$t('حداکثر مبلغ')"
         dir="ltr"
-        digits-only
+        thousand-sep
         @update:model-value="filters.setFilter('amountMax', $event || null)"
       />
       <TheIRDatePicker
@@ -417,8 +417,8 @@ function currentQuery() {
     payment: filters.getString('payment') || undefined,
     shipping: filters.getString('shipping') || undefined,
     paymentMethod: filters.getString('paymentMethod') || undefined,
-    amountMin: filters.values.amountMin ? Number(filters.values.amountMin) : undefined,
-    amountMax: filters.values.amountMax ? Number(filters.values.amountMax) : undefined,
+    amountMin: filters.values.amountMin ? Number(String(filters.values.amountMin).replace(/\D/g, '')) || undefined : undefined,
+    amountMax: filters.values.amountMax ? Number(String(filters.values.amountMax).replace(/\D/g, '')) || undefined : undefined,
     dateFrom: filters.values.dateFrom ? String(filters.values.dateFrom) : undefined,
     dateTo: filters.values.dateTo ? String(filters.values.dateTo) : undefined,
     hasDiscount: filters.values.hasDiscount === true ? true : undefined,

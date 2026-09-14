@@ -27,7 +27,7 @@
         :ui="{
           item: 'basis-[5.5rem] sm:basis-[6.25rem] md:basis-[6.75rem] lg:basis-[7.25rem] shrink-0 min-w-0',
           container: 'ms-0 py-1',
-          viewport: 'px-9 sm:px-10',
+          viewport: '-mx-3',
           prev: 'start-0 z-20 shadow-sm',
           next: 'end-0 z-20 shadow-sm',
         }"

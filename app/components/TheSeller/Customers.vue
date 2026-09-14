@@ -88,14 +88,14 @@
         :model-value="spendMin"
         :label="$t('حداقل خرید (تومان)')"
         dir="ltr"
-        digits-only
+        thousand-sep
         @update:model-value="setSpendMin($event)"
       />
       <TheFormInput
         :model-value="spendMax"
         :label="$t('حداکثر خرید (تومان)')"
         dir="ltr"
-        digits-only
+        thousand-sep
         @update:model-value="setSpendMax($event)"
       />
     </div>

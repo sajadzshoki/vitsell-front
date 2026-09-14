@@ -372,7 +372,7 @@ export class ProductReviewSchema extends BaseModel {
 }
 
 export class ProductSchema extends BaseModel {
-  static $columns = ['badge', 'brand', 'category', 'categoryLabel', 'colors', 'createdAt', 'fastDelivery', 'gallery', 'id', 'image', 'imageDark', 'inStock', 'oldPrice', 'price', 'rating', 'reviews', 'scores', 'shortDesc', 'shortName', 'soldCount', 'specs', 'title', 'updatedAt', 'viewCount'] as const
+  static $columns = ['badge', 'brand', 'category', 'categoryLabel', 'colors', 'createdAt', 'fastDelivery', 'gallery', 'id', 'image', 'imageDark', 'inStock', 'oldPrice', 'price', 'rating', 'reviews', 'scores', 'seo', 'shortDesc', 'shortName', 'soldCount', 'specs', 'tags', 'title', 'updatedAt', 'viewCount'] as const
   $columns = ProductSchema.$columns
   @column()
   declare badge: string | null
@@ -409,6 +409,8 @@ export class ProductSchema extends BaseModel {
   @column()
   declare scores: any | null
   @column()
+  declare seo: any | null
+  @column()
   declare shortDesc: string | null
   @column()
   declare shortName: string | null
@@ -416,6 +418,8 @@ export class ProductSchema extends BaseModel {
   declare soldCount: number
   @column()
   declare specs: any | null
+  @column()
+  declare tags: any | null
   @column()
   declare title: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })

@@ -134,6 +134,17 @@ function formatCard(digits: string) {
   return clipped.replace(/(\d{4})(?=\d)/g, '$1-')
 }
 
+/** Keep external/programmatic values formatted when thousandSep is on. */
+watch(
+  model,
+  (value) => {
+    if (!props.thousandSep) return
+    const next = formatThousand(onlyDigits(value || ''))
+    if (next !== value) model.value = next
+  },
+  { flush: 'post' },
+)
+
 function onNativeInput(event: Event) {
   const target = event.target as HTMLInputElement
   let next = target.value ?? ''

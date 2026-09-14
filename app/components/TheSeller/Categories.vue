@@ -310,15 +310,6 @@
                   >
                     {{ productCount(row.id).toLocaleString('fa-IR') }} {{ $t('محصول') }}
                   </UBadge>
-                  <UBadge
-                    v-if="attrCount(row.id)"
-                    color="info"
-                    variant="subtle"
-                    size="xs"
-                    class="num"
-                  >
-                    {{ attrCount(row.id).toLocaleString('fa-IR') }} {{ $t('ویژگی') }}
-                  </UBadge>
                 </div>
                 <div
                   class="text-[11px] text-muted num mt-0.5"
@@ -533,7 +524,6 @@ const {
   updateCategory,
   getById,
 } = useSellerCategories()
-const { attributes, ensureLoaded: ensureAttrs } = useSellerAttributes()
 const { can } = useSellerPermissions()
 const { search, status, hasActiveFilters, clearFilters, patchQuery } = useSellerListQuery({
   defaultStatus: 'all',
@@ -562,8 +552,6 @@ const parentFilter = computed({
     void patchQuery({ parentId: next })
   },
 })
-
-ensureAttrs()
 
 const statusTabs = computed(() => {
   const c = listMeta.value.statusCounts
@@ -609,10 +597,6 @@ function productCount(id: string) {
   const row = treeRows.value.find(r => r.id === id)
   if (row && 'productCount' in row) return Number((row as any).productCount) || 0
   return Number(listItems.value.find(c => c.id === id)?.productCount) || 0
-}
-
-function attrCount(id: string) {
-  return attributes.value.filter(a => a.categoryIds.includes(id)).length
 }
 
 /** Server already filtered — tree/flat only reshapes rows */

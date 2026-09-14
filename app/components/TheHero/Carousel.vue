@@ -15,7 +15,6 @@
       :items="slides"
       :per-view="[1, 1, 1, 1, 1]"
       loop
-      fade
       arrows
       dots
       :autoplay="{ delay: 5500, stopOnInteraction: false, stopOnMouseEnter: true }"
@@ -27,13 +26,17 @@
       :ui="{
         item: 'basis-full min-w-full ps-0',
         container: 'ms-0',
-        prev: 'hidden md:flex start-5 z-20 opacity-100 hover:brightness-110  !h-fit !translate-y-40',
-        next: 'hidden md:flex start-16 w-fit z-20 opacity-100 hover:brightness-110  !translate-y-40 h-fit',
+        prev: 'hidden md:flex start-5 bottom-5 top-auto !translate-y-0 z-20 opacity-100 hover:brightness-110 !h-fit',
+        next: 'hidden md:flex start-16 bottom-5 top-auto !translate-y-0 z-20 opacity-100 hover:brightness-110 !h-fit !w-fit',
         dots: 'bottom-2.5 md:bottom-6 z-20 gap-1.5 md:gap-2 ',
         dot: 'size-1.5 md:size-2 bg-default/50 data-[state=active]:bg-default data-[state=active]:w-5 md:data-[state=active]:w-8 rounded-full transition-all',
       }"
     >
-      <div class="relative overflow-hidden h-[220px] sm:h-[280px] md:h-auto md:min-h-[440px] bg-inverted">
+      <!--
+        Hero banner upload ratio: 4:1 desktop / 2:1 mobile (e.g. 1920×480).
+        One full-bleed image — object-cover fills the frame.
+      -->
+      <div class="relative overflow-hidden w-full aspect-[4/1] <md:aspect-[2/1] bg-inverted">
         <img
           :src="item.image"
           :alt="$t(item.title)"
@@ -49,22 +52,16 @@
           :class="toneClass(item.tone)"
         />
 
-        <!-- Mobile: bottom scrim for readable text -->
         <div
-          class="absolute inset-0 pointer-events-none md:hidden bg-gradient-to-t from-inverted via-inverted/70 to-inverted/10"
-        />
-        <!-- Desktop: light wash + side gradient for copy -->
-        <div class="absolute inset-0 hidden md:block bg-inverted/25 pointer-events-none" />
-        <div
-          class="absolute inset-0 hidden md:block pointer-events-none bg-[linear-gradient(to_inline-end,var(--ui-bg-inverted)_0%,color-mix(in_srgb,var(--ui-bg-inverted)_78%,transparent)_40%,transparent_76%)]"
+          class="absolute inset-0 pointer-events-none bg-gradient-to-t from-inverted via-inverted/55 to-inverted/5"
         />
 
         <div
-          class="relative z-10 mx-auto max-w-8xl h-full md:grid md:grid-cols-2 md:items-center md:min-h-[440px] px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-8 md:pb-0 md:justify-center"
+          class="relative z-10 mx-auto max-w-8xl h-full px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-8 md:pb-10"
         >
-          <div class="w-full max-w-lg md:max-w-none py-0 md:py-0">
+          <div class="w-full max-w-lg">
             <span
-              class="inline-flex items-center gap-1.5 md:gap-2 bg-default/15 backdrop-blur px-2.5 py-1 md:(px-3 py-1.5) rounded-full text-[10px] md:text-xs mb-2 md:mb-4 border border-default/15 text-inverted"
+              class="inline-flex items-center gap-1.5 md:gap-2 bg-default/15 backdrop-blur px-2.5 py-1 md:(px-3 py-1.5) rounded-full text-[10px] md:text-xs mb-2 md:mb-3 border border-default/15 text-inverted"
             >
               <span class="size-1 md:size-1.5 rounded-full bg-current animate-pulse" />
               {{ $t(item.eyebrow) }}
@@ -72,12 +69,12 @@
 
             <component
               :is="index === 0 ? 'h1' : 'h2'"
-              class="text-xl sm:text-2xl md:text-5xl lg:text-6xl font-black leading-snug md:leading-tight mb-1.5 md:mb-4 text-inverted drop-shadow-sm line-clamp-2"
+              class="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-black leading-snug md:leading-tight mb-1.5 md:mb-3 text-inverted drop-shadow-sm line-clamp-2"
             >
               {{ $t(item.title) }}
             </component>
 
-            <p class="text-inverted/90 text-xs md:text-base leading-5 md:leading-7 mb-3 md:mb-7 max-w-md line-clamp-2 md:line-clamp-none">
+            <p class="text-inverted/90 text-xs md:text-base leading-5 md:leading-7 mb-3 md:mb-5 max-w-md line-clamp-2">
               {{ $t(item.subtitle) }}
             </p>
 
@@ -106,16 +103,6 @@
                 <span class="text-[10px] md:text-xs text-inverted/80">{{ $t('تخفیف') }}</span>
               </div>
             </div>
-          </div>
-
-          <div class="relative hidden md:flex h-full min-h-[240px] items-center justify-center p-6">
-            <img
-              :src="item.image"
-              :alt="$t(item.title)"
-              class="max-h-80 w-auto max-w-full object-contain drop-shadow-2xl rounded-2xl"
-              loading="eager"
-              decoding="async"
-            >
           </div>
         </div>
       </div>

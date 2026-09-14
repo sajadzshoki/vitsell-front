@@ -1,3 +1,5 @@
+import type { SeoMeta } from '~/data/seo'
+
 export type ProductColor = {
   name: string
   hex: string
@@ -37,6 +39,13 @@ export type Product = {
   buyNotes?: { icon: string, text: string }[]
   scores?: Record<string, number>
   specs?: ProductSpec[]
+  seo?: SeoMeta
+  tags?: string[]
+  featured?: boolean
+  published?: boolean
+  hasVariants?: boolean
+  sku?: string
+  lowStockThreshold?: number
 }
 
 export const categoryLabels: Record<string, string> = {

@@ -49,7 +49,7 @@
           :ui="{
             item: 'basis-[22%] ps-2',
             container: 'ms-0 items-start',
-            viewport: 'px-7',
+            viewport: 'md:px-7 -mx-3',
             prev: 'start-0 z-20 shadow-sm',
             next: 'end-0 z-20 shadow-sm',
           }"

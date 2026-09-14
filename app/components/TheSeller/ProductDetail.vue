@@ -75,7 +75,7 @@
                 <span v-if="product.categoryLabel"> · {{ product.categoryLabel }}</span>
               </p>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
               <UBadge
                 :color="statusMeta.color"
                 variant="subtle"
@@ -86,12 +86,15 @@
               </UBadge>
               <UButton
                 :to="`/product/${productId}`"
-                color="neutral"
-                variant="ghost"
-                size="xs"
+                target="_blank"
+                color="primary"
+                variant="soft"
+                size="sm"
                 icon="i-tabler-external-link"
-                :aria-label="$t('مشاهده در فروشگاه')"
-              />
+                class="cursor-pointer"
+              >
+                {{ $t('مشاهده در فروشگاه') }}
+              </UButton>
             </div>
           </div>
 
@@ -301,6 +304,8 @@
             <TheFormInput
               v-model="priceInput"
               inputmode="numeric"
+              thousand-sep
+              dir="ltr"
               class="num"
               @update:model-value="onPriceFieldsChange('price')"
             />
@@ -310,6 +315,8 @@
             <TheFormInput
               v-model="oldPriceInput"
               inputmode="numeric"
+              thousand-sep
+              dir="ltr"
               class="num"
               @update:model-value="onPriceFieldsChange('oldPrice')"
             />
@@ -319,6 +326,9 @@
             <TheFormInput
               v-model="discountInput"
               inputmode="numeric"
+              digits-only
+              maxlength="3"
+              dir="ltr"
               class="num"
               @update:model-value="onPriceFieldsChange('discount')"
             />
@@ -506,6 +516,7 @@ import {
 } from '~/data/seller'
 import type { SellerProductQuestion } from '~/data/seller-questions'
 import {
+  formatPriceInput,
   parsePriceInput,
   sellerProductBadges,
   SELLER_BADGE_NONE,
@@ -692,8 +703,8 @@ function hydrateQuickFields() {
 }
 
 function hydratePriceFields() {
-  priceInput.value = String(product.value.price || '')
-  oldPriceInput.value = product.value.oldPrice ? String(product.value.oldPrice) : ''
+  priceInput.value = formatPriceInput(product.value.price || '')
+  oldPriceInput.value = product.value.oldPrice ? formatPriceInput(product.value.oldPrice) : ''
   discountInput.value = String(
     calcDiscountPercent(product.value.price, product.value.oldPrice) || '',
   )
@@ -764,7 +775,7 @@ function onPriceFieldsChange(source: 'price' | 'oldPrice' | 'discount') {
     const pct = Math.min(99, Math.max(0, Number.parseInt(discountInput.value.replace(/[^\d]/g, '') || '0', 10)))
     discountInput.value = pct ? String(pct) : ''
     if (price > 0 && pct > 0 && pct < 100) {
-      oldPriceInput.value = String(Math.round(price / (1 - pct / 100)))
+      oldPriceInput.value = formatPriceInput(Math.round(price / (1 - pct / 100)))
     }
     else if (pct <= 0) {
       oldPriceInput.value = ''

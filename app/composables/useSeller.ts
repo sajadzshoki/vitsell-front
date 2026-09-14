@@ -807,6 +807,8 @@ export function useSeller() {
       hasVariants: extras?.hasVariants,
       sku: extras?.sku,
       lowStockThreshold: extras?.lowStockThreshold,
+      seo: product.seo ?? null,
+      tags: Array.isArray(product.tags) ? product.tags : [],
     }
   }
 

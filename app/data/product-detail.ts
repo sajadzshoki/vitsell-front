@@ -309,15 +309,10 @@ export function getProductSpecGroups(product: Product): ProductSpecGroup[] {
   }
 
   if (product.specs?.length) {
-    const mid = Math.ceil(product.specs.length / 2)
     return [
       {
-        title: 'مشخصات کلی',
-        items: product.specs.slice(0, mid),
-      },
-      {
-        title: 'سایر مشخصات',
-        items: product.specs.slice(mid),
+        title: 'مشخصات',
+        items: product.specs,
       },
     ]
   }

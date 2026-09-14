@@ -163,8 +163,12 @@ const commerce = computed(() =>
   productId.value ? getByProductId(productId.value) : null,
 )
 
+const productSeo = computed(() =>
+  product.value?.seo || commerce.value?.seo || null,
+)
+
 useEntitySeo(() => ({
-  entity: commerce.value?.seo,
+  entity: productSeo.value,
   fallbackTitle: product.value?.title ?? '',
   fallbackDescription: htmlToPlainText(product.value?.shortDesc) || product.value?.title || '',
   fallbackImage: product.value?.image ?? '',
@@ -176,14 +180,15 @@ useJsonLd(() => {
   if (!p) return null
   const base = settings.value.siteUrl.replace(/\/+$/, '')
   const price = p.price
+  const seo = productSeo.value
   return productJsonLd({
-    name: commerce.value?.seo?.metaTitle || p.title,
-    description: htmlToPlainText(commerce.value?.seo?.metaDescription)
+    name: seo?.metaTitle || p.title,
+    description: htmlToPlainText(seo?.metaDescription)
       || htmlToPlainText(p.shortDesc)
       || p.title,
-    image: commerce.value?.seo?.ogImage || p.image,
+    image: seo?.ogImage || p.image,
     url: base ? `${base}/product/${p.id}` : `/product/${p.id}`,
-    sku: commerce.value?.sku || undefined,
+    sku: p.sku || commerce.value?.sku || undefined,
     brand: p.brand,
     price,
     currency: 'IRR',

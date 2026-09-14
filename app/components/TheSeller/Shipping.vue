@@ -104,10 +104,10 @@
               @update:model-value="patchDraft(method.id, 'estimatedDays', String($event ?? ''))"
             />
             <TheFormInput
-              :model-value="String(editDraft[method.id]?.baseCost ?? method.baseCost)"
+              :model-value="formatPriceInput(editDraft[method.id]?.baseCost ?? method.baseCost)"
               :label="$t('هزینه پایه (تومان)')"
               dir="ltr"
-              digits-only
+              thousand-sep
               @update:model-value="setDraftCost(method.id, $event)"
             />
             <UFormField :label="$t('وضعیت')">
@@ -182,7 +182,7 @@
             v-model="createForm.baseCost"
             :label="$t('هزینه پایه (تومان)')"
             dir="ltr"
-            digits-only
+            thousand-sep
           />
           <UFormField :label="$t('وضعیت')">
             <USelect
@@ -258,6 +258,7 @@
 
 <script setup lang="ts">
 import { formatPrice } from '~/data/products'
+import { formatPriceInput } from '~/data/seller-product-form'
 import type { SellerShippingMethod } from '~/data/seller-returns-refunds'
 
 type MethodDraft = {

@@ -60,6 +60,21 @@
       </div>
     </div>
 
+    <!-- برچسب‌ها -->
+    <div
+      v-if="product.tags?.length"
+      class="flex flex-wrap gap-2 pb-4 border-b border-muted"
+    >
+      <NuxtLink
+        v-for="tag in product.tags"
+        :key="tag"
+        :to="{ path: '/search', query: { q: tag } }"
+        class="inline-flex items-center rounded-lg bg-muted px-2.5 py-1 text-xs text-toned hover:(bg-primary/10 text-primary) transition-colors cursor-pointer"
+      >
+        {{ tag }}
+      </NuxtLink>
+    </div>
+
     <!-- ارسال سریع -->
     <div
       v-if="product.fastDelivery"

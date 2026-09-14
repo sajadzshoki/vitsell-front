@@ -343,10 +343,9 @@
           </div>
           <TheFormInput
             v-model="refundAmount"
-            type="number"
             :label="$t('مبلغ')"
             dir="ltr"
-            digits-only
+            thousand-sep
           />
           <TheFormInput
             v-model="refundReason"
@@ -936,6 +935,7 @@ import {
   sellerShippingStatusMeta,
 } from '~/data/seller-order-commerce'
 import { formatPrice } from '~/data/products'
+import { formatPriceInput } from '~/data/seller-product-form'
 import { customerFullName } from '~/data/seller-customers'
 
 const props = defineProps<{
@@ -1164,7 +1164,7 @@ async function confirmCancel() {
 }
 
 function openRefund() {
-  refundAmount.value = String(refundableLeft.value || '')
+  refundAmount.value = formatPriceInput(refundableLeft.value || '')
   refundReason.value = ''
   refundTxn.value = ''
   refundOpen.value = true
@@ -1172,7 +1172,7 @@ function openRefund() {
 
 async function confirmRefund() {
   if (!order.value) return
-  const amount = Math.round(Number(refundAmount.value) || 0)
+  const amount = Math.round(Number(String(refundAmount.value).replace(/\D/g, '')) || 0)
   if (amount <= 0) {
     toast.error(t('مبلغ بازپرداخت نامعتبر است'))
     return

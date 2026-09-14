@@ -96,6 +96,7 @@
 | `POST` | `/notifications/read-all` |
 | `GET\|PUT` | `/seller/shop` |
 | `GET\|POST` | `/seller/categories` | `q` `status` `parentId` |
+| `GET` | `/seller/categories/:id/spec-keys` | کلیدهای مشخصات پیشنهادی همان دسته |
 | `GET\|PUT\|DELETE` | `/seller/categories/:id` | |
 | `GET\|POST` | `/seller/brands` | `q` `status` `page` `pageSize` |
 | `GET\|PUT\|PATCH\|DELETE` | `/seller/brands/:id` | PATCH `/status` |

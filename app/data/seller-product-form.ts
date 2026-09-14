@@ -1,21 +1,11 @@
 import { categories, getCategoryById, getCategoryIcon } from '~/data/categories'
 import { resolveCategoryIconName } from '~/data/seller-categories'
-import { compareTemplates, type CompareSection } from '~/data/compare'
 import { categoryLabels, type Product, type ProductColor, type ProductSpec } from '~/data/products'
 import { isEmptyHtml } from '~/data/seller-blog'
-
-export type SellerProductFieldType = 'text' | 'select' | 'number' | 'textarea'
-
-export type SellerProductField = {
-  key: string
-  label: string
-  type: SellerProductFieldType
-  required?: boolean
-  options?: string[]
-  placeholder?: string
-  group: string
-  help?: string
-}
+import type { SeoMeta } from '~/data/seo'
+import { sanitizeSeoMeta } from '~/data/seo'
+import type { SellerAttribute } from '~/data/seller-attributes'
+import type { SellerProductVariantAxis as VariantAxis } from '~/data/seller-product-variants'
 
 export type SellerProductFormValues = {
   category: string
@@ -32,8 +22,10 @@ export type SellerProductFormValues = {
   gallery: string[]
   badge: string
   fastDelivery: boolean
+  /** Display colors derived from variant axes (read-only in UI). */
   colors: ProductColor[]
-  attrs: Record<string, string>
+  /** Free-form product specs (key / value rows). */
+  specs: ProductSpec[]
 }
 
 export const SELLER_BADGE_NONE = '__none__'
@@ -44,52 +36,6 @@ export const sellerProductBadges = [
   'پرفروش',
   'جدید',
 ] as const
-
-export const sellerProductColorPresets: ProductColor[] = [
-  { name: 'مشکی', hex: '#1c1c1e' },
-  { name: 'سفید', hex: '#f5f5f0' },
-  { name: 'نقره‌ای', hex: '#c0c0c0' },
-  { name: 'آبی', hex: '#3a4a5c' },
-  { name: 'طلایی', hex: '#c9a227' },
-  { name: 'قرمز', hex: '#b91c1c' },
-  { name: 'سبز', hex: '#166534' },
-  { name: 'صورتی', hex: '#db2777' },
-]
-
-/** گزینه‌های آماده برای فیلدهای پرتکرار هر دسته */
-export const sellerProductFieldOptions: Record<string, string[]> = {
-  'حافظه داخلی': ['۶۴ گیگابایت', '۱۲۸ گیگابایت', '۲۵۶ گیگابایت', '۵۱۲ گیگابایت', '۱ ترابایت'],
-  'حافظه': ['۱۲۸ گیگابایت', '۲۵۶ گیگابایت', '۵۱۲ گیگابایت', '۱ ترابایت', '۲ ترابایت'],
-  RAM: ['۴ گیگابایت', '۶ گیگابایت', '۸ گیگابایت', '۱۲ گیگابایت', '۱۶ گیگابایت', '۱۸ گیگابایت', '۳۲ گیگابایت', '۶۴ گیگابایت'],
-  'سیستم‌عامل': ['Android', 'iOS', 'iPadOS', 'Windows 11', 'macOS', 'بدون سیستم‌عامل'],
-  بلوتوث: ['دارد', 'ندارد', 'Bluetooth 5.0', 'Bluetooth 5.2', 'Bluetooth 5.3'],
-  نویزکنسلینگ: ['فعال', 'غیرفعال', 'ندارد'],
-  'مقاومت در برابر آب': ['ندارد', 'IPX4', 'IPX7', 'IP68', '۵۰ متر', '۱۰۰ متر'],
-  'نوع پنل': ['OLED', 'QLED', 'LED', 'Mini-LED', 'LCD'],
-  رزولوشن: ['Full HD', '2K', '4K UHD', '8K', 'HD'],
-  'نرخ نوسازی': ['۶۰ هرتز', '۹۰ هرتز', '۱۲۰ هرتز', '۱۴۴ هرتز', '۱۶۵ هرتز'],
-  سایز: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '۳۸', '۴۰', '۴۲', '۴۴'],
-  حجم: ['۳۰ میلی‌لیتر', '۵۰ میلی‌لیتر', '۱۰۰ میلی‌لیتر', '۲۰۰ میلی‌لیتر', '۵۰۰ میلی‌لیتر'],
-  رنگ: sellerProductColorPresets.map(c => c.name),
-}
-
-const brandOptionsByCategory: Record<string, string[]> = {
-  mobile: ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Honor', 'Nokia', 'Google', 'Nothing'],
-  laptop: ['Apple', 'ASUS', 'Lenovo', 'HP', 'Acer', 'Microsoft', 'Dell', 'MSI'],
-  audio: ['Apple', 'Sony', 'JBL', 'Anker', 'Sennheiser', 'Bose', 'Samsung'],
-  tv: ['LG', 'Samsung', 'Sony', 'TCL', 'Xiaomi'],
-  camera: ['Canon', 'Sony', 'Nikon', 'Fujifilm', 'GoPro'],
-  watch: ['Apple', 'Samsung', 'Garmin', 'Huawei', 'Xiaomi'],
-  gaming: ['Sony', 'Microsoft', 'Nintendo', 'Valve'],
-  home: ['Xiaomi', 'Dyson', 'Philips', 'Bosch', 'LG', 'Samsung'],
-  fashion: ['Nike', 'Adidas', 'Puma', 'Zara', 'H&M'],
-  beauty: ['Loreal', 'Maybelline', 'Nivea', 'The Ordinary', 'CeraVe'],
-}
-
-const defaultTemplate: CompareSection[] = [
-  { title: 'اطلاعات عمومی', rows: ['مدل', 'رنگ'] },
-  { title: 'مشخصات', rows: ['ویژگی‌ها'] },
-]
 
 export type SellerProductCategoryOption = {
   id: string
@@ -120,6 +66,19 @@ export function sellerCategoriesToFormOptions(
     }))
 }
 
+const brandOptionsByCategory: Record<string, string[]> = {
+  mobile: ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Honor', 'Nokia', 'Google', 'Nothing'],
+  laptop: ['Apple', 'ASUS', 'Lenovo', 'HP', 'Acer', 'Microsoft', 'Dell', 'MSI'],
+  audio: ['Apple', 'Sony', 'JBL', 'Anker', 'Sennheiser', 'Bose', 'Samsung'],
+  tv: ['LG', 'Samsung', 'Sony', 'TCL', 'Xiaomi'],
+  camera: ['Canon', 'Sony', 'Nikon', 'Fujifilm', 'GoPro'],
+  watch: ['Apple', 'Samsung', 'Garmin', 'Huawei', 'Xiaomi'],
+  gaming: ['Sony', 'Microsoft', 'Nintendo', 'Valve'],
+  home: ['Xiaomi', 'Dyson', 'Philips', 'Bosch', 'LG', 'Samsung'],
+  fashion: ['Nike', 'Adidas', 'Puma', 'Zara', 'H&M'],
+  beauty: ['Loreal', 'Maybelline', 'Nivea', 'The Ordinary', 'CeraVe'],
+}
+
 export function getBrandOptions(categoryId: string): string[] {
   const fromMap = brandOptionsByCategory[categoryId]
   if (fromMap?.length) return fromMap
@@ -133,33 +92,8 @@ export function getBrandOptions(categoryId: string): string[] {
   return ['متفرقه']
 }
 
-export function getCategoryAttributeSections(categoryId: string): CompareSection[] {
-  return compareTemplates[categoryId] ?? defaultTemplate
-}
-
-export function getCategoryAttributeFields(categoryId: string): SellerProductField[] {
-  if (!categoryId) return []
-
-  const sections = getCategoryAttributeSections(categoryId)
-  const fields: SellerProductField[] = []
-
-  for (const section of sections) {
-    for (const row of section.rows) {
-      if (row === 'رنگ') continue
-      const options = sellerProductFieldOptions[row]
-      fields.push({
-        key: row,
-        label: row,
-        type: options?.length ? 'select' : 'text',
-        options,
-        required: false,
-        group: section.title,
-        placeholder: `${row} را وارد کنید`,
-      })
-    }
-  }
-
-  return fields
+export function emptySpecRow(): ProductSpec {
+  return { key: '', value: '' }
 }
 
 export function emptySellerProductForm(category = ''): SellerProductFormValues {
@@ -179,13 +113,20 @@ export function emptySellerProductForm(category = ''): SellerProductFormValues {
     badge: SELLER_BADGE_NONE,
     fastDelivery: false,
     colors: [],
-    attrs: {},
+    specs: [emptySpecRow()],
   }
 }
 
 export function parsePriceInput(value: string): number {
   const digits = value.replace(/[^\d]/g, '')
   return digits ? Number(digits) : 0
+}
+
+/** Display helper for price text fields: 3000000 → 3,000,000 */
+export function formatPriceInput(value: string | number | null | undefined): string {
+  const digits = String(value ?? '').replace(/[^\d]/g, '')
+  if (!digits) return ''
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
 export function slugifyProductTitle(title: string) {
@@ -213,18 +154,46 @@ function slugifyTitle(title: string) {
   return slugifyProductTitle(title).slice(0, 40)
 }
 
+export function normalizeFormSpecs(specs: ProductSpec[]): ProductSpec[] {
+  return specs
+    .map(row => ({
+      key: String(row.key || '').trim(),
+      value: String(row.value || '').trim(),
+    }))
+    .filter(row => row.key && row.value)
+}
+
+/** Derive display colors from color-type variant axes. */
+export function colorsFromVariantAxes(
+  axes: VariantAxis[],
+  attributes: SellerAttribute[],
+): ProductColor[] {
+  const byId = new Map(attributes.map(a => [a.id, a]))
+  const colors: ProductColor[] = []
+  const seen = new Set<string>()
+
+  for (const axis of axes) {
+    const attr = byId.get(axis.attributeId)
+    if (!attr || attr.type !== 'color') continue
+    for (const valueId of axis.valueIds) {
+      const value = attr.values.find(v => v.id === valueId && v.status !== 'inactive')
+      if (!value) continue
+      const hex = (value.meta || '').trim() || '#9ca3af'
+      const dedupe = `${value.label}|${hex}`
+      if (seen.has(dedupe)) continue
+      seen.add(dedupe)
+      colors.push({ name: value.label, hex })
+    }
+  }
+
+  return colors
+}
+
 export function productToSellerForm(
   product: Product,
   stock = 0,
 ): SellerProductFormValues {
-  const attrs: Record<string, string> = {}
-  for (const field of getCategoryAttributeFields(product.category)) {
-    attrs[field.key] = product.specs?.find(s => s.key === field.key)?.value ?? ''
-  }
-  for (const spec of product.specs ?? []) {
-    if (attrs[spec.key] === undefined) attrs[spec.key] = spec.value
-  }
-
+  const specs = (product.specs ?? []).map(s => ({ key: s.key, value: s.value }))
   return {
     category: product.category,
     title: product.title,
@@ -232,8 +201,8 @@ export function productToSellerForm(
     brand: product.brand,
     shortDesc: product.shortDesc ?? '',
     description: product.description ?? '',
-    price: String(product.price || ''),
-    oldPrice: product.oldPrice ? String(product.oldPrice) : '',
+    price: formatPriceInput(product.price || ''),
+    oldPrice: product.oldPrice ? formatPriceInput(product.oldPrice) : '',
     stock: String(stock),
     image: product.image || '',
     imageDark: product.imageDark || '',
@@ -241,13 +210,19 @@ export function productToSellerForm(
     badge: product.badge || SELLER_BADGE_NONE,
     fastDelivery: Boolean(product.fastDelivery),
     colors: product.colors ? [...product.colors] : [],
-    attrs,
+    specs: specs.length ? specs : [emptySpecRow()],
   }
 }
 
 export function buildSellerProductFromForm(
   form: SellerProductFormValues,
-  options?: { id?: string, base?: Product },
+  options?: {
+    id?: string
+    base?: Product
+    seo?: SeoMeta | null
+    tags?: string[]
+    colors?: ProductColor[]
+  },
 ): Product | null {
   const title = form.title.trim()
   const brand = form.brand.trim()
@@ -258,9 +233,12 @@ export function buildSellerProductFromForm(
 
   if (!title || !category || price <= 0) return null
 
-  const specs: ProductSpec[] = Object.entries(form.attrs)
-    .filter(([, value]) => value.trim())
-    .map(([key, value]) => ({ key, value: value.trim() }))
+  const specs = normalizeFormSpecs(form.specs)
+  const colors = options?.colors ?? form.colors
+  const tags = (options?.tags ?? []).map(t => t.trim()).filter(Boolean)
+  const seo = options && 'seo' in options
+    ? (sanitizeSeoMeta(options.seo) ?? undefined)
+    : options?.base?.seo
 
   const id = options?.id
     || `seller-${slugifyTitle(form.shortName || title)}-${Date.now().toString().slice(-5)}`
@@ -283,18 +261,19 @@ export function buildSellerProductFromForm(
     ...(form.imageDark.trim() ? { imageDark: form.imageDark.trim() } : { imageDark: undefined }),
     ...(form.gallery.length ? { gallery: [...form.gallery] } : { gallery: undefined }),
     badge: form.badge && form.badge !== SELLER_BADGE_NONE ? form.badge : undefined,
-    colors: form.colors.length ? form.colors : undefined,
+    colors: colors.length ? colors : undefined,
     inStock: stock > 0,
     fastDelivery: form.fastDelivery,
     shortDesc: isEmptyHtml(form.shortDesc) ? undefined : form.shortDesc.trim(),
     description: isEmptyHtml(form.description) ? undefined : form.description.trim(),
     specs: specs.length ? specs : undefined,
+    seo,
+    tags,
   }
 }
 
 export function validateSellerProductForm(
   form: SellerProductFormValues,
-  fields: SellerProductField[],
 ): Record<string, string> {
   const errors: Record<string, string> = {}
 
@@ -314,11 +293,12 @@ export function validateSellerProductForm(
     errors.oldPrice = 'قیمت قبلی باید بیشتر از قیمت فروش باشد'
   }
 
-  for (const field of fields) {
-    if (field.required && !form.attrs[field.key]?.trim()) {
-      errors[`attr:${field.key}`] = `${field.label} الزامی است`
-    }
-  }
+  form.specs.forEach((row, index) => {
+    const key = row.key.trim()
+    const value = row.value.trim()
+    if (key && !value) errors[`spec:${index}:value`] = 'مقدار مشخصه الزامی است'
+    if (value && !key) errors[`spec:${index}:key`] = 'عنوان مشخصه الزامی است'
+  })
 
   return errors
 }

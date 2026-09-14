@@ -141,50 +141,6 @@
       </div>
     </div>
 
-    <!-- Attribute assignment -->
-    <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
-      <h3 class="font-bold text-highlighted mb-1">
-        {{ $t('ویژگی‌های این دسته') }}
-      </h3>
-      <p class="text-xs text-muted mb-4 leading-6">
-        {{ $t('ویژگی‌های مرتبط با محصولات این دسته. خالی = همه ویژگی‌های عمومی.') }}
-      </p>
-      <div
-        v-if="!attributes.length"
-        class="text-xs text-muted rounded-xl border border-dashed border-muted p-4"
-      >
-        {{ $t('هنوز ویژگی‌ای تعریف نشده') }}
-        <UButton
-          to="/seller/attributes/new"
-          color="primary"
-          variant="link"
-          size="xs"
-          class="cursor-pointer ms-1"
-        >
-          {{ $t('ایجاد ویژگی') }}
-        </UButton>
-      </div>
-      <div
-        v-else
-        class="max-h-56 overflow-y-auto rounded-xl border border-muted p-3 space-y-2"
-      >
-        <UCheckbox
-          v-for="attr in attributes"
-          :key="attr.id"
-          :model-value="isAttrAssigned(attr)"
-          :label="attrLabel(attr)"
-          :disabled="!categoryKey || !canAssignAttrs"
-          @update:model-value="toggleAttr(attr.id, !!$event)"
-        />
-      </div>
-      <p
-        v-if="!categoryKey"
-        class="text-[11px] text-muted mt-3 leading-5"
-      >
-        {{ $t('پس از ذخیره دسته می‌توانید ویژگی‌ها را اختصاص دهید.') }}
-      </p>
-    </div>
-
     <!-- Subs -->
     <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
       <TheSellerCategorySubsEditor v-model="form.subs" />
@@ -428,18 +384,10 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useAppToast()
 const { createCategory, updateCategory, categories, ensureLoaded } = useSellerCategories()
-const {
-  attributes,
-  updateAttribute,
-  toAttributeForm,
-  ensureLoaded: ensureAttrs,
-} = useSellerAttributes()
-const { can } = useSellerPermissions()
 const { storeUrl } = useAppMode()
 const route = useRoute()
 
 void ensureLoaded()
-void ensureAttrs()
 
 const isEdit = computed(() => Boolean(props.initial?.id))
 const saving = ref(false)
@@ -478,41 +426,6 @@ function captureSnapshot() {
 
 captureSnapshot()
 
-const canAssignAttrs = computed(() => can('attributes.update'))
-const categoryKey = computed(() => props.initial?.id || form.value.id.trim())
-
-function isAttrAssigned(attr: { categoryIds: string[] }) {
-  const id = categoryKey.value
-  if (!id) return false
-  if (!attr.categoryIds.length) return true
-  return attr.categoryIds.includes(id)
-}
-
-function attrLabel(attr: { name: string, variantDefining?: boolean }) {
-  return attr.variantDefining ? `${attr.name} (${t('واریانت')})` : attr.name
-}
-
-function toggleAttr(attrId: string, assigned: boolean) {
-  const id = categoryKey.value
-  if (!id || !canAssignAttrs.value) return
-  const attr = attributes.value.find(a => a.id === attrId)
-  if (!attr) return
-  const formValues = toAttributeForm(attr)
-  let nextIds = [...formValues.categoryIds]
-  if (assigned) {
-    if (!nextIds.length) return
-    if (!nextIds.includes(id)) nextIds.push(id)
-  }
-  else if (!nextIds.length) {
-    nextIds = categories.value.map(c => c.id).filter(cid => cid !== id)
-  }
-  else {
-    nextIds = nextIds.filter(cid => cid !== id)
-  }
-  formValues.categoryIds = nextIds
-  const result = updateAttribute(attrId, formValues)
-  if (!result.ok) toast.error(t(result.error))
-}
 const iconPreview = computed(() => resolveCategoryIconName(form.value.icon))
 
 const parentOptions = computed(() =>

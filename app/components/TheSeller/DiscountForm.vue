@@ -70,6 +70,9 @@
           v-model="form.value"
           :label="form.type === 'percent' ? $t('درصد') : $t('مبلغ (تومان)')"
           dir="ltr"
+          :thousand-sep="form.type === 'fixed'"
+          :digits-only="form.type === 'percent'"
+          :maxlength="form.type === 'percent' ? 2 : undefined"
           :error="errors.value"
           required
           :icon="form.type === 'percent' ? 'i-tabler-percentage' : 'i-tabler-cash'"
@@ -79,6 +82,7 @@
           v-model="form.minOrder"
           :label="$t('حداقل سفارش (تومان)')"
           dir="ltr"
+          thousand-sep
           icon="i-tabler-shopping-cart"
           :help="$t('۰ = بدون حداقل')"
         />
@@ -87,6 +91,7 @@
           v-model="form.maxDiscount"
           :label="$t('سقف تخفیف (تومان)')"
           dir="ltr"
+          thousand-sep
           icon="i-tabler-arrow-bar-up"
           :help="$t('خالی = بدون سقف')"
         />
