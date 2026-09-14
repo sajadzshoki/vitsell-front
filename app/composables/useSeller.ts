@@ -1,5 +1,6 @@
 import {
   defaultSellerShop,
+  normalizeSellerProductStatus,
   sellerLowStockThreshold,
   sellerOrderNextStatus,
   sellerOrderPrevStatus,
@@ -158,7 +159,6 @@ export function useSeller() {
     statusCounts: {
       all: 0,
       active: 0,
-      pending: 0,
       inactive: 0,
       out_of_stock: 0,
     },
@@ -319,13 +319,14 @@ export function useSeller() {
         statusCounts: {
           all: result.length,
           active: 0,
-          pending: 0,
           inactive: 0,
           out_of_stock: 0,
         },
       }
     }
     const page = (result || {}) as Partial<SellerListingsPage>
+    const active = Number(page.statusCounts?.active) || 0
+    const pending = Number(page.statusCounts?.pending) || 0
     return {
       items: Array.isArray(page.items) ? page.items : [],
       total: Number(page.total) || 0,
@@ -333,8 +334,8 @@ export function useSeller() {
       pageSize: Number(page.pageSize) || 10,
       statusCounts: {
         all: Number(page.statusCounts?.all) || 0,
-        active: Number(page.statusCounts?.active) || 0,
-        pending: Number(page.statusCounts?.pending) || 0,
+        // legacy marketplace pending → count as active (no approval flow)
+        active: active + pending,
         inactive: Number(page.statusCounts?.inactive) || 0,
         out_of_stock: Number(page.statusCounts?.out_of_stock) || 0,
       },
@@ -438,7 +439,7 @@ export function useSeller() {
         stock: item.stock,
         sold: item.sold,
         views: item.views,
-        status: item.status,
+        status: normalizeSellerProductStatus(item.status),
       }
     })
     if (products.length) remember(products)
@@ -642,7 +643,7 @@ export function useSeller() {
       stock: item.stock,
       sold: item.sold,
       views: item.views,
-      status: item.status,
+      status: normalizeSellerProductStatus(item.status),
     }
     if (item.product) remember([item.product])
     const exists = listings.value.some(l => l.productId === listing.productId)
@@ -862,7 +863,7 @@ export function useSeller() {
   async function addListingProduct(
     product: Product,
     stock: number,
-    status: SellerProductStatus = 'pending',
+    status: SellerProductStatus = 'active',
     extras?: ListingProductExtras,
   ): Promise<{ ok: true, productId: string } | { ok: false, error: string }> {
     const { result, error } = await usePost<{ listing: SellerListing, product: Product }>(
@@ -889,11 +890,18 @@ export function useSeller() {
       views: 0,
       status,
     }
-    listings.value = [listing, ...listings.value.filter(l => l.productId !== listing.productId)]
-    if (result.product) {
-      syncCommerceFromListing({ ...listing, product: result.product as ListingApiItem['product'] })
+    const normalized: SellerListing = {
+      productId: listing.productId,
+      stock: listing.stock,
+      sold: listing.sold,
+      views: listing.views,
+      status: normalizeSellerProductStatus(listing.status ?? status),
     }
-    return { ok: true, productId: listing.productId }
+    listings.value = [normalized, ...listings.value.filter(l => l.productId !== normalized.productId)]
+    if (result.product) {
+      syncCommerceFromListing({ ...normalized, product: result.product as ListingApiItem['product'] })
+    }
+    return { ok: true, productId: normalized.productId }
   }
 
   function upsertOrder(order: SellerOrder) {

@@ -64,7 +64,16 @@ export type SellerNavGroup = {
   items: SellerNavItem[]
 }
 
-export type SellerProductStatus = 'active' | 'pending' | 'inactive' | 'out_of_stock'
+export type SellerProductStatus = 'active' | 'inactive' | 'out_of_stock'
+
+/** Map legacy marketplace `pending` (approval) → active; site admin publishes directly. */
+export function normalizeSellerProductStatus(
+  status: string | null | undefined,
+): SellerProductStatus {
+  if (status === 'pending') return 'active'
+  if (status === 'active' || status === 'inactive' || status === 'out_of_stock') return status
+  return 'inactive'
+}
 
 export type SellerListing = {
   productId: string
@@ -398,7 +407,6 @@ export const sellerProductStatusMeta: Record<
   { label: string; color: 'success' | 'warning' | 'neutral' | 'error' }
 > = {
   active: { label: 'فعال', color: 'success' },
-  pending: { label: 'در انتظار تأیید', color: 'warning' },
   inactive: { label: 'غیرفعال', color: 'neutral' },
   out_of_stock: { label: 'ناموجود', color: 'error' },
 }
@@ -468,13 +476,13 @@ export const defaultSellerListings: SellerListing[] = [
   { productId: 'galaxy-s25-ultra', stock: 8, sold: 54, views: 8320, status: 'active' },
   { productId: 'macbook-m4', stock: 5, sold: 21, views: 4180, status: 'active' },
   { productId: 'sony-xm5', stock: 32, sold: 140, views: 15640, status: 'active' },
-  { productId: 'apple-watch-ultra', stock: 10, sold: 0, views: 980, status: 'pending' },
+  { productId: 'apple-watch-ultra', stock: 10, sold: 0, views: 980, status: 'active' },
   { productId: 'ps5-pro', stock: 3, sold: 67, views: 9870, status: 'active' },
   { productId: 'ipad-pro-m4', stock: 12, sold: 18, views: 2640, status: 'inactive' },
   { productId: 'airpods-pro-2', stock: 45, sold: 210, views: 18920, status: 'active' },
   { productId: 'jbl-charge-5', stock: 0, sold: 88, views: 5410, status: 'out_of_stock' },
   { productId: 'xiaomi-robot-vac', stock: 7, sold: 33, views: 3120, status: 'active' },
-  { productId: 'nike-air-max', stock: 20, sold: 0, views: 640, status: 'pending' },
+  { productId: 'nike-air-max', stock: 20, sold: 0, views: 640, status: 'active' },
   { productId: 'lg-oled-c4', stock: 2, sold: 9, views: 1880, status: 'active' },
 ]
 

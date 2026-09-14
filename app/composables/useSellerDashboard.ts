@@ -61,13 +61,11 @@ export function useSellerDashboard() {
     const counts = {
       total: listings.value.length,
       active: 0,
-      pending: 0,
       inactive: 0,
       out_of_stock: 0,
     }
     for (const item of listings.value) {
       if (item.status === 'active') counts.active += 1
-      else if (item.status === 'pending') counts.pending += 1
       else if (item.status === 'inactive') counts.inactive += 1
       else if (item.status === 'out_of_stock') counts.out_of_stock += 1
     }

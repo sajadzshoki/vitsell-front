@@ -512,6 +512,7 @@ import {
 } from '~/data/products'
 import {
   sellerProductStatusMeta,
+  normalizeSellerProductStatus,
   type SellerProductStatus,
 } from '~/data/seller'
 import type { SellerProductQuestion } from '~/data/seller-questions'
@@ -607,7 +608,7 @@ watch(
 )
 
 const statusMeta = computed(() =>
-  sellerProductStatusMeta[listing.value?.status ?? 'inactive'],
+  sellerProductStatusMeta[normalizeSellerProductStatus(listing.value?.status)],
 )
 
 const discountPct = computed(() =>

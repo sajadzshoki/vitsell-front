@@ -162,7 +162,6 @@ export const sellerProductFilterDefs: SellerFilterDef[] = [
     options: [
       { value: 'all', label: 'همه' },
       { value: 'active', label: 'فعال' },
-      { value: 'pending', label: 'در انتظار' },
       { value: 'inactive', label: 'غیرفعال' },
       { value: 'out_of_stock', label: 'ناموجود' },
     ],

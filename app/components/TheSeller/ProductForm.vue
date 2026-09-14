@@ -525,7 +525,7 @@
               :disabled="!can('products.create')"
               @click="onSubmit(true)"
             >
-              {{ $t('ثبت و ارسال برای تأیید') }}
+              {{ $t('ثبت و انتشار') }}
             </UButton>
           </template>
         </div>
@@ -867,7 +867,7 @@ function buildProductPayload(base?: ReturnType<typeof resolveProduct>, id?: stri
   })
 }
 
-async function onSubmit(sendForReview: boolean) {
+async function onSubmit(publish: boolean) {
   commerce.value.slug = normalizeProductSlug(commerce.value.slug || form.value.title)
   errors.value = validateSellerProductForm(form.value)
   if (Object.keys(errors.value).length) {
@@ -935,12 +935,12 @@ async function onSubmit(sendForReview: boolean) {
     }
     const product = withCategoryLabel(built)
 
-    // پیش‌نویس = unpublished؛ ارسال برای تأیید = published
-    commerce.value.published = sendForReview
+    // پیش‌نویس = unpublished + inactive؛ انتشار = published + active (بدون تأیید مارکت‌پلیس)
+    commerce.value.published = publish
 
-    const status = sendForReview
-      ? 'pending' as const
-      : (stock > 0 ? 'inactive' as const : 'out_of_stock' as const)
+    const status = !publish
+      ? (stock > 0 ? 'inactive' as const : 'out_of_stock' as const)
+      : (stock > 0 ? 'active' as const : 'out_of_stock' as const)
     const created = await addListingProduct(product, stock, status, listingExtras())
     if (!created.ok) {
       toast.error(t(created.error))
@@ -953,8 +953,8 @@ async function onSubmit(sendForReview: boolean) {
     bumpUsage(commerce.value.tags, 1)
 
     toast.success(
-      sendForReview
-        ? t('محصول برای تأیید ثبت شد')
+      publish
+        ? t('محصول ثبت و منتشر شد')
         : t('پیش‌نویس محصول ذخیره شد'),
     )
     allowNextNavigation()

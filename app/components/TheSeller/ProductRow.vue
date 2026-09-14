@@ -129,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { sellerProductStatusMeta, type SellerListing } from '~/data/seller'
+import { normalizeSellerProductStatus, sellerProductStatusMeta, type SellerListing } from '~/data/seller'
 import { formatPrice } from '~/data/products'
 
 const props = defineProps<{
@@ -144,5 +144,7 @@ const { setListingStatus, resolveProduct } = useSeller()
 const { can } = useSellerPermissions()
 
 const product = computed(() => resolveProduct(props.listing.productId))
-const statusMeta = computed(() => sellerProductStatusMeta[props.listing.status])
+const statusMeta = computed(() =>
+  sellerProductStatusMeta[normalizeSellerProductStatus(props.listing.status)],
+)
 </script>

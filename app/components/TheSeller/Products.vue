@@ -541,7 +541,6 @@ void ensureCategories()
 const statusTabs = computed(() => [
   { id: 'all', label: t('همه'), count: listingsMeta.value.statusCounts.all },
   { id: 'active', label: t('فعال'), count: listingsMeta.value.statusCounts.active },
-  { id: 'pending', label: t('در انتظار'), count: listingsMeta.value.statusCounts.pending },
   { id: 'inactive', label: t('غیرفعال'), count: listingsMeta.value.statusCounts.inactive },
   { id: 'out_of_stock', label: t('ناموجود'), count: listingsMeta.value.statusCounts.out_of_stock },
 ])
