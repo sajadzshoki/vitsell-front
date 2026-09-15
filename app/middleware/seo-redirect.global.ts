@@ -20,7 +20,8 @@ export default defineNuxtRouteMiddleware((to) => {
   // Only allow same-origin path redirects
   if (!dest.startsWith('/') || dest.startsWith('//')) return
 
+  const permanent = hit.type === 301 || hit.type === 308
   return navigateTo(dest, {
-    redirectCode: hit.permanent ? 301 : 302,
+    redirectCode: permanent ? 301 : 302,
   })
 })

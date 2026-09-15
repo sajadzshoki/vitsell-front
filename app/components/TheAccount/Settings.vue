@@ -60,7 +60,11 @@
 
     <footer class="text-center py-8 lg:py-10">
       <div class="inline-flex items-center gap-2 text-primary font-bold text-lg mb-1">
-        <UIcon name="i-tabler-shopping-bag" class="size-6" />
+        <img
+          :src="VITSELL_LOGO_SRC"
+          :alt="$t('ویتسل')"
+          class="size-7 rounded object-contain"
+        >
         <span>{{ $t('ویتسل') }}</span>
       </div>
       <div class="text-[11px] text-dimmed num">
@@ -71,6 +75,7 @@
 </template>
 
 <script setup lang="ts">
+import { VITSELL_LOGO_SRC } from '~/data/brand'
 import { appVersion, settingsLinkItems } from '~/data/settings'
 
 const { isDark } = useColorModeTransition()

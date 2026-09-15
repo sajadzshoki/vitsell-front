@@ -274,8 +274,8 @@
 
           <div class="size-14 sm:size-16 rounded-xl bg-default border border-muted grid place-items-center shrink-0 overflow-hidden">
             <img
-              v-if="row.image"
-              :src="row.image"
+              v-if="row.image || isSellerAdminIconImage(row.icon)"
+              :src="row.image || row.icon"
               :alt="row.name"
               class="size-full object-cover"
             >
@@ -508,6 +508,7 @@ import {
   type SellerCategoryStatus,
   type SellerCategoryTreeRow,
 } from '~/data/seller-categories'
+import { isSellerAdminIconImage } from '~/data/seller-admin-icons'
 import { categoryStorefrontHref } from '~/data/categories'
 import { downloadSellerCsv } from '~/data/seller-export'
 

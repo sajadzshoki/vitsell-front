@@ -42,7 +42,10 @@ function cloneBottom(list: BottomNavItem[]): SellerBottomNavForm[] {
 
 function toQuick(raw: any, index: number): SellerNavLinkForm {
   const id = String(raw?.id || `quick-${index + 1}`)
-  const to = String(raw?.to || '')
+  let to = String(raw?.to || '')
+  if (id === 'categories' && (!to || to === '/search')) {
+    to = '/category'
+  }
   return {
     id,
     label: String(raw?.label || id),
@@ -58,12 +61,17 @@ function toQuick(raw: any, index: number): SellerNavLinkForm {
 function toBottom(raw: any, index: number): SellerBottomNavForm {
   const id = String(raw?.id || `bottom-${index + 1}`)
   const badge = raw?.badge ? String(raw.badge) : undefined
+  let to = raw?.to ? String(raw.to) : undefined
+  // Heal misconfig: categories browse page is `/category`, not bare `/search`.
+  if (id === 'categories' && (!to || to === '/search')) {
+    to = '/category'
+  }
   return {
     id,
     label: String(raw?.label || id),
     icon: String(raw?.icon || 'circle'),
     iconActive: raw?.iconActive ? String(raw.iconActive) : '',
-    to: raw?.to ? String(raw.to) : undefined,
+    to,
     badge: badge === 'cart' ? 'cart' : badge as SellerBottomNavForm['badge'],
     enabled: raw?.enabled === false ? false : true,
   }

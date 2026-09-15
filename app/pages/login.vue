@@ -4,10 +4,14 @@
     <div class="mb-7 flex flex-col items-center text-center gap-3">
       <NuxtLink
         to="/"
-        class="size-14 rounded-2xl bg-primary grid place-items-center text-inverted shadow-lg shadow-primary/20 transition-all  hover:brightness-110"
+        class="size-16 rounded-2xl overflow-hidden bg-inverted grid place-items-center shadow-lg shadow-primary/20 transition-all hover:brightness-110"
         :aria-label="$t('ویتسل')"
       >
-        <UIcon name="i-tabler-shopping-bag" class="size-7" />
+        <img
+          :src="VITSELL_LOGO_SRC"
+          :alt="$t('ویتسل')"
+          class="size-full object-contain p-1"
+        >
       </NuxtLink>
       <div>
         <h1 class="text-2xl font-extrabold text-highlighted tracking-tight">
@@ -396,6 +400,8 @@
 </template>
 
 <script setup lang="ts">
+import { VITSELL_LOGO_SRC } from '~/data/brand'
+
 definePageMeta({
   layout: 'auth',
 })

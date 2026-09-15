@@ -57,9 +57,13 @@
         </div>
 
         <div
-          class="shrink-0 size-28 md:size-36 rounded-3xl bg-primary grid place-items-center shadow-lg shadow-primary/25"
+          class="shrink-0 size-28 md:size-36 rounded-3xl overflow-hidden   grid place-items-center"
         >
-          <UIcon name="i-tabler-crown" class="size-14 md:size-16 text-inverted" />
+          <img
+            :src="VITSELL_LOGO_SRC"
+            :alt="$t('ویتسل')"
+            class="size-full object-contain p-2"
+          >
         </div>
       </div>
     </div>
@@ -67,6 +71,8 @@
 </template>
 
 <script setup lang="ts">
+import { VITSELL_LOGO_SRC } from '~/data/brand'
+
 const { promos, pending, loaded } = useHome()
 
 const promo = computed(() => {

@@ -4,41 +4,31 @@
     class="flex items-center gap-2 shrink-0 <md:flex-col"
   >
     <img
-      v-if="logoUrl"
       :src="logoUrl"
       :alt="siteName"
-      class="size-10 rounded-xl object-cover shadow-lg shadow-primary/20"
+      :class="logoSize"
+      class="size-14 rounded-xl object-contain"
     >
     <div
-      v-else
-      class="size-10 rounded-xl grid place-items-center shadow-lg shadow-primary/20"
-      :class="inverted ? 'bg-default text-highlighted' : 'bg-primary text-inverted'"
+      v-if="showName"
+      class="hidden sm:flex flex-col leading-tight text-start"
     >
-      <UIcon
-        name="i-tabler-shopping-bag"
-        class="size-5"
-      />
-    </div>
-    <div class="hidden sm:flex flex-col leading-tight text-start">
       <span
         class="text-xl font-extrabold"
         :class="inverted ? 'text-inverted' : 'text-highlighted'"
       >
         {{ siteName }}
       </span>
-      <!-- <span
-        class="text-[10px] -mt-0.5"
-        :class="inverted ? 'text-inverted/60' : 'text-dimmed'"
-      >
-        {{ tagline }}
-      </span> -->
     </div>
   </NuxtLink>
 </template>
 
 <script setup lang="ts">
+import { VITSELL_LOGO_SRC } from '~/data/brand'
+
 withDefaults(defineProps<{
   inverted?: boolean
+  logoSize?: string
 }>(), {
   inverted: false,
 })
@@ -53,6 +43,8 @@ const siteName = computed(() =>
   || site.value.name?.trim()
   || t('ویتسل'),
 )
-const logoUrl = computed(() => site.value.logoUrl?.trim() || '')
-const tagline = computed(() => t('فروشگاه پرمیوم'))
+const customLogo = computed(() => site.value.logoUrl?.trim() || '')
+const logoUrl = computed(() => customLogo.value || VITSELL_LOGO_SRC)
+/** Wordmark is already in the default PNG; only show text beside a custom mark. */
+const showName = computed(() => Boolean(customLogo.value))
 </script>

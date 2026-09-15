@@ -51,7 +51,7 @@
         <div class="py-10 lg:py-12 !pb-4 grid grid-cols-1 xl:grid-cols-12 gap-10 xl:gap-8">
           <!-- Brand block -->
           <div class="xl:col-span-4 flex flex-col gap-5">
-            <TheNavbarLogo />
+            <TheNavbarLogo logoSize="!size-18"/>
 
             <p
               v-if="aboutSegments.length"

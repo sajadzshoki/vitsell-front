@@ -19,7 +19,14 @@
           size="md"
           class="font-medium inline-flex items-center gap-1.5"
         >
+          <img
+            v-if="selectedCategoryImage"
+            :src="selectedCategoryImage"
+            alt=""
+            class="size-4 rounded object-cover"
+          >
           <UIcon
+            v-else
             :name="selectedCategory.icon"
             class="size-4"
           />
@@ -57,24 +64,71 @@
       </div>
       <div
         v-else
-        class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5"
+        class="space-y-3"
       >
-        <button
-          v-for="category in categoryOptions"
-          :key="category.id"
-          type="button"
-          class="flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-all  cursor-pointer"
-          :class="form.category === category.id
-            ? 'border-primary bg-primary/10 text-primary'
-            : 'border-muted bg-muted/40 text-toned hover:(border-accented bg-elevated)'"
-          @click="onCategorySelect(category.id)"
+        <UInput
+          v-model="categorySearch"
+          icon="i-tabler-search"
+          size="md"
+          class="w-full"
+          :placeholder="$t('جستجوی دسته‌بندی...')"
+          :aria-label="$t('جستجوی دسته‌بندی')"
+        />
+
+        <div
+          v-if="!filteredCategoryTree.length"
+          class="rounded-2xl border border-dashed border-muted px-4 py-8 text-center text-sm text-muted"
         >
-          <UIcon
-            :name="category.icon"
-            class="size-6"
-          />
-          <span class="text-xs font-medium leading-tight">{{ $t(category.name) }}</span>
-        </button>
+          {{ $t('دسته‌بندی‌ای با این جستجو پیدا نشد') }}
+        </div>
+        <div
+          v-else
+          class="rounded-2xl border border-muted bg-muted/30 p-2 max-h-72 overflow-y-auto"
+        >
+          <UTree
+            :model-value="selectedCategoryTreeValue"
+            :items="filteredCategoryTree"
+            :get-key="categoryTreeGetKey"
+            :expanded="categoryTreeExpanded"
+            color="primary"
+            size="md"
+            expanded-icon="i-tabler-folder-open"
+            collapsed-icon="i-tabler-folder"
+            trailing-icon="i-tabler-chevron-down"
+            class="w-full"
+            :ui="{
+              link: 'cursor-pointer rounded-xl',
+              itemWithChildren: 'ms-0',
+              listWithChildren: 'border-s border-muted ms-3 ps-2',
+            }"
+            @update:model-value="onCategoryTreeModel"
+            @update:expanded="onCategoryTreeExpanded"
+          >
+            <template #item-leading="{ item }">
+              <span class="size-5 shrink-0 grid place-items-center overflow-hidden rounded-md me-1.5">
+                <img
+                  v-if="(item as SellerCategoryPickerNode).image"
+                  :src="(item as SellerCategoryPickerNode).image!"
+                  alt=""
+                  class="size-5 object-cover"
+                >
+                <UIcon
+                  v-else
+                  :name="(item as SellerCategoryPickerNode).icon || 'i-tabler-category'"
+                  class="size-4 text-primary"
+                />
+              </span>
+            </template>
+          </UTree>
+        </div>
+
+        <p
+          v-if="selectedCategoryPath"
+          class="text-xs text-muted leading-6"
+        >
+          {{ $t('مسیر انتخاب‌شده') }}:
+          <span class="text-toned font-medium">{{ selectedCategoryPath }}</span>
+        </p>
       </div>
       <p
         v-if="errors.category"
@@ -281,32 +335,47 @@
 
         <template #specs>
           <div class="space-y-5">
-            <div class="flex items-center justify-between gap-3 flex-wrap">
-              <div>
-                <h4 class="text-sm font-bold text-toned">
-                  {{ $t('مشخصات محصول') }}
-                </h4>
-                <p class="text-xs text-muted mt-1 leading-6">
-                  {{ $t('عنوان و مقدار هر مشخصه را وارد کنید؛ کلیدهای قبلی همین دسته پیشنهاد می‌شوند.') }}
-                </p>
+            <div>
+              <h4 class="text-sm font-bold text-toned">
+                {{ $t('مشخصات محصول') }}
+              </h4>
+              <p class="text-xs text-muted mt-1 leading-6">
+                {{ $t('عنوان و مقدار هر مشخصه را وارد کنید؛ با کشیدن می‌توانید ترتیب نمایش در سایت را عوض کنید.') }}
+              </p>
+            </div>
+
+            <div
+              v-if="!form.category"
+              class="rounded-2xl border border-dashed border-muted bg-muted/30 px-4 py-3 text-xs text-muted leading-6"
+            >
+              {{ $t('برای دیدن پیشنهادهای مشخصات، ابتدا دسته‌بندی را در تب اطلاعات پایه انتخاب کنید.') }}
+            </div>
+
+            <div
+              v-else-if="unusedSpecKeySuggestions.length"
+              class="rounded-2xl border border-muted bg-muted/30 p-3 space-y-2"
+            >
+              <p class="text-xs font-medium text-toned">
+                {{ $t('پیشنهاد از محصولات همین دسته') }}
+              </p>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="key in unusedSpecKeySuggestions.slice(0, 16)"
+                  :key="key"
+                  type="button"
+                  class="rounded-lg bg-default border border-muted px-2.5 py-1 text-[11px] text-toned hover:(bg-primary/10 text-primary border-primary/30) cursor-pointer"
+                  @click="applySpecKeySuggestion(key)"
+                >
+                  {{ key }}
+                </button>
               </div>
-              <UButton
-                type="button"
-                color="primary"
-                variant="soft"
-                size="sm"
-                icon="i-tabler-plus"
-                class="cursor-pointer"
-                @click="addSpecRow"
-              >
-                {{ $t('افزودن مشخصه') }}
-              </UButton>
             </div>
 
             <div class="overflow-x-auto rounded-2xl border border-muted">
               <table class="w-full min-w-md text-sm">
                 <thead class="bg-muted/60 text-toned">
                   <tr class="text-start">
+                    <th class="px-2 py-2.5 font-medium w-10" />
                     <th class="px-3 py-2.5 font-medium w-[40%]">
                       {{ $t('عنوان') }}
                     </th>
@@ -319,29 +388,38 @@
                 <tbody>
                   <tr
                     v-for="(row, index) in form.specs"
-                    :key="index"
-                    class="border-t border-muted"
+                    :key="row._id"
+                    class="border-t border-muted transition-colors"
+                    :class="{
+                      'opacity-40': dragSpecFrom === index,
+                      'bg-primary/5': dragSpecOver === index && dragSpecFrom !== index,
+                    }"
+                    @dragover.prevent="onSpecDragOver(index, $event)"
+                    @drop.prevent="onSpecDrop(index)"
+                    @dragleave="onSpecDragLeave(index)"
                   >
+                    <td class="px-1 py-2 align-middle">
+                      <div
+                        role="button"
+                        tabindex="0"
+                        class="inline-flex items-center justify-center size-8 rounded-lg text-muted hover:(bg-muted text-toned) cursor-grab active:cursor-grabbing select-none"
+                        draggable="true"
+                        :aria-label="$t('جابه‌جایی با کشیدن')"
+                        @dragstart="onSpecDragStart(index, $event)"
+                        @dragend="onSpecDragEnd"
+                      >
+                        <UIcon
+                          name="i-tabler-grip-vertical"
+                          class="size-4 pointer-events-none"
+                        />
+                      </div>
+                    </td>
                     <td class="px-3 py-2 align-top">
                       <UInput
                         v-model="row.key"
                         :placeholder="$t('مثلاً مدل')"
                         class="w-full"
                       />
-                      <div
-                        v-if="unusedSpecKeySuggestions.length"
-                        class="flex flex-wrap gap-1.5 mt-1.5"
-                      >
-                        <button
-                          v-for="key in unusedSpecKeySuggestions.slice(0, 8)"
-                          :key="key"
-                          type="button"
-                          class="rounded-lg bg-muted px-2 py-0.5 text-[11px] text-toned hover:(bg-primary/10 text-primary) cursor-pointer"
-                          @click="applySpecKeySuggestion(index, key)"
-                        >
-                          {{ key }}
-                        </button>
-                      </div>
                       <p
                         v-if="errors[`spec:${index}:key`]"
                         class="text-[11px] text-error mt-1"
@@ -379,6 +457,18 @@
                 </tbody>
               </table>
             </div>
+
+            <UButton
+              type="button"
+              color="primary"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-plus"
+              class="cursor-pointer w-full sm:w-auto"
+              @click="addSpecRow"
+            >
+              {{ $t('افزودن مشخصه') }}
+            </UButton>
 
             <div
               v-if="derivedColors.length"
@@ -564,6 +654,13 @@ import {
   validateSellerProductForm,
   type SellerProductFormValues,
 } from '~/data/seller-product-form'
+import {
+  buildSellerCategoryPickerTree,
+  categoryAncestorIds,
+  resolveCategoryIconName,
+  type SellerCategoryPickerNode,
+} from '~/data/seller-categories'
+import { isSellerAdminIconImage } from '~/data/seller-admin-icons'
 import { emptyProductCommerce, type SellerProductCommerce } from '~/data/seller-product-variants'
 import { emptySeoMeta, htmlToPlainText, sanitizeSeoMeta } from '~/data/seo'
 
@@ -621,11 +718,91 @@ const form = ref<SellerProductFormValues>(emptySellerProductForm())
 const commerce = ref<SellerProductCommerce>(emptyProductCommerce())
 const slugManual = ref(false)
 const categorySpecKeys = ref<string[]>([])
+const dragSpecFrom = ref<number | null>(null)
+const dragSpecOver = ref<number | null>(null)
+const categorySearch = ref('')
+const categoryTreeExpanded = ref<string[]>([])
 const categoryOptions = computed(() =>
   sellerCategoriesToFormOptions(categories.value, {
     includeInactiveIds: form.value.category ? [form.value.category] : [],
   }),
 )
+const filteredCategoryTree = computed(() =>
+  buildSellerCategoryPickerTree(categories.value, {
+    includeInactiveIds: form.value.category ? [form.value.category] : [],
+    query: categorySearch.value,
+  }),
+)
+
+function categoryTreeGetKey(item: SellerCategoryPickerNode) {
+  return item.id
+}
+
+function onCategoryTreeExpanded(keys: string[]) {
+  categoryTreeExpanded.value = keys
+}
+
+function findCategoryTreeNode(
+  nodes: SellerCategoryPickerNode[],
+  id: string,
+): SellerCategoryPickerNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    if (node.children?.length) {
+      const found = findCategoryTreeNode(node.children, id)
+      if (found) return found
+    }
+  }
+  return undefined
+}
+
+const selectedCategoryTreeValue = computed(() => {
+  const id = form.value.category
+  if (!id) return undefined
+  return findCategoryTreeNode(filteredCategoryTree.value, id)
+    || findCategoryTreeNode(
+      buildSellerCategoryPickerTree(categories.value, {
+        includeInactiveIds: [id],
+      }),
+      id,
+    )
+})
+
+function onCategoryTreeModel(value: SellerCategoryPickerNode | SellerCategoryPickerNode[] | null | undefined) {
+  if (!value || Array.isArray(value)) return
+  if (!value.id) return
+  onCategorySelect(value.id)
+}
+
+function syncCategoryTreeExpanded(categoryId: string) {
+  if (!categoryId) return
+  const ancestors = categoryAncestorIds(categories.value, categoryId)
+  categoryTreeExpanded.value = [...new Set([...categoryTreeExpanded.value, ...ancestors, categoryId])]
+}
+
+watch(
+  () => [form.value.category, categories.value.length] as const,
+  ([categoryId]) => {
+    if (categoryId) syncCategoryTreeExpanded(categoryId)
+  },
+  { immediate: true },
+)
+
+watch(categorySearch, (q) => {
+  if (!q.trim()) return
+  // Expand all visible parents while searching
+  const collect = (nodes: SellerCategoryPickerNode[], acc: string[]) => {
+    for (const node of nodes) {
+      if (node.children?.length) {
+        acc.push(node.id)
+        collect(node.children, acc)
+      }
+    }
+    return acc
+  }
+  categoryTreeExpanded.value = collect(filteredCategoryTree.value, [])
+})
+
 const errors = ref<Record<string, string>>({})
 const submitting = ref(false)
 const activeTab = ref('basic')
@@ -766,9 +943,45 @@ function onCreateTag(item: string) {
   }
 }
 
-const selectedCategory = computed(() =>
-  categoryOptions.value.find(item => item.id === form.value.category),
-)
+const selectedCategory = computed(() => {
+  const id = form.value.category
+  if (!id) return null
+  const fromOptions = categoryOptions.value.find(item => item.id === id)
+  if (fromOptions) return fromOptions
+  const sellerCat = getSellerCategory(id)
+  if (!sellerCat) return null
+  return {
+    id: sellerCat.id,
+    name: sellerCat.name,
+    icon: resolveCategoryIconName(sellerCat.icon || 'category'),
+  }
+})
+
+const selectedCategoryImage = computed(() => {
+  const id = form.value.category
+  if (!id) return null
+  const sellerCat = getSellerCategory(id)
+  if (!sellerCat) return null
+  if (sellerCat.image) return sellerCat.image
+  if (isSellerAdminIconImage(sellerCat.icon)) return sellerCat.icon
+  return null
+})
+
+const selectedCategoryPath = computed(() => {
+  const id = form.value.category
+  if (!id) return ''
+  const byId = new Map(categories.value.map(c => [c.id, c]))
+  const parts: string[] = []
+  let current = byId.get(id)
+  const guard = new Set<string>()
+  while (current) {
+    if (guard.has(current.id)) break
+    guard.add(current.id)
+    parts.unshift(current.name)
+    current = current.parentId ? byId.get(current.parentId) : undefined
+  }
+  return parts.join(' › ')
+})
 
 const brandOptions = computed(() => {
   const sellerCat = getSellerCategory(form.value.category)
@@ -822,13 +1035,62 @@ function removeSpecRow(index: number) {
   form.value.specs = form.value.specs.filter((_, i) => i !== index)
 }
 
-function applySpecKeySuggestion(index: number, key: string) {
+function onSpecDragStart(index: number, e: DragEvent) {
+  dragSpecFrom.value = index
+  dragSpecOver.value = index
+  e.dataTransfer?.setData('text/plain', String(index))
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+}
+
+function onSpecDragOver(index: number, e: DragEvent) {
+  e.preventDefault()
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+  if (dragSpecFrom.value === null) return
+  dragSpecOver.value = index
+}
+
+function onSpecDragLeave(index: number) {
+  if (dragSpecOver.value === index) dragSpecOver.value = null
+}
+
+function onSpecDrop(index: number) {
+  const from = dragSpecFrom.value
+  if (from === null || from === index) {
+    onSpecDragEnd()
+    return
+  }
   const next = [...form.value.specs]
-  const row = next[index]
-  if (!row) return
-  next[index] = { ...row, key }
+  const [item] = next.splice(from, 1)
+  if (!item) {
+    onSpecDragEnd()
+    return
+  }
+  next.splice(index, 0, item)
   form.value.specs = next
-  onCreateSpecKey(key)
+  onSpecDragEnd()
+}
+
+function onSpecDragEnd() {
+  dragSpecFrom.value = null
+  dragSpecOver.value = null
+}
+
+/** Apply a category suggestion: fill first empty title, else append a row. */
+function applySpecKeySuggestion(key: string) {
+  const trimmed = key.trim()
+  if (!trimmed) return
+  const emptyIdx = form.value.specs.findIndex(s => !s.key.trim())
+  if (emptyIdx >= 0) {
+    const next = [...form.value.specs]
+    const row = next[emptyIdx]
+    if (!row) return
+    next[emptyIdx] = { ...row, key: trimmed }
+    form.value.specs = next
+  }
+  else {
+    form.value.specs = [...form.value.specs, { ...emptySpecRow(), key: trimmed }]
+  }
+  onCreateSpecKey(trimmed)
 }
 
 function onCreateSpecKey(item: string) {

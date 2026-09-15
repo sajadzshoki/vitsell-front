@@ -41,17 +41,20 @@ export function useSellerSeoSettings() {
   const loaded = useState('seller-seo-site-loaded', () => false)
   const pending = useState('seller-seo-site-pending', () => false)
 
-  async function fetchSettings(options?: { force?: boolean }) {
+  async function fetchSettings(options?: { force?: boolean, admin?: boolean }) {
     if (loaded.value && !options?.force) {
       return { ok: true as const, error: null as null }
     }
     pending.value = true
     try {
-      const { result, error } = await useGet<SellerSeoSiteSettings>('/seller/seo', {
+      // Storefront uses public `/seo`; seller panel keeps admin CRUD path.
+      const path = options?.admin ? '/seller/seo' : '/seo'
+      const { result, error } = await useGet<SellerSeoSiteSettings>(path, {
         headers: { 'no-error': true },
         server: false,
       })
       if (error || result == null) {
+        loaded.value = true
         return {
           ok: false as const,
           error: apiErrorMessage(error, 'بارگذاری تنظیمات سئو ناموفق بود'),

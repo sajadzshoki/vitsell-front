@@ -320,8 +320,8 @@ const {
 } = useSellerRedirects()
 
 const bootPending = ref(true)
-const seoLoad = await fetchSettings({ force: true })
-const redirectsLoad = await fetchRedirects({ force: true })
+const seoLoad = await fetchSettings({ force: true, admin: true })
+const redirectsLoad = await fetchRedirects({ force: true, admin: true })
 bootPending.value = false
 if (!seoLoad.ok) {
   toast.error(t(seoLoad.error || 'بارگذاری تنظیمات سئو ناموفق بود'))

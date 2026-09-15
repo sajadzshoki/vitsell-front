@@ -4,7 +4,7 @@ import type {
   CategorySuggestedItem,
 } from '~/data/category-pages'
 import { emptySeoMeta, sanitizeSeoMeta, seoMetaFromCategoryHeading, type SeoMeta } from '~/data/seo'
-import { resolveSellerAdminIconName } from '~/data/seller-admin-icons'
+import { resolveSellerAdminIconName, isSellerAdminIconImage } from '~/data/seller-admin-icons'
 
 export type SellerCategoryStatus = 'active' | 'inactive'
 
@@ -384,6 +384,126 @@ export function flattenCategoryTree(categories: SellerCategory[]): SellerCategor
   }
 
   return rows
+}
+
+/** Nested tree nodes for product-form category picker (Nuxt UI Tree). */
+export type SellerCategoryPickerNode = {
+  id: string
+  label: string
+  /** Always a Tabler / Nuxt Icon name — never an image URL (UTree uses UIcon). */
+  icon: string
+  /** Optional image preview (category.image or icon-as-image). */
+  image?: string | null
+  defaultExpanded?: boolean
+  children?: SellerCategoryPickerNode[]
+}
+
+function pickerIconFields(cat: SellerCategory): Pick<SellerCategoryPickerNode, 'icon' | 'image'> {
+  const rawIcon = String(cat.icon || '').trim()
+  if (isSellerAdminIconImage(rawIcon)) {
+    return {
+      icon: 'i-tabler-category',
+      image: rawIcon || cat.image || null,
+    }
+  }
+  return {
+    icon: resolveCategoryIconName(rawIcon || 'category'),
+    image: cat.image || null,
+  }
+}
+
+export function buildSellerCategoryPickerTree(
+  categories: SellerCategory[],
+  options?: { includeInactiveIds?: string[], query?: string },
+): SellerCategoryPickerNode[] {
+  const include = new Set(options?.includeInactiveIds?.filter(Boolean) ?? [])
+  const filtered = categories.filter(c => c.status !== 'inactive' || include.has(c.id))
+
+  const byParent = new Map<string | null, SellerCategory[]>()
+  for (const cat of filtered) {
+    const key = cat.parentId ?? null
+    const list = byParent.get(key) ?? []
+    list.push(cat)
+    byParent.set(key, list)
+  }
+  for (const list of byParent.values()) {
+    list.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'fa'))
+  }
+
+  const seen = new Set<string>()
+  function walk(parentId: string | null): SellerCategoryPickerNode[] {
+    const nodes: SellerCategoryPickerNode[] = []
+    for (const cat of byParent.get(parentId) ?? []) {
+      if (seen.has(cat.id)) continue
+      seen.add(cat.id)
+      const children = walk(cat.id)
+      nodes.push({
+        id: cat.id,
+        label: cat.name,
+        ...pickerIconFields(cat),
+        ...(children.length ? { children, defaultExpanded: true } : {}),
+      })
+    }
+    return nodes
+  }
+
+  const tree = walk(null)
+
+  // Orphans (missing parent still in list)
+  for (const cat of filtered) {
+    if (seen.has(cat.id)) continue
+    seen.add(cat.id)
+    tree.push({
+      id: cat.id,
+      label: cat.name,
+      ...pickerIconFields(cat),
+    })
+  }
+
+  const query = options?.query?.trim().toLowerCase()
+  if (!query) return tree
+
+  function filterNodes(nodes: SellerCategoryPickerNode[]): SellerCategoryPickerNode[] {
+    const out: SellerCategoryPickerNode[] = []
+    for (const node of nodes) {
+      const childMatches = filterNodes(node.children ?? [])
+      const selfMatch = node.label.toLowerCase().includes(query)
+        || node.id.toLowerCase().includes(query)
+      if (selfMatch) {
+        out.push({
+          ...node,
+          defaultExpanded: true,
+          ...(node.children?.length
+            ? { children: childMatches.length ? childMatches : node.children }
+            : {}),
+        })
+      }
+      else if (childMatches.length) {
+        out.push({ ...node, defaultExpanded: true, children: childMatches })
+      }
+    }
+    return out
+  }
+
+  return filterNodes(tree)
+}
+
+/** Ancestor category ids (nearest parent first → root last). */
+export function categoryAncestorIds(
+  categories: SellerCategory[],
+  categoryId: string,
+): string[] {
+  const byId = new Map(categories.map(c => [c.id, c]))
+  const ids: string[] = []
+  let current = byId.get(categoryId)
+  const guard = new Set<string>()
+  while (current?.parentId) {
+    if (guard.has(current.parentId)) break
+    guard.add(current.parentId)
+    ids.push(current.parentId)
+    current = byId.get(current.parentId)
+  }
+  return ids
 }
 
 export function resolveCategoryIconName(icon: string) {

@@ -243,6 +243,32 @@ export const sellerAdminIconOptions: { key: string, label: string }[] = sellerAd
 
 const IMAGE_EXT_RE = /\.(png|jpe?g|webp|gif|svg)(\?|#|$)/i
 
+/**
+ * Legacy / shorthand keys stored on categories (and older seeds) → Tabler slug.
+ * Without this, `mobile` becomes `i-tabler-mobile` which does not exist.
+ */
+export const sellerAdminIconAliases: Record<string, string> = {
+  mobile: 'device-mobile',
+  phone: 'device-mobile',
+  cellphone: 'device-mobile',
+  laptop: 'device-laptop',
+  notebook: 'device-laptop',
+  audio: 'headphones',
+  headphone: 'headphones',
+  headphones: 'headphones',
+  tv: 'device-tv',
+  television: 'device-tv',
+  watch: 'device-watch',
+  smartwatch: 'device-watch',
+  gaming: 'device-gamepad-2',
+  game: 'device-gamepad-2',
+  gamepad: 'device-gamepad-2',
+  fashion: 'shirt',
+  clothing: 'shirt',
+  beauty: 'sparkles',
+  cosmetics: 'sparkles',
+}
+
 /** True when the value is an uploaded/custom image URL or path (not a Tabler key). */
 export function isSellerAdminIconImage(icon: string) {
   const raw = String(icon || '').trim()
@@ -260,14 +286,29 @@ export function isSellerAdminIconImage(icon: string) {
   return false
 }
 
+function applySellerAdminIconAlias(slug: string) {
+  const key = String(slug || '').trim().replace(/^tabler-/i, '')
+  if (!key) return 'category'
+  return sellerAdminIconAliases[key] || key
+}
+
 /** Normalize stored icon to a Nuxt Icon / UIcon name (`i-tabler-…`). Image URLs are returned as-is. */
 export function resolveSellerAdminIconName(icon: string) {
   const raw = String(icon || '').trim()
   if (!raw) return 'i-tabler-category'
   if (isSellerAdminIconImage(raw)) return raw
-  if (raw.startsWith('i-')) return raw
-  if (raw.startsWith('tabler:')) return `i-tabler-${raw.slice('tabler:'.length)}`
-  return `i-tabler-${raw.replace(/^tabler-/i, '')}`
+
+  if (raw.startsWith('i-tabler-')) {
+    return `i-tabler-${applySellerAdminIconAlias(raw.slice('i-tabler-'.length))}`
+  }
+  if (raw.startsWith('tabler:')) {
+    return `i-tabler-${applySellerAdminIconAlias(raw.slice('tabler:'.length))}`
+  }
+  if (raw.startsWith('i-')) {
+    // Unknown collection prefix — keep as-is unless it is a bare alias without collection
+    return raw
+  }
+  return `i-tabler-${applySellerAdminIconAlias(raw)}`
 }
 
 /** Strip `i-tabler-` / `tabler:` for storage as a short key. Images stay as URL. */

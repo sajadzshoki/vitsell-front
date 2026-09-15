@@ -25,6 +25,8 @@
 | `GET` | `/mega-menu` | — storefront mega menu tree |
 | `GET` | `/mega-menu/resolve?path=` | — resolve SEO path → filter |
 | `GET` | `/navigation` | — quick/bottom links |
+| `GET` | `/seo` | — global SEO defaults (public) |
+| `GET` | `/seo/redirects` | — active SEO redirects (public) |
 | `GET\|POST` | `/seller/mega-menus` | ✅ admin |
 | `GET\|PUT\|DELETE` | `/seller/mega-menus/:id` | ✅ admin |
 | `PATCH` | `/seller/mega-menus/:id/status` | ✅ admin |

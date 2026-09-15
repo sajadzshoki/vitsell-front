@@ -45,17 +45,22 @@ export function useSellerRedirects() {
   const loaded = useState('seller-seo-redirects-loaded', () => false)
   const pending = useState('seller-seo-redirects-pending', () => false)
 
-  async function fetchRedirects(options?: { force?: boolean }) {
+  async function fetchRedirects(options?: { force?: boolean, admin?: boolean }) {
     if (loaded.value && !options?.force) {
       return { ok: true as const, error: null as null }
     }
     pending.value = true
     try {
+      // Storefront uses public `/seo/redirects`; seller panel keeps admin CRUD path.
+      const path = options?.admin ? '/seller/seo/redirects' : '/seo/redirects'
       const { result, error } = await useGet<{ items: SellerRedirect[] } | SellerRedirect[]>(
-        '/seller/seo/redirects',
+        path,
         { headers: { 'no-error': true }, server: false },
       )
       if (error || result == null) {
+        // Stop retry storms on every route change when API is down / old deploy.
+        loaded.value = true
+        redirects.value = []
         return {
           ok: false as const,
           error: apiErrorMessage(error, 'بارگذاری ریدایرکت‌ها ناموفق بود'),

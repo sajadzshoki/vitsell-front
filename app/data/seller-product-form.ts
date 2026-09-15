@@ -7,6 +7,9 @@ import { sanitizeSeoMeta } from '~/data/seo'
 import type { SellerAttribute } from '~/data/seller-attributes'
 import type { SellerProductVariantAxis as VariantAxis } from '~/data/seller-product-variants'
 
+/** Form-only row id for stable Vue keys / drag-drop; stripped on save. */
+export type SellerSpecRow = ProductSpec & { _id: string }
+
 export type SellerProductFormValues = {
   category: string
   title: string
@@ -24,8 +27,8 @@ export type SellerProductFormValues = {
   fastDelivery: boolean
   /** Display colors derived from variant axes (read-only in UI). */
   colors: ProductColor[]
-  /** Free-form product specs (key / value rows). */
-  specs: ProductSpec[]
+  /** Free-form product specs (key / value rows). Order = storefront order. */
+  specs: SellerSpecRow[]
 }
 
 export const SELLER_BADGE_NONE = '__none__'
@@ -92,8 +95,17 @@ export function getBrandOptions(categoryId: string): string[] {
   return ['متفرقه']
 }
 
-export function emptySpecRow(): ProductSpec {
-  return { key: '', value: '' }
+/** Form-only row id for stable Vue keys / drag-drop; stripped on save. */
+export function emptySpecRow(): SellerSpecRow {
+  return { _id: crypto.randomUUID(), key: '', value: '' }
+}
+
+export function withSpecRowId(row: ProductSpec & { _id?: string }): SellerSpecRow {
+  return {
+    _id: row._id || crypto.randomUUID(),
+    key: row.key ?? '',
+    value: row.value ?? '',
+  }
 }
 
 export function emptySellerProductForm(category = ''): SellerProductFormValues {
@@ -193,7 +205,7 @@ export function productToSellerForm(
   product: Product,
   stock = 0,
 ): SellerProductFormValues {
-  const specs = (product.specs ?? []).map(s => ({ key: s.key, value: s.value }))
+  const specs = (product.specs ?? []).map(s => withSpecRowId(s))
   return {
     category: product.category,
     title: product.title,

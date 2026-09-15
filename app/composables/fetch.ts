@@ -23,17 +23,25 @@ export function getUploadOrigin() {
   return base.replace(/\/api\/v1$/i, '') || base
 }
 
-const UPLOAD_FILE_RE = /\/uploads\/([\w.-]+\.(?:jpe?g|png|webp|gif|mp4|webm|mov|pdf|txt|docx?))$/i
+const UPLOAD_FILE_RE = /\/uploads\/([\w.-]+\.(?:jpe?g|png|webp|gif|svg|mp4|webm|mov|pdf|txt|docx?))$/i
+/** MinIO / S3 path-style public object URL: `{origin}/{bucket}/{file}` */
+const S3_OBJECT_RE = /^(https?:\/\/[^/]+)\/([^/]+)\/([\w.-]+\.(?:jpe?g|png|webp|gif|svg|mp4|webm|mov|pdf|txt|docx?))$/i
 
 /**
  * Make media URLs loadable in the browser.
- * - `/uploads/...` (and legacy absolute upload hosts) → API origin
+ * - Absolute MinIO/S3/CDN URLs → use as-is
+ * - `/uploads/...` (and legacy absolute upload hosts) → API origin (streams from Drive)
  * - `/images/...` and other storefront public assets stay same-origin
  */
 export function resolveMediaUrl(url: string) {
   const raw = String(url || '').trim()
   if (!raw) return ''
   if (raw.startsWith('blob:') || raw.startsWith('data:')) return raw
+
+  // Direct object storage / CDN (MinIO path-style, etc.)
+  if (S3_OBJECT_RE.test(raw) && !raw.includes('/uploads/')) {
+    return raw
+  }
 
   const origin = getUploadOrigin()
 

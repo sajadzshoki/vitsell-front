@@ -76,4 +76,7 @@ Check out the [deployment documentation](https://nuxt.com/docs/4.x/getting-start
 
 backend update : 
 docker compose -f docker-compose.prod.yml build --progress=plain
+
 docker compose -f docker-compose.prod.yml up -d
+
+docker exec -it api node ace migration:run
