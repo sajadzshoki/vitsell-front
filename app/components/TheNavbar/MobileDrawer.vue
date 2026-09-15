@@ -109,27 +109,33 @@
               v-if="menu.sections.length"
               type="button"
               class="size-11 shrink-0 grid place-items-center text-dimmed hover:bg-muted transition cursor-pointer"
+              :aria-expanded="expanded === menu.id"
               :aria-label="$t('زیردسته‌ها')"
               @click="toggle(menu.id)"
             >
               <UIcon
                 name="i-tabler-chevron-down"
-                class="size-4 transition"
+                class="size-4 transition-transform duration-300 ease-out"
                 :class="{ 'rotate-180': expanded === menu.id }"
               />
             </button>
           </div>
 
           <div
-            v-if="expanded === menu.id && menu.sections.length"
-            class="bg-muted/60 pb-2"
+            v-if="menu.sections.length"
+            class="grid transition-[grid-template-rows] duration-300 ease-out"
+            :class="expanded === menu.id ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
           >
-            <TheNavbarMobileMenuSection
-              v-for="section in menu.sections"
-              :key="section.id"
-              :section="section"
-              @navigate="open = false"
-            />
+            <div class="overflow-hidden bg-muted/60">
+              <div class="pb-2">
+                <TheNavbarMobileMenuSection
+                  v-for="section in menu.sections"
+                  :key="section.id"
+                  :section="section"
+                  @navigate="open = false"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </nav>

@@ -14,8 +14,8 @@
 </template>
 
 <script setup lang="ts">
-const { fetchCategories } = useCategories()
-await fetchCategories({ withCounts: true })
+const { fetchMegaMenu } = useMegaMenu()
+await fetchMegaMenu()
 
 useSeoMeta({
   title: () => 'دسته‌بندی کالاها',

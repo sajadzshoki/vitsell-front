@@ -58,6 +58,6 @@
 <script setup lang="ts">
 import { popularSearches, toSearchRoute } from '~/data/categories'
 
-const { categories } = useCategories()
-const categoryCount = computed(() => categories.value.length)
+const { menus } = useMegaMenu()
+const categoryCount = computed(() => menus.value.length)
 </script>

@@ -2,171 +2,212 @@
   <div
     class="flex min-h-[32rem] w-full overflow-hidden rounded-3xl border border-muted bg-default shadow-xl shadow-primary/5"
   >
-    <!-- Categories sidebar -->
+    <!-- Layer 1: root menus -->
     <aside
-      class="w-72 shrink-0 bg-muted/60 border-e border-muted py-4 overflow-y-auto scrollbar-none"
+      class="w-[250px] shrink-0 bg-muted/60 border-e border-muted py-2 overflow-y-auto scrollbar-none"
       :aria-label="$t('دسته‌بندی‌های اصلی')"
     >
-      <p class="px-5 pb-3 text-xs font-bold text-dimmed uppercase tracking-wide">
+      <p class="px-5 pb-3 pt-2 text-xs font-bold text-dimmed uppercase tracking-wide">
         {{ $t('دسته‌های اصلی') }}
       </p>
-      <ul class="flex flex-col gap-0.5 px-2">
+
+      <div
+        v-if="pending && !menus.length"
+        class="py-16 grid place-items-center"
+      >
+        <UIcon
+          name="i-tabler-loader-2"
+          class="size-7 text-muted animate-spin"
+        />
+      </div>
+
+      <div
+        v-else-if="loadError && !menus.length"
+        class="px-4 py-10 text-center"
+      >
+        <p class="text-sm text-muted mb-3">
+          {{ $t(loadError) }}
+        </p>
+        <UButton
+          color="primary"
+          variant="soft"
+          size="sm"
+          class="cursor-pointer"
+          @click="fetchMegaMenu({ force: true })"
+        >
+          {{ $t('تلاش دوباره') }}
+        </UButton>
+      </div>
+
+      <div
+        v-else-if="!menus.length"
+        class="px-4 py-10 text-sm text-dimmed text-center"
+      >
+        {{ $t('منویی برای نمایش وجود ندارد') }}
+      </div>
+
+      <ul
+        v-else
+        class="flex flex-col"
+      >
         <li
-          v-for="c in categories"
-          :key="c.id"
+          v-for="menu in menus"
+          :key="menu.id"
         >
           <button
             type="button"
-            class="group w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-start transition"
-            :class="c.id === activeId
-              ? 'bg-default shadow-sm text-primary font-bold'
-              : 'text-toned hover:(bg-elevated text-primary)'"
-            @mouseenter="selectCategory(c.id)"
-            @click="selectCategory(c.id)"
+            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-start transition cursor-pointer"
+            :class="menu.id === activeId
+              ? 'bg-primary/10 text-primary font-bold'
+              : 'text-toned hover:(bg-primary/10 text-primary)'"
+            @mouseenter="selectMenu(menu.id)"
+            @click="selectMenu(menu.id)"
           >
-            <span
-              class="size-10 shrink-0 rounded-xl grid place-items-center transition"
-              :class="c.id === activeId
-                ? 'bg-primary/10 text-primary'
-                : 'bg-elevated text-dimmed group-hover:(bg-primary/10 text-primary)'"
-            >
-              <UIcon :name="getCategoryIcon(c.id)" class="size-5" />
-            </span>
-            <span class="flex-1 min-w-0 text-sm truncate">
-              {{ $t(c.name) }}
-            </span>
-            <span
-              v-if="productCountByCategory[c.id]"
-              class="text-[10px] font-medium text-dimmed num shrink-0"
-              :class="c.id === activeId ? 'text-primary/70' : ''"
-            >
-              {{ productCountByCategory[c.id]?.toLocaleString('fa-IR') }}
-            </span>
             <UIcon
-              v-if="c.id === activeId"
-              name="i-tabler-chevron-left"
-              class="size-4 shrink-0 text-primary/60"
+              :name="menuIcon(menu)"
+              class="size-5 shrink-0"
             />
+            <span class="flex-1 truncate">{{ $t(menu.title) }}</span>
           </button>
         </li>
       </ul>
     </aside>
 
-    <!-- Subcategories panel -->
+    <!-- Layer 2: top-level sections -->
+    <div
+      class="w-[250px] shrink-0 bg-default py-2 border-e border-muted overflow-y-auto scrollbar-none"
+      :aria-label="$t('زیردسته‌ها')"
+    >
+      <template v-if="activeMenu?.sections?.length">
+        <component
+          :is="menuRootTo(activeMenu) ? NuxtLink : 'button'"
+          v-bind="menuRootLinkAttrs(activeMenu)"
+          class="w-full flex items-center gap-2 px-4 py-3 mb-1 text-sm font-bold text-highlighted text-start cursor-pointer hover:text-primary transition"
+        >
+          <UIcon
+            name="i-tabler-chevron-right"
+            class="size-4 text-dimmed shrink-0"
+          />
+          <span class="truncate">{{ $t(activeMenu.title) }}</span>
+        </component>
+
+        <button
+          v-for="section in activeMenu.sections"
+          :key="section.id"
+          type="button"
+          class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-start transition cursor-pointer"
+          :class="activeSectionId === section.id
+            ? 'bg-primary/10 text-primary font-bold'
+            : 'text-toned hover:(bg-primary/10 text-primary)'"
+          @mouseenter="selectSection(section.id)"
+          @click="selectSection(section.id)"
+        >
+          <span class="flex-1 truncate">{{ $t(section.title) }}</span>
+          <UIcon
+            v-if="sectionHasPanel(section)"
+            name="i-tabler-chevron-left"
+            class="size-4 text-dimmed shrink-0"
+          />
+        </button>
+      </template>
+      <div
+        v-else-if="activeMenu"
+        class="px-4 py-10 text-sm text-dimmed"
+      >
+        {{ $t('زیردسته‌ای یافت نشد.') }}
+      </div>
+    </div>
+
+    <!-- Layer 3: grouped columns / items -->
     <div class="relative flex-1 min-w-0 overflow-y-auto scrollbar-none">
       <div
         class="absolute top-0 end-0 size-64 bg-gradient-to-bl from-primary/5 to-transparent pointer-events-none"
         aria-hidden="true"
       />
 
-      <div
-        v-if="activeCategory"
-        class="relative p-6 lg:p-8"
-      >
-        <div class="flex flex-wrap items-start justify-between gap-4 mb-8 pb-6 border-b border-muted">
-          <div class="flex items-center gap-4 min-w-0">
-            <span class="size-14 shrink-0 rounded-2xl bg-primary/10 text-primary grid place-items-center">
-              <UIcon :name="getCategoryIcon(activeCategory.id)" class="size-7" />
-            </span>
-            <div class="min-w-0">
-              <h2 class="text-xl lg:text-2xl font-black text-highlighted truncate">
-                {{ $t(activeCategory.name) }}
-              </h2>
-              <p class="text-sm text-muted mt-1">
-                <template v-if="activeCategory.subs.length">
-                  {{ activeCategory.subs.length.toLocaleString('fa-IR') }}
-                  {{ $t('زیردسته') }}
-                  <span class="text-dimmed mx-1">·</span>
-                </template>
-                <span class="num">
-                  {{ (productCountByCategory[activeCategory.id] ?? 0).toLocaleString('fa-IR') }}
-                </span>
-                {{ $t('کالا') }}
-              </p>
-            </div>
-          </div>
-
-          <UButton
-            :to="toCategoryRoute(activeCategory.id)"
-            color="primary"
-            size="md"
-            trailing-icon="i-tabler-arrow-left"
-            class="font-bold shrink-0"
+      <div class="relative p-5 lg:p-6">
+        <div
+          v-if="activeSection"
+          class="flex items-center justify-between mb-5 gap-3"
+        >
+          <component
+            :is="activeSectionTo ? NuxtLink : 'h3'"
+            v-bind="activeSectionTo
+              ? {
+                  to: activeSectionTo,
+                  external: isExternalMegaHref(activeSectionTo),
+                  target: isExternalMegaHref(activeSectionTo) ? '_blank' : undefined,
+                  rel: isExternalMegaHref(activeSectionTo) ? 'noopener' : undefined,
+                }
+              : {}"
+            class="font-bold text-highlighted text-base"
+            :class="activeSectionTo ? 'hover:text-primary transition cursor-pointer' : ''"
           >
-            {{ $t('مشاهده همه محصولات') }}
+            {{ $t(activeSection.title) }}
+          </component>
+          <UButton
+            v-if="activeSectionCategoryTo"
+            :to="activeSectionCategoryTo"
+            color="primary"
+            variant="link"
+            size="xs"
+            trailing-icon="i-tabler-arrow-left"
+            class="font-bold shrink-0 cursor-pointer"
+          >
+            {{ $t('صفحه دسته') }}
           </UButton>
         </div>
 
         <div
-          v-if="activeCategory.subs.length"
-          class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-8"
+          v-if="activeSection && layer3Groups.length"
+          class="grid grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-6"
         >
-          <article
-            v-for="sub in activeCategory.subs"
-            :key="sub.name"
-            class="group/sub"
-          >
-            <h3 class="font-bold text-default text-sm mb-4 flex items-center gap-2">
-              <span class="size-2 rounded-full bg-primary shrink-0" />
-              {{ $t(sub.name) }}
-            </h3>
-            <ul class="space-y-1">
-              <li
-                v-for="item in sub.items"
-                :key="item"
-              >
-                <NuxtLink
-                  :to="toSearchRoute({ q: item, category: activeCategory.id })"
-                  class="flex items-center gap-2 py-2 px-3 -mx-3 rounded-xl text-sm text-muted hover:(bg-primary/5 text-primary) transition-all  group/link"
-                >
-                  <UIcon
-                    name="i-tabler-chevron-left"
-                    class="size-3.5 shrink-0 opacity-0 group-hover/link:opacity-100 transition"
-                  />
-                  <span>{{ item }}</span>
-                </NuxtLink>
-              </li>
-            </ul>
-          </article>
+          <TheNavbarMegaMenuSection
+            v-for="group in layer3Groups"
+            :key="group.id"
+            :section="group"
+          />
         </div>
 
-        <div
-          v-else
-          class="flex flex-col items-center justify-center py-16 text-center"
+        <ul
+          v-else-if="activeSection?.items.length"
+          class="grid grid-cols-2 gap-x-8 gap-y-1"
         >
-          <span class="size-16 rounded-2xl bg-muted text-dimmed grid place-items-center mb-4">
-            <UIcon :name="getCategoryIcon(activeCategory.id)" class="size-8" />
-          </span>
-          <p class="text-sm text-dimmed mb-5 max-w-xs">
-            {{ $t('زیردسته‌ای برای این دسته ثبت نشده — می‌توانید مستقیم محصولات را ببینید') }}
-          </p>
-          <UButton
-            :to="toCategoryRoute(activeCategory.id)"
-            color="primary"
-            variant="soft"
-            trailing-icon="i-tabler-arrow-left"
+          <li
+            v-for="item in activeSection.items"
+            :key="item.id"
           >
-            {{ $t('رفتن به صفحه دسته') }}
-          </UButton>
-        </div>
-
-        <div
-          v-if="activeCategory.subs.length"
-          class="mt-10 pt-6 border-t border-muted"
-        >
-          <p class="text-xs font-semibold text-dimmed mb-3">
-            {{ $t('پیشنهاد جستجو در') }} {{ $t(activeCategory.name) }}
-          </p>
-          <div class="flex flex-wrap gap-2">
             <NuxtLink
-              v-for="term in suggestedTerms"
-              :key="term"
-              :to="toSearchRoute({ q: term, category: activeCategory.id })"
-              class="inline-flex items-center h-8 px-3 rounded-lg text-xs font-medium bg-muted text-toned hover:(bg-primary/10 text-primary) transition"
+              v-if="itemTo(item)"
+              :to="itemTo(item)!"
+              :external="isExternalMegaHref(itemTo(item))"
+              :target="isExternalMegaHref(itemTo(item)) ? '_blank' : undefined"
+              rel="noopener"
+              class="text-sm text-toned hover:(bg-primary/10 text-primary) transition rounded-lg px-2 py-1.5 text-start w-full block cursor-pointer"
             >
-              {{ term }}
+              {{ item.title }}
             </NuxtLink>
-          </div>
+            <span
+              v-else
+              class="text-sm text-toned rounded-lg px-2 py-1.5 block"
+            >
+              {{ item.title }}
+            </span>
+          </li>
+        </ul>
+
+        <div
+          v-else-if="activeSection"
+          class="text-sm text-dimmed py-8"
+        >
+          {{ $t('موردی برای نمایش نیست') }}
+        </div>
+
+        <div
+          v-else-if="activeMenu"
+          class="text-sm text-dimmed py-8"
+        >
+          {{ $t('یک بخش را انتخاب کنید') }}
         </div>
       </div>
     </div>
@@ -174,24 +215,78 @@
 </template>
 
 <script setup lang="ts">
+import { NuxtLink } from '#components'
 import {
-  getCategoryIcon,
-  toCategoryRoute,
-  toSearchRoute,
-} from '~/data/categories'
+  isExternalMegaHref,
+  megaMenuItemToRoute,
+  megaMenuRootToRoute,
+  megaMenuSectionToRoute,
+  type MegaMenuRoute,
+  type PublicMegaMenu,
+  type PublicMegaMenuItem,
+  type PublicMegaMenuSection,
+} from '~/data/mega-menu'
+import { resolveSellerAdminIconName } from '~/data/seller-admin-icons'
+import { getCategoryIcon, toSearchRoute } from '~/data/categories'
 
 const {
-  categories,
-  productCounts: productCountByCategory,
+  menus,
+  pending,
+  loadError,
+  fetchMegaMenu,
   activeId,
-  activeCategory,
-  selectCategory,
+  activeMenu,
+  activeSectionId,
+  activeSection,
+  selectMenu,
+  selectSection,
 } = useCategoryBrowser()
 
-const suggestedTerms = computed(() => {
-  const subs = activeCategory.value?.subs ?? []
-  const fromSubs = subs.flatMap(s => s.items).slice(0, 4)
-  if (fromSubs.length) return fromSubs
-  return [activeCategory.value?.name].filter(Boolean) as string[]
+const layer3Groups = computed((): PublicMegaMenuSection[] => {
+  const section = activeSection.value
+  if (!section) return []
+  if (section.sections.length) return section.sections
+  return []
 })
+
+const activeSectionCategoryTo = computed(() => {
+  const id = activeSection.value?.category?.id
+  return id ? toSearchRoute({ category: id }) : null
+})
+
+const activeSectionTo = computed(() => sectionTo(activeSection.value))
+
+function sectionHasPanel(section: PublicMegaMenuSection) {
+  return section.sections.length > 0 || section.items.length > 0
+}
+
+function menuIcon(menu: PublicMegaMenu) {
+  if (menu.icon) return resolveSellerAdminIconName(menu.icon)
+  return getCategoryIcon(menu.slug || menu.id)
+}
+
+function menuRootTo(menu: PublicMegaMenu | null | undefined): MegaMenuRoute | null {
+  if (!menu) return null
+  return megaMenuRootToRoute(menu)
+}
+
+function sectionTo(section: PublicMegaMenuSection | null | undefined): MegaMenuRoute | null {
+  if (!section) return null
+  return megaMenuSectionToRoute(section)
+}
+
+function itemTo(item: PublicMegaMenuItem): MegaMenuRoute | null {
+  return megaMenuItemToRoute(item)
+}
+
+function menuRootLinkAttrs(menu: PublicMegaMenu | null | undefined) {
+  const to = menuRootTo(menu)
+  if (!to) return { type: 'button' as const }
+  return {
+    to,
+    external: isExternalMegaHref(to),
+    target: isExternalMegaHref(to) ? '_blank' : undefined,
+    rel: isExternalMegaHref(to) ? 'noopener' : undefined,
+  }
+}
 </script>
