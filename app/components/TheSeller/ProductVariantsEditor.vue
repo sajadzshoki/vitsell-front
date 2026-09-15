@@ -5,7 +5,7 @@
         {{ $t('واریانت‌های پویا') }}
       </h3>
       <p class="text-xs text-muted mt-1 leading-6">
-        {{ $t('ویژگی‌های واریانت را انتخاب کنید، مقادیر را مشخص کنید، سپس ترکیب‌ها را بسازید. Color/Size اجباری نیست.') }}
+        {{ $t('برای هر گزینه تغییر قیمت نسبت به قیمت پایه را وارد کنید؛ موجودی برای هر ترکیب جداگانه ثبت می‌شود.') }}
       </p>
     </div>
 
@@ -62,25 +62,60 @@
           </div>
           <div
             v-if="axis.attributeId"
-            class="flex flex-wrap gap-2"
+            class="space-y-2"
           >
-            <UButton
-              v-for="value in valuesFor(axis.attributeId)"
-              :key="value.id"
-              type="button"
-              size="xs"
-              :color="axis.valueIds.includes(value.id) ? 'primary' : 'neutral'"
-              :variant="axis.valueIds.includes(value.id) ? 'soft' : 'outline'"
-              class="cursor-pointer"
-              @click="toggleValue(axisIndex, value.id)"
+            <div class="flex flex-wrap gap-2">
+              <UButton
+                v-for="value in valuesFor(axis.attributeId)"
+                :key="value.id"
+                type="button"
+                size="xs"
+                :color="axis.valueIds.includes(value.id) ? 'primary' : 'neutral'"
+                :variant="axis.valueIds.includes(value.id) ? 'soft' : 'outline'"
+                class="cursor-pointer"
+                @click="toggleValue(axisIndex, value.id)"
+              >
+                <span
+                  v-if="value.meta"
+                  class="size-3 rounded-full border border-default me-1.5 shrink-0"
+                  :style="{ backgroundColor: value.meta }"
+                />
+                {{ value.label }}
+              </UButton>
+            </div>
+
+            <div
+              v-if="axis.valueIds.length"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-2"
             >
-              <span
-                v-if="value.meta"
-                class="size-3 rounded-full border border-default me-1.5 shrink-0"
-                :style="{ backgroundColor: value.meta }"
-              />
-              {{ value.label }}
-            </UButton>
+              <div
+                v-for="value in selectedValuesFor(axis)"
+                :key="value.id"
+                class="flex items-center justify-between gap-3 rounded-xl border border-muted bg-default p-2.5"
+              >
+                <span class="inline-flex items-center gap-2 min-w-0 text-xs font-medium text-toned">
+                  <span
+                    v-if="value.meta"
+                    class="size-4 rounded-full border border-default shrink-0"
+                    :style="{ backgroundColor: value.meta }"
+                  />
+                  <span class="truncate">{{ value.label }}</span>
+                </span>
+                <UFormField
+                  :label="$t('تغییر قیمت')"
+                  class="w-36 shrink-0"
+                >
+                  <UInput
+                    :model-value="formatSignedAdjustment(axis.priceAdjustments?.[value.id])"
+                    dir="ltr"
+                    inputmode="numeric"
+                    class="w-full"
+                    :placeholder="$t('مثلاً 10,000,000 یا -2,000,000')"
+                    @update:model-value="setPriceAdjustment(axisIndex, value.id, String($event ?? ''))"
+                  />
+                </UFormField>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -138,13 +173,6 @@
             <span class="text-muted font-medium num">({{ localVariants.length.toLocaleString('fa-IR') }})</span>
           </h4>
           <div class="flex items-center gap-2 flex-wrap">
-            <TheFormInput
-              v-model="bulkPrice"
-              class="w-32"
-              :placeholder="$t('قیمت گروهی')"
-              dir="ltr"
-              thousand-sep
-            />
             <TheFormInput
               v-model="bulkStock"
               class="w-28"
@@ -217,20 +245,6 @@
               @update:model-value="patchVariant(vIndex, { barcode: $event })"
             />
             <TheFormInput
-              :model-value="variant.price ? formatPriceInput(variant.price) : ''"
-              :label="$t('قیمت')"
-              dir="ltr"
-              thousand-sep
-              @update:model-value="patchVariant(vIndex, { price: Number($event.replace(/\D/g, '') || 0) })"
-            />
-            <TheFormInput
-              :model-value="variant.salePrice != null ? formatPriceInput(variant.salePrice) : ''"
-              :label="$t('قیمت فروش')"
-              dir="ltr"
-              thousand-sep
-              @update:model-value="patchVariant(vIndex, { salePrice: $event ? Number($event.replace(/\D/g, '') || 0) : null })"
-            />
-            <TheFormInput
               :model-value="String(variant.stock)"
               :label="$t('موجودی')"
               dir="ltr"
@@ -282,7 +296,8 @@ import {
   type SellerProductVariant,
   type SellerProductVariantAxis,
 } from '~/data/seller-product-variants'
-import { formatPriceInput, parsePriceInput } from '~/data/seller-product-form'
+import { parsePriceInput } from '~/data/seller-product-form'
+import type { SellerAttributeValue } from '~/data/seller-attributes'
 
 const props = defineProps<{
   axes: SellerProductVariantAxis[]
@@ -319,7 +334,6 @@ const localVariants = computed({
   set: (value) => emit('update:variants', value),
 })
 
-const bulkPrice = ref('')
 const bulkStock = ref('')
 
 const attributeSelectItems = computed(() =>
@@ -335,6 +349,36 @@ function valuesFor(attributeId: string) {
   return scopedAttributes.value.find(a => a.id === attributeId)?.values
     ?? activeAttributes.value.find(a => a.id === attributeId)?.values
     ?? []
+}
+
+function selectedValuesFor(axis: SellerProductVariantAxis): SellerAttributeValue[] {
+  return valuesFor(axis.attributeId).filter(value => axis.valueIds.includes(value.id))
+}
+
+function parseSignedAdjustment(value: string) {
+  const normalized = value
+    .replace(/[۰-۹]/g, char => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(char)))
+    .replace(/[^\d-]/g, '')
+  const amount = Number(normalized)
+  return Number.isFinite(amount) ? amount : 0
+}
+
+function formatSignedAdjustment(value: number | undefined) {
+  const amount = Number(value) || 0
+  return amount ? amount.toLocaleString('en-US') : '0'
+}
+
+function setPriceAdjustment(axisIndex: number, valueId: string, value: string) {
+  localAxes.value = localAxes.value.map((axis, index) => {
+    if (index !== axisIndex) return axis
+    return {
+      ...axis,
+      priceAdjustments: {
+        ...(axis.priceAdjustments ?? {}),
+        [valueId]: parseSignedAdjustment(value),
+      },
+    }
+  })
 }
 
 const previewCount = computed(() => {
@@ -365,7 +409,7 @@ function buildGenerateAxes() {
 }
 
 function addAxis() {
-  localAxes.value = [...localAxes.value, { attributeId: '', valueIds: [] }]
+  localAxes.value = [...localAxes.value, { attributeId: '', valueIds: [], priceAdjustments: {} }]
 }
 
 function removeAxis(index: number) {
@@ -374,7 +418,7 @@ function removeAxis(index: number) {
 
 function onAxisAttribute(index: number, attributeId: string) {
   const next = localAxes.value.map((axis, i) =>
-    i === index ? { attributeId, valueIds: [] } : axis,
+    i === index ? { attributeId, valueIds: [], priceAdjustments: {} } : axis,
   )
   localAxes.value = next
 }
@@ -388,6 +432,10 @@ function toggleValue(axisIndex: number, valueId: string) {
       valueIds: has
         ? axis.valueIds.filter(id => id !== valueId)
         : [...axis.valueIds, valueId],
+      priceAdjustments: {
+        ...(axis.priceAdjustments ?? {}),
+        [valueId]: axis.priceAdjustments?.[valueId] ?? 0,
+      },
     }
   })
   localAxes.value = next
@@ -429,13 +477,11 @@ function patchVariant(index: number, patch: Partial<SellerProductVariant>) {
 }
 
 function applyBulk() {
-  const price = bulkPrice.value ? Number(bulkPrice.value.replace(/\D/g, '') || 0) : null
   const stock = bulkStock.value ? Number(bulkStock.value.replace(/\D/g, '') || 0) : null
-  if (price == null && stock == null) return
+  if (stock == null) return
   localVariants.value = localVariants.value.map(v => ({
     ...v,
-    ...(price != null ? { price } : {}),
-    ...(stock != null ? { stock } : {}),
+    stock,
   }))
 }
 </script>

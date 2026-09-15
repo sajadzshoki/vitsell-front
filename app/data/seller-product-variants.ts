@@ -7,6 +7,7 @@ export type SellerProductVariantOption = {
   attributeName: string
   valueId: string
   label: string
+  meta?: string | null
 }
 
 export type SellerProductVariant = {
@@ -27,6 +28,8 @@ export type SellerProductVariant = {
 export type SellerProductVariantAxis = {
   attributeId: string
   valueIds: string[]
+  /** Product-specific price delta for each selected value (can be negative). */
+  priceAdjustments?: Record<string, number>
 }
 
 /** Extended product commerce fields (persisted via listing product payload) */
@@ -66,6 +69,33 @@ export function emptyProductCommerce(productId = ''): SellerProductCommerce {
 
 export function variantLabel(variant: SellerProductVariant) {
   return variant.options.map(o => o.label).join(' / ')
+}
+
+export function variantPriceAdjustment(
+  axes: SellerProductVariantAxis[] | null | undefined,
+  variant: SellerProductVariant | null | undefined,
+) {
+  if (!variant) return 0
+  const byAttribute = new Map((axes ?? []).map(axis => [axis.attributeId, axis]))
+  return variant.options.reduce((sum, option) => {
+    const value = Number(byAttribute.get(option.attributeId)?.priceAdjustments?.[option.valueId])
+    return sum + (Number.isFinite(value) ? value : 0)
+  }, 0)
+}
+
+export function variantFinalPrice(
+  basePrice: number,
+  axes: SellerProductVariantAxis[] | null | undefined,
+  variant: SellerProductVariant | null | undefined,
+) {
+  return Math.max(0, Number(basePrice || 0) + variantPriceAdjustment(axes, variant))
+}
+
+export function variantMatchesSelection(
+  variant: SellerProductVariant,
+  selection: Record<string, string>,
+) {
+  return variant.options.every(option => selection[option.attributeId] === option.valueId)
 }
 
 export function createVariantFromCombo(

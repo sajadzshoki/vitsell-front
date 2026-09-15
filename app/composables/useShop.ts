@@ -6,6 +6,8 @@ export type CartLine = {
   id: string
   qty: number
   product: Product
+  variantId?: string | null
+  variantLabel?: string
 }
 
 export function useShop() {
@@ -60,8 +62,22 @@ export function useShop() {
     return wishlistProducts.value.some(p => p.id === id)
   }
 
-  function getCartQty(id: string) {
-    return cartLines.value.find(l => l.id === id)?.qty || 0
+  function getCartQty(productId: string, variantId?: string | null) {
+    if (variantId) {
+      return cartLines.value.find(line =>
+        line.product.id === productId && line.variantId === variantId,
+      )?.qty || 0
+    }
+    return cartLines.value
+      .filter(line => line.product.id === productId)
+      .reduce((sum, line) => sum + line.qty, 0)
+  }
+
+  function getCartLineId(productId: string, variantId?: string | null) {
+    return cartLines.value.find(line =>
+      line.product.id === productId
+      && (variantId ? line.variantId === variantId : !line.variantId),
+    )?.id ?? null
   }
 
   async function fetchDiscountCodes() {
@@ -192,9 +208,13 @@ export function useShop() {
     }
   }
 
-  async function addToCart(id: string, qty = 1) {
+  async function addToCart(id: string, qty = 1, variantId?: string | null) {
     if (!requireAuth()) return
-    const { result } = await usePost<CartLine>('/cart', { productId: id, qty }, {
+    const { result } = await usePost<CartLine>('/cart', {
+      productId: id,
+      qty,
+      ...(variantId ? { variantId } : {}),
+    }, {
       headers: { 'no-error': true },
     })
     if (result) {
@@ -332,6 +352,7 @@ export function useShop() {
     isInWishlist,
     toggleWishlist,
     getCartQty,
+    getCartLineId,
     addToCart,
     updateQty,
     removeFromCart,

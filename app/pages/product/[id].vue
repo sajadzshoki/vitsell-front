@@ -37,6 +37,7 @@
             <div class="md:col-span-7">
               <TheProductInfo
                 v-model:color-index="colorIndex"
+                v-model:selected-options="selectedOptions"
                 :product="product"
                 @open-reviews="activeTab = 'reviews'"
                 @open-specs="activeTab = 'specs'"
@@ -47,7 +48,10 @@
         </section>
 
         <aside class="order-2 lg:col-span-3 lg:row-span-2 lg:sticky lg:top-36 lg:z-20 self-start w-full">
-          <TheProductBuyBox :product="product" />
+          <TheProductBuyBox
+            :product="displayProduct"
+            :variant-id="selectedVariant?.id"
+          />
         </aside>
 
         <div class="order-3 lg:col-span-9 min-w-0">
@@ -80,6 +84,11 @@ import { useEntitySeo } from '~/composables/useEntitySeo'
 import { useSellerSeoSettings } from '~/composables/useSellerSeoSettings'
 import { useSellerProductCommerce } from '~/composables/useSellerProductCommerce'
 import { htmlToPlainText } from '~/data/seo'
+import {
+  variantFinalPrice,
+  variantMatchesSelection,
+  variantPriceAdjustment,
+} from '~/data/seller-product-variants'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -112,6 +121,7 @@ async function loadProduct() {
       throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
     }
     product.value = result
+    initializeVariantSelection()
     await fetchDetail({ force: true })
     if (result) {
       const { track } = useUserActivity()
@@ -136,12 +146,57 @@ watch(productId, () => {
 useMobileBackwardTitle(() => product.value?.title ?? '')
 
 const colorIndex = ref(0)
+const selectedOptions = ref<Record<string, string>>({})
 const activeTab = ref('desc')
 
 watch(productId, () => {
   colorIndex.value = 0
+  selectedOptions.value = {}
   activeTab.value = 'desc'
 })
+
+const selectedVariant = computed(() =>
+  (product.value?.variants ?? []).find(variant =>
+    variantMatchesSelection(variant, selectedOptions.value),
+  ) ?? null,
+)
+
+const displayProduct = computed<Product>(() => {
+  const current = product.value!
+  const variant = selectedVariant.value
+  if (!variant || !(current.variants?.length)) return current
+  const adjustment = variantPriceAdjustment(current.variantAxes, variant)
+  const price = variantFinalPrice(current.price, current.variantAxes, variant)
+  const oldPrice = current.oldPrice
+    ? Math.max(price, current.oldPrice + adjustment)
+    : undefined
+  return {
+    ...current,
+    price,
+    ...(oldPrice && oldPrice > price ? { oldPrice } : { oldPrice: undefined }),
+    image: variant.image || current.image,
+    stock: variant.stock,
+    inStock: variant.status === 'active' && variant.stock > 0,
+    sku: variant.sku || current.sku,
+    barcode: variant.barcode || current.barcode,
+    weight: variant.weight || current.weight,
+  }
+})
+
+function initializeVariantSelection() {
+  const current = product.value
+  const variants = current?.variants ?? []
+  if (!current?.variantAxes?.length || !variants.length) {
+    selectedOptions.value = {}
+    return
+  }
+  const preferred = variants.find(variant => variant.status === 'active' && variant.stock > 0)
+    ?? variants.find(variant => variant.status === 'active')
+    ?? variants[0]
+  selectedOptions.value = Object.fromEntries(
+    (preferred?.options ?? []).map(option => [option.attributeId, option.valueId]),
+  )
+}
 
 const breadcrumbItems = computed(() => {
   if (!product.value) return []

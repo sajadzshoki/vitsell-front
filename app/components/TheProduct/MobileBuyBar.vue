@@ -26,7 +26,7 @@
             icon="i-tabler-plus"
             class="size-9 rounded-lg shrink-0"
             :aria-label="$t('افزایش تعداد')"
-            @click="updateQty(product.id, qty + 1)"
+            @click="cartLineId && updateQty(cartLineId, qty + 1)"
           />
           <span class="min-w-8 px-1 text-center text-base font-bold text-highlighted num">
             {{ qty.toLocaleString('fa-IR') }}
@@ -40,7 +40,7 @@
             class="size-9 rounded-lg shrink-0"
             :icon="qty === 1 ? 'i-tabler-trash' : 'i-tabler-minus'"
             :aria-label="qty === 1 ? $t('حذف از سبد') : $t('کاهش تعداد')"
-            @click="updateQty(product.id, qty - 1)"
+            @click="cartLineId && updateQty(cartLineId, qty - 1)"
           />
         </div>
       </template>
@@ -90,6 +90,7 @@ import { formatPrice, type Product } from '~/data/products'
 
 const props = defineProps<{
   product: Product
+  variantId?: string
 }>()
 
 const emit = defineEmits<{
@@ -98,10 +99,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const toast = useToast()
-const { getCartQty, updateQty } = useShop()
+const { getCartQty, getCartLineId, updateQty } = useShop()
 const { currencyLabel, site } = useSiteSettings()
 
-const qty = computed(() => getCartQty(props.product.id))
+const qty = computed(() => getCartQty(props.product.id, props.variantId))
+const cartLineId = computed(() => getCartLineId(props.product.id, props.variantId))
 const outOfStock = computed(() => props.product.inStock === false)
 const allowBackorder = computed(() => site.value.outOfStockBehavior === 'allow_backorder')
 

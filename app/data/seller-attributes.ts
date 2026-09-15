@@ -250,10 +250,10 @@ export function buildDefaultSellerAttributes(): SellerAttribute[] {
 /** Cartesian product of attribute value selections → combination rows */
 export function generateVariantCombinations(
   axes: { attributeId: string, attributeName: string, values: SellerAttributeValue[] }[],
-): { key: string, options: { attributeId: string, attributeName: string, valueId: string, label: string }[] }[] {
+): { key: string, options: { attributeId: string, attributeName: string, valueId: string, label: string, meta?: string | null }[] }[] {
   if (!axes.length || axes.some(a => !a.values.length)) return []
 
-  let combos: { attributeId: string, attributeName: string, valueId: string, label: string }[][] = [[]]
+  let combos: { attributeId: string, attributeName: string, valueId: string, label: string, meta?: string | null }[][] = [[]]
   for (const axis of axes) {
     const next: typeof combos = []
     for (const prefix of combos) {
@@ -265,6 +265,7 @@ export function generateVariantCombinations(
             attributeName: axis.attributeName,
             valueId: value.id,
             label: value.label,
+            meta: value.meta,
           },
         ])
       }

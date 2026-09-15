@@ -31,16 +31,68 @@
       </button>
     </div>
 
-    <!-- رنگ -->
+    <!-- واریانت‌ها -->
     <div
-      v-if="product.colors?.length"
+      v-if="variantAxes.length"
+      class="pb-4 border-b border-muted"
+    >
+      <div
+        v-for="axis in variantAxes"
+        :key="axis.attributeId"
+        class="mb-4 last:mb-0"
+      >
+        <div class="text-xs text-muted mb-2">
+          {{ axis.attributeName }}:
+          <span class="text-highlighted font-medium">
+            {{ selectedLabel(axis.attributeId) }}
+          </span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button
+            v-for="option in axis.options"
+            :key="option.valueId"
+            type="button"
+            class="min-h-9 inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer"
+            :class="selectedOptions[axis.attributeId] === option.valueId
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-muted bg-default text-toned hover:(border-primary/50 text-primary)'"
+            @click="selectOption(axis.attributeId, option.valueId)"
+          >
+            <span
+              v-if="option.meta"
+              class="size-5 rounded-full block border border-muted shrink-0"
+              :style="{ backgroundColor: option.meta }"
+            />
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="selectedVariant"
+        class="mt-3 inline-flex items-center gap-2 text-xs"
+        :class="selectedVariant.stock > 0 && selectedVariant.status === 'active' ? 'text-success' : 'text-error'"
+      >
+        <UIcon
+          :name="selectedVariant.stock > 0 && selectedVariant.status === 'active'
+            ? 'i-tabler-package'
+            : 'i-tabler-package-off'"
+          class="size-4"
+        />
+        {{ selectedVariant.stock > 0 && selectedVariant.status === 'active'
+          ? `${$t('موجودی این ترکیب')}: ${selectedVariant.stock.toLocaleString('fa-IR')}`
+          : $t('این ترکیب ناموجود است') }}
+      </div>
+    </div>
+
+    <!-- رنگ قدیمی برای محصولاتی که هنوز واریانت ندارند -->
+    <div
+      v-else-if="product.colors?.length"
       class="pb-4 border-b border-muted"
     >
       <div class="text-xs text-muted mb-1.5">
         {{ $t('رنگ') }}:
-        <span class="text-highlighted font-medium">
-          {{ product.colors[colorIndex]?.name }}
-        </span>
+        <span class="text-highlighted font-medium">{{ product.colors[colorIndex]?.name }}</span>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <button
@@ -199,6 +251,10 @@ import {
 } from '~/data/product-detail'
 import type { Product } from '~/data/products'
 import { htmlToPlainText } from '~/data/seo'
+import {
+  variantMatchesSelection,
+  type SellerProductVariantOption,
+} from '~/data/seller-product-variants'
 
 const props = defineProps<{
   product: Product
@@ -211,6 +267,7 @@ const emit = defineEmits<{
 }>()
 
 const colorIndex = defineModel<number>('colorIndex', { default: 0 })
+const selectedOptions = defineModel<Record<string, string>>('selectedOptions', { default: {} })
 
 const { questions } = useProductDetail(() => props.product)
 
@@ -218,6 +275,46 @@ const features = computed(() => props.product.features ?? [])
 const highlightSpecs = computed(() => getProductHighlightSpecs(props.product, 6))
 const returnNote = computed(() => getProductReturnNote(props.product))
 const questionsCount = computed(() => questions.value.length)
+
+const variantAxes = computed(() => {
+  const variants = props.product.variants ?? []
+  return (props.product.variantAxes ?? []).map((axis) => {
+    const options = new Map<string, SellerProductVariantOption>()
+    for (const variant of variants) {
+      for (const option of variant.options) {
+        if (option.attributeId === axis.attributeId && axis.valueIds.includes(option.valueId)) {
+          options.set(option.valueId, option)
+        }
+      }
+    }
+    const first = options.values().next().value as SellerProductVariantOption | undefined
+    return {
+      attributeId: axis.attributeId,
+      attributeName: first?.attributeName || axis.attributeId,
+      options: axis.valueIds
+        .map(valueId => options.get(valueId))
+        .filter((option): option is SellerProductVariantOption => Boolean(option)),
+    }
+  }).filter(axis => axis.options.length)
+})
+
+const selectedVariant = computed(() =>
+  (props.product.variants ?? []).find(variant =>
+    variantMatchesSelection(variant, selectedOptions.value),
+  ) ?? null,
+)
+
+function selectOption(attributeId: string, valueId: string) {
+  selectedOptions.value = { ...selectedOptions.value, [attributeId]: valueId }
+}
+
+function selectedLabel(attributeId: string) {
+  const valueId = selectedOptions.value[attributeId]
+  return variantAxes.value
+    .find(axis => axis.attributeId === attributeId)
+    ?.options.find(option => option.valueId === valueId)
+    ?.label ?? ''
+}
 
 const introText = computed(() => {
   const short = htmlToPlainText(props.product.shortDesc)

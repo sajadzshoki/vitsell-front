@@ -104,6 +104,12 @@
             <div class="text-xs text-default line-clamp-1">
               {{ line.product.title }}
             </div>
+            <div
+              v-if="line.variantLabel"
+              class="text-[10px] text-toned"
+            >
+              {{ line.variantLabel }}
+            </div>
             <div class="text-[10px] text-dimmed num">
               {{ $t('تعداد') }}: {{ line.qty.toLocaleString('fa-IR') }}
             </div>

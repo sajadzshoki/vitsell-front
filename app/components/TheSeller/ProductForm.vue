@@ -926,7 +926,7 @@ async function onSubmit(publish: boolean) {
         toast.error(t('اطلاعات محصول معتبر نیست'))
         return
       }
-      const product = withCategoryLabel(built)
+      const product = withCategoryLabel({ ...built, inStock: stock > 0 })
       const listing = getListing(props.productId)
       // Persist commerce overlay BEFORE listing PATCH — PATCH updates stock/title and
       // would otherwise trigger the form watch against a stale commerce map.
@@ -966,7 +966,7 @@ async function onSubmit(publish: boolean) {
       toast.error(t('اطلاعات محصول معتبر نیست'))
       return
     }
-    const product = withCategoryLabel(built)
+    const product = withCategoryLabel({ ...built, inStock: stock > 0 })
 
     // پیش‌نویس = unpublished + inactive؛ انتشار = published + active (بدون تأیید مارکت‌پلیس)
     commerce.value.published = publish

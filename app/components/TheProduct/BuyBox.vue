@@ -81,7 +81,7 @@
             class="size-9 rounded-lg shrink-0"
             :icon="qty === 1 ? 'i-tabler-trash' : 'i-tabler-minus'"
             :aria-label="qty === 1 ? $t('حذف از سبد') : $t('کاهش تعداد')"
-            @click="updateQty(product.id, qty - 1)"
+            @click="cartLineId && updateQty(cartLineId, qty - 1)"
           />
           <div class="flex flex-col items-center">
             <span class="text-sm font-bold text-primary num">
@@ -98,7 +98,7 @@
             icon="i-tabler-plus"
             class="size-9 rounded-lg shrink-0"
             :aria-label="$t('افزایش تعداد')"
-            @click="updateQty(product.id, qty + 1)"
+            @click="cartLineId && updateQty(cartLineId, qty + 1)"
           />
         </div>
 
@@ -182,6 +182,7 @@
 
     <TheProductMobileBuyBar
       :product="product"
+      :variant-id="variantId"
       @add="onAdd"
     />
   </div>
@@ -192,11 +193,12 @@ import { formatPrice, type Product } from '~/data/products'
 
 const props = defineProps<{
   product: Product
+  variantId?: string
 }>()
 
 const { t } = useI18n()
 const toast = useToast()
-const { addToCart, getCartQty, updateQty } = useShop()
+const { addToCart, getCartQty, getCartLineId, updateQty } = useShop()
 const { currencyLabel, site, fetchSite } = useSiteSettings()
 await fetchSite()
 const compareStore = useCompareStore()
@@ -221,7 +223,8 @@ const supportTelHref = computed(() => {
   return `tel:${digits || raw}`
 })
 
-const qty = computed(() => getCartQty(props.product.id))
+const qty = computed(() => getCartQty(props.product.id, props.variantId))
+const cartLineId = computed(() => getCartLineId(props.product.id, props.variantId))
 const inCompare = computed(() => compareStore.isInCompare(props.product.id))
 
 const discount = computed(() => {
@@ -256,7 +259,7 @@ function notifyAdded() {
 
 function onAdd() {
   if (outOfStock.value) return
-  addToCart(props.product.id, 1)
+  addToCart(props.product.id, 1, props.variantId)
   notifyAdded()
 }
 

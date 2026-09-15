@@ -27,7 +27,7 @@
           square
           class="size-8"
           :aria-label="$t('افزایش تعداد')"
-          @click="updateQty(product.id, qty + 1)"
+          @click="updateQty(lineId, qty + 1)"
         >
           +
         </UButton>
@@ -44,7 +44,7 @@
           :icon="qty === 1 ? 'i-tabler-trash' : undefined"
           :class="qty === 1 ? 'text-error' : ''"
           :aria-label="qty === 1 ? $t('حذف از سبد') : $t('کاهش تعداد')"
-          @click="updateQty(product.id, qty - 1)"
+          @click="updateQty(lineId, qty - 1)"
         >
           <span v-if="qty > 1">−</span>
         </UButton>
@@ -62,6 +62,12 @@
         >
           {{ product.title }}
         </NuxtLink>
+        <div
+          v-if="variantLabel"
+          class="mt-1 text-[11px] text-toned"
+        >
+          {{ variantLabel }}
+        </div>
       </div>
 
       <div class="flex items-center gap-2 mt-2 text-[11px]">
@@ -84,7 +90,7 @@
             size="sm"
             square
             :aria-label="$t('افزایش تعداد')"
-            @click="updateQty(product.id, qty + 1)"
+            @click="updateQty(lineId, qty + 1)"
           >
             +
           </UButton>
@@ -100,7 +106,7 @@
             :icon="qty === 1 ? 'i-tabler-trash' : undefined"
             :class="qty === 1 ? 'text-error' : ''"
             :aria-label="qty === 1 ? $t('حذف از سبد') : $t('کاهش تعداد')"
-            @click="updateQty(product.id, qty - 1)"
+            @click="updateQty(lineId, qty - 1)"
           >
             <span v-if="qty > 1">−</span>
           </UButton>
@@ -136,6 +142,8 @@ import { formatPrice, type Product } from '~/data/products'
 const props = defineProps<{
   product: Product
   qty: number
+  lineId: string
+  variantLabel?: string
 }>()
 
 const { updateQty } = useShop()

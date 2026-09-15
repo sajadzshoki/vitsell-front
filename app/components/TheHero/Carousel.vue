@@ -47,16 +47,6 @@
         >
 
         <div
-          v-if="item.tone !== 'inverted'"
-          class="absolute inset-0 opacity-20 pointer-events-none"
-          :class="toneClass(item.tone)"
-        />
-
-        <div
-          class="absolute inset-0 pointer-events-none bg-gradient-to-t from-inverted via-inverted/55 to-inverted/5"
-        />
-
-        <div
           class="relative z-10 mx-auto max-w-8xl h-full px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-8 md:pb-10"
         >
           <div class="w-full max-w-lg">

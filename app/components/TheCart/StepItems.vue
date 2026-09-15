@@ -5,6 +5,8 @@
       :key="line.id"
       :product="line.product"
       :qty="line.qty"
+      :line-id="line.id"
+      :variant-label="line.variantLabel"
     />
 
     <!-- <NuxtLink
