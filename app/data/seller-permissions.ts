@@ -25,6 +25,7 @@ export type SellerPermission =
   | 'products.create'
   | 'products.update'
   | 'products.delete'
+  | 'products.import'
   | 'categories.view'
   | 'categories.create'
   | 'categories.update'
@@ -239,6 +240,7 @@ export const sellerPermissionCatalog: SellerPermissionMeta[] = [
   { key: 'products.create', label: 'ایجاد محصول', group: 'products' },
   { key: 'products.update', label: 'ویرایش محصول', group: 'products' },
   { key: 'products.delete', label: 'حذف محصول', group: 'products' },
+  { key: 'products.import', label: 'ورود محصول (ایمپورت)', group: 'products' },
   { key: 'categories.view', label: 'مشاهده دسته‌ها', group: 'products' },
   { key: 'categories.create', label: 'ایجاد دسته', group: 'products' },
   { key: 'categories.update', label: 'ویرایش دسته', group: 'products' },
@@ -436,6 +438,7 @@ export const sellerNavPermissionMap: Record<string, SellerPermission> = {
   dashboard: 'dashboard.view',
   products: 'products.view',
   product_tags: 'products.view',
+  importer_technolife: 'products.import',
   categories: 'categories.view',
   brands: 'brands.view',
   attributes: 'attributes.view',
@@ -486,6 +489,7 @@ export const sellerNavPermissionMap: Record<string, SellerPermission> = {
 
 /** Page path prefix → required view permission */
 export const sellerRoutePermissionMap: { prefix: string, permission: SellerPermission }[] = [
+  { prefix: '/seller/importer', permission: 'products.import' },
   { prefix: '/seller/products/tags', permission: 'products.view' },
   { prefix: '/seller/products', permission: 'products.view' },
   { prefix: '/seller/categories', permission: 'categories.view' },
@@ -560,7 +564,7 @@ export const sellerDefaultRolePermissions: Record<SellerSystemRoleKey, SellerPer
   ].includes(p)),
   PRODUCT_MANAGER: [
     'dashboard.view', 'analytics.view',
-    'products.view', 'products.create', 'products.update', 'products.delete',
+    'products.view', 'products.create', 'products.update', 'products.delete', 'products.import',
     'categories.view', 'categories.create', 'categories.update', 'categories.delete',
     'brands.view', 'brands.create', 'brands.update', 'brands.delete',
     'attributes.view', 'attributes.create', 'attributes.update', 'attributes.delete',
@@ -672,7 +676,8 @@ export function setHasPermission(set: Set<SellerPermission>, permission: SellerP
   // Legacy import/export hubs → section permissions
   if (permission === 'imports.view' || permission === 'imports.create' || permission === 'imports.manage') {
     if (
-      setHasPermission(set, 'products.create')
+      setHasPermission(set, 'products.import')
+      || setHasPermission(set, 'products.create')
       || setHasPermission(set, 'categories.create')
       || setHasPermission(set, 'brands.create')
       || setHasPermission(set, 'inventory.update')

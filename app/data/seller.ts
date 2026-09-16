@@ -2,6 +2,7 @@ export type SellerTabId =
   | 'dashboard'
   | 'products'
   | 'product_tags'
+  | 'importer_technolife'
   | 'categories'
   | 'brands'
   | 'attributes'
@@ -305,6 +306,7 @@ export const sellerNavGroups: SellerNavGroup[] = [
     label: 'کاتالوگ',
     items: [
       { id: 'products', label: 'محصولات', icon: 'i-tabler-package', to: '/seller/products' },
+      { id: 'importer_technolife', label: 'ایمپورت تکنولایف', icon: 'i-tabler-download', to: '/seller/importer/technolife' },
       { id: 'product_tags', label: 'برچسب‌ها', icon: 'i-tabler-tags', to: '/seller/products/tags' },
       { id: 'categories', label: 'دسته‌بندی‌ها', icon: 'i-tabler-category', to: '/seller/categories' },
       { id: 'mega_menu', label: 'مگا منو', icon: 'i-tabler-layout-navbar', to: '/seller/mega-menus' },
