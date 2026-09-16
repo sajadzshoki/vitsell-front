@@ -50,18 +50,31 @@
       </div>
 
       <div
-        v-if="canLoadMore"
+        v-if="canLoadMore || loadingMore"
         ref="sentinelRef"
-        class="h-10"
-      />
-
-      <div
-        v-if="loadingMore"
-        class="mt-4"
+        class="mt-6 flex flex-col items-center justify-center gap-3 py-5"
+        aria-live="polite"
       >
-        <TheSkeleton
-          :variant="layout === 'list' ? 'product-list' : 'product-grid'"
-          :count="4"
+        <template v-if="loadingMore">
+          <div class="flex items-center gap-2 text-primary">
+            <UIcon
+              name="i-tabler-loader-2"
+              class="size-6 animate-spin"
+            />
+            <span class="text-sm font-medium">
+              {{ $t('در حال بارگذاری محصولات بیشتر...') }}
+            </span>
+          </div>
+          <TheSkeleton
+            :variant="layout === 'list' ? 'product-list' : 'product-grid'"
+            :count="4"
+            class="w-full opacity-70"
+          />
+        </template>
+        <div
+          v-else
+          class="h-12 w-full"
+          aria-hidden="true"
         />
       </div>
 
@@ -122,17 +135,30 @@ function onPageChange(next: number) {
   emit('pageChange', next)
 }
 
+function tryLoadMore() {
+  if (!props.canLoadMore || props.pending || props.loadingMore) return
+  emit('loadMore')
+}
+
 if (import.meta.client) {
   useInfiniteScroll(
     window,
     () => {
-      emit('loadMore')
+      tryLoadMore()
     },
     {
-      distance: 320,
-      interval: 400,
+      distance: 420,
+      interval: 300,
       canLoadMore: () => props.canLoadMore && !props.pending && !props.loadingMore,
     },
+  )
+
+  useIntersectionObserver(
+    sentinelRef,
+    ([entry]) => {
+      if (entry?.isIntersecting) tryLoadMore()
+    },
+    { rootMargin: '240px 0px' },
   )
 }
 </script>

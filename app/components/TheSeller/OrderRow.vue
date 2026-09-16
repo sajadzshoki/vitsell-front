@@ -54,7 +54,7 @@
           >
             <img
               v-if="item.product?.image"
-              :src="item.product.image"
+              :src="resolveMediaUrl(item.product.image)"
               :alt="item.product.title"
               class="size-12 rounded-xl border-1 border-default object-cover bg-default"
             >

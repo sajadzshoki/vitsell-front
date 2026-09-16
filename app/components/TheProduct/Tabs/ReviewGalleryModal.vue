@@ -129,12 +129,12 @@
 
         <!-- Thumbnails -->
         <div class="shrink-0 px-3 sm:px-6 mt-3">
-          <div class="flex gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-1 justify-center">
+          <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5 sm:gap-2 max-w-5xl mx-auto">
             <button
               v-for="(item, index) in currentList"
               :key="`${tab}-${item}-${index}`"
               type="button"
-              class="size-14 sm:size-16 shrink-0 rounded-xl overflow-hidden border-2 transition-all  cursor-pointer"
+              class="aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer"
               :class="activeIndex === index ? 'border-primary' : 'border-inverted/20 hover:border-inverted/50'"
               :aria-label="$t('تصویر')"
               @click="activeIndex = index"

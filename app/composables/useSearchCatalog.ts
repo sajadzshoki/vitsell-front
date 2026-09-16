@@ -298,8 +298,13 @@ export async function useSearchCatalog() {
   }
 
   async function loadPage(targetPage: number, append: boolean) {
-    if (append) loadingMore.value = true
-    else pending.value = true
+    if (append) {
+      loadingMore.value = true
+      await nextTick()
+    }
+    else {
+      pending.value = true
+    }
 
     try {
       const result = await fetchSearchCatalog(catalogQuery(targetPage))

@@ -18,21 +18,21 @@
         class="group flex flex-col items-center gap-1.5 sm:gap-2.5 cursor-pointer"
       >
         <div
-          class="relative w-full aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl bg-inverted overflow-hidden border border-muted/40 transition-all duration-300 group-hover:(border-primary/40 shadow-md)"
+          class="relative w-full aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl  overflow-hidden  transition-all duration-300 "
         >
-          <div
+          <!-- <div
             class="absolute inset-0 bg-primary/10 opacity-70 pointer-events-none"
             aria-hidden="true"
-          />
-          <div
+          /> -->
+          <!-- <div
             class="absolute -bottom-1/4 inset-x-1/4 h-1/2 rounded-full bg-primary/25 blur-2xl pointer-events-none transition-opacity group-hover:opacity-90"
             aria-hidden="true"
-          />
+          /> -->
 
           <img
             :src="brand.image"
             :alt="$t(brand.name)"
-            class="relative z-10 size-full object-contain object-center p-1.5 sm:p-3 drop-shadow-lg transition-all duration-300 group-hover:scale-105"
+            class="relative z-10 size-full object-contain object-center p-1.5 drop-shadow-lg transition-all duration-300 group-hover:scale-105"
             loading="lazy"
             decoding="async"
           >

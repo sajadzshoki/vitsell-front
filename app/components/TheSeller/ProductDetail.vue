@@ -49,7 +49,7 @@
       <div class="flex items-start gap-3 sm:gap-4">
         <img
           v-if="product.image"
-          :src="product.image"
+          :src="resolveMediaUrl(product.image)"
           :alt="product.title"
           class="size-20 sm:size-24 rounded-2xl object-cover bg-muted shrink-0"
         >

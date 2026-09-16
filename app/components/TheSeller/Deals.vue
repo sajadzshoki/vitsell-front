@@ -159,7 +159,7 @@
           <div class="size-16 rounded-xl bg-default border border-muted overflow-hidden shrink-0">
             <img
               v-if="productOf(deal)?.image"
-              :src="productOf(deal)!.image"
+              :src="resolveMediaUrl(productOf(deal)!.image)"
               :alt="productOf(deal)!.title"
               class="size-full object-cover"
             >

@@ -149,7 +149,7 @@
       >
         <img
           v-if="selectedProduct.image"
-          :src="selectedProduct.image"
+          :src="resolveMediaUrl(selectedProduct.image)"
           :alt="selectedProduct.title"
           class="size-16 rounded-xl object-cover bg-default shrink-0"
         >

@@ -130,15 +130,11 @@
               v-model="menuMeta.slug"
               dir="ltr"
               class="w-full"
+              @update:model-value="menuMetaSlugTouched = true"
             />
           </UFormField>
           <UFormField :label="$t('آیکون')">
-            <UInput
-              v-model="menuMeta.icon"
-              dir="ltr"
-              placeholder="device-mobile"
-              class="w-full"
-            />
+            <TheSellerIconPicker v-model="menuMeta.icon" />
           </UFormField>
           <UFormField :label="$t('وضعیت')">
             <USelect
@@ -198,6 +194,7 @@
               dir="ltr"
               placeholder="phones-by-tier"
               class="w-full"
+              @update:model-value="sectionSlugTouched = true"
             />
           </UFormField>
           <UFormField :label="$t('بخش والد')">
@@ -279,6 +276,7 @@
               dir="ltr"
               placeholder="samsung-mid-range"
               class="w-full"
+              @update:model-value="itemSlugTouched = true"
             />
           </UFormField>
           <UFormField :label="$t('نوع')">
@@ -461,6 +459,9 @@ const { brands, ensureLoaded: loadBrands } = useSellerBrands()
 
 const openMenuMeta = ref(false)
 const saving = ref(false)
+const menuMetaSlugTouched = ref(false)
+const sectionSlugTouched = ref(false)
+const itemSlugTouched = ref(false)
 const menuMeta = reactive({
   title: '',
   slug: '',
@@ -644,6 +645,20 @@ watch(tree, (next) => {
   if (next) Object.assign(menuMeta, formFromSummary(next))
 })
 
+watch(
+  () => menuMeta.title,
+  (title) => {
+    if (menuMetaSlugTouched.value) return
+    const next = slugifyLatin(title)
+    if (next) menuMeta.slug = next
+  },
+)
+
+watch(openMenuMeta, (open) => {
+  if (!open) return
+  menuMetaSlugTouched.value = Boolean(menuMeta.slug.trim())
+})
+
 async function saveMenuMeta() {
   if (!menuMeta.title.trim()) {
     toast.error(t('عنوان الزامی است'))
@@ -687,13 +702,14 @@ function openSectionModal(section: SellerMegaMenuSection | null, parentId?: stri
   sectionForm.parentId = orNone(section?.parentId ?? parentId)
   sectionForm.categoryId = orNone(section?.categoryId)
   sectionForm.status = section?.status || 'active'
+  sectionSlugTouched.value = Boolean(section?.slug?.trim())
   sectionModal.open = true
 }
 
 watch(
   () => sectionForm.title,
   (title) => {
-    if (sectionModal.editingId || sectionForm.slug.trim()) return
+    if (sectionSlugTouched.value) return
     const next = slugifyLatin(title)
     if (next) sectionForm.slug = next
   },
@@ -702,7 +718,7 @@ watch(
 watch(
   () => itemForm.title,
   (title) => {
-    if (itemModal.editingId || itemForm.slug.trim()) return
+    if (itemSlugTouched.value) return
     const next = slugifyLatin(title)
     if (next) itemForm.slug = next
   },
@@ -726,6 +742,7 @@ function openItemModal(payload: { sectionId: string, item?: SellerMegaMenuItem |
     q: filter?.q || '',
     attrs: { ...(filter?.attrs || {}) },
   }
+  itemSlugTouched.value = Boolean(payload.item?.slug?.trim())
   itemModal.open = true
 }
 

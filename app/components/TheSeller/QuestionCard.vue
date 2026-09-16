@@ -7,7 +7,7 @@
       >
         <img
           v-if="product.image"
-          :src="product.image"
+          :src="resolveMediaUrl(product.image)"
           :alt="product.title"
           class="size-12 rounded-xl object-cover bg-default"
         >

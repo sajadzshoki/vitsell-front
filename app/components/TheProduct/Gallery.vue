@@ -123,15 +123,17 @@
           </div>
         </div>
 
-        <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+        <div class="grid grid-cols-4 gap-1.5">
           <button
-            v-for="(image, index) in gallery"
+            v-for="(image, index) in visibleThumbs"
             :key="`${galleryTab}-${image}-${index}`"
             type="button"
-            class="size-16 md:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all  cursor-pointer"
-            :class="active === index ? 'border-primary' : 'border-muted hover:border-accented'"
-            :aria-label="galleryTab === 'buyers' ? $t('تصویر خریدار') : $t('تصویر محصول')"
-            @click="select(index)"
+            class="relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer"
+            :class="active === index && !isMoreThumb(index) ? 'border-primary' : 'border-muted hover:border-accented'"
+            :aria-label="isMoreThumb(index)
+              ? $t('مشاهده همه تصاویر')
+              : (galleryTab === 'buyers' ? $t('تصویر خریدار') : $t('تصویر محصول'))"
+            @click="onThumbClick(index)"
           >
             <img
               :src="imageSrc(image)"
@@ -140,6 +142,12 @@
               loading="lazy"
               decoding="async"
             >
+            <span
+              v-if="isMoreThumb(index)"
+              class="absolute inset-0 flex items-center justify-center bg-inverted/55 text-inverted text-base md:text-lg font-bold num"
+            >
+              +{{ moreCount.toLocaleString('fa-IR') }}
+            </span>
           </button>
         </div>
 
@@ -250,30 +258,16 @@
       }"
     >
       <template #body>
-        <div class="relative w-full max-w-5xl px-3 sm:px-4 flex flex-col items-center gap-3">
-          <div class="relative w-full">
-            <UCarousel
-              ref="fsCarousel"
-              v-slot="{ item }"
-              :items="gallery"
-              :start-index="active"
-              wheel-gestures
-              class="w-full"
-              :ui="{
-                item: 'basis-full min-w-full ps-0',
-                container: 'ms-0',
-              }"
-              @select="onSelect"
+        <div class="w-full max-w-5xl px-3 sm:px-6 py-14 flex flex-col gap-4 min-h-dvh">
+          <div class="relative flex-1 min-h-0 flex items-center justify-center">
+            <img
+              :src="imageSrc(gallery[active] || '')"
+              :alt="product.title"
+              class="max-h-[52dvh] w-auto max-w-full object-contain rounded-2xl"
+              loading="eager"
+              decoding="async"
+              draggable="false"
             >
-              <img
-                :src="imageSrc(item)"
-                :alt="product.title"
-                class="max-h-[70dvh] w-auto max-w-full mx-auto object-contain rounded-2xl"
-                loading="eager"
-                decoding="async"
-                draggable="false"
-              >
-            </UCarousel>
 
             <template v-if="gallery.length > 1">
               <UButton
@@ -303,12 +297,12 @@
             </template>
           </div>
 
-          <div class="flex gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-1">
+          <div class="shrink-0 grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5 sm:gap-2">
             <button
               v-for="(image, index) in gallery"
               :key="`fs-${image}-${index}`"
               type="button"
-              class="size-14 sm:size-16 shrink-0 rounded-xl overflow-hidden border-2 transition-all  cursor-pointer"
+              class="aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer"
               :class="active === index ? 'border-primary' : 'border-inverted/20 hover:border-inverted/50'"
               :aria-label="$t('تصویر محصول')"
               @click="select(index)"
@@ -342,6 +336,8 @@ const toast = useAppToast()
 const { isInWishlist, toggleWishlist } = useShop()
 const { allReviews } = useProductDetail(() => props.product)
 
+const THUMB_LIMIT = 4
+
 const active = ref(0)
 const fullscreen = ref(false)
 const priceChartOpen = ref(false)
@@ -349,7 +345,6 @@ const zooming = ref(false)
 const origin = ref({ x: 50, y: 50 })
 const stageRef = ref<HTMLElement | null>(null)
 const carousel = ref<{ emblaApi?: { scrollTo: (index: number) => void } | null } | null>(null)
-const fsCarousel = ref<{ emblaApi?: { scrollTo: (index: number) => void } | null } | null>(null)
 const dragMoved = ref(false)
 const galleryTab = ref<'official' | 'buyers'>('official')
 
@@ -381,6 +376,10 @@ const gallery = computed(() => {
   }
   return officialGallery.value
 })
+
+const visibleThumbs = computed(() => gallery.value.slice(0, THUMB_LIMIT))
+
+const moreCount = computed(() => Math.max(0, gallery.value.length - THUMB_LIMIT))
 
 const discount = computed(() => {
   const { oldPrice, price } = props.product
@@ -433,7 +432,18 @@ function onSelect(index: number) {
 function select(index: number) {
   active.value = index
   carousel.value?.emblaApi?.scrollTo(index)
-  fsCarousel.value?.emblaApi?.scrollTo(index)
+}
+
+function isMoreThumb(index: number) {
+  return moreCount.value > 0 && index === THUMB_LIMIT - 1
+}
+
+function onThumbClick(index: number) {
+  if (isMoreThumb(index)) {
+    openFullscreen()
+    return
+  }
+  select(index)
 }
 
 function goPrev() {

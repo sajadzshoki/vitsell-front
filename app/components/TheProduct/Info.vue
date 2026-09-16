@@ -114,11 +114,11 @@
 
     <!-- برچسب‌ها -->
     <div
-      v-if="product.tags?.length"
+      v-if="publicTags.length"
       class="flex flex-wrap gap-2 pb-4 border-b border-muted"
     >
       <NuxtLink
-        v-for="tag in product.tags"
+        v-for="tag in publicTags"
         :key="tag"
         :to="{ path: '/search', query: { q: tag } }"
         class="inline-flex items-center rounded-lg bg-muted px-2.5 py-1 text-xs text-toned hover:(bg-primary/10 text-primary) transition-colors cursor-pointer"
@@ -272,6 +272,9 @@ const selectedOptions = defineModel<Record<string, string>>('selectedOptions', {
 const { questions } = useProductDetail(() => props.product)
 
 const features = computed(() => props.product.features ?? [])
+const publicTags = computed(() =>
+  (props.product.tags ?? []).filter(tag => !/^technolife$|^tl:/i.test(tag.trim())),
+)
 const highlightSpecs = computed(() => getProductHighlightSpecs(props.product, 6))
 const returnNote = computed(() => getProductReturnNote(props.product))
 const questionsCount = computed(() => questions.value.length)

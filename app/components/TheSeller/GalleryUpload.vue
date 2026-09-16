@@ -61,26 +61,56 @@
       </div>
     </button>
 
-    <div
+    <TransitionGroup
       v-if="model.length"
+      name="gallery-reorder"
+      tag="div"
       class="mt-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2"
     >
       <div
         v-for="(url, index) in model"
-        :key="`${url}-${index}`"
-        class="relative aspect-square rounded-xl border border-muted overflow-hidden bg-muted group"
+        :key="itemKey(url, index)"
+        class="relative aspect-square rounded-xl border overflow-hidden bg-muted group"
+        :class="{
+          'border-primary ring-2 ring-primary/30': isPrimary(index),
+          'border-muted': !isPrimary(index),
+          'opacity-40 scale-[0.98]': dragFrom === index,
+          'ring-2 ring-primary/40': dragOverIndex === index && dragFrom !== index,
+        }"
+        draggable="true"
+        @dragstart="onReorderDragStart(index, $event)"
+        @dragover.prevent="onReorderDragOver(index, $event)"
+        @dragleave="onReorderDragLeave(index)"
+        @drop.prevent="onReorderDrop(index)"
+        @dragend="onReorderDragEnd"
       >
         <img
           :src="previewSrc(url)"
           :alt="`${$t('تصویر')} ${index + 1}`"
-          class="size-full object-cover"
+          class="size-full object-cover pointer-events-none"
+          draggable="false"
           @load="onImgLoad(url, $event)"
           @error="onImgError(url)"
         >
+
+        <div class="absolute top-1 start-1 flex items-center gap-1 z-10">
+          <span
+            class="size-7 rounded-lg bg-inverted/70 text-inverted grid place-items-center cursor-grab active:cursor-grabbing"
+            :title="$t('جابه‌جایی با کشیدن')"
+            :aria-label="$t('جابه‌جایی با کشیدن')"
+          >
+            <UIcon
+              name="i-tabler-grip-vertical"
+              class="size-3.5 pointer-events-none"
+            />
+          </span>
+        </div>
+
         <button
           type="button"
-          class="absolute top-1 end-1 size-7 rounded-full bg-inverted/70 text-inverted grid place-items-center cursor-pointer opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition"
+          class="absolute top-1 end-1 size-7 rounded-full bg-inverted/70 text-inverted grid place-items-center cursor-pointer opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition z-10"
           :title="$t('حذف')"
+          :aria-label="$t('حذف')"
           @click.stop="removeAt(index)"
         >
           <UIcon
@@ -88,14 +118,53 @@
             class="size-3.5"
           />
         </button>
-        <span
-          v-if="index === 0"
-          class="absolute bottom-1 start-1 rounded-md bg-primary/90 text-inverted text-[10px] px-1.5 py-0.5 font-medium"
-        >
-          {{ $t('اصلی') }}
-        </span>
+
+        <div class="absolute bottom-1 inset-x-1 flex items-center justify-between gap-1 z-10">
+          <span
+            v-if="isPrimary(index)"
+            class="rounded-md bg-primary text-inverted text-[10px] px-1.5 py-0.5 font-medium"
+          >
+            {{ $t('اصلی') }}
+          </span>
+          <button
+            v-else
+            type="button"
+            class="rounded-md bg-inverted/75 text-inverted text-[10px] px-1.5 py-0.5 font-medium cursor-pointer hover:bg-primary hover:text-inverted transition opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+            :title="$t('تنظیم به‌عنوان تصویر اصلی')"
+            @click.stop="setAsPrimary(index)"
+          >
+            {{ $t('اصلی کردن') }}
+          </button>
+
+          <div class="ms-auto flex items-center gap-0.5">
+            <button
+              type="button"
+              class="size-6 rounded-md bg-inverted/70 text-inverted grid place-items-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="index === 0"
+              :aria-label="$t('جابه‌جایی به قبل')"
+              @click.stop="moveBy(index, -1)"
+            >
+              <UIcon
+                name="i-tabler-chevron-right"
+                class="size-3.5"
+              />
+            </button>
+            <button
+              type="button"
+              class="size-6 rounded-md bg-inverted/70 text-inverted grid place-items-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="index >= model.length - 1"
+              :aria-label="$t('جابه‌جایی به بعد')"
+              @click.stop="moveBy(index, 1)"
+            >
+              <UIcon
+                name="i-tabler-chevron-left"
+                class="size-3.5"
+              />
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </TransitionGroup>
 
     <p
       v-if="hint"
@@ -117,6 +186,8 @@ withDefaults(defineProps<{
 })
 
 const model = defineModel<string[]>({ default: () => [] })
+/** Optional sync with product main image (`form.image`). */
+const primary = defineModel<string>('primary', { default: '' })
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -125,6 +196,8 @@ const { uploadFiles: uploadSellerMedia } = useSellerMedia()
 const inputRef = ref<HTMLInputElement | null>(null)
 const reading = ref(false)
 const dragOver = ref(false)
+const dragFrom = ref<number | null>(null)
+const dragOverIndex = ref<number | null>(null)
 
 /** remote url → blob: preview (fallback when /uploads is not publicly readable) */
 const blobByUrl = ref<Record<string, string>>({})
@@ -132,6 +205,18 @@ const blobByUrl = ref<Record<string, string>>({})
 const preferBlob = ref<Record<string, boolean>>({})
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024
+
+/** Stable keys so TransitionGroup can animate reorder (FLIP). */
+const keyByUrl = ref<Record<string, string>>({})
+let keySeq = 0
+
+function itemKey(url: string, index: number) {
+  const existing = keyByUrl.value[url]
+  if (existing) return existing
+  const next = `g-${++keySeq}-${index}`
+  keyByUrl.value = { ...keyByUrl.value, [url]: next }
+  return next
+}
 
 function previewSrc(url: string) {
   const blob = blobByUrl.value[url]
@@ -146,6 +231,25 @@ function revokeBlob(url: string) {
   blobByUrl.value = restBlobs
   const { [url]: _p, ...restPrefer } = preferBlob.value
   preferBlob.value = restPrefer
+  const { [url]: _k, ...restKeys } = keyByUrl.value
+  keyByUrl.value = restKeys
+}
+
+function syncPrimaryFromGallery() {
+  const first = model.value[0]?.trim() || ''
+  if (!first) {
+    if (primary.value) primary.value = ''
+    return
+  }
+  if (!primary.value?.trim()) primary.value = first
+}
+
+function isPrimary(index: number) {
+  const url = model.value[index]
+  if (!url) return false
+  const main = primary.value?.trim()
+  if (main) return main === url
+  return index === 0
 }
 
 function openPicker() {
@@ -155,8 +259,71 @@ function openPicker() {
 
 function removeAt(index: number) {
   const url = model.value[index]
+  const wasPrimary = Boolean(url && primary.value?.trim() === url)
   if (url) revokeBlob(url)
   model.value = model.value.filter((_, i) => i !== index)
+  if (wasPrimary) {
+    primary.value = model.value[0]?.trim() || ''
+  }
+}
+
+function moveBy(index: number, delta: number) {
+  const next = index + delta
+  if (next < 0 || next >= model.value.length) return
+  const list = [...model.value]
+  const [item] = list.splice(index, 1)
+  if (!item) return
+  list.splice(next, 0, item)
+  model.value = list
+}
+
+function setAsPrimary(index: number) {
+  if (index < 0 || index >= model.value.length) return
+  const list = [...model.value]
+  const [item] = list.splice(index, 1)
+  if (!item) return
+  list.unshift(item)
+  model.value = list
+  primary.value = item
+}
+
+function onReorderDragStart(index: number, event: DragEvent) {
+  dragFrom.value = index
+  dragOverIndex.value = index
+  event.dataTransfer?.setData('text/plain', String(index))
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+}
+
+function onReorderDragOver(index: number, event: DragEvent) {
+  event.dataTransfer && (event.dataTransfer.dropEffect = 'move')
+  if (dragFrom.value === null) return
+  dragOverIndex.value = index
+}
+
+function onReorderDragLeave(index: number) {
+  if (dragOverIndex.value === index) dragOverIndex.value = null
+}
+
+function onReorderDrop(toIndex: number) {
+  const from = dragFrom.value
+  if (from === null || from === toIndex) {
+    onReorderDragEnd()
+    return
+  }
+  const list = [...model.value]
+  const [item] = list.splice(from, 1)
+  if (!item) {
+    onReorderDragEnd()
+    return
+  }
+  list.splice(toIndex, 0, item)
+  model.value = list
+  onReorderDragEnd()
+}
+
+function onReorderDragEnd() {
+  dragFrom.value = null
+  dragOverIndex.value = null
 }
 
 function onImgLoad(url: string, event: Event) {
@@ -217,14 +384,15 @@ async function uploadFiles(files: File[]) {
       }
       urls.push(url)
     })
-    // Revoke unused blobs when fewer items returned than files
     for (let i = result.items.length; i < blobs.length; i++) {
       const blob = blobs[i]
       if (blob) URL.revokeObjectURL(blob)
     }
 
     if (urls.length) {
+      const wasEmpty = !model.value.length
       model.value = [...model.value, ...urls]
+      if (wasEmpty && !primary.value?.trim()) syncPrimaryFromGallery()
     }
     else {
       toast.error(t('آپلود تصویر ناموفق بود'))
@@ -252,6 +420,7 @@ function onFileChange(event: Event) {
 
 function onDrop(event: DragEvent) {
   dragOver.value = false
+  // Ignore reorder drops that bubble from thumbs (no files)
   const files = [...(event.dataTransfer?.files ?? [])].filter(f => f.type.startsWith('image/'))
   if (files.length) void uploadFiles(files)
 }
@@ -260,3 +429,26 @@ onBeforeUnmount(() => {
   Object.keys(blobByUrl.value).forEach(revokeBlob)
 })
 </script>
+
+<style scoped>
+.gallery-reorder-move {
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gallery-reorder-enter-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.gallery-reorder-enter-from {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.gallery-reorder-leave-active {
+  transition: opacity 0.16s ease;
+}
+
+.gallery-reorder-leave-to {
+  opacity: 0;
+}
+</style>

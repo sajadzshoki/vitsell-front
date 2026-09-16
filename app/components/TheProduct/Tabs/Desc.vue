@@ -76,16 +76,25 @@ const props = defineProps<{
 function toSafeHtml(raw: string | null | undefined) {
   const value = raw?.trim()
   if (!value || isEmptyHtml(value)) return ''
-  return sanitizeBlogHtml(contentToHtml([value]))
+  return resolveHtmlMediaUrls(sanitizeBlogHtml(contentToHtml([value])))
+}
+
+function resolveHtmlMediaUrls(html: string) {
+  return html.replace(
+    /(<img\b[^>]*\bsrc=["'])([^"']+)(["'][^>]*>)/gi,
+    (_tag, before: string, src: string, after: string) => {
+      const resolved = resolveMediaUrl(src)
+      return `${before}${resolved || src}${after}`
+    },
+  )
 }
 
 const safeLeadHtml = computed(() => toSafeHtml(props.product.shortDesc))
 const safeBodyHtml = computed(() => toSafeHtml(props.product.description))
 
 const mediaImages = computed(() => {
-  const fromDesc = props.product.descImages?.filter(Boolean) ?? []
-  if (fromDesc.length) return fromDesc
-  const gallery = props.product.gallery?.filter(Boolean) ?? []
-  return gallery.filter(src => src !== props.product.image)
+  return (props.product.descImages ?? [])
+    .filter(Boolean)
+    .map(src => resolveMediaUrl(src) || src)
 })
 </script>

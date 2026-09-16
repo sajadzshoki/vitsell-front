@@ -7,7 +7,7 @@
       >
         <img
           v-if="product.image"
-          :src="product.image"
+          :src="resolveMediaUrl(product.image)"
           :alt="product.title"
           class="size-16 rounded-xl object-cover bg-default"
         >
@@ -131,6 +131,7 @@
 <script setup lang="ts">
 import { normalizeSellerProductStatus, sellerProductStatusMeta, type SellerListing } from '~/data/seller'
 import { formatPrice } from '~/data/products'
+import { resolveMediaUrl } from '~/composables/fetch'
 
 const props = defineProps<{
   listing: SellerListing

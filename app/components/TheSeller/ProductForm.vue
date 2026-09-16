@@ -544,8 +544,9 @@
             </div>
             <TheSellerGalleryUpload
               v-model="form.gallery"
+              v-model:primary="form.image"
               :label="$t('گالری تصاویر')"
-              :hint="$t('ترتیب با جابه‌جایی در آپلودر حفظ می‌شود')"
+              :hint="$t('با کشیدن یا دکمه‌ها ترتیب را عوض کنید؛ «اصلی کردن» همان تصویر اصلی محصول را تنظیم می‌کند')"
             />
           </div>
         </template>
