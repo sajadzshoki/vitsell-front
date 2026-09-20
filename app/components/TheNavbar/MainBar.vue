@@ -28,7 +28,7 @@ const searchQuery = ref('')
 watch(
   () => route.query.q,
   (q) => {
-    if (typeof q === 'string') searchQuery.value = q
+    searchQuery.value = typeof q === 'string' ? q : ''
   },
   { immediate: true },
 )

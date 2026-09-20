@@ -241,6 +241,25 @@
       class="space-y-2"
     >
       <div
+        v-if="can('categories.update') || can('categories.delete')"
+        class="flex items-center gap-2 text-xs text-muted px-1"
+      >
+        <UCheckbox
+          :model-value="allVisibleSelected"
+          :indeterminate="someVisibleSelected && !allVisibleSelected"
+          :label="$t('انتخاب همه')"
+          class="cursor-pointer"
+          @update:model-value="toggleSelectAll(!!$event)"
+        />
+        <span
+          v-if="visibleRows.length"
+          class="num text-dimmed"
+        >
+          {{ visibleRows.length.toLocaleString('fa-IR') }} {{ $t('مورد') }}
+        </span>
+      </div>
+
+      <div
         v-for="row in visibleRows"
         :key="row.id"
         class="bg-muted border border-muted rounded-2xl p-3 sm:p-4"
@@ -248,9 +267,9 @@
       >
         <div class="flex items-start gap-3">
           <UCheckbox
-            v-if="can('categories.update')"
+            v-if="can('categories.update') || can('categories.delete')"
             :model-value="selectedIds.includes(row.id)"
-            class="mt-5"
+            class="mt-5 cursor-pointer"
             @update:model-value="toggleSelect(row.id, !!$event)"
           />
 
@@ -275,7 +294,7 @@
           <div class="size-14 sm:size-16 rounded-xl bg-default border border-muted grid place-items-center shrink-0 overflow-hidden">
             <img
               v-if="row.image || isSellerAdminIconImage(row.icon)"
-              :src="row.image || row.icon"
+              :src="resolveMediaUrl(row.image || row.icon) || row.image || row.icon"
               :alt="row.name"
               class="size-full object-cover"
             >
@@ -511,6 +530,7 @@ import {
 import { isSellerAdminIconImage } from '~/data/seller-admin-icons'
 import { categoryStorefrontHref } from '~/data/categories'
 import { downloadSellerCsv } from '~/data/seller-export'
+import { resolveMediaUrl } from '~/composables/fetch'
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -522,6 +542,7 @@ const {
   pending,
   fetchList,
   deleteCategory,
+  bulkDeleteCategories,
   updateCategory,
   getById,
 } = useSellerCategories()
@@ -705,6 +726,25 @@ function toggleSelect(id: string, on: boolean) {
   else selectedIds.value = selectedIds.value.filter(x => x !== id)
 }
 
+const allVisibleSelected = computed(() =>
+  visibleRows.value.length > 0
+  && visibleRows.value.every(r => selectedIds.value.includes(r.id)),
+)
+
+const someVisibleSelected = computed(() =>
+  visibleRows.value.some(r => selectedIds.value.includes(r.id)),
+)
+
+function toggleSelectAll(on: boolean) {
+  const ids = visibleRows.value.map(r => r.id)
+  if (on) {
+    selectedIds.value = [...new Set([...selectedIds.value, ...ids])]
+  }
+  else {
+    selectedIds.value = selectedIds.value.filter(id => !ids.includes(id))
+  }
+}
+
 async function clearAll() {
   selectedIds.value = []
   await clearFilters()
@@ -775,27 +815,25 @@ async function confirmDelete() {
       const targets = [...bulkDeleteEligible.value]
       if (!targets.length) return
 
-      let okCount = 0
-      const errors: string[] = []
-      for (const row of targets) {
-        const result = await deleteCategory(row.id)
-        if (result.ok) okCount += 1
-        else errors.push(result.error || row.name)
-      }
-
+      const result = await bulkDeleteCategories(targets.map(r => r.id))
       const blocked = bulkDeleteBlocked.value.length
       selectedIds.value = []
       closeDelete()
       await loadCategories()
 
-      if (okCount) {
-        toast.success(`${okCount.toLocaleString('fa-IR')} ${t('دسته‌بندی حذف شد')}`)
+      if (!result.ok) {
+        toast.error(result.error)
+        return
       }
-      if (blocked) {
-        toast.warning(`${blocked.toLocaleString('fa-IR')} ${t('مورد به‌خاطر وابستگی رد شد')}`)
+      if (result.deleted) {
+        toast.success(`${result.deleted.toLocaleString('fa-IR')} ${t('دسته‌بندی حذف شد')}`)
       }
-      if (errors.length) {
-        toast.error(errors[0]!)
+      const failedCount = (result.failed?.length || 0) + blocked
+      if (failedCount) {
+        toast.warning(`${failedCount.toLocaleString('fa-IR')} ${t('مورد به‌خاطر وابستگی رد شد')}`)
+      }
+      if (result.failed?.[0]?.message) {
+        toast.error(result.failed[0].message)
       }
       return
     }

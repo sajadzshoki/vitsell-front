@@ -4,27 +4,27 @@
     <div class="mb-7 flex flex-col items-center text-center gap-3">
       <NuxtLink
         to="/"
-        class="size-16 rounded-2xl overflow-hidden bg-inverted grid place-items-center shadow-lg shadow-primary/20 transition-all hover:brightness-110"
+        class="size-20 rounded-2xl overflow-hidden grid place-items-center  shadow-primary/20 transition-all hover:brightness-110"
         :aria-label="$t('ویتسل')"
       >
         <img
           :src="VITSELL_LOGO_SRC"
           :alt="$t('ویتسل')"
-          class="size-full object-contain p-1"
+          class="size-full object-contain "
         >
       </NuxtLink>
       <div>
-        <h1 class="text-2xl font-extrabold text-highlighted tracking-tight">
+        <!-- <h1 class="text-2xl font-extrabold text-highlighted tracking-tight">
           {{ $t('ویتسل') }}
-        </h1>
-        <p class="mt-1 text-sm text-muted">
+        </h1> -->
+        <p class=" text-sm text-muted">
           {{ subtitle }}
         </p>
       </div>
     </div>
 
     <!-- Form panel -->
-    <div class="rounded-3xl border border-muted bg-default p-6 sm:p-8 shadow-sm">
+    <div class="rounded-3xl border border-muted bg-default p-4 sm:p-8 shadow-sm">
       <Transition
         mode="out-in"
         enter-active-class="transition-opacity duration-200 ease-out"
@@ -237,7 +237,7 @@
               otp
               :length="5"
               size="xl"
-              placeholder="○"
+              placeholder=""
               autofocus
               :color="otpError ? 'error' : 'primary'"
               :highlight="!!otpError"

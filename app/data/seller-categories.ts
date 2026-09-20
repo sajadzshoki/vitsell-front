@@ -5,6 +5,7 @@ import type {
 } from '~/data/category-pages'
 import { emptySeoMeta, sanitizeSeoMeta, seoMetaFromCategoryHeading, type SeoMeta } from '~/data/seo'
 import { resolveSellerAdminIconName, isSellerAdminIconImage } from '~/data/seller-admin-icons'
+import { resolveMediaUrl } from '~/composables/fetch'
 
 export type SellerCategoryStatus = 'active' | 'inactive'
 
@@ -400,15 +401,16 @@ export type SellerCategoryPickerNode = {
 
 function pickerIconFields(cat: SellerCategory): Pick<SellerCategoryPickerNode, 'icon' | 'image'> {
   const rawIcon = String(cat.icon || '').trim()
+  const rawImage = String(cat.image || '').trim()
   if (isSellerAdminIconImage(rawIcon)) {
     return {
       icon: 'i-tabler-category',
-      image: rawIcon || cat.image || null,
+      image: resolveMediaUrl(rawIcon || rawImage) || null,
     }
   }
   return {
     icon: resolveCategoryIconName(rawIcon || 'category'),
-    image: cat.image || null,
+    image: rawImage ? resolveMediaUrl(rawImage) || null : null,
   }
 }
 

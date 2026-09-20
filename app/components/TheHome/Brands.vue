@@ -8,7 +8,7 @@
       <div class="sm:hidden">
         <TheCarousel
           v-slot="{ item }"
-          :items="brands"
+          :items="previewBrands"
           arrows
           :per-view="[3, 3, 3, 3, 3]"
           align="start"
@@ -26,31 +26,35 @@
             next: 'end-0 z-20 shadow-sm',
           }"
         >
-          <button
-            type="button"
-            class="w-full text-lg font-bold text-dimmed hover:text-highlighted transition-all  tracking-wide cursor-pointer py-2"
-            @click="navigateTo(`/search?q=${encodeURIComponent(item)}`)"
+          <NuxtLink
+            :to="toSearchRoute({ brands: item })"
+            class="w-full text-lg font-bold text-dimmed hover:text-highlighted transition-all tracking-wide cursor-pointer py-2 block text-center"
           >
             {{ item }}
-          </button>
+          </NuxtLink>
         </TheCarousel>
       </div>
 
       <div class="hidden sm:flex items-center flex-wrap justify-around gap-6">
-        <button
-          v-for="brand in brands"
+        <NuxtLink
+          v-for="brand in previewBrands"
           :key="brand"
-          type="button"
-          class="text-lg md:text-2xl font-bold text-dimmed hover:text-highlighted transition-all  tracking-wide cursor-pointer"
-          @click="navigateTo(`/search?q=${encodeURIComponent(brand)}`)"
+          :to="toSearchRoute({ brands: brand })"
+          class="text-lg md:text-2xl font-bold text-dimmed hover:text-highlighted transition-all tracking-wide cursor-pointer"
         >
           {{ brand }}
-        </button>
+        </NuxtLink>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { toSearchRoute } from '~/data/categories'
+
+const PREVIEW_LIMIT = 10
+
 const { brands, pending, loaded } = useHome()
+
+const previewBrands = computed(() => brands.value.slice(0, PREVIEW_LIMIT))
 </script>

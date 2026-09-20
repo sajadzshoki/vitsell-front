@@ -111,7 +111,7 @@
           </template>
 
           <div
-            v-if="gallery.length > 1"
+            v-if="gallery.length > 1 && gallery.length <= 8"
             class="absolute bottom-3 inset-x-0 z-10 flex justify-center gap-1.5 pointer-events-none"
           >
             <span
@@ -121,18 +121,30 @@
               :class="active === index ? 'bg-primary w-4' : 'bg-inverted/25'"
             />
           </div>
+          <div
+            v-else-if="gallery.length > 8"
+            class="absolute bottom-3 inset-x-0 z-10 flex justify-center pointer-events-none"
+          >
+            <span class="px-2 py-0.5 rounded-full bg-inverted/55 text-inverted text-[10px] font-bold num">
+              {{ (active + 1).toLocaleString('fa-IR') }} / {{ gallery.length.toLocaleString('fa-IR') }}
+            </span>
+          </div>
         </div>
 
-        <div class="grid grid-cols-4 gap-1.5">
+        <div
+          ref="thumbStrip"
+          class="flex gap-1.5 overflow-x-auto scrollbar-none overscroll-x-contain cursor-default"
+        >
           <button
             v-for="(image, index) in visibleThumbs"
             :key="`${galleryTab}-${image}-${index}`"
             type="button"
-            class="relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer"
+            class="relative size-[4.5rem] sm:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all cursor-pointer"
             :class="active === index && !isMoreThumb(index) ? 'border-primary' : 'border-muted hover:border-accented'"
             :aria-label="isMoreThumb(index)
               ? $t('مشاهده همه تصاویر')
               : (galleryTab === 'buyers' ? $t('تصویر خریدار') : $t('تصویر محصول'))"
+            :data-thumb="index"
             @click="onThumbClick(index)"
           >
             <img
@@ -253,17 +265,17 @@
         header: 'bg-transparent border-0 min-h-0 p-3 sm:p-4 absolute top-0 inset-x-0 z-10',
         title: 'sr-only',
         description: 'sr-only',
-        body: 'bg-transparent p-0 sm:p-0 flex flex-col items-center justify-center gap-3 min-h-dvh',
+        body: 'bg-transparent p-0 sm:p-0 flex flex-col overflow-hidden h-dvh',
         close: 'text-inverted hover:bg-default/10',
       }"
     >
       <template #body>
-        <div class="w-full max-w-5xl px-3 sm:px-6 py-14 flex flex-col gap-4 min-h-dvh">
+        <div class="w-full max-w-5xl mx-auto px-3 sm:px-6 pt-14 pb-4 flex flex-col gap-3 h-dvh overflow-hidden">
           <div class="relative flex-1 min-h-0 flex items-center justify-center">
             <img
               :src="imageSrc(gallery[active] || '')"
               :alt="product.title"
-              class="max-h-[52dvh] w-auto max-w-full object-contain rounded-2xl"
+              class="max-h-full w-auto max-w-full object-contain rounded-2xl"
               loading="eager"
               decoding="async"
               draggable="false"
@@ -297,14 +309,19 @@
             </template>
           </div>
 
-          <div class="shrink-0 grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5 sm:gap-2">
+          <div
+            v-if="gallery.length > 1"
+            ref="fsThumbStrip"
+            class="shrink-0 flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none overscroll-x-contain py-1 cursor-default"
+          >
             <button
               v-for="(image, index) in gallery"
               :key="`fs-${image}-${index}`"
               type="button"
-              class="aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer"
+              class="size-16 sm:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all cursor-pointer"
               :class="active === index ? 'border-primary' : 'border-inverted/20 hover:border-inverted/50'"
               :aria-label="$t('تصویر محصول')"
+              :data-fs-thumb="index"
               @click="select(index)"
             >
               <img
@@ -345,6 +362,8 @@ const zooming = ref(false)
 const origin = ref({ x: 50, y: 50 })
 const stageRef = ref<HTMLElement | null>(null)
 const carousel = ref<{ emblaApi?: { scrollTo: (index: number) => void } | null } | null>(null)
+const thumbStrip = ref<HTMLElement | null>(null)
+const fsThumbStrip = ref<HTMLElement | null>(null)
 const dragMoved = ref(false)
 const galleryTab = ref<'official' | 'buyers'>('official')
 
@@ -432,7 +451,53 @@ function onSelect(index: number) {
 function select(index: number) {
   active.value = index
   carousel.value?.emblaApi?.scrollTo(index)
+  scrollThumbIntoView(index)
 }
+
+function scrollThumbIntoView(index: number) {
+  nextTick(() => {
+    const strip = fullscreen.value ? fsThumbStrip.value : thumbStrip.value
+    const attr = fullscreen.value ? 'data-fs-thumb' : 'data-thumb'
+    const el = strip?.querySelector(`[${attr}="${index}"]`) as HTMLElement | null
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  })
+}
+
+/** Map mouse wheel to horizontal thumb-strip scroll (desktop). */
+function onThumbWheel(event: WheelEvent) {
+  const el = event.currentTarget as HTMLElement | null
+  if (!el) return
+  if (el.scrollWidth <= el.clientWidth + 1) return
+
+  const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+    ? event.deltaX
+    : event.deltaY
+  if (!delta) return
+
+  event.preventDefault()
+  el.scrollBy({ left: delta })
+}
+
+function bindThumbWheel(el: HTMLElement | null) {
+  if (!el || (el as any)._thumbWheelBound) return
+  el.addEventListener('wheel', onThumbWheel, { passive: false })
+  ;(el as any)._thumbWheelBound = true
+}
+
+watch(thumbStrip, el => bindThumbWheel(el), { immediate: true })
+watch(fsThumbStrip, el => bindThumbWheel(el), { immediate: true })
+onBeforeUnmount(() => {
+  thumbStrip.value?.removeEventListener('wheel', onThumbWheel)
+  fsThumbStrip.value?.removeEventListener('wheel', onThumbWheel)
+})
+
+watch(active, (index) => {
+  scrollThumbIntoView(index)
+})
+
+watch(fullscreen, (open) => {
+  if (open) scrollThumbIntoView(active.value)
+})
 
 function isMoreThumb(index: number) {
   return moreCount.value > 0 && index === THUMB_LIMIT - 1

@@ -12,6 +12,8 @@ export type ProductColor = {
 export type ProductSpec = {
   key: string
   value: string
+  /** Optional section title (e.g. from Technolife configurations groups) */
+  group?: string
 }
 
 export type Product = {

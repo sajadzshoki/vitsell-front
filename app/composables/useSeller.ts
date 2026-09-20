@@ -782,6 +782,56 @@ export function useSeller() {
     return { ok: true as const, error: null as null }
   }
 
+  async function bulkDeleteListings(productIds: string[]) {
+    const unique = [...new Set(productIds.map(id => String(id || '').trim()).filter(Boolean))]
+    if (!unique.length) {
+      return {
+        ok: false as const,
+        error: 'هیچ محصولی انتخاب نشده است',
+        deleted: 0,
+        failed: [] as Array<{ id: string; message: string }>,
+      }
+    }
+
+    const { result, error } = await usePost<{
+      deleted: number
+      failed?: Array<{ id: string; message: string }>
+      deletedIds?: string[]
+    }>('/seller/listings/bulk-delete', { ids: unique }, {
+      headers: { 'no-error': true },
+    })
+
+    if (error) {
+      const message
+        = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+          || error?.data?.message
+          || error?.message
+          || 'حذف گروهی محصولات ناموفق بود'
+      return {
+        ok: false as const,
+        error: message,
+        deleted: 0,
+        failed: [] as Array<{ id: string; message: string }>,
+      }
+    }
+
+    const deletedIds = new Set(result?.deletedIds || unique)
+    listings.value = listings.value.filter(item => !deletedIds.has(item.productId))
+    if (listingsMeta.value.total > 0) {
+      listingsMeta.value = {
+        ...listingsMeta.value,
+        total: Math.max(0, listingsMeta.value.total - deletedIds.size),
+      }
+    }
+
+    return {
+      ok: true as const,
+      deleted: Number(result?.deleted) || deletedIds.size,
+      failed: Array.isArray(result?.failed) ? result!.failed! : [],
+      error: null as null,
+    }
+  }
+
   type ListingProductExtras = {
     featured?: boolean
     published?: boolean
@@ -1343,6 +1393,7 @@ export function useSeller() {
     fetchProductPanel,
     setListingStatus,
     deleteListing,
+    bulkDeleteListings,
     updateListingProduct,
     updateListingStock,
     addListingProduct,

@@ -45,7 +45,7 @@
 
     <TheHomeBlog />
     <TheHomeFeatures class="<md:hidden" />
-    <TheHomePromos />
+    <!-- <TheHomePromos /> -->
 
     <TheHomeAppDownload />
 

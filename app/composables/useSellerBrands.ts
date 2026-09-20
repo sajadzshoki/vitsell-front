@@ -243,6 +243,43 @@ export function useSellerBrands() {
     return { ok: true as const }
   }
 
+  async function bulkDeleteBrands(ids: string[]) {
+    const unique = [...new Set(ids.map(id => String(id || '').trim()).filter(Boolean))]
+    if (!unique.length) {
+      return {
+        ok: false as const,
+        error: 'هیچ برندی انتخاب نشده است',
+        deleted: 0,
+        failed: [] as Array<{ id: string; message: string }>,
+      }
+    }
+
+    const { result, error } = await usePost<{
+      deleted: number
+      failed?: Array<{ id: string; message: string }>
+      deletedIds?: string[]
+    }>('/seller/brands/bulk-delete', { ids: unique }, {
+      headers: { 'no-error': true },
+    })
+
+    if (error) {
+      return {
+        ok: false as const,
+        error: apiErrorMessage(error, 'حذف گروهی برندها ناموفق بود'),
+        deleted: 0,
+        failed: [] as Array<{ id: string; message: string }>,
+      }
+    }
+
+    const deletedIds = new Set(result?.deletedIds || unique)
+    items.value = items.value.filter(b => !deletedIds.has(b.id))
+    return {
+      ok: true as const,
+      deleted: Number(result?.deleted) || deletedIds.size,
+      failed: Array.isArray(result?.failed) ? result!.failed! : [],
+    }
+  }
+
   async function setStatus(id: string, status: SellerBrand['status']) {
     const { result, error } = await usePatch<SellerBrand>(
       `/seller/brands/${encodeURIComponent(id)}/status`,
@@ -272,6 +309,7 @@ export function useSellerBrands() {
     createBrand,
     updateBrand,
     deleteBrand,
+    bulkDeleteBrands,
     setStatus,
     emptyBrandForm,
     toBrandForm,

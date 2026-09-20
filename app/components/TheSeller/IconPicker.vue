@@ -333,8 +333,8 @@ function pick(key: string) {
   const next = isSellerAdminIconImage(key)
     ? String(key).trim()
     : normalizeSellerAdminIconKey(key)
-  model.value = next
-  if (next) addIcon(next)
+  const stored = next ? (addIcon(next) || next) : ''
+  model.value = stored
   open.value = false
 }
 
@@ -379,8 +379,12 @@ async function onFileChange(event: Event) {
       return
     }
     const url = result.items[0].url
-    addIcon(url)
-    model.value = url
+    const stored = (() => {
+      const upload = String(url).match(/\/uploads\/([\w.-]+\.(?:jpe?g|png|webp|gif|svg))/i)
+      return upload ? `/uploads/${upload[1]}` : url
+    })()
+    addIcon(stored)
+    model.value = stored
     toast.success(t('آیکون به لیست اضافه شد'))
     open.value = false
   }

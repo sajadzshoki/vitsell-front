@@ -36,7 +36,7 @@
       <div class="sm:hidden">
         <TheCarousel
           v-slot="{ item }"
-          :items="categories"
+          :items="previewCategories"
           arrows
           :per-view="[4, 4, 4, 4, 4]"
           align="start"
@@ -79,7 +79,7 @@
       <!-- Tablet / desktop grid -->
       <div class="hidden sm:grid grid-cols-5 lg:grid-cols-10 gap-3 md:gap-4">
         <NuxtLink
-          v-for="category in categories"
+          v-for="category in previewCategories"
           :key="category.id"
           :to="toSearchRoute({ category: category.id })"
           class="group flex flex-col items-center gap-2 cursor-pointer"
@@ -109,7 +109,11 @@ import type { Category } from '~/data/categories'
 import { toSearchRoute } from '~/data/categories'
 import { getCategoryImage } from '~/data/category-pages'
 
+const PREVIEW_LIMIT = 10
+
 const { categories, pending, loaded } = useHome()
+
+const previewCategories = computed(() => categories.value.slice(0, PREVIEW_LIMIT))
 
 function imageFor(category: Category) {
   return getCategoryImage(category.id, category.image)

@@ -181,12 +181,9 @@
 
         <!-- Apps + trust badges -->
         <div
-          v-if="appStores.length || badges.length"
           class="py-8 border-t border-muted flex flex-col md:(flex-row items-end justify-between) gap-8"
         >
-          <div v-if="appStores.length">
-        <div class="py-6 flex flex-col md:(flex-row items-end justify-between) gap-8">
-          <div>
+          <div v-if="downloadStores.length">
             <h4 class="flex items-center gap-2 text-sm font-bold text-highlighted mb-4 text-start">
               <span
                 class="size-1.5 rounded-full bg-primary shrink-0"
@@ -200,7 +197,7 @@
                 :key="store.id"
                 :href="store.href"
                 :aria-label="$t(store.label)"
-                class="inline-flex items-center cursor-pointer transition-all  hover:opacity-90 focus-visible:(outline-none ring-2 ring-primary/40) rounded-xl"
+                class="inline-flex items-center cursor-pointer transition-all hover:opacity-90 focus-visible:(outline-none ring-2 ring-primary/40) rounded-xl"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -213,14 +210,31 @@
             </div>
           </div>
 
-          <div
-            v-if="badges.length"
-            class="flex flex-wrap items-center gap-2 md:justify-end"
-          >
+          <div class="flex flex-wrap items-center gap-2 md:justify-end">
+            <!-- <a
+              referrerpolicy="origin"
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://trustseal.enamad.ir/?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT"
+              class="size-25 rounded-xl bg-elevated flex items-center justify-center overflow-hidden p-1.5 cursor-pointer"
+              :aria-label="$t('نماد اعتماد')"
+              :title="$t('نماد اعتماد')"
+            >
+              <img
+                referrerpolicy="origin"
+                src="https://trustseal.enamad.ir/logo.aspx?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT"
+                alt=""
+                class="size-full object-contain cursor-pointer"
+                loading="lazy"
+                width="56"
+                height="56"
+              >
+            </a> -->
+            <a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT' alt='' style='cursor:pointer' code='GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT'/></a>
             <div
-              v-for="badge in badges"
+              v-for="badge in displayBadges"
               :key="badge.id"
-              class="size-25 rounded-xl  bg-elevated flex items-center justify-center overflow-hidden p-1.5"
+              class="size-25 rounded-xl bg-elevated flex items-center justify-center overflow-hidden p-1.5"
               :title="$t(badge.label)"
             >
               <img
@@ -251,8 +265,6 @@
           </p>
         </div>
       </div>
-    </div>
-    </div>
     </div>
   </footer>
 </template>
@@ -331,10 +343,18 @@ const contact = computed(() => {
   }
 })
 const appStores = computed(() =>
-  (footer.value.appStores || []).filter(s => s?.id && s?.label && s?.href),
+  (footer.value.appStores || []).filter(s => s?.id && s?.label && s?.icon && s?.href),
+)
+/** Prefer CMS app stores; fall back to temporary store badge icons. */
+const downloadStores = computed(() =>
+  appStores.value.length ? appStores.value : [...FALLBACK_DOWNLOAD_STORES],
 )
 const badges = computed(() =>
   (footer.value.badges || []).filter(b => b?.id && b?.label && b?.icon),
+)
+/** Skip CMS enamad — official trustseal is rendered statically. */
+const displayBadges = computed(() =>
+  badges.value.filter(b => b.id !== 'enamad'),
 )
 
 const address = computed(() => site.value.address?.trim() || '')

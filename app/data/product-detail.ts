@@ -308,20 +308,45 @@ export function getProductSpecGroups(product: Product): ProductSpecGroup[] {
     return specGroupOverrides[product.id]
   }
 
+  const brandGroup: ProductSpecGroup | null = product.brand
+    ? {
+        title: 'برند',
+        items: [{ key: 'برند', value: product.brand }],
+      }
+    : null
+
   if (product.specs?.length) {
-    return [
-      {
-        title: 'مشخصات',
-        items: product.specs,
-      },
-    ]
+    const order: string[] = []
+    const byGroup = new Map<string, ProductSpec[]>()
+    for (const spec of product.specs) {
+      const title = (spec.group || '').trim() || 'مشخصات فنی'
+      if (!byGroup.has(title)) {
+        byGroup.set(title, [])
+        order.push(title)
+      }
+      byGroup.get(title)!.push({ key: spec.key, value: spec.value })
+    }
+
+    const groups: ProductSpecGroup[] = order.map(title => ({
+      title,
+      items: byGroup.get(title)!,
+    }))
+
+    // Prefixed brand section when specs don't already open with one
+    const firstTitle = groups[0]?.title || ''
+    const hasBrandSection = /برند|سازنده|manufacturer|brand/i.test(firstTitle)
+      || groups.some(g => g.items.some(i => /^(برند|سازنده)$/i.test(i.key)))
+    if (brandGroup && !hasBrandSection) {
+      return [brandGroup, ...groups]
+    }
+    return groups
   }
 
   return [
+    ...(brandGroup ? [brandGroup] : []),
     {
       title: 'مشخصات کلی',
       items: [
-        { key: 'برند', value: product.brand },
         {
           key: 'دسته‌بندی',
           value: categoryLabels[product.category] ?? product.categoryLabel,

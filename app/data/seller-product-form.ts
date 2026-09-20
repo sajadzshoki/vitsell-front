@@ -168,11 +168,14 @@ function slugifyTitle(title: string) {
 
 export function normalizeFormSpecs(specs: ProductSpec[]): ProductSpec[] {
   return specs
-    .map(row => ({
-      key: String(row.key || '').trim(),
-      value: String(row.value || '').trim(),
-    }))
-    .filter(row => row.key && row.value)
+    .map((row) => {
+      const key = String(row.key || '').trim()
+      const value = String(row.value || '').trim()
+      const group = String(row.group || '').trim()
+      if (!key || !value) return null
+      return group ? { key, value, group } : { key, value }
+    })
+    .filter((row): row is ProductSpec => Boolean(row))
 }
 
 /** Derive display colors from color-type variant axes. */

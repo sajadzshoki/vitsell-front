@@ -405,6 +405,7 @@ const {
   fetchListingsExport,
   setListingStatus,
   deleteListing,
+  bulkDeleteListings,
 } = useSeller()
 const { can } = useSellerPermissions()
 const { saveCommerce } = useSellerProductCommerce()
@@ -718,22 +719,23 @@ async function confirmDelete() {
   try {
     if (bulkDeleteMode.value) {
       const ids = [...selectedIds.value]
-      let okCount = 0
-      const errors: string[] = []
-      for (const id of ids) {
-        const result = await deleteListing(id)
-        if (result.ok) okCount += 1
-        else errors.push(result.error || id)
-      }
+      const result = await bulkDeleteListings(ids)
       selectedIds.value = []
       bulkAction.value = ''
       closeDelete()
       await loadProducts()
-      if (okCount) {
-        toast.success(`${okCount.toLocaleString('fa-IR')} ${t('محصول حذف شد')}`)
+      if (!result.ok) {
+        toast.error(t(result.error || 'حذف گروهی محصولات ناموفق بود'))
+        return
       }
-      if (errors.length) {
-        toast.error(errors[0]!)
+      if (result.deleted) {
+        toast.success(`${result.deleted.toLocaleString('fa-IR')} ${t('محصول حذف شد')}`)
+      }
+      if (result.failed?.length) {
+        toast.warning(
+          `${result.failed.length.toLocaleString('fa-IR')} ${t('مورد به‌خاطر وابستگی رد شد')}`,
+        )
+        if (result.failed[0]?.message) toast.error(result.failed[0].message)
       }
       return
     }

@@ -323,6 +323,40 @@ export function useSellerCategories() {
     return { ok: true as const }
   }
 
+  async function bulkDeleteCategories(ids: string[]) {
+    const unique = [...new Set(ids.map(id => String(id || '').trim()).filter(Boolean))]
+    if (!unique.length) {
+      return { ok: false as const, error: 'هیچ دسته‌ای انتخاب نشده است', deleted: 0, failed: [] as Array<{ id: string; message: string }> }
+    }
+
+    const { result, error } = await usePost<{
+      deleted: number
+      failed?: Array<{ id: string; message: string }>
+      deletedIds?: string[]
+    }>('/seller/categories/bulk-delete', { ids: unique }, {
+      headers: { 'no-error': true },
+    })
+
+    if (error) {
+      const message
+        = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
+          || error?.data?.message
+          || 'حذف گروهی دسته‌بندی‌ها ناموفق بود'
+      return { ok: false as const, error: message, deleted: 0, failed: [] as Array<{ id: string; message: string }> }
+    }
+
+    const deletedIds = new Set(result?.deletedIds || unique)
+    items.value = items.value.filter(c => !deletedIds.has(c.id))
+    listItems.value = listItems.value.filter(c => !deletedIds.has(c.id))
+    syncStorefront()
+    await fetchCategories({ force: true })
+    return {
+      ok: true as const,
+      deleted: Number(result?.deleted) || deletedIds.size,
+      failed: Array.isArray(result?.failed) ? result!.failed! : [],
+    }
+  }
+
   return {
     categories,
     items,
@@ -338,5 +372,6 @@ export function useSellerCategories() {
     createCategory,
     updateCategory,
     deleteCategory,
+    bulkDeleteCategories,
   }
 }

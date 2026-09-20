@@ -9,12 +9,12 @@
       header: 'bg-transparent border-0 min-h-0 p-3 sm:p-4 absolute top-0 inset-x-0 z-20',
       title: 'sr-only',
       description: 'sr-only',
-      body: 'bg-transparent p-0 sm:p-0 flex flex-col min-h-dvh',
+      body: 'bg-transparent p-0 sm:p-0 flex flex-col overflow-hidden h-dvh',
       close: 'text-inverted hover:bg-default/10',
     }"
   >
     <template #body>
-      <div class="flex flex-col min-h-dvh pt-14 pb-4">
+      <div class="flex flex-col h-dvh overflow-hidden pt-14 pb-4">
         <!-- Tabs -->
         <div
           v-if="showOfficialTab"
@@ -127,16 +127,20 @@
           </div>
         </div>
 
-        <!-- Thumbnails -->
-        <div class="shrink-0 px-3 sm:px-6 mt-3">
-          <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5 sm:gap-2 max-w-5xl mx-auto">
+        <!-- Thumbnails: single-row horizontal strip (avoids layout collapse with many images) -->
+        <div class="shrink-0 px-3 sm:px-6 mt-3 pb-1">
+          <div
+            ref="thumbStrip"
+            class="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none overscroll-x-contain max-w-5xl mx-auto py-1 cursor-default"
+          >
             <button
               v-for="(item, index) in currentList"
               :key="`${tab}-${item}-${index}`"
               type="button"
-              class="aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer"
+              class="size-16 sm:size-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all cursor-pointer"
               :class="activeIndex === index ? 'border-primary' : 'border-inverted/20 hover:border-inverted/50'"
               :aria-label="$t('تصویر')"
+              :data-thumb="index"
               @click="activeIndex = index"
             >
               <img
@@ -174,6 +178,7 @@ const open = defineModel<boolean>('open', { default: false })
 
 const tab = ref<'official' | 'buyers'>('buyers')
 const activeIndex = ref(0)
+const thumbStrip = ref<HTMLElement | null>(null)
 
 const showOfficialTab = computed(() => props.officialImages.length > 0)
 
@@ -199,7 +204,12 @@ watch(open, (isOpen) => {
   nextTick(() => {
     const max = Math.max(currentList.value.length - 1, 0)
     activeIndex.value = Math.min(Math.max(props.startIndex, 0), max)
+    scrollThumbIntoView(activeIndex.value)
   })
+})
+
+watch(activeIndex, (index) => {
+  scrollThumbIntoView(index)
 })
 
 function setTab(next: 'official' | 'buyers') {
@@ -213,6 +223,37 @@ function setTab(next: 'official' | 'buyers') {
 function mediaSrc(url: string) {
   return resolveMediaUrl(url) || '/images/noImage.png'
 }
+
+function scrollThumbIntoView(index: number) {
+  nextTick(() => {
+    const el = thumbStrip.value?.querySelector(`[data-thumb="${index}"]`) as HTMLElement | null
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  })
+}
+
+function onThumbWheel(event: WheelEvent) {
+  const el = event.currentTarget as HTMLElement | null
+  if (!el) return
+  if (el.scrollWidth <= el.clientWidth + 1) return
+
+  const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+    ? event.deltaX
+    : event.deltaY
+  if (!delta) return
+
+  event.preventDefault()
+  el.scrollBy({ left: delta })
+}
+
+watch(thumbStrip, (el) => {
+  if (!el || (el as any)._thumbWheelBound) return
+  el.addEventListener('wheel', onThumbWheel, { passive: false })
+  ;(el as any)._thumbWheelBound = true
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  thumbStrip.value?.removeEventListener('wheel', onThumbWheel)
+})
 
 function goPrev() {
   if (activeIndex.value <= 0) return

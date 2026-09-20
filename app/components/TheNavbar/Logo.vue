@@ -13,12 +13,12 @@
       v-if="showName"
       class="hidden sm:flex flex-col leading-tight text-start"
     >
-      <span
+      <!-- <span
         class="text-xl font-extrabold"
         :class="inverted ? 'text-inverted' : 'text-highlighted'"
       >
         {{ siteName }}
-      </span>
+      </span> -->
     </div>
   </NuxtLink>
 </template>

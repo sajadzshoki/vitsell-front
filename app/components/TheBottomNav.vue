@@ -1,9 +1,13 @@
 <template>
   <nav
+    v-if="items.length"
     class="md:hidden fixed inset-x-0 bottom-0 z-40 bg-default/95 backdrop-blur-md border-t border-muted pb-[env(safe-area-inset-bottom)]"
     :aria-label="$t('ناوبری پایین')"
   >
-    <ul class="grid grid-cols-4 h-16 max-w-8xl mx-auto">
+    <ul
+      class="grid h-16 max-w-8xl mx-auto"
+      :style="{ gridTemplateColumns: `repeat(${Math.max(items.length, 1)}, minmax(0, 1fr))` }"
+    >
       <li
         v-for="item in items"
         :key="item.id"
@@ -67,9 +71,13 @@ const { cartCount, cartBump, isLoggedIn, ensureCartLoaded } = useShop()
 const { publicBottomLinks, fetchNavigation } = useSellerNavigation()
 await fetchNavigation({ force: false, admin: false })
 
+function isAccountItem(item: BottomNavItem) {
+  return item.id === 'account' || item.to === '/account' || item.to === '/login'
+}
+
 const items = computed(() =>
   publicBottomLinks.value.map((item) => {
-    if (item.id !== 'account') return item
+    if (!isAccountItem(item)) return item
     return {
       ...item,
       to: isLoggedIn.value ? '/account' : '/login',
@@ -110,7 +118,7 @@ function iconFor(item: BottomNavItem) {
 function isActive(item: BottomNavItem) {
   if (!item.to) return false
   if (item.to === '/') return route.path === '/'
-  if (item.id === 'categories') {
+  if (item.id === 'categories' || item.to === '/category') {
     return route.path === '/category' || route.path.startsWith('/category/')
   }
   return route.path === item.to || route.path.startsWith(`${item.to}/`)

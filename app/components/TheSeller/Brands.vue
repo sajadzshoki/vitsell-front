@@ -292,12 +292,35 @@
 
     <UModal
       v-model:open="deleteOpen"
-      :title="$t('حذف برند')"
+      :title="bulkDeleteMode ? $t('حذف گروهی') : $t('حذف برند')"
       :description="$t('در صورت داشتن محصول وابسته، حذف انجام نمی‌شود.')"
     >
       <template #body>
         <div
-          v-if="pendingDelete"
+          v-if="bulkDeleteMode"
+          class="space-y-3 text-sm"
+        >
+          <p class="text-toned">
+            {{ selectedIds.length.toLocaleString('fa-IR') }}
+            {{ $t('برند انتخاب شده است') }}
+          </p>
+          <p
+            v-if="bulkDeleteBlocked.length"
+            class="text-xs text-warning leading-5"
+          >
+            {{ bulkDeleteBlocked.length.toLocaleString('fa-IR') }}
+            {{ $t('مورد به‌خاطر محصول وابسته حذف نمی‌شوند') }}
+          </p>
+          <p
+            v-if="bulkDeleteEligible.length"
+            class="text-xs text-muted leading-5"
+          >
+            {{ bulkDeleteEligible.length.toLocaleString('fa-IR') }}
+            {{ $t('مورد قابل حذف است') }}
+          </p>
+        </div>
+        <div
+          v-else-if="pendingDelete"
           class="rounded-xl border border-muted bg-muted/40 p-4 text-sm space-y-2"
         >
           <div class="flex items-center justify-between gap-3">
@@ -311,6 +334,13 @@
               dir="ltr"
             >{{ pendingDelete.slug }}</span>
           </div>
+          <p
+            v-if="productCountFor(pendingDelete) > 0"
+            class="text-xs text-error"
+          >
+            {{ $t('این برند به محصولات لینک شده و حذف نمی‌شود.') }}
+            ({{ productCountFor(pendingDelete).toLocaleString('fa-IR') }})
+          </p>
         </div>
       </template>
       <template #footer>
@@ -319,7 +349,8 @@
             color="neutral"
             variant="outline"
             class="cursor-pointer"
-            @click="deleteOpen = false"
+            :disabled="deleting"
+            @click="closeDelete"
           >
             {{ $t('انصراف') }}
           </UButton>
@@ -327,6 +358,7 @@
             color="error"
             class="font-bold cursor-pointer"
             :loading="deleting"
+            :disabled="bulkDeleteMode ? !bulkDeleteEligible.length : !canDeletePending"
             @click="confirmDelete"
           >
             {{ $t('حذف') }}
@@ -359,6 +391,7 @@ const {
   pending,
   fetchList,
   deleteBrand,
+  bulkDeleteBrands,
   setStatus,
 } = useSellerBrands()
 const { search, status, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
@@ -374,18 +407,28 @@ function openBrandStorefront(brand: SellerBrand) {
 const loading = ref(true)
 const importOpen = ref(false)
 const deleteOpen = ref(false)
+const bulkDeleteMode = ref(false)
 const pendingDelete = ref<SellerBrand | null>(null)
 const deleting = ref(false)
 const selectedIds = ref<string[]>([])
 const bulkAction = ref('')
 const bulkRunning = ref(false)
 
-const canBulk = computed(() => can('brands.update'))
+const canBulk = computed(() => can('brands.update') || can('brands.delete'))
 
-const bulkActionItems = computed(() => [
-  { value: 'activate', label: t('فعال‌سازی') },
-  { value: 'deactivate', label: t('غیرفعال‌سازی') },
-])
+const bulkActionItems = computed(() => {
+  const items: Array<{ value: string; label: string }> = []
+  if (can('brands.update')) {
+    items.push(
+      { value: 'activate', label: t('فعال‌سازی') },
+      { value: 'deactivate', label: t('غیرفعال‌سازی') },
+    )
+  }
+  if (can('brands.delete')) {
+    items.push({ value: 'delete', label: t('حذف') })
+  }
+  return items
+})
 
 const statusTabs = computed(() => {
   const c = listMeta.value.statusCounts
@@ -402,6 +445,24 @@ function productCountFor(brand: SellerBrand) {
 
 /** Server already filtered + paged */
 const paged = computed(() => brands.value)
+
+const selectedBrands = computed(() =>
+  selectedIds.value
+    .map(id => brands.value.find(b => b.id === id))
+    .filter((b): b is SellerBrand => Boolean(b)),
+)
+
+const bulkDeleteEligible = computed(() =>
+  selectedBrands.value.filter(b => productCountFor(b) === 0),
+)
+
+const bulkDeleteBlocked = computed(() =>
+  selectedBrands.value.filter(b => productCountFor(b) > 0),
+)
+
+const canDeletePending = computed(() =>
+  Boolean(pendingDelete.value && productCountFor(pendingDelete.value) === 0),
+)
 
 const allPageSelected = computed(() =>
   paged.value.length > 0 && paged.value.every(b => selectedIds.value.includes(b.id)),
@@ -458,6 +519,16 @@ async function loadBrands() {
 
 async function runBulk() {
   if (!bulkAction.value || !selectedIds.value.length) return
+
+  if (bulkAction.value === 'delete') {
+    if (!can('brands.delete')) return
+    bulkDeleteMode.value = true
+    pendingDelete.value = null
+    deleteOpen.value = true
+    return
+  }
+
+  if (!can('brands.update')) return
   bulkRunning.value = true
   try {
     const target = bulkAction.value === 'activate' ? 'active' : 'inactive'
@@ -475,19 +546,51 @@ async function runBulk() {
 }
 
 function openDelete(brand: SellerBrand) {
+  bulkDeleteMode.value = false
   pendingDelete.value = brand
   deleteOpen.value = true
 }
 
+function closeDelete() {
+  deleteOpen.value = false
+  pendingDelete.value = null
+  bulkDeleteMode.value = false
+}
+
 async function confirmDelete() {
-  if (!pendingDelete.value) return
   deleting.value = true
   try {
+    if (bulkDeleteMode.value) {
+      const targets = [...bulkDeleteEligible.value]
+      if (!targets.length) return
+      const result = await bulkDeleteBrands(targets.map(b => b.id))
+      const blocked = bulkDeleteBlocked.value.length
+      selectedIds.value = []
+      bulkAction.value = ''
+      closeDelete()
+      if (!result.ok) {
+        toast.error(result.error)
+        return
+      }
+      if (result.deleted) {
+        toast.success(`${result.deleted.toLocaleString('fa-IR')} ${t('برند حذف شد')}`)
+      }
+      const failedCount = (result.failed?.length || 0) + blocked
+      if (failedCount) {
+        toast.warning(`${failedCount.toLocaleString('fa-IR')} ${t('مورد به‌خاطر وابستگی رد شد')}`)
+      }
+      if (result.failed?.[0]?.message) {
+        toast.error(result.failed[0].message)
+      }
+      await loadBrands()
+      return
+    }
+
+    if (!pendingDelete.value || !canDeletePending.value) return
     const result = await deleteBrand(pendingDelete.value.id)
-    deleteOpen.value = false
-    pendingDelete.value = null
+    closeDelete()
     if (!result.ok) {
-      toast.error(t(result.error))
+      toast.error(result.error)
       return
     }
     toast.success(t('برند حذف شد'))

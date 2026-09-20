@@ -30,10 +30,19 @@ function writeStorage(icons: string[]) {
   }
 }
 
+function canonicalizeMediaUrl(url: string) {
+  const raw = String(url || '').trim()
+  if (!raw) return ''
+  // Prefer stable relative upload path so resolveMediaUrl can retarget API origin.
+  const upload = raw.match(/\/uploads\/([\w.-]+\.(?:jpe?g|png|webp|gif|svg))$/i)
+  if (upload) return `/uploads/${upload[1]}`
+  return raw
+}
+
 function normalizeIcon(icon: string) {
   const raw = String(icon || '').trim()
   if (!raw) return ''
-  if (isSellerAdminIconImage(raw)) return raw
+  if (isSellerAdminIconImage(raw)) return canonicalizeMediaUrl(raw)
   return normalizeSellerAdminIconKey(raw)
 }
 

@@ -108,7 +108,7 @@
               <span class="size-5 shrink-0 grid place-items-center overflow-hidden rounded-md me-1.5">
                 <img
                   v-if="(item as SellerCategoryPickerNode).image"
-                  :src="(item as SellerCategoryPickerNode).image!"
+                  :src="resolveMediaUrl((item as SellerCategoryPickerNode).image!) || (item as SellerCategoryPickerNode).image!"
                   alt=""
                   class="size-5 object-cover"
                 >
@@ -662,6 +662,7 @@ import {
   type SellerCategoryPickerNode,
 } from '~/data/seller-categories'
 import { isSellerAdminIconImage } from '~/data/seller-admin-icons'
+import { resolveMediaUrl } from '~/composables/fetch'
 import { emptyProductCommerce, type SellerProductCommerce } from '~/data/seller-product-variants'
 import { emptySeoMeta, htmlToPlainText, sanitizeSeoMeta } from '~/data/seo'
 
@@ -963,9 +964,10 @@ const selectedCategoryImage = computed(() => {
   if (!id) return null
   const sellerCat = getSellerCategory(id)
   if (!sellerCat) return null
-  if (sellerCat.image) return sellerCat.image
-  if (isSellerAdminIconImage(sellerCat.icon)) return sellerCat.icon
-  return null
+  const raw = sellerCat.image
+    || (isSellerAdminIconImage(sellerCat.icon) ? sellerCat.icon : '')
+  if (!raw) return null
+  return resolveMediaUrl(raw) || raw
 })
 
 const selectedCategoryPath = computed(() => {
@@ -993,7 +995,8 @@ const brandOptions = computed(() => {
     ? brandSub.items
     : getBrandOptions(form.value.category)
   const fromStore = brands.value.filter(b => b.status === 'active').map(b => b.name)
-  return [...new Set([...fromStore, ...fromCategory])]
+  const current = form.value.brand.trim()
+  return [...new Set([...(current ? [current] : []), ...fromStore, ...fromCategory])]
 })
 
 const warehouseItems = computed(() =>

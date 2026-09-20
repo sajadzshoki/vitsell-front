@@ -36,7 +36,7 @@
         Hero banner upload ratio: 4:1 desktop / 2:1 mobile (e.g. 1920×480).
         One full-bleed image — object-cover fills the frame.
       -->
-      <div class="relative overflow-hidden w-full aspect-[4/1] <md:aspect-[2/1] bg-inverted">
+      <div class="relative overflow-hidden w-full aspect-[4/1] <md:aspect-[3/1] bg-inverted">
         <img
           :src="item.image"
           :alt="$t(item.title)"

@@ -86,6 +86,31 @@ function toPayload(raw: any): SellerNavigationPayload {
   }
 }
 
+export const SELLER_NAV_MAX_QUICK = 12
+export const SELLER_NAV_MAX_BOTTOM = 6
+
+export function createSellerQuickLink(): SellerNavLinkForm {
+  return {
+    id: `quick-${crypto.randomUUID()}`,
+    label: '',
+    icon: '',
+    to: '/',
+    enabled: true,
+    external: false,
+  }
+}
+
+export function createSellerBottomLink(): SellerBottomNavForm {
+  return {
+    id: `bottom-${crypto.randomUUID()}`,
+    label: '',
+    icon: 'circle',
+    iconActive: '',
+    to: '/',
+    enabled: true,
+  }
+}
+
 export function useSellerNavigation() {
   const quickLinks = useState<SellerNavLinkForm[]>(
     'seller-public-nav-quick',
