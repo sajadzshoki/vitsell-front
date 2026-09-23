@@ -161,7 +161,7 @@ export const footerColumns: FooterColumn[] = [
     id: 'after-buy',
     title: 'پس از خرید',
     links: [
-      { label: 'پیگیری سفارش', to: '/account/orders' },
+      { label: 'پیگیری سفارش', to: '/tracking' },
       { label: 'رویه‌های بازگشت کالا', to: staticPagePaths.returns },
       { label: 'ضمانت اصالت کالا', to: staticPagePaths.faq },
       { label: 'پشتیبانی مشتریان', to: staticPagePaths.contact },

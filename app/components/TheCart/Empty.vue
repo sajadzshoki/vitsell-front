@@ -1,12 +1,14 @@
 <template>
-  <div class="max-w-md mx-auto bg-default border border-muted rounded-3xl p-10 text-center">
-    <div class="flex justify-center mb-6 text-primary">
-      <UIcon
-        name="i-tabler-shopping-cart"
-        class="size-24 opacity-80"
-      />
-    </div>
-    <h1 class="text-2xl font-bold text-highlighted mb-2">
+  <div class="max-w-lg mx-auto text-center px-2">
+    <img
+      src="/images/empty-basket.png"
+      :alt="$t('سبد خرید شما خالی است')"
+      class="mx-auto w-full max-w-xs sm:max-w-sm mb-6 rounded-2xl"
+      width="600"
+      height="600"
+      loading="lazy"
+    >
+    <h1 class="text-2xl font-semibold text-highlighted mb-2">
       {{ $t('سبد خرید شما خالی است') }}
     </h1>
     <p class="text-sm text-muted mb-8 leading-7">
@@ -16,7 +18,7 @@
       to="/"
       color="primary"
       size="xl"
-      class="font-bold shadow-lg shadow-primary/25 px-8"
+      class=" shadow-lg shadow-primary/25 px-8"
     >
       {{ $t('مشاهده محصولات') }}
     </UButton>

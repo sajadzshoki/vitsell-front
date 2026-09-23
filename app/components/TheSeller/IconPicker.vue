@@ -93,7 +93,7 @@
           />
 
           <div
-            v-if="filteredCustomImages.length"
+            v-if="libraryLoading || filteredCustomImages.length"
             class="space-y-2"
           >
             <div class="flex items-center justify-between gap-2">
@@ -104,7 +104,16 @@
                 {{ filteredCustomImages.length.toLocaleString('fa-IR') }}
               </span>
             </div>
-            <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-40 overflow-y-auto scrollbar-none pe-1">
+            <div
+              v-if="libraryLoading && !filteredCustomImages.length"
+              class="text-xs text-dimmed py-3 text-center"
+            >
+              {{ $t('در حال بارگذاری...') }}
+            </div>
+            <div
+              v-else
+              class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-40 overflow-y-auto scrollbar-none pe-1"
+            >
               <div
                 v-for="url in filteredCustomImages"
                 :key="url"
@@ -113,7 +122,7 @@
                 <button
                   type="button"
                   class="size-full rounded-xl border grid place-items-center transition-all cursor-pointer overflow-hidden p-1.5"
-                  :class="model === url
+                  :class="sameIcon(model, url)
                     ? 'border-primary bg-primary/10'
                     : 'border-muted bg-muted/40 hover:(border-accented bg-elevated)'"
                   :title="url"
@@ -127,6 +136,7 @@
                   >
                 </button>
                 <button
+                  v-if="isStoredCustom(url)"
                   type="button"
                   class="absolute -top-1 -end-1 size-5 rounded-full bg-default border border-muted text-toned hover:text-error grid place-items-center cursor-pointer shadow-sm"
                   :aria-label="$t('حذف از لیست')"
@@ -281,8 +291,11 @@ withDefaults(defineProps<{
 const model = defineModel<string>({ default: '' })
 const { t } = useI18n()
 const toast = useAppToast()
-const { uploadFiles } = useSellerMedia()
+const { uploadFiles, updateMedia } = useSellerMedia()
+const { footer } = useFooter()
 const { imageIcons, keyIcons, hydrate, addIcon, removeIcon } = useSellerCustomIcons()
+const libraryImages = ref<string[]>([])
+const libraryLoading = ref(false)
 
 const open = ref(false)
 const search = ref('')
@@ -304,11 +317,20 @@ const filteredKeys = computed(() => {
 })
 
 const filteredCustomImages = computed(() => {
-  const list = [...imageIcons.value]
-  const current = String(model.value || '').trim()
-  if (current && isSellerAdminIconImage(current) && !list.includes(current)) {
-    list.unshift(current)
+  const seen = new Set<string>()
+  const list: string[] = []
+  const push = (url: string) => {
+    const key = canonicalUploadPath(url)
+    if (!key || !isSellerAdminIconImage(key) || seen.has(key)) return
+    seen.add(key)
+    list.push(key)
   }
+
+  push(model.value)
+  for (const url of imageIcons.value) push(url)
+  for (const url of savedFooterIcons()) push(url)
+  for (const url of libraryImages.value) push(url)
+
   const q = search.value.trim().toLowerCase()
   if (!q) return list
   return list.filter(url => url.toLowerCase().includes(q))
@@ -324,14 +346,69 @@ const displayValue = computed(() => {
   return normalizeSellerAdminIconKey(raw)
 })
 
+function canonicalUploadPath(url: string) {
+  const raw = String(url || '').trim()
+  if (!raw) return ''
+  const upload = raw.match(/\/uploads\/([\w.-]+\.(?:jpe?g|png|webp|gif|svg))(?:\?|#|$)/i)
+  if (upload) return `/uploads/${upload[1]}`
+  return raw
+}
+
+function sameIcon(a: string, b: string) {
+  const left = canonicalUploadPath(a)
+  const right = canonicalUploadPath(b)
+  return Boolean(left) && left === right
+}
+
+function isStoredCustom(url: string) {
+  const key = canonicalUploadPath(url)
+  return imageIcons.value.some(item => canonicalUploadPath(item) === key)
+}
+
+function savedFooterIcons() {
+  const urls: string[] = []
+  const collect = (icon?: string) => {
+    if (icon) urls.push(icon)
+  }
+  for (const item of footer.value.badges || []) collect(item.icon)
+  for (const item of footer.value.trustItems || []) collect(item.icon)
+  for (const item of footer.value.socials || []) collect(item.icon)
+  for (const item of footer.value.appStores || []) collect(item.icon)
+  return urls
+}
+
 function openPicker() {
   hydrate()
   open.value = true
+  void loadLibraryImages()
+}
+
+async function loadLibraryImages() {
+  if (libraryLoading.value) return
+  libraryLoading.value = true
+  try {
+    const { result, error } = await useGet<{ items?: { url?: string, kind?: string, width?: number | null, height?: number | null, usageHints?: string[] }[] } | { url?: string, kind?: string, width?: number | null, height?: number | null, usageHints?: string[] }[]>(
+      '/seller/media',
+      {
+        query: { kind: 'image', all: true, pageSize: 200 },
+        headers: { 'no-error': true },
+        server: false,
+      },
+    )
+    if (error || result == null) return
+    const items = Array.isArray(result) ? result : (result.items || [])
+    libraryImages.value = items
+      .map(item => String(item?.url || '').trim())
+      .filter(url => isSellerAdminIconImage(url))
+  }
+  finally {
+    libraryLoading.value = false
+  }
 }
 
 function pick(key: string) {
   const next = isSellerAdminIconImage(key)
-    ? String(key).trim()
+    ? canonicalUploadPath(key)
     : normalizeSellerAdminIconKey(key)
   const stored = next ? (addIcon(next) || next) : ''
   model.value = stored
@@ -356,8 +433,11 @@ function addCustomKey() {
 }
 
 function removeCustom(url: string) {
+  const key = canonicalUploadPath(url)
   removeIcon(url)
-  if (model.value === url) model.value = ''
+  if (key !== url) removeIcon(key)
+  libraryImages.value = libraryImages.value.filter(item => canonicalUploadPath(item) !== key)
+  if (sameIcon(model.value, url)) model.value = ''
 }
 
 async function onFileChange(event: Event) {
@@ -378,13 +458,21 @@ async function onFileChange(event: Event) {
       toast.error(t(result.error || 'آپلود آیکون ناموفق بود'))
       return
     }
-    const url = result.items[0].url
-    const stored = (() => {
-      const upload = String(url).match(/\/uploads\/([\w.-]+\.(?:jpe?g|png|webp|gif|svg))/i)
-      return upload ? `/uploads/${upload[1]}` : url
-    })()
+    const uploaded = result.items[0]
+    const url = uploaded?.url
+    if (!url) {
+      toast.error(t('آپلود آیکون ناموفق بود'))
+      return
+    }
+    const stored = canonicalUploadPath(url)
     addIcon(stored)
     model.value = stored
+    if (!libraryImages.value.some(item => sameIcon(item, stored))) {
+      libraryImages.value = [stored, ...libraryImages.value]
+    }
+    if (uploaded.id) {
+      await updateMedia(uploaded.id, { usageHints: ['icon'] })
+    }
     toast.success(t('آیکون به لیست اضافه شد'))
     open.value = false
   }

@@ -1,6 +1,7 @@
 /**
- * Show carousel arrows only when item count exceeds visible slides
- * at the current breakpoint (mobile-first: base / sm / md / lg / xl).
+ * Show carousel arrows only from md up, and only when item count
+ * exceeds visible slides (mobile-first: base / sm / md / lg / xl).
+ * On phone, swipe/drag only — no prev/next buttons.
  */
 export function useShowCarouselArrows(
   itemCount: MaybeRefOrGetter<number>,
@@ -35,6 +36,8 @@ export function useShowCarouselArrows(
 
   const showArrows = computed(() => {
     if (!ready.value) return false
+    // Phone / narrow: swipe only (same UX as CircleStrip on mobile)
+    if (!isMd.value) return false
     return toValue(itemCount) > visible.value
   })
 

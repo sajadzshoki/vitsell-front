@@ -1,15 +1,24 @@
 /** Pages that replace navbar + bottom nav with a mobile back header. */
-const BACKWARD_EXACT = new Set(['/cart', '/notifications', '/compare'])
+const BACKWARD_EXACT = new Set(['/notifications', '/compare'])
 
 export function useMobileBackward() {
   const route = useRoute()
   const router = useRouter()
   const { t } = useI18n()
   const titleOverride = useState<string | null>('mobileBackwardTitle', () => null)
-  const titleOwner = useState<symbol | null>('mobileBackwardTitleOwner', () => null)
+  const titleOwner = useState<string | null>('mobileBackwardTitleOwner', () => null)
+  const { cartLines } = useShop()
+  const checkout = useCheckoutStore()
+  const { step, placedOrderId } = storeToRefs(checkout)
+
+  const isEmptyCartLanding = computed(() =>
+    cartLines.value.length === 0 && step.value === 0 && !placedOrderId.value,
+  )
 
   const isBackwardPage = computed(() => {
     const path = route.path.replace(/\/$/, '') || '/'
+    // Empty cart: keep main header + bottom nav on mobile
+    if (path === '/cart') return !isEmptyCartLanding.value
     if (BACKWARD_EXACT.has(path)) return true
     return /^\/product\/[^/]+$/.test(path)
   })
@@ -23,12 +32,12 @@ export function useMobileBackward() {
     return t('جزئیات محصول')
   })
 
-  function setTitle(value: string | null, owner?: symbol) {
+  function setTitle(value: string | null, owner?: string) {
     if (owner) titleOwner.value = owner
     titleOverride.value = value
   }
 
-  function clearTitle(owner?: symbol) {
+  function clearTitle(owner?: string) {
     if (owner && titleOwner.value !== owner) return
     titleOverride.value = null
     if (!owner || titleOwner.value === owner) titleOwner.value = null
@@ -54,7 +63,7 @@ export function useMobileBackward() {
 /** Bind a reactive title while the page is mounted. */
 export function useMobileBackwardTitle(source: MaybeRefOrGetter<string | null | undefined>) {
   const { setTitle, clearTitle } = useMobileBackward()
-  const owner = Symbol('mobileBackwardTitle')
+  const owner = useId()
 
   watch(
     () => toValue(source),

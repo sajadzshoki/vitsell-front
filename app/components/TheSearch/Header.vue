@@ -52,9 +52,9 @@
       >
         <NuxtLink
           v-for="item in visibleSubs"
-          :key="item.name"
-          :to="toSearchRoute({ q: item.name, category: categoryId })"
-          class="group flex flex-col items-center justify-center gap-2 shrink-0 w-[6.5rem] sm:w-28 min-h-[7rem] px-2 py-3 rounded-xl bg-muted hover:bg-elevated transition-all  text-center"
+          :key="item.id"
+          :to="toSearchRoute({ category: item.id })"
+          class="group flex flex-col items-center justify-center gap-2 shrink-0 w-[6.5rem] sm:w-28 min-h-[7rem] px-2 py-3 rounded-xl bg-muted hover:bg-elevated transition-all text-center cursor-pointer"
         >
           <div class="size-12 sm:size-14 rounded-xl bg-default overflow-hidden grid place-items-center shadow-sm">
             <img
@@ -66,7 +66,7 @@
             >
             <UIcon
               v-else
-              :name="getCategoryIcon(categoryId)"
+              :name="getCategoryIcon(item.id)"
               class="size-6 sm:size-7 text-muted group-hover:text-primary transition"
             />
           </div>
@@ -78,7 +78,7 @@
         <button
           v-if="hiddenCount > 0 && !expanded"
           type="button"
-          class="flex flex-col items-center justify-center gap-1.5 shrink-0 w-[6.5rem] sm:w-28 min-h-[7rem] px-2 py-3 rounded-xl bg-muted hover:bg-elevated transition-all  text-center"
+          class="flex flex-col items-center justify-center gap-1.5 shrink-0 w-[6.5rem] sm:w-28 min-h-[7rem] px-2 py-3 rounded-xl bg-muted hover:bg-elevated transition-all text-center cursor-pointer"
           @click="expanded = true"
         >
           <span class="text-2xl font-bold text-highlighted num leading-none">
@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CategorySub } from '~/data/categories'
+import type { SearchSubcategoryChip } from '~/data/categories'
 import { getCategoryIcon, toSearchRoute } from '~/data/categories'
 
 const VISIBLE_LIMIT = 7
@@ -107,7 +107,7 @@ const props = withDefaults(defineProps<{
   isSearchQuery: boolean
   categoryId?: string
   categoryImage?: string | null
-  subs?: CategorySub[]
+  subs?: SearchSubcategoryChip[]
 }>(), {
   categoryId: '',
   categoryImage: null,
@@ -131,7 +131,7 @@ const hiddenCount = computed(() =>
   Math.max(0, props.subs.length - VISIBLE_LIMIT),
 )
 
-function subImage(item: CategorySub) {
+function subImage(item: SearchSubcategoryChip) {
   return item.image || props.categoryImage || null
 }
 </script>

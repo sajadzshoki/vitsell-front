@@ -15,7 +15,6 @@ import {
   getCategoryPageMeta,
   type CategoryPageMeta,
 } from '~/data/category-pages'
-import type { MegaMenuResolvePayload } from '~/data/mega-menu'
 
 type CategoryPagePayload = {
   meta: CategoryPageMeta | null
@@ -76,47 +75,12 @@ export async function useSearchCatalog() {
   const categorySeo = ref<CategoryPageMeta['seo'] | null>(null)
   const skipNextFilterWatch = ref(false)
 
-  const megaPathKey = computed(() => {
-    const catId = String(route.params.catId ?? '').trim()
-    const rawPath = route.params.path
-    if (!catId || rawPath == null || rawPath === '') return ''
-    const parts = Array.isArray(rawPath)
-      ? rawPath.map(p => String(p).trim()).filter(Boolean)
-      : String(rawPath).split('/').map(p => p.trim()).filter(Boolean)
-    if (!parts.length) return ''
-    return [catId, ...parts].join('/')
-  })
+  const q = computed(() => String(route.query.q ?? '').trim())
 
-  const { data: megaResolved } = await useAsyncData<MegaMenuResolvePayload | null>(
-    () => `mega-menu-resolve:${megaPathKey.value || 'none'}`,
-    async () => {
-      const key = megaPathKey.value
-      if (!key) return null
-      const { result, error } = await useGet<MegaMenuResolvePayload>(
-        `/mega-menu/resolve?path=${encodeURIComponent(key)}`,
-        { headers: { 'no-error': true } },
-      )
-      if (error || !result) return null
-      return result
-    },
-    { watch: [megaPathKey] },
-  )
-
-  const q = computed(() => {
-    const fromQuery = String(route.query.q ?? '').trim()
-    if (fromQuery) return fromQuery
-    return String(megaResolved.value?.filter?.q || '').trim()
-  })
-
-  /** Path `/search/category-{id}` (preferred) or legacy `?category=` or mega SEO path */
+  /** Path `/search/category-{id}` (preferred) or legacy `?category=` */
   const categoryId = computed(() => {
-    if (megaResolved.value?.category) return megaResolved.value.category
     const fromParam = String(route.params.id ?? '').trim()
     if (fromParam) return fromParam
-    const fromCatId = String(route.params.catId ?? '').trim()
-    if (fromCatId && megaPathKey.value) {
-      return megaResolved.value?.filter?.category || fromCatId
-    }
     return String(route.query.category ?? '').trim()
   })
   const category = computed(() => getCategoryById(categoryId.value))
@@ -127,9 +91,13 @@ export async function useSearchCatalog() {
     Math.max(facets.value.maxPrice || SEARCH_PRICE_MAX, facets.value.minPrice || 0, 1),
   )
 
+  function flagFromRoute(key: string): boolean {
+    const raw = route.query[key]
+    const value = String(Array.isArray(raw) ? raw[0] : raw ?? '').trim().toLowerCase()
+    return value === '1' || value === 'true' || value === 'yes'
+  }
+
   function brandsFromRoute(): string[] {
-    const fromMega = megaResolved.value?.filter?.brands
-    if (fromMega?.length) return [...fromMega]
     const raw = route.query.brands ?? route.query.brand
     if (Array.isArray(raw)) {
       return raw.flatMap(v => String(v).split(',')).map(s => s.trim()).filter(Boolean)
@@ -139,8 +107,6 @@ export async function useSearchCatalog() {
   }
 
   function attrsFromRoute(): Record<string, string[]> {
-    const fromMega = megaResolved.value?.filter?.attrs
-    if (fromMega && Object.keys(fromMega).length) return { ...fromMega }
     const raw = route.query.attrs
     if (raw == null || raw === '') return {}
     const text = Array.isArray(raw) ? String(raw[0] || '') : String(raw)
@@ -162,20 +128,27 @@ export async function useSearchCatalog() {
   }
 
   function priceFromRoute(key: 'minPrice' | 'maxPrice') {
-    const fromMega = megaResolved.value?.filter?.[key]
-    if (fromMega && fromMega > 0) return fromMega
     const raw = route.query[key]
+    const value = Number(Array.isArray(raw) ? raw[0] : raw)
+    return Number.isFinite(value) && value > 0 ? value : 0
+  }
+
+  function minRatingFromRoute(): number {
+    const raw = route.query.minRating
     const value = Number(Array.isArray(raw) ? raw[0] : raw)
     return Number.isFinite(value) && value > 0 ? value : 0
   }
 
   const routeBrands = computed(() => brandsFromRoute())
   const routeFilterKey = computed(() => JSON.stringify({
-    mega: megaPathKey.value,
     brands: brandsFromRoute(),
     minPrice: priceFromRoute('minPrice'),
     maxPrice: priceFromRoute('maxPrice'),
     attrs: attrsFromRoute(),
+    onlyDiscount: flagFromRoute('onlyDiscount'),
+    onlyInStock: flagFromRoute('onlyInStock'),
+    fastDelivery: flagFromRoute('fastDelivery'),
+    minRating: minRatingFromRoute(),
     q: q.value,
   }))
 
@@ -184,9 +157,10 @@ export async function useSearchCatalog() {
     || priceFromRoute('minPrice')
     || priceFromRoute('maxPrice')
     || Object.keys(attrsFromRoute()).length
-    || megaResolved.value?.filter?.onlyDiscount
-    || megaResolved.value?.filter?.fastDelivery
-    || megaResolved.value?.filter?.onlyInStock
+    || flagFromRoute('onlyDiscount')
+    || flagFromRoute('fastDelivery')
+    || flagFromRoute('onlyInStock')
+    || minRatingFromRoute() > 0
   ) {
     filters.value = {
       ...cloneSearchFilters(filters.value),
@@ -194,15 +168,14 @@ export async function useSearchCatalog() {
       minPrice: priceFromRoute('minPrice'),
       maxPrice: priceFromRoute('maxPrice') || filters.value.maxPrice,
       attrs: attrsFromRoute(),
-      onlyDiscount: Boolean(megaResolved.value?.filter?.onlyDiscount),
-      fastDelivery: Boolean(megaResolved.value?.filter?.fastDelivery),
-      onlyInStock: Boolean(megaResolved.value?.filter?.onlyInStock),
-      minRating: Number(megaResolved.value?.filter?.minRating || 0) || 0,
+      onlyDiscount: flagFromRoute('onlyDiscount'),
+      fastDelivery: flagFromRoute('fastDelivery'),
+      onlyInStock: flagFromRoute('onlyInStock'),
+      minRating: minRatingFromRoute(),
     }
   }
 
   const heading = computed(() => {
-    if (megaResolved.value?.title) return megaResolved.value.title
     if (q.value) return q.value
     if (category.value) return category.value.name
     if (categoryId.value) return categoryId.value
@@ -228,7 +201,9 @@ export async function useSearchCatalog() {
     && total.value > pageSize,
   )
   const cardLayout = computed(() => layout.value === 'list' ? 'horizontal' : 'vertical')
-  const suggestedCategories = computed(() => categories.value.slice(0, 6))
+  const suggestedCategories = computed(() =>
+    categories.value.filter(c => !c.parentId).slice(0, 6),
+  )
 
   function catalogQuery(targetPage: number): SearchCatalogQuery {
     return {
@@ -260,7 +235,7 @@ export async function useSearchCatalog() {
       attributes: Array.isArray(next.attributes) ? next.attributes : [],
     }
 
-    // Align price slider ceiling; preserve shareable URL filters from mega menu / deep links.
+    // Align price slider ceiling; preserve shareable URL filters.
     const urlMin = priceFromRoute('minPrice')
     const urlMax = priceFromRoute('maxPrice')
     const urlAttrs = attrsFromRoute()
@@ -272,6 +247,10 @@ export async function useSearchCatalog() {
       attrs: Object.keys(urlAttrs).length ? urlAttrs : {},
       minPrice: urlMin,
       maxPrice: urlMax > 0 ? urlMax : ceiling,
+      onlyDiscount: flagFromRoute('onlyDiscount'),
+      onlyInStock: flagFromRoute('onlyInStock'),
+      fastDelivery: flagFromRoute('fastDelivery'),
+      minRating: minRatingFromRoute(),
     }
   }
 
@@ -381,12 +360,20 @@ export async function useSearchCatalog() {
       const nextMin = priceFromRoute('minPrice')
       const nextMax = priceFromRoute('maxPrice')
       const nextAttrs = attrsFromRoute()
+      const nextOnlyDiscount = flagFromRoute('onlyDiscount')
+      const nextOnlyInStock = flagFromRoute('onlyInStock')
+      const nextFastDelivery = flagFromRoute('fastDelivery')
+      const nextMinRating = minRatingFromRoute()
       const same
         = nextMin === filters.value.minPrice
           && (nextMax === filters.value.maxPrice || (nextMax === 0 && filters.value.maxPrice === priceCeiling.value))
           && JSON.stringify(nextAttrs) === JSON.stringify(filters.value.attrs)
           && nextBrands.length === filters.value.brands.length
           && nextBrands.every((b, i) => b === filters.value.brands[i])
+          && nextOnlyDiscount === filters.value.onlyDiscount
+          && nextOnlyInStock === filters.value.onlyInStock
+          && nextFastDelivery === filters.value.fastDelivery
+          && nextMinRating === filters.value.minRating
       if (same) return
       skipNextFilterWatch.value = true
       filters.value = {
@@ -395,6 +382,10 @@ export async function useSearchCatalog() {
         minPrice: nextMin,
         maxPrice: nextMax > 0 ? nextMax : priceCeiling.value,
         attrs: nextAttrs,
+        onlyDiscount: nextOnlyDiscount,
+        onlyInStock: nextOnlyInStock,
+        fastDelivery: nextFastDelivery,
+        minRating: nextMinRating,
       }
       void resetAndLoad()
     },
@@ -405,6 +396,7 @@ export async function useSearchCatalog() {
     async () => {
       await refreshFacets()
       await resetAndLoad()
+      if (!import.meta.client) return
       const { track } = useUserActivity()
       const cat = categoryId.value
       const query = q.value?.trim()

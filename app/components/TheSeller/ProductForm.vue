@@ -640,6 +640,7 @@
 
 <script setup lang="ts">
 import {
+  applyProductSeoDefaults,
   buildSellerProductFromForm,
   colorsFromVariantAxes,
   emptySellerProductForm,
@@ -813,7 +814,11 @@ const savedSnapshot = ref('')
 const isDirty = computed(() =>
   JSON.stringify({ form: form.value, commerce: commerce.value }) !== savedSnapshot.value,
 )
-const seoPreviewDescription = computed(() => htmlToPlainText(form.value.shortDesc))
+const seoPreviewDescription = computed(() =>
+  htmlToPlainText(form.value.description || form.value.shortDesc),
+)
+const lastAutoSeoTitle = ref('')
+const lastAutoSeoDesc = ref('')
 const { allowNextNavigation } = useSellerUnsavedGuard(isDirty)
 
 function captureSnapshot() {
@@ -855,12 +860,18 @@ function hydrateCommerceFromProduct(productId: string, product = resolveProduct(
     tags: Array.isArray(product.tags) && product.tags.length
       ? [...product.tags]
       : [...(existing.tags || [])],
-    seo: {
+    seo: applyProductSeoDefaults({
       ...emptySeoMeta(),
       ...(existing.seo || {}),
       ...(product.seo || {}),
-    },
+    }, {
+      title: product.title,
+      description: product.description || '',
+      shortDesc: product.shortDesc || '',
+    }),
   }
+  lastAutoSeoTitle.value = product.title.trim()
+  lastAutoSeoDesc.value = htmlToPlainText(product.description || product.shortDesc || '')
 }
 
 async function loadCategorySpecKeys(categoryId: string) {
@@ -912,8 +923,27 @@ watch(
 watch(
   () => form.value.title,
   (title) => {
-    if (slugManual.value) return
-    commerce.value.slug = title.trim() ? slugifyProductTitle(title) : ''
+    const next = title.trim()
+    if (!slugManual.value) {
+      commerce.value.slug = next ? slugifyProductTitle(next) : ''
+    }
+    const current = commerce.value.seo.metaTitle.trim()
+    if (!current || current === lastAutoSeoTitle.value) {
+      commerce.value.seo.metaTitle = next
+      lastAutoSeoTitle.value = next
+    }
+  },
+)
+
+watch(
+  () => [form.value.description, form.value.shortDesc] as const,
+  () => {
+    const next = htmlToPlainText(form.value.description || form.value.shortDesc)
+    const current = htmlToPlainText(commerce.value.seo.metaDescription)
+    if (!current || current === lastAutoSeoDesc.value) {
+      commerce.value.seo.metaDescription = next
+      lastAutoSeoDesc.value = next
+    }
   },
 )
 
@@ -1155,7 +1185,7 @@ function buildProductPayload(base?: ReturnType<typeof resolveProduct>, id?: stri
   return buildSellerProductFromForm(form.value, {
     id,
     base,
-    seo: sanitizeSeoMeta(commerce.value.seo),
+    seo: sanitizeSeoMeta(applyProductSeoDefaults(commerce.value.seo, form.value)),
     tags: commerce.value.tags,
     colors,
   })

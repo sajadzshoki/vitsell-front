@@ -79,75 +79,122 @@
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
-import { productJsonLd, useJsonLd } from '~/composables/useJsonLd'
+import { barcodeToGtin13, productJsonLd, useJsonLd } from '~/composables/useJsonLd'
 import { useEntitySeo } from '~/composables/useEntitySeo'
 import { useSellerSeoSettings } from '~/composables/useSellerSeoSettings'
 import { useSellerProductCommerce } from '~/composables/useSellerProductCommerce'
 import { htmlToPlainText } from '~/data/seo'
 import {
+  findVariantByQuery,
+  preferredProductVariant,
+  PRODUCT_VARIANT_QUERY_KEY,
+  selectionFromVariant,
   variantFinalPrice,
   variantMatchesSelection,
   variantPriceAdjustment,
 } from '~/data/seller-product-variants'
 
+function variantOptionLabel(
+  variant: { options?: { attributeName: string, label: string }[] } | null | undefined,
+  patterns: RegExp,
+) {
+  return variant?.options?.find(option => patterns.test(option.attributeName))?.label?.trim() || undefined
+}
+
 const { t } = useI18n()
 const route = useRoute()
-const { fetchProduct, cache } = useProducts()
+const router = useRouter()
+const { fetchProduct } = useProducts()
 
 const productId = computed(() => String(route.params.id ?? ''))
-const product = ref<Product | null>(null)
-const pending = ref(true)
 
-const { related, fetchDetail, detailPending } = useProductDetail(product)
-
-watch(
-  () => (productId.value ? cache.value[productId.value] : null),
-  (cached) => {
-    if (cached) product.value = cached
-  },
-)
-
-async function loadProduct() {
-  const id = productId.value
-  pending.value = true
-  try {
+const { data: product, pending } = await useAsyncData(
+  () => `product-${productId.value}`,
+  async () => {
+    const id = productId.value
     if (!id) {
-      product.value = null
       throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
     }
     const { result, error } = await fetchProduct(id)
     if (!result || error) {
-      product.value = null
       throw createError({ statusCode: 404, statusMessage: t('محصول یافت نشد') })
     }
-    product.value = result
-    initializeVariantSelection()
-    await fetchDetail({ force: true })
-    if (result) {
-      const { track } = useUserActivity()
-      void track({
-        type: 'product_view',
-        productId: result.id,
-        category: result.category,
-      })
-    }
-  }
-  finally {
-    pending.value = false
-  }
-}
+    return result
+  },
+  { watch: [productId] },
+)
 
-loadProduct()
-
-watch(productId, () => {
-  loadProduct()
-})
-
-useMobileBackwardTitle(() => product.value?.title ?? '')
+const {
+  related,
+  fetchDetail,
+  detailPending,
+  allReviews,
+  displayRating,
+  displayReviewCount,
+} = useProductDetail(product)
 
 const colorIndex = ref(0)
 const selectedOptions = ref<Record<string, string>>({})
 const activeTab = ref('desc')
+/** Avoid query↔selection feedback loops while applying URL or defaults. */
+const syncingVariantQuery = ref(false)
+
+function routeVariantQuery() {
+  return route.query[PRODUCT_VARIANT_QUERY_KEY]
+}
+
+function initializeVariantSelection() {
+  const current = product.value
+  const variants = current?.variants ?? []
+  if (!current?.variantAxes?.length || !variants.length) {
+    selectedOptions.value = {}
+    return
+  }
+  const fromQuery = findVariantByQuery(variants, routeVariantQuery())
+  const preferred = fromQuery ?? preferredProductVariant(variants)
+  selectedOptions.value = selectionFromVariant(preferred)
+}
+
+async function patchVariantQuery(variantId: string | undefined) {
+  const current = routeVariantQuery()
+  const currentId = Array.isArray(current)
+    ? String(current[0] ?? '')
+    : String(current ?? '')
+  const nextId = variantId || undefined
+  if ((currentId || undefined) === nextId) return
+
+  syncingVariantQuery.value = true
+  try {
+    await router.replace({
+      query: {
+        ...route.query,
+        [PRODUCT_VARIANT_QUERY_KEY]: nextId ?? null,
+      },
+    })
+  }
+  finally {
+    syncingVariantQuery.value = false
+  }
+}
+
+async function hydrateProductExtras(result: Product | null | undefined) {
+  if (!result) return
+  initializeVariantSelection()
+  await fetchDetail({ force: import.meta.server })
+  if (import.meta.client) {
+    const { track } = useUserActivity()
+    void track({
+      type: 'product_view',
+      productId: result.id,
+      category: result.category,
+    })
+  }
+}
+
+watch(product, (result, prev) => {
+  if (!result || result.id === prev?.id) return
+  void hydrateProductExtras(result)
+})
 
 watch(productId, () => {
   colorIndex.value = 0
@@ -155,10 +202,39 @@ watch(productId, () => {
   activeTab.value = 'desc'
 })
 
+useMobileBackwardTitle(() => product.value?.title ?? '')
+
 const selectedVariant = computed(() =>
   (product.value?.variants ?? []).find(variant =>
     variantMatchesSelection(variant, selectedOptions.value),
   ) ?? null,
+)
+
+watch(
+  selectedVariant,
+  (variant) => {
+    if (!import.meta.client || syncingVariantQuery.value) return
+    const hasAxes = Boolean(product.value?.variantAxes?.length && product.value?.variants?.length)
+    void patchVariantQuery(hasAxes ? variant?.id : undefined)
+  },
+  { flush: 'post' },
+)
+
+watch(
+  () => route.query[PRODUCT_VARIANT_QUERY_KEY],
+  (queryValue) => {
+    if (syncingVariantQuery.value) return
+    const variants = product.value?.variants ?? []
+    if (!product.value?.variantAxes?.length || !variants.length) return
+    const fromQuery = findVariantByQuery(variants, queryValue)
+    if (!fromQuery) return
+    if (selectedVariant.value?.id === fromQuery.id) return
+    syncingVariantQuery.value = true
+    selectedOptions.value = selectionFromVariant(fromQuery)
+    nextTick(() => {
+      syncingVariantQuery.value = false
+    })
+  },
 )
 
 const displayProduct = computed<Product>(() => {
@@ -182,21 +258,6 @@ const displayProduct = computed<Product>(() => {
     weight: variant.weight || current.weight,
   }
 })
-
-function initializeVariantSelection() {
-  const current = product.value
-  const variants = current?.variants ?? []
-  if (!current?.variantAxes?.length || !variants.length) {
-    selectedOptions.value = {}
-    return
-  }
-  const preferred = variants.find(variant => variant.status === 'active' && variant.stock > 0)
-    ?? variants.find(variant => variant.status === 'active')
-    ?? variants[0]
-  selectedOptions.value = Object.fromEntries(
-    (preferred?.options ?? []).map(option => [option.attributeId, option.valueId]),
-  )
-}
 
 const breadcrumbItems = computed(() => {
   if (!product.value) return []
@@ -234,19 +295,70 @@ useJsonLd(() => {
   const p = product.value
   if (!p) return null
   const base = settings.value.siteUrl.replace(/\/+$/, '')
-  const price = p.price
-  const seo = productSeo.value
+  const absolute = (path: string) => {
+    if (!path) return undefined
+    if (path.startsWith('http')) return path
+    if (!base) return path.startsWith('/') ? path : `/${path}`
+    const normalized = path.startsWith('/') ? path : `/${path}`
+    return `${base}${normalized}`
+  }
+  const offerProduct = displayProduct.value
+  const variant = selectedVariant.value
+  const canonical = absolute(`/product/${p.id}`)
+  const pageUrl = variant?.id && canonical
+    ? `${canonical}?${PRODUCT_VARIANT_QUERY_KEY}=${encodeURIComponent(variant.id)}`
+    : canonical
+  const color = variantOptionLabel(variant, /رنگ|color/i)
+    || p.colors?.[colorIndex.value]?.name
+    || undefined
+  const size = variantOptionLabel(variant, /سایز|اندازه|size/i)
+  const gtin13 = barcodeToGtin13(offerProduct.barcode || p.barcode || commerce.value?.barcode)
+  const imageSources = [
+    offerProduct.image,
+    ...(p.gallery || []),
+    p.image,
+  ]
+    .map(src => absolute(String(src || '').trim()))
+    .filter((src): src is string => Boolean(src))
+
   return productJsonLd({
-    name: seo?.metaTitle || p.title,
-    description: htmlToPlainText(seo?.metaDescription)
-      || htmlToPlainText(p.shortDesc)
+    name: p.title,
+    description: htmlToPlainText(p.shortDesc)
+      || htmlToPlainText(p.description)
       || p.title,
-    image: seo?.ogImage || p.image,
-    url: base ? `${base}/product/${p.id}` : `/product/${p.id}`,
-    sku: p.sku || commerce.value?.sku || undefined,
-    brand: p.brand,
-    price,
+    image: imageSources,
+    url: pageUrl,
+    sku: offerProduct.sku || p.sku || commerce.value?.sku || undefined,
+    gtin13,
+    brand: p.brand || undefined,
+    category: p.categoryLabel || undefined,
+    color,
+    size,
+    additionalProperty: (p.specs || [])
+      .map(spec => ({ name: spec.key, value: spec.value }))
+      .filter(spec => spec.name && spec.value),
+    price: offerProduct.price,
     currency: 'IRR',
+    inStock: offerProduct.inStock !== false,
+    itemCondition: 'NewCondition',
+    sellerName: settings.value.siteName || undefined,
+    sellerUrl: base || undefined,
+    ratingValue: displayRating.value,
+    reviewCount: displayReviewCount.value,
+    reviews: allReviews.value.map(review => ({
+      authorName: review.name,
+      ratingValue: review.rating,
+      reviewBody: review.text,
+      datePublished: review.date,
+    })),
+    breadcrumbs: [
+      { name: t('خانه'), url: absolute('/') },
+      { name: t(p.categoryLabel), url: absolute(`/category/${p.category}`) },
+      ...(p.brand ? [{ name: p.brand }] : []),
+      { name: p.title, url: pageUrl },
+    ],
   })
 })
+
+await hydrateProductExtras(product.value)
 </script>

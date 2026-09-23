@@ -23,7 +23,7 @@
 | `GET` | `/categories/:id` | — |
 | `GET` | `/category-pages/:id` | — |
 | `GET` | `/mega-menu` | — storefront mega menu tree |
-| `GET` | `/mega-menu/resolve?path=` | — resolve SEO path → filter |
+| `GET` | `/mega-menu/resolve?path=` | — legacy `/category/…` path → filter + canonical `/search` href |
 | `GET` | `/navigation` | — quick/bottom links |
 | `GET` | `/seo` | — global SEO defaults (public) |
 | `GET` | `/seo/redirects` | — active SEO redirects (public) |
@@ -66,10 +66,10 @@
 
 | UI | Route | Notes |
 |----|-------|-------|
-| MegaMenu — ریشه | از `GET /mega-menu` | نه `Category.subs` |
-| MegaMenu — category item | `/category/<menu>/<section>/…` یا `/search/category-<id>` | `href` از API / fallback `toSearchRoute` |
-| MegaMenu — filter item | `/category/<menu>/<section>/…/<item-slug>` مثلاً `/category/mobile/mobile-phone/price-up-to-30ml` | resolve: `GET /mega-menu/resolve?path=` |
+| MegaMenu — ریشه | از `GET /mega-menu` | نه `Category.subs`؛ اگر slug = دسته واقعی → لندینگ `/category/{id}` |
+| MegaMenu — category / filter item | `/search/category-<id>` (+ query فیلتر) | `href` از API یا `toSearchRoute` / `megaMenuFilterToSearchRoute` |
 | MegaMenu — link item | URL ذخیره‌شده | داخلی یا خارجی |
+| Legacy SEO path | `/category/<menu>/<section>/…` | ۳۰۱ → `/search…` via `category/[catId]/[...path].vue` + `GET /mega-menu/resolve` |
 | Search — زیردسته‌ها | همان path دسته | داخل `TheSearchHeader` وقتی category از path ست است؛ عکس از `CategorySchema.image` / `subs[].image` |
 | فیلتر محصولات | `GET /products?category=&q=&brands=&minPrice=&maxPrice=&attrs=` | |
 
@@ -88,6 +88,7 @@
 | `GET` | `/account/orders/:id` |
 | `POST` | `/checkout/place` |
 | `GET` | `/payments/zarinpal/callback` *(بدون auth)* |
+| `GET` | `/orders/:id/tracking` | — فقط کد رهگیری پستی |
 
 ## Notifications & seller (auth)
 

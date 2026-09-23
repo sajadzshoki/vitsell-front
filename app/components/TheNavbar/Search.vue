@@ -13,13 +13,13 @@
         type="search"
         :placeholder="$t('جستجو در ویتسل...')"
         class="flex-1 min-w-0 h-full bg-transparent border-0 text-sm leading-none  text-default placeholder:text-dimmed"
-        @focus="open = true"
+        @focus="onFocus"
         @keydown.enter="doSearch"
       >
     </label>
 
     <div
-      v-if="open && (suggestions.length > 0 || !query.trim())"
+      v-if="open"
       class="absolute top-full inset-x-0 mt-2 z-30 bg-default border border-muted rounded-2xl shadow-xl overflow-hidden"
     >
       <div v-if="!query.trim()" class="p-3">
@@ -31,7 +31,7 @@
             v-for="s in popularSearches"
             :key="s"
             type="button"
-            class="text-xs bg-elevated hover:(bg-primary/10 text-primary) text-toned px-3 py-1.5 rounded-lg transition"
+            class="text-xs bg-elevated hover:(bg-primary/10 text-primary) text-toned px-3 py-1.5 rounded-lg transition cursor-pointer"
             @click="pickTerm(s)"
           >
             {{ s }}
@@ -43,7 +43,7 @@
             <span>{{ $t('جستجوهای اخیر') }}</span>
             <button
               type="button"
-              class="text-[10px] text-muted hover:text-primary transition"
+              class="text-[10px] text-muted hover:text-primary transition cursor-pointer"
               @click="clearRecent"
             >
               {{ $t('پاک کردن') }}
@@ -54,7 +54,7 @@
               v-for="s in recentSearches"
               :key="s"
               type="button"
-              class="inline-flex items-center gap-1.5 text-xs bg-elevated hover:(bg-primary/10 text-primary) text-toned px-3 py-1.5 rounded-lg transition"
+              class="inline-flex items-center gap-1.5 text-xs bg-elevated hover:(bg-primary/10 text-primary) text-toned px-3 py-1.5 rounded-lg transition cursor-pointer"
               @click="pickTerm(s)"
             >
               <UIcon name="i-tabler-history" class="size-3.5 shrink-0 text-dimmed" />
@@ -63,12 +63,37 @@
           </div>
         </template>
       </div>
-      <div v-else class="py-2">
+
+      <div
+        v-else-if="suggestPending"
+        class="px-4 py-6 text-center text-xs text-muted"
+      >
+        {{ $t('در حال جستجو...') }}
+      </div>
+
+      <div
+        v-else-if="suggestions.length === 0"
+        class="px-4 py-6 text-center text-xs text-muted"
+      >
+        {{ $t('نتیجه‌ای یافت نشد') }}
+        <button
+          type="button"
+          class="mt-2 block mx-auto text-primary hover:underline cursor-pointer"
+          @click="doSearch"
+        >
+          {{ $t('مشاهده همه نتایج') }}
+        </button>
+      </div>
+
+      <div
+        v-else
+        class="py-2"
+      >
         <button
           v-for="s in suggestions"
           :key="s.id"
           type="button"
-          class="w-full flex items-center gap-3 px-3 py-2 text-start hover:bg-muted transition"
+          class="w-full flex items-center gap-3 px-3 py-2 text-start hover:bg-muted transition cursor-pointer"
           @click="goProduct(s.id)"
         >
           <TheIcon
@@ -80,6 +105,13 @@
             <div class="text-xs text-default truncate">{{ s.title }}</div>
             <div class="text-[10px] text-dimmed">{{ s.brand }}</div>
           </div>
+        </button>
+        <button
+          type="button"
+          class="w-full px-3 py-2.5 text-xs text-primary hover:bg-primary/10 border-t border-muted text-start cursor-pointer"
+          @click="doSearch"
+        >
+          {{ $t('مشاهده همه نتایج برای') }} «{{ query.trim() }}»
         </button>
       </div>
     </div>
@@ -98,21 +130,46 @@ const open = ref(false)
 const wrapRef = ref<HTMLElement | null>(null)
 const recentSearches = useLocalStorage<string[]>('vitsell-recent-searches', [])
 const suggestions = ref<Product[]>([])
+const suggestPending = ref(false)
 const { fetchProducts } = useProducts()
+
+let suggestSeq = 0
+
+async function loadSuggestions(raw: string) {
+  const q = raw.trim()
+  if (!q) {
+    suggestions.value = []
+    suggestPending.value = false
+    return
+  }
+
+  const seq = ++suggestSeq
+  suggestPending.value = true
+  try {
+    const { result } = await fetchProducts({ q, pageSize: 5, page: 1 })
+    if (seq !== suggestSeq) return
+    suggestions.value = result.items.slice(0, 5)
+  }
+  finally {
+    if (seq === suggestSeq) suggestPending.value = false
+  }
+}
 
 watchDebounced(
   query,
-  async (value) => {
-    const q = value.trim()
-    if (!q) {
-      suggestions.value = []
-      return
-    }
-    const { result } = await fetchProducts({ q, pageSize: 5, page: 1 })
-    suggestions.value = result.items.slice(0, 5)
+  (value) => {
+    void loadSuggestions(value)
   },
-  { debounce: 250 },
+  { debounce: 250, immediate: true },
 )
+
+function onFocus() {
+  open.value = true
+  const q = query.value.trim()
+  if (q && !suggestions.value.length && !suggestPending.value) {
+    void loadSuggestions(q)
+  }
+}
 
 function close() {
   open.value = false

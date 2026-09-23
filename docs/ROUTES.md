@@ -15,9 +15,11 @@ Middleware احراز هویت: `app/middleware/auth.ts` → در صورت عد�
 | Route | فایل | توضیح | Auth | Layout |
 |-------|------|--------|------|--------|
 | `/` | `index.vue` | صفحه خانه | — | default |
-| `/search` | `search.vue` | نتایج جستجو | — | default |
-| `/category` | `category/index.vue` | لیست دسته‌بندی‌ها | — | default |
-| `/category/:catId` | `category/[catId].vue` | محصولات یک دسته + فیلتر | — | default |
+| `/category` | `category/index.vue` | مرورگر دسته‌بندی‌ها | — | default |
+| `/category/:catId` | `category/[catId]/index.vue` | لندینگ دسته (هیرو، پیشنهاد، SEO) | — | default |
+| `/category/:catId/*` | `category/[catId]/[...path].vue` | ۳۰۱ → `/search` (legacy mega SEO) | — | default |
+| `/search` | `search/index.vue` | نتایج جستجو / فیلتر | — | default |
+| `/search/category-:id` | `search/category-[id].vue` | لیست محصولات یک دسته | — | default |
 | `/product/:id` | `product/[id].vue` | جزئیات محصول | — | default |
 | `/compare` | `compare.vue` | مقایسه محصولات | — | default |
 | `/cart` | `cart.vue` | سبد خرید + مراحل تسویه (checkout steps) | — | default |
@@ -102,6 +104,7 @@ Shell اختصاصی بدون Navbar/Footer فروشگاه.
 | `/guide/order` | `guide/order.vue` | راهنمای ثبت سفارش |
 | `/guide/payment` | `guide/payment.vue` | شیوه‌های پرداخت |
 | `/guide/shipping` | `guide/shipping.vue` | رویه ارسال |
+| `/tracking` | `tracking.vue` | پیگیری مرسوله (ورود شماره → tracking.post.ir) |
 
 ### نکات فرانت
 
@@ -213,6 +216,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | Method | Path | Auth | توضیح |
 |--------|------|------|--------|
 | `POST` | `/checkout/place` | ✅ | ثبت سفارش؛ برای `online` → `{ orderId, paymentUrl }` |
+| `GET` | `/orders/:id/tracking` | — | فقط کد رهگیری پستی سفارش (صفحه پیگیری) |
 | `GET` | `/payments/zarinpal/callback` | — | کال‌بک زرین‌پال سفارش |
 | `GET` | `/payments/zarinpal/wallet-callback` | — | کال‌بک شارژ کیف پول |
 
@@ -359,7 +363,9 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | صفحه فرانت | endpointهای اصلی |
 |------------|------------------|
 | `/` | `GET /home`, `GET /categories`, … |
-| `/search`, `/category/:catId` | `GET /products`, `GET /categories/:id` |
+| `/search`, `/search/category-:id` | `GET /products`, `GET /categories/:id` |
+| `/category/:catId` (لندینگ) | `GET /category-pages/:id`, `GET /products` |
+| `/category/:catId/*` (legacy) | `GET /mega-menu/resolve` → ۳۰۱ به search |
 | `/product/:id` | `GET /products/:id`, reviews, questions |
 | `/compare` | `GET /compare/templates/:category`, `GET /products/:id` |
 | `/cart` | `GET|POST|PATCH|DELETE /cart`, `POST /checkout/place` |

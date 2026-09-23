@@ -1,9 +1,40 @@
 // @ts-nocheck
 const isAdminApp = process.env.NUXT_PUBLIC_APP_MODE === 'admin'
+const storeUrl = process.env.NUXT_PUBLIC_STORE_URL || 'https://vitsell.ir'
+
+function isProductionStoreHost(url) {
+    try {
+        const host = new URL(url).hostname.toLowerCase()
+        return host === 'vitsell.ir' || host === 'www.vitsell.ir'
+    }
+    catch {
+        return false
+    }
+}
+
+/** Admin, localhost, and staging must not advertise themselves as the production site. */
+const indexable = !isAdminApp && isProductionStoreHost(storeUrl)
+
+const privateRobotsDisallow = [
+    '/seller',
+    '/account',
+    '/login',
+    '/cart',
+    '/wishlist',
+    '/notifications',
+    '/order',
+    '/compare',
+    '/tracking',
+    '/api',
+]
+
+const privateNoindex = {
+    robots: 'noindex, nofollow',
+}
 
 export default defineNuxtConfig({
     devtools: {enabled: false},
-    ssr: false,
+    ssr: true,
     /** Separate dirs so `dev:store` + `dev:admin` don't clobber each other's prepared config */
     buildDir: isAdminApp ? '.nuxt-admin' : '.nuxt',
     devServer: {
@@ -19,8 +50,66 @@ export default defineNuxtConfig({
         // "nuxt-lodash",
         '@vueuse/nuxt',
         "nuxt-swiper",
-        "@nuxtjs/device"
+        "@nuxtjs/device",
+            '@nuxtjs/robots',
+    '@nuxtjs/sitemap'
     ],
+    site: {
+        url: storeUrl,
+        name: 'vitsell',
+        indexable,
+    },
+    robots: indexable
+        ? {
+            sitemap: ['/sitemap.xml'],
+            groups: [
+                {
+                    userAgent: ['*'],
+                    allow: ['/'],
+                    disallow: privateRobotsDisallow,
+                },
+            ],
+        }
+        : {
+            groups: [
+                {
+                    userAgent: ['*'],
+                    disallow: ['/'],
+                },
+            ],
+        },
+    sitemap: indexable
+        ? {
+            sources: ['/api/__sitemap__/urls'],
+            exclude: [
+                '/seller/**',
+                '/account/**',
+                '/login',
+                '/cart',
+                '/wishlist',
+                '/notifications',
+                '/order/**',
+                '/compare',
+                '/tracking',
+                '/api/**',
+                '/search',
+            ],
+        }
+        : {
+            exclude: ['/**'],
+            sources: [],
+        },
+    routeRules: {
+        '/seller/**': privateNoindex,
+        '/account/**': privateNoindex,
+        '/login': privateNoindex,
+        '/cart': privateNoindex,
+        '/wishlist': privateNoindex,
+        '/notifications': privateNoindex,
+        '/order/**': privateNoindex,
+        '/compare': privateNoindex,
+        '/tracking': privateNoindex,
+    },
 
     css: [
         '~/assets/css/main.css',
@@ -94,6 +183,21 @@ export default defineNuxtConfig({
         },
     },
 
+    vite: {
+        resolve: {
+            // Prevent mixed npm/pnpm copies of intlify from breaking vue-i18n imports
+            // (e.g. toDevtoolsGroupId missing from a stale @intlify/shared@11.4.8).
+            dedupe: [
+                'vue-i18n',
+                '@intlify/shared',
+                '@intlify/core',
+                '@intlify/core-base',
+                '@intlify/message-compiler',
+                '@intlify/devtools-types',
+            ],
+        },
+    },
+
     hooks: {
         async 'nitro:build:public-assets'(nitro) {
             const { fixSpaHtmlInDir } = await import('./scripts/fix-spa-html.mjs')
@@ -109,15 +213,24 @@ export default defineNuxtConfig({
                 const { existsSync } = await import('node:fs')
                 const { join } = await import('node:path')
                 const publicDir = join(process.cwd(), '.output', 'public')
-                if (!existsSync(publicDir)) return
-                const { fixSpaHtmlInDir } = await import('./scripts/fix-spa-html.mjs')
-                const result = await fixSpaHtmlInDir(publicDir)
-                if (result.fixed) {
-                    console.log(`[fix-spa-html] close: fixed ${result.fixed}/${result.files} HTML files`)
+                if (existsSync(publicDir)) {
+                    const { fixSpaHtmlInDir } = await import('./scripts/fix-spa-html.mjs')
+                    const result = await fixSpaHtmlInDir(publicDir)
+                    if (result.fixed) {
+                        console.log(`[fix-spa-html] close: fixed ${result.fixed}/${result.files} HTML files`)
+                    }
                 }
             }
             catch (err) {
                 console.warn('[fix-spa-html] close hook skipped:', err?.message || err)
+            }
+            try {
+                const { pathToFileURL } = await import('node:url')
+                const { join } = await import('node:path')
+                await import(pathToFileURL(join(process.cwd(), 'scripts/patch-nitro-entry.mjs')).href)
+            }
+            catch (err) {
+                console.warn('[ssr-entry] patch skipped:', err?.message || err)
             }
         },
     },

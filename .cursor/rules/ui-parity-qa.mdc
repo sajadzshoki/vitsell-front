@@ -21,7 +21,7 @@ alwaysApply: true
 4. **منوهای بازشونده**: `text-start`، رنگ یکدست آیکون و لیبل (`text-toned`)، hover یکسان (`hover:bg-primary/10 hover:text-primary`).
 5. **RTL**: `start`/`end` نه `left`/`right` مگر نیاز فیزیکی مشخص و تست‌شده باشد. برای فلش کاروسل جهت آیکون را با موقعیت فیزیکی دکمه چک کن.
 6. **اکشن نوبار (فعلی)**: موبایل = سرچ + اعلان‌ها + bottom nav؛ دسکتاپ = سبد + اعلانات؛ تم در منو حساب؛ wishlist در منو حساب نه در نوار.
-7. **Transform / rotate**: UnoCSS + Tailwind v4 با هم زاویه را دو برابر می‌کنند. `rotate-*` / `scale-*` / `translate-*` / `skew-*` را Uno تولید نکند (`uno.config.ts` → `blocklist`). فقط Tailwind (Nuxt UI) مالک transform است.
+7. **Transform و ring**: UnoCSS و Tailwind v4 کلاس یکسان را با CSS متفاوت می‌سازند و در بیلد، خروجی Uno آخر می‌آید. `rotate-*` / `scale-*` / `translate-*` / `skew-*` و همهٔ `ring` / `ring-*` را Uno تولید نکند (`uno.config.ts` → `blocklist`). فقط Tailwind (Nuxt UI) مالک transform و ring است؛ وگرنه زاویه دو برابر می‌شود و دور UModal و بقیهٔ کنترل‌ها رینگ آبی می‌افتد.
 8. **UnoCSS variant group**: وقتی چند یوتیلیتی یک breakpoint/variant مشترک دارند، تکرار نکن. به‌جای `lg:px-6 lg:py-4 lg:gap-4` بنویس `lg:(px-6 py-4 gap-4)` (transformer-variant-group در `uno.config.ts`). همین برای `sm:` / `md:` / `hover:` / `dark:` و غیره.
 9. **Nuxt UI docs**: فقط v4 از https://ui.nuxt.com — نه `ui3.nuxt.com`.
 10. **Cursor pointer**: هر چیز کلیک‌پذیر `cursor: pointer` (قانون سراسری در `main.css` + کلاس روی المان‌های سفارشی). جزئیات: `.cursor/rules/search-category-ux.mdc`.

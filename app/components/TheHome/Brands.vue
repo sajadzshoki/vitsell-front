@@ -28,7 +28,7 @@
         >
           <NuxtLink
             :to="toSearchRoute({ brands: item })"
-            class="w-full text-lg font-bold text-dimmed hover:text-highlighted transition-all tracking-wide cursor-pointer py-2 block text-center"
+            class="w-full text-lg font-bold text-gray-500  hover:text-highlighted transition-all tracking-wide cursor-pointer py-2 block text-center"
           >
             {{ item }}
           </NuxtLink>
@@ -40,7 +40,7 @@
           v-for="brand in previewBrands"
           :key="brand"
           :to="toSearchRoute({ brands: brand })"
-          class="text-lg md:text-2xl font-bold text-dimmed hover:text-highlighted transition-all tracking-wide cursor-pointer"
+          class="text-lg md:text-2xl font-bold text-gray-500 hover:!text-highlighted transition-all tracking-wide cursor-pointer"
         >
           {{ brand }}
         </NuxtLink>

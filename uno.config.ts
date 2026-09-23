@@ -7,13 +7,18 @@ import {
 import transformerVariantGroup from '@unocss/transformer-variant-group'
 
 /**
- * Nuxt UI / Tailwind v4 uses CSS individual transform properties:
- *   .rotate-90 { rotate: 90deg }
- * UnoCSS presetUno still emits:
- *   .rotate-90 { transform: rotate(90deg) }
- * Both apply → angles double (90→180, 45→90). Let Tailwind own transforms.
+ * Nuxt UI / Tailwind v4 and UnoCSS presetUno both emit the same class names
+ * with different CSS. In the production bundle Uno is appended last, so its
+ * rules win; in `nuxt dev` Tailwind usually wins. Let Tailwind own these.
+ *
+ * Transforms: Tailwind uses `rotate: 90deg`; Uno uses `transform: rotate(90deg)`.
+ * Both apply → angles double (90→180).
+ *
+ * Rings: Nuxt UI draws borders with `ring` / `ring-default` (1px, --tw-ring-*).
+ * Uno's `.ring` is a 3px halo (`--un-ring-color: #93c5fd80`) and overwrites
+ * `box-shadow`, so UModal and other overlays show a ring only on the server build.
  */
-const TW_TRANSFORM_BLOCKLIST = [
+const TW_OWNED_BLOCKLIST = [
     /^rotate-/,
     /^-rotate-/,
     /^scale-/,
@@ -26,10 +31,12 @@ const TW_TRANSFORM_BLOCKLIST = [
     'transform-gpu',
     'transform-cpu',
     'transform-none',
+    // `ring`, `!ring-0`, `hover:ring-2`, `group-hover:ring-4`, `ring-offset-*`
+    /(?:^|:)!?ring(?:-|$)/,
 ]
 
 export default defineConfig({
-    blocklist: TW_TRANSFORM_BLOCKLIST,
+    blocklist: TW_OWNED_BLOCKLIST,
     theme: {
         fontFamily: {
             sans: 'IRANYekanX, sans-serif',

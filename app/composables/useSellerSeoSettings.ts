@@ -12,13 +12,37 @@ function apiErrorMessage(error: any, fallback: string) {
   )
 }
 
-function toSeo(raw: any): SellerSeoSiteSettings {
+function isPlaceholderSiteUrl(url: string) {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')
+  }
+  catch {
+    return true
+  }
+}
+
+function runtimeSeoDefaults(): SellerSeoSiteSettings {
   const defaults = defaultSeoSiteSettings()
+  try {
+    const storeUrl = String(useRuntimeConfig().public.storeUrl || '').trim().replace(/\/+$/, '')
+    if (storeUrl && !isPlaceholderSiteUrl(storeUrl)) defaults.siteUrl = storeUrl
+  }
+  catch {
+    /* outside Nuxt context */
+  }
+  return defaults
+}
+
+function toSeo(raw: any): SellerSeoSiteSettings {
+  const defaults = runtimeSeoDefaults()
   const robots = String(raw?.defaultRobots || defaults.defaultRobots)
   const card = String(raw?.twitterCard || defaults.twitterCard)
+  const rawSiteUrl = String(raw?.siteUrl || '').trim().replace(/\/+$/, '')
+  const siteUrl = rawSiteUrl && !isPlaceholderSiteUrl(rawSiteUrl) ? rawSiteUrl : defaults.siteUrl
   return {
     siteName: String(raw?.siteName || defaults.siteName).trim() || defaults.siteName,
-    siteUrl: String(raw?.siteUrl || defaults.siteUrl).trim().replace(/\/+$/, '') || defaults.siteUrl,
+    siteUrl,
     titlePattern: String(raw?.titlePattern || defaults.titlePattern).trim() || defaults.titlePattern,
     defaultRobots:
       robots === 'noindex,follow'
@@ -33,10 +57,16 @@ function toSeo(raw: any): SellerSeoSiteSettings {
   }
 }
 
+type SeoFetchResult = {
+  ok: boolean
+  error: string | null
+  settings?: SellerSeoSiteSettings
+}
+
 export function useSellerSeoSettings() {
   const settings = useState<SellerSeoSiteSettings>(
     'seller-seo-site',
-    () => defaultSeoSiteSettings(),
+    () => runtimeSeoDefaults(),
   )
   const loaded = useState('seller-seo-site-loaded', () => false)
   const pending = useState('seller-seo-site-pending', () => false)
@@ -45,13 +75,21 @@ export function useSellerSeoSettings() {
     if (loaded.value && !options?.force) {
       return { ok: true as const, error: null as null }
     }
+    const nuxtApp = useNuxtApp() as ReturnType<typeof useNuxtApp> & {
+      _seoSettingsInflight?: Record<string, Promise<SeoFetchResult>>
+    }
+    const inflight = (nuxtApp._seoSettingsInflight ||= {})
+    const inflightKey = options?.admin ? 'admin' : 'public'
+    if (inflight[inflightKey] && !options?.force) return inflight[inflightKey]
+
+    const task = (async () => {
     pending.value = true
     try {
-      // Storefront uses public `/seo`; seller panel keeps admin CRUD path.
+      // Storefront uses public `/seo` during SSR. Admin CRUD stays client-only.
       const path = options?.admin ? '/seller/seo' : '/seo'
       const { result, error } = await useGet<SellerSeoSiteSettings>(path, {
         headers: { 'no-error': true },
-        server: false,
+        ...(options?.admin ? { server: false } : {}),
       })
       if (error || result == null) {
         loaded.value = true
@@ -67,12 +105,19 @@ export function useSellerSeoSettings() {
     finally {
       pending.value = false
     }
+    })()
+
+    inflight[inflightKey] = task
+    try {
+      return await task
+    }
+    finally {
+      if (inflight[inflightKey] === task) delete inflight[inflightKey]
+    }
   }
 
-  function ensureLoaded() {
-    if (!loaded.value && !pending.value) {
-      void fetchSettings()
-    }
+  async function ensureLoaded() {
+    if (!loaded.value) await fetchSettings()
     return settings.value
   }
 

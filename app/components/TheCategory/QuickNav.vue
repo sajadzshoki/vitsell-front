@@ -27,5 +27,5 @@ defineProps<{
   activeId: string
 }>()
 
-const { categories } = useCategories()
+const { rootCategories: categories } = useCategories()
 </script>

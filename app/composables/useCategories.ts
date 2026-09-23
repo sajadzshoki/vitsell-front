@@ -32,9 +32,25 @@ export function useCategories() {
   }> | null>('categories-inflight', () => null)
 
   const categories = computed(() => list.value)
+  const rootCategories = computed(() =>
+    list.value.filter(c => !c.parentId),
+  )
 
   function getCategoryById(id: string) {
     return list.value.find(c => c.id === id)
+  }
+
+  function getChildCategories(parentId: string) {
+    const id = String(parentId || '').trim()
+    if (!id) return []
+    return list.value
+      .filter(c => c.parentId === id)
+      .slice()
+      .sort((a, b) => {
+        const order = (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0)
+        if (order !== 0) return order
+        return a.name.localeCompare(b.name, 'fa')
+      })
   }
 
   async function fetchProductCounts(ids: string[]) {
@@ -94,10 +110,12 @@ export function useCategories() {
   return {
     list,
     categories,
+    rootCategories,
     productCounts,
     loaded,
     pending,
     getCategoryById,
+    getChildCategories,
     fetchCategories,
     fetchProductCounts,
   }

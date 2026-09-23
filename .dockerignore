@@ -1,0 +1,24 @@
+node_modules
+# Do not ignore `.output` — Dockerfile.prebuilt COPYs it into the image.
+.nuxt
+.nuxt-admin
+.nitro
+.cache
+.data
+dist
+.git
+.github
+.cursor
+.idea
+.fleet
+graphify-out
+errorLog.txt
+*.md
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+coverage
+terminals
+agent-transcripts

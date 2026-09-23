@@ -1,6 +1,6 @@
 <template>
   <section v-if="brands.length">
-    <div class="flex items-center justify-center gap-2 mb-3 sm:mb-5">
+    <div class="flex items-center justify-center gap-2 mb-3 ">
       <UIcon
         name="i-tabler-device-mobile"
         class="size-4 sm:size-5 text-primary shrink-0"
@@ -15,7 +15,7 @@
         v-for="brand in brands"
         :key="brand.id"
         :to="brand.to"
-        class="group flex flex-col items-center gap-1.5 sm:gap-2.5 cursor-pointer"
+        class="group flex flex-col  items-center gap-1.5 sm:gap-2.5 cursor-pointer"
       >
         <div
           class="relative w-full aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl  overflow-hidden  transition-all duration-300 "
@@ -32,7 +32,7 @@
           <img
             :src="brand.image"
             :alt="$t(brand.name)"
-            class="relative z-10 size-full object-contain object-center p-1.5 drop-shadow-lg transition-all duration-300 group-hover:scale-105"
+            class="relative z-10 size-full object-cover object-center  drop-shadow-lg transition-all duration-300 group-hover:scale-105"
             loading="lazy"
             decoding="async"
           >

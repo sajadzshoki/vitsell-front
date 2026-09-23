@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="T">
 /**
- * UCarousel wrapper: arrows only when items overflow the visible slot count.
+ * UCarousel wrapper: arrows from md up only, and only when items overflow.
  */
 const props = withDefaults(defineProps<{
   items: T[]

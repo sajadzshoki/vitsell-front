@@ -103,17 +103,17 @@ const {
   brandRoute,
   pending,
   loaded,
+  ready,
 } = useCategoryPage()
+
+await ready
 
 const showSkeleton = computed(() =>
   (pending.value || !loaded.value) && !category.value,
 )
 
-const { getById: getSellerCategory } = useSellerCategories()
-const sellerSeo = computed(() => getSellerCategory(catId.value)?.seo ?? null)
-
 useEntitySeo(() => ({
-  entity: sellerSeo.value,
+  entity: category.value?.seo ?? null,
   fallbackTitle: category.value?.name ?? meta.value.hero.title,
   fallbackDescription: meta.value.seo.paragraphs[0] ?? meta.value.hero.subtitle,
   fallbackImage: meta.value.hero.image || '',

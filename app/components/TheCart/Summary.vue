@@ -108,10 +108,9 @@
         type="button"
         color="primary"
         size="xl"
-        
         class="font-bold shadow-lg shadow-primary/25 w-full"
         trailing-icon="i-tabler-arrow-left"
-        @click="store.nextStep()"
+        @click="emit('next')"
       >
         {{ $t('ثبت سفارش') }}
       </UButton>
@@ -132,6 +131,10 @@
 
 <script setup lang="ts">
 import { formatPrice } from '~/data/products'
+
+const emit = defineEmits<{
+  next: []
+}>()
 
 const { t } = useI18n()
 const store = useCheckoutStore()

@@ -113,7 +113,9 @@ const PREVIEW_LIMIT = 10
 
 const { categories, pending, loaded } = useHome()
 
-const previewCategories = computed(() => categories.value.slice(0, PREVIEW_LIMIT))
+const previewCategories = computed(() =>
+  categories.value.filter(c => !c.parentId).slice(0, PREVIEW_LIMIT),
+)
 
 function imageFor(category: Category) {
   return getCategoryImage(category.id, category.image)

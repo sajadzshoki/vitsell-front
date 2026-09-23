@@ -150,9 +150,9 @@ export class CategorySchema extends BaseModel {
   @column()
   declare status: string
   /**
-   * Subcategory groups for MegaMenu / Search chips.
+   * Optional curated groups (brands / usage labels) for admin product hints.
+   * Search header chips use taxonomy children via `parentId`, not this field.
    * Shape: `{ name: string, items: string[], image?: string }[]`
-   * Front: shown inside TheSearchHeader when `/search/category-<id>`.
    */
   @column()
   declare subs: any

@@ -619,11 +619,11 @@ const adminWarnings = computed(() => {
   }
   const hasAnyCategory = tree.value.sections.some(sectionHasLinkedCategory)
   if (!hasAnyCategory) {
-    warnings.push(t('هیچ بخش/آیتمی به دسته‌بندی محصول وصل نیست؛ فیلتر کاتالوگ از مسیر SEO خالی می‌ماند.'))
+    warnings.push(t('هیچ بخش/آیتمی به دسته‌بندی محصول وصل نیست؛ لینک‌های کاتالوگ به /search مقصد مشخصی ندارند.'))
   }
   const categoryIds = new Set(categorySource.value.map(c => c.id))
   if (tree.value.slug && !categoryIds.has(tree.value.slug)) {
-    warnings.push(t('اسلاگ منو با شناسه هیچ دسته‌بندی‌ای یکی نیست؛ لینک ریشه به اولین بخش می‌رود (نه صفحه دسته).'))
+    warnings.push(t('اسلاگ منو با شناسه هیچ دسته‌بندی‌ای یکی نیست؛ لینک ریشه به جستجوی اولین بخش می‌رود (نه لندینگ دسته).'))
   }
   return warnings
 })
@@ -790,7 +790,7 @@ async function saveSection() {
     sectionModal.open = false
     await reload()
     if (!payload.categoryId) {
-      toast.warning(t('بخش بدون دسته‌بندی ذخیره شد؛ عنوان در فروشگاه فقط مسیر SEO دارد مگر آیتم دسته/فیلتر اضافه کنید.'))
+      toast.warning(t('بخش بدون دسته‌بندی ذخیره شد؛ در فروشگاه لینک عنوان بخش خالی می‌ماند مگر آیتم دسته/فیلتر اضافه کنید.'))
     }
   }
   finally {

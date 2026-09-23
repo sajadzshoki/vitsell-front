@@ -34,7 +34,7 @@ const route = useRoute()
 const { isBackwardPage, title: backwardTitle } = useMobileBackward()
 const { settings, ensureLoaded } = useSellerSeoSettings()
 
-ensureLoaded()
+await ensureLoaded()
 
 useJsonLd(() => webSiteJsonLd({
   name: settings.value.siteName,

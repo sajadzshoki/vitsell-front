@@ -1,0 +1,26 @@
+# Run a locally built Nuxt SSR output. Use when the server only has `.output/`.
+# On the build machine: npm run build:store:prod
+# Then copy `.output` + this file + docker-compose.prebuilt.yml to the server.
+# (No `# syntax=docker/dockerfile:1` — Docker Hub often returns 403 for that frontend image.)
+
+FROM node:24-bookworm-slim
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=3000 \
+    NITRO_PORT=3000 \
+    NITRO_HOST=0.0.0.0
+
+RUN groupadd --system --gid 1001 nuxt \
+  && useradd --system --uid 1001 --gid nuxt nuxt
+
+COPY --chown=nuxt:nuxt .output ./.output
+
+USER nuxt
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/robots.txt').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["node", ".output/server/index.mjs"]

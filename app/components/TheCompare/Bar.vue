@@ -101,9 +101,10 @@ const items = computed(() => compareStore.products)
 const pathNorm = computed(() => route.path.replace(/\/$/, '') || '/')
 const isComparePage = computed(() => pathNorm.value === '/compare')
 
-/** Product / cart use a taller fixed buy bar; other pages use bottom nav. */
+/** Product / (non-empty) cart use a taller fixed buy bar; other pages use bottom nav. */
 const hasMobileBuyBar = computed(() => {
-  return /^\/product\/[^/]+$/.test(pathNorm.value) || pathNorm.value === '/cart'
+  return /^\/product\/[^/]+$/.test(pathNorm.value)
+    || (pathNorm.value === '/cart' && isBackwardPage.value)
 })
 
 const barBottomClass = computed(() => {

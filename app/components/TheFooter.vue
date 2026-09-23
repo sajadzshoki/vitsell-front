@@ -211,26 +211,29 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2 md:justify-end">
-            <!-- <a
-              referrerpolicy="origin"
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://trustseal.enamad.ir/?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT"
-              class="size-25 rounded-xl bg-elevated flex items-center justify-center overflow-hidden p-1.5 cursor-pointer"
-              :aria-label="$t('نماد اعتماد')"
-              :title="$t('نماد اعتماد')"
+            <div
+              class="size-25 rounded-xl bg-elevated flex items-center justify-center overflow-hidden p-1.5"
             >
-              <img
+              <a
+                :href="ENAMAD_HREF"
+                target="_blank"
+                rel="noopener noreferrer"
                 referrerpolicy="origin"
-                src="https://trustseal.enamad.ir/logo.aspx?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT"
-                alt=""
-                class="size-full object-contain cursor-pointer"
-                loading="lazy"
-                width="56"
-                height="56"
+                class="size-full flex items-center justify-center cursor-pointer"
               >
-            </a> -->
-            <a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT' alt='' style='cursor:pointer' code='GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT'/></a>
+                <img
+                  :src="enamadSrc"
+                  alt="نماد اعتماد الکترونیکی"
+                  class="size-full object-contain cursor-pointer"
+                  width="56"
+                  height="56"
+                  loading="lazy"
+                  referrerpolicy="origin"
+                  code="GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT"
+                  @error="enamadSrc = TRUST_BADGES.enamad"
+                >
+              </a>
+            </div>
             <div
               v-for="badge in displayBadges"
               :key="badge.id"
@@ -238,8 +241,8 @@
               :title="$t(badge.label)"
             >
               <img
-                v-if="badgeImageSrc(badge.id)"
-                :src="badgeImageSrc(badge.id)"
+                v-if="badgeIconSrc(badge)"
+                :src="badgeIconSrc(badge)"
                 :alt="$t(badge.label)"
                 class="size-full object-contain"
                 loading="lazy"
@@ -282,6 +285,18 @@ const TRUST_BADGES: Record<string, string> = {
   ecunion: '/images/enamad-logo.png',
   payment: '/images/samandehi.png',
 }
+
+const ENAMAD_HREF = 'https://trustseal.enamad.ir/?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT'
+const ENAMAD_REMOTE = 'https://trustseal.enamad.ir/logo.aspx?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT'
+
+/** Remote seal only on real hosts — enamad often fails on localhost (Firefox NS_ERROR_DOM_NETWORK_ERR). */
+function useProductionEnamadSeal() {
+  if (!import.meta.client) return false
+  const host = window.location.hostname.toLowerCase()
+  return host === 'vitsell.ir' || host === 'www.vitsell.ir'
+}
+
+const enamadSrc = ref(useProductionEnamadSeal() ? ENAMAD_REMOTE : TRUST_BADGES.enamad)
 
 /** Temporary store badges — App Store / Google Play / Microsoft */
 const FALLBACK_DOWNLOAD_STORES = [
@@ -390,7 +405,8 @@ const aboutSegments = computed(() => {
   return segments
 })
 
-function badgeImageSrc(id: string) {
-  return TRUST_BADGES[id] ?? ''
+function badgeIconSrc(badge: { id: string, icon: string }) {
+  if (isSellerAdminIconImage(badge.icon)) return resolveMediaUrl(badge.icon)
+  return TRUST_BADGES[badge.id] ?? ''
 }
 </script>

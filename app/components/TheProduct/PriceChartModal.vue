@@ -51,6 +51,9 @@ const open = defineModel<boolean>('open', { default: false })
 
 const { t } = useI18n()
 
+const breakpoints = useBreakpoints({ sm: 640 })
+const isPhone = breakpoints.smaller('sm')
+
 const history = computed(() => getProductPriceHistory(props.product))
 
 const categories = computed(() => history.value.map(p => p.label))
@@ -116,14 +119,20 @@ const chartOptions = computed(() => {
     grid: {
       borderColor: border,
       strokeDashArray: 4,
+      padding: {
+        left: isPhone.value ? 4 : 8,
+        right: isPhone.value ? 4 : 4,
+      },
     },
     dataLabels: { enabled: false },
     legend: { show: false },
     xaxis: {
       categories: categories.value,
-      tickAmount: 6,
+      // tickAmount turns off overlap hiding. These values land ~3 dates on a
+      // phone modal and ~8 on the desktop modal, with a real gap between labels.
+      tickAmount: isPhone.value ? 2 : 6,
       labels: {
-        style: { colors: text, fontSize: '11px' },
+        style: { colors: text, fontSize: isPhone.value ? '10px' : '11px' },
         rotate: 0,
         hideOverlappingLabels: true,
       },

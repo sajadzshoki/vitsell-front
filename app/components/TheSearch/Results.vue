@@ -22,7 +22,7 @@
         <UButton
           v-for="category in suggestedCategories"
           :key="category.id"
-          :to="toSearchRoute({ q: category.name, category: category.id })"
+          :to="toSearchRoute({ category: category.id })"
           color="neutral"
           variant="subtle"
           size="sm"

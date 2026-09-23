@@ -34,10 +34,30 @@
     "vue": "3.5.41",
     "vue-router": "5.2.0"
   },
+  "overrides": {
+    "@intlify/shared": "11.4.10",
+    "@intlify/core": "11.4.10",
+    "@intlify/core-base": "11.4.10",
+    "@intlify/message-compiler": "11.4.10",
+    "@intlify/devtools-types": "11.4.10",
+    "vue-i18n": "11.4.10"
+  },
+  "pnpm": {
+    "overrides": {
+      "@intlify/shared": "11.4.10",
+      "@intlify/core": "11.4.10",
+      "@intlify/core-base": "11.4.10",
+      "@intlify/message-compiler": "11.4.10",
+      "@intlify/devtools-types": "11.4.10",
+      "vue-i18n": "11.4.10"
+    }
+  },
   "dependencies": {
     "@capacitor/push-notifications": "^7.0.7",
     "@neshan-maps-platform/vue3-openlayers": "^2.0.1",
     "@nuxt/ui": "4.10.0",
+    "@nuxtjs/robots": "^6.2.3",
+    "@nuxtjs/sitemap": "^8.5.1",
     "@pinia/nuxt": "^1.0.2",
     "@vueuse/components": "^14.4.0",
     "@vueuse/nuxt": "^14.4.0",

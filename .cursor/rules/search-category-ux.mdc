@@ -21,17 +21,18 @@ alwaysApply: true
 toSearchRoute({ category: id })  // → /search/category-{id}
 ```
 
-- نه `/category/:catId` برای کلیک دسته اصلی / دکمه «صفحه دسته».
+- نه `/category/:catId` برای کلیک دسته اصلی / دکمه «صفحه دسته» (لندینگ جداست؛ لیست محصول = search).
 - نه `/search?category=` برای دسته (legacy؛ ریدایرکت ۳۰۱ به path).
-- آیتم‌های برگ زیردسته همچنان `toSearchRoute({ q, category })` → `/search/category-{id}?q=...`.
+- نه مسیر عمیق `/category/<menu>/<section>/…` برای لیست محصول — آن‌ها ۳۰۱ به `/search…` می‌شوند.
+- آیتم‌های برگ مگامنو (فیلتر) → `megaMenuFilterToSearchRoute` / `toSearchRoute` با فیلتر query.
 - سرچ دستی بدون دسته → `/search?q=...`.
-- API: `GET /products?category=` و `GET /categories` — ببین `ROUTES.md` و `CategorySchema.subs` در `types/models.ts`.
+- API: `GET /products?category=` و `GET /categories` (همهٔ فعال + `parentId`) — ببین `ROUTES.md` و `CategorySchema` در `types/models.ts`.
 
 ## Search subcategory section
 
-وقتی کاربر با **دسته اصلی** وارد شده (`/search/category-{id}` و دسته `subs` داشته باشد)، زیردسته‌ها را **داخل همان سکشن هدر** (`TheSearchHeader`) نشان بده — نه سکشن جدا:
+وقتی کاربر با **دسته اصلی** وارد شده (`/search/category-{id}`) و آن دسته **فرزند تاکسونومی** داشته باشد (`parentId`)، زیردسته‌ها را **داخل همان سکشن هدر** (`TheSearchHeader`) نشان بده — نه سکشن جدا:
 
-- داده: `category.subs` + عکس از `category.image` (یا `sub.image` اگر بود) — `types/models.ts` → `CategorySchema`
-- هر کارت → `toSearchRoute({ q: sub.name, category })`
+- داده: فرزندان دسته از `GET /categories` (`parentId === categoryId`) — نه `category.subs` (آن فیلد فقط گروه/برند کمکی ادمین است)
+- هر کارت → `toSearchRoute({ category: child.id })` → `/search/category-{childId}` (**بدون** `?q=`)
 - بیش از ۷ زیردسته → کارت «مشاهده N دسته‌بندی دیگر»
 - استایل: کارت `bg-muted` داخل باکس هدر، گوشه گرد، **عکس** بالا (نه آیکون مگر fallback)، لیبل پایین، `cursor: pointer`

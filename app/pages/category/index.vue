@@ -17,8 +17,9 @@
 const { fetchMegaMenu } = useMegaMenu()
 await fetchMegaMenu()
 
-useSeoMeta({
-  title: () => 'دسته‌بندی کالاها',
-  description: () => 'مرور همه دسته‌بندی‌ها و زیردسته‌های ویتسل',
-})
+useEntitySeo(() => ({
+  fallbackTitle: 'دسته‌بندی کالاها',
+  fallbackDescription: 'مرور همه دسته‌بندی‌ها و زیردسته‌های ویتسل',
+  path: '/category',
+}))
 </script>

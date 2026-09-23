@@ -37,6 +37,7 @@ export function useEntitySeo(input: MaybeRefOrGetter<ResolveSeoInput & {
     ogTitle: () => resolved.value.ogTitle,
     ogDescription: () => resolved.value.ogDescription || undefined,
     ogImage: () => resolved.value.ogImage || undefined,
+    ogUrl: () => resolved.value.canonical || undefined,
     ogType: () => 'website',
     twitterCard: () => resolved.value.twitterCard as 'summary' | 'summary_large_image',
     twitterTitle: () => resolved.value.twitterTitle,

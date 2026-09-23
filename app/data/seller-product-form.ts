@@ -1,9 +1,15 @@
 import { categories, getCategoryById, getCategoryIcon } from '~/data/categories'
 import { resolveCategoryIconName } from '~/data/seller-categories'
 import { categoryLabels, type Product, type ProductColor, type ProductSpec } from '~/data/products'
-import { isEmptyHtml } from '~/data/seller-blog'
+import { isEmptyHtml, stripDefaultLinkRel } from '~/data/seller-blog'
 import type { SeoMeta } from '~/data/seo'
-import { sanitizeSeoMeta } from '~/data/seo'
+import {
+  emptySeoMeta,
+  htmlToPlainText,
+  sanitizeSeoMeta,
+  SEO_DESC_SOFT_MAX,
+  SEO_TITLE_SOFT_MAX,
+} from '~/data/seo'
 import type { SellerAttribute } from '~/data/seller-attributes'
 import type { SellerProductVariantAxis as VariantAxis } from '~/data/seller-product-variants'
 
@@ -229,6 +235,24 @@ export function productToSellerForm(
   }
 }
 
+export function applyProductSeoDefaults(
+  seo: SeoMeta | null | undefined,
+  form: Pick<SellerProductFormValues, 'title' | 'description' | 'shortDesc'>,
+): SeoMeta {
+  const next = { ...emptySeoMeta(), ...seo }
+  const title = form.title.trim()
+  const description = htmlToPlainText(form.description || form.shortDesc)
+  if (!next.metaTitle.trim() && title) {
+    next.metaTitle = title.slice(0, SEO_TITLE_SOFT_MAX)
+  }
+  if (!htmlToPlainText(next.metaDescription).trim() && description) {
+    next.metaDescription = description.slice(0, SEO_DESC_SOFT_MAX)
+  }
+  if (!next.ogTitle.trim()) next.ogTitle = next.metaTitle
+  if (!htmlToPlainText(next.ogDescription).trim()) next.ogDescription = next.metaDescription
+  return next
+}
+
 export function buildSellerProductFromForm(
   form: SellerProductFormValues,
   options?: {
@@ -252,7 +276,7 @@ export function buildSellerProductFromForm(
   const colors = options?.colors ?? form.colors
   const tags = (options?.tags ?? []).map(t => t.trim()).filter(Boolean)
   const seo = options && 'seo' in options
-    ? (sanitizeSeoMeta(options.seo) ?? undefined)
+    ? (sanitizeSeoMeta(applyProductSeoDefaults(options.seo, form)) ?? undefined)
     : options?.base?.seo
 
   const id = options?.id
@@ -279,8 +303,8 @@ export function buildSellerProductFromForm(
     colors: colors.length ? colors : undefined,
     inStock: stock > 0,
     fastDelivery: form.fastDelivery,
-    shortDesc: isEmptyHtml(form.shortDesc) ? undefined : form.shortDesc.trim(),
-    description: isEmptyHtml(form.description) ? undefined : form.description.trim(),
+    shortDesc: isEmptyHtml(form.shortDesc) ? undefined : stripDefaultLinkRel(form.shortDesc.trim()),
+    description: isEmptyHtml(form.description) ? undefined : stripDefaultLinkRel(form.description.trim()),
     specs: specs.length ? specs : undefined,
     seo,
     tags,

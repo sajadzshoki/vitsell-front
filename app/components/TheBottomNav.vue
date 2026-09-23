@@ -89,11 +89,11 @@ const cartAnimating = ref(false)
 let bumpTimer: ReturnType<typeof setTimeout> | undefined
 
 onMounted(() => {
-  if (isLoggedIn.value) void ensureCartLoaded()
+  void ensureCartLoaded()
 })
 
-watch(isLoggedIn, (loggedIn) => {
-  if (loggedIn) void ensureCartLoaded()
+watch(isLoggedIn, () => {
+  void ensureCartLoaded()
 })
 
 watch(cartBump, () => {

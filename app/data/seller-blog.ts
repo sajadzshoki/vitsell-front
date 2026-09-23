@@ -163,15 +163,30 @@ export function textToContent(text: string): string[] {
     .filter(Boolean)
 }
 
+/** Drop editor-default link rel tokens so inspect/HTML stays as the author set it. */
+export function stripDefaultLinkRel(html: string): string {
+  return html.replace(
+    /\srel=(["'])([^"']*)\1/gi,
+    (_full, quote: string, value: string) => {
+      const kept = value
+        .split(/\s+/)
+        .filter(token => token && !/^(noopener|noreferrer|nofollow)$/i.test(token))
+      return kept.length ? ` rel=${quote}${kept.join(' ')}${quote}` : ''
+    },
+  )
+}
+
 /** حذف تگ‌های خطرناک قبل از v-html در استورفرانت */
 export function sanitizeBlogHtml(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, '')
-    .replace(/<object[\s\S]*?>[\s\S]*?<\/object>/gi, '')
-    .replace(/<embed[\s\S]*?>/gi, '')
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/javascript:/gi, '')
+  return stripDefaultLinkRel(
+    html
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+      .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, '')
+      .replace(/<object[\s\S]*?>[\s\S]*?<\/object>/gi, '')
+      .replace(/<embed[\s\S]*?>/gi, '')
+      .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .replace(/javascript:/gi, ''),
+  )
 }
 
 export function isRichBlogContent(content: string[]): boolean {

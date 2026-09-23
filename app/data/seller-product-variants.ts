@@ -98,6 +98,36 @@ export function variantMatchesSelection(
   return variant.options.every(option => selection[option.attributeId] === option.valueId)
 }
 
+/** Storefront query key for the active product variant (`?v=<id>`). */
+export const PRODUCT_VARIANT_QUERY_KEY = 'v'
+
+export function selectionFromVariant(variant: SellerProductVariant | null | undefined) {
+  if (!variant?.options?.length) return {} as Record<string, string>
+  return Object.fromEntries(
+    variant.options.map(option => [option.attributeId, option.valueId]),
+  )
+}
+
+export function preferredProductVariant(variants: SellerProductVariant[]) {
+  if (!variants.length) return null
+  return variants.find(variant => variant.status === 'active' && variant.stock > 0)
+    ?? variants.find(variant => variant.status === 'active')
+    ?? variants[0]
+    ?? null
+}
+
+/** Resolve by stable `id`, with `key` as fallback for older shared links. */
+export function findVariantByQuery(
+  variants: SellerProductVariant[] | undefined | null,
+  queryValue: unknown,
+) {
+  const raw = Array.isArray(queryValue)
+    ? String(queryValue[0] ?? '').trim()
+    : String(queryValue ?? '').trim()
+  if (!raw || raw === 'null' || raw === 'undefined' || !variants?.length) return null
+  return variants.find(variant => variant.id === raw || variant.key === raw) ?? null
+}
+
 export function createVariantFromCombo(
   combo: {
     key: string

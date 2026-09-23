@@ -1,0 +1,53 @@
+ssr:error [nuxt-icons] Icon 'shopping-bag' doesn't exist in 'assets/icons' 
+  at getIcon (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\nuxt-icons\dist\runtime\components\nuxt-icon.vue)
+  at C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\nuxt-icons\dist\runtime\components\nuxt-icon.vue
+  at withAsyncContext (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\@vue\runtime-core\dist\runtime-core.cjs.js)
+browser.mjs:48:19
+ssr:error [nuxt-icons] Icon 'brand-apple' doesn't exist in 'assets/icons' 
+  at getIcon (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\nuxt-icons\dist\runtime\components\nuxt-icon.vue)
+  at C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\nuxt-icons\dist\runtime\components\nuxt-icon.vue
+  at withAsyncContext (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\@vue\runtime-core\dist\runtime-core.cjs.js)
+browser.mjs:48:19
+ssr:error [nuxt-icons] Icon 'brand-android' doesn't exist in 'assets/icons' 
+  at getIcon (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\nuxt-icons\dist\runtime\components\nuxt-icon.vue)
+  at C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\nuxt-icons\dist\runtime\components\nuxt-icon.vue
+  at withAsyncContext (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\@vue\runtime-core\dist\runtime-core.cjs.js)
+browser.mjs:48:19
+ssr:error [nuxt-icons] Icon 'shopping-bag' doesn't exist in 'assets/icons' 
+  at getIcon (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\nuxt-icons\dist\runtime\components\nuxt-icon.vue)
+  at callWithErrorHandling (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\@vue\runtime-core\dist\runtime-core.cjs.js)
+  at callWithAsyncErrorHandling (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\@vue\runtime-core\dist\runtime-core.cjs.js)
+browser.mjs:48:19
+ssr:error [nuxt-icons] Icon 'brand-apple' doesn't exist in 'assets/icons' 
+  at getIcon (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\nuxt-icons\dist\runtime\components\nuxt-icon.vue)
+  at callWithErrorHandling (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\@vue\runtime-core\dist\runtime-core.cjs.js)
+  at callWithAsyncErrorHandling (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\@vue\runtime-core\dist\runtime-core.cjs.js)
+browser.mjs:48:19
+ssr:error [nuxt-icons] Icon 'brand-android' doesn't exist in 'assets/icons' 
+  at getIcon (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\nuxt-icons\dist\runtime\components\nuxt-icon.vue)
+  at callWithErrorHandling (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\@vue\runtime-core\dist\runtime-core.cjs.js)
+  at callWithAsyncErrorHandling (C:\Users\Sajad-Vista\WebstormProjects\digishop\node_modules\@vue\runtime-core\dist\runtime-core.cjs.js)
+browser.mjs:48:19
+Hydration completed but contains mismatches. runtime-core.esm-bundler.js:1900:11
+[nuxt-icons] Icon 'shopping-bag' doesn't exist in 'assets/icons' nuxt-icon.vue:30:13
+[nuxt-icons] Icon 'brand-apple' doesn't exist in 'assets/icons' nuxt-icon.vue:30:13
+[nuxt-icons] Icon 'brand-android' doesn't exist in 'assets/icons' nuxt-icon.vue:30:13
+[nuxt-icons] Icon 'shopping-bag' doesn't exist in 'assets/icons' nuxt-icon.vue:30:13
+[nuxt-icons] Icon 'brand-apple' doesn't exist in 'assets/icons' nuxt-icon.vue:30:13
+[nuxt-icons] Icon 'brand-android' doesn't exist in 'assets/icons' nuxt-icon.vue:30:13
+XHR 
+POST
+http://localhost:3333/api/v1/activity
+
+
+-----------------------------------------------
+POST
+	
+scheme
+	http
+host
+	localhost:3333
+filename
+	/api/v1/activity/sync
+
+    {"message":"insert into \"user_activities\" (\"category\", \"created_at\", \"event_type\", \"occurred_at\", \"product_id\", \"query\", \"user_id\") values ($1, $2, $3, $4, $5, $6, $7) returning \"id\" - insert or update on table \"user_activities\" violates foreign key constraint \"user_activities_product_id_foreign\"","name":"error","frames":[{"functionName":"parseErrorMessage","fileName":"/app/node_modules/pg-protocol/src/parser.ts","lineNumber":395,"columnNumber":9,"raw":"    at parseErrorMessage (/app/node_modules/pg-protocol/src/parser.ts:395:9)","type":"module","fileType":"fs","source":[{"chunk":"  const messageValue = fields.M","lineNumber":390},{"chunk":"","lineNumber":391},{"chunk":"  const message =","lineNumber":392},{"chunk":"    name === 'notice'","lineNumber":393},{"chunk":"      ? new NoticeMessage(LATEINIT_LENGTH, messageValue)","lineNumber":394},{"chunk":"      : new DatabaseError(messageValue, LATEINIT_LENGTH, name)","lineNumber":395},{"chunk":"","lineNumber":396},{"chunk":"  message.severity = fields.S","lineNumber":397},{"chunk":"  message.code = fields.C","lineNumber":398},{"chunk":"  message.detail = fields.D","lineNumber":399},{"chunk":"  message.hint = fields.H","lineNumber":400}]},{"functionName":"Parser.handlePacket","fileName":"/app/node_modules/pg-protocol/src/parser.ts","lineNumber":212,"columnNumber":19,"raw":"    at Parser.handlePacket (/app/node_modules/pg-protocol/src/parser.ts:212:19)","type":"module","fileType":"fs","source":[{"chunk":"        break","lineNumber":207},{"chunk":"      case MessageCodes.BackendKeyData:","lineNumber":208},{"chunk":"        message = parseBackendKeyData(reader)","lineNumber":209},{"chunk":"        break","lineNumber":210},{"chunk":"      case MessageCodes.ErrorMessage:","lineNumber":211},{"chunk":"        message = parseErrorMessage(reader, 'error')","lineNumber":212},{"chunk":"        break","lineNumber":213},{"chunk":"      case MessageCodes.NoticeMessage:","lineNumber":214},{"chunk":"        message = parseErrorMessage(reader, 'notice')","lineNumber":215},{"chunk":"        break","lineNumber":216},{"chunk":"      case MessageCodes.RowDescriptionMessage:","lineNumber":217}]},{"functionName":"Parser.parse","fileName":"/app/node_modules/pg-protocol/src/parser.ts","lineNumber":105,"columnNumber":30,"raw":"    at Parser.parse (/app/node_modules/pg-protocol/src/parser.ts:105:30)","type":"module","fileType":"fs","source":[{"chunk":"      const code = this.buffer[offset]","lineNumber":100},{"chunk":"      // length is 1 Uint32BE - it is the length of the message EXCLUDING the code","lineNumber":101},{"chunk":"      const length = this.buffer.readUInt32BE(offset + CODE_LENGTH)","lineNumber":102},{"chunk":"      const fullMessageLength = CODE_LENGTH + length","lineNumber":103},{"chunk":"      if (fullMessageLength + offset <= bufferFullLength) {","lineNumber":104},{"chunk":"        const message = this.handlePacket(offset + HEADER_LENGTH, code, length, this.buffer)","lineNumber":105},{"chunk":"        callback(message)","lineNumber":106},{"chunk":"        offset += fullMessageLength","lineNumber":107},{"chunk":"      } else {","lineNumber":108},{"chunk":"        break","lineNumber":109},{"chunk":"      }","lineNumber":110}]},{"functionName":"Socket.<anonymous>","fileName":"/app/node_modules/pg-protocol/src/index.ts","lineNumber":7,"columnNumber":48,"raw":"    at Socket.<anonymous> (/app/node_modules/pg-protocol/src/index.ts:7:48)","type":"module","fileType":"fs","source":[{"chunk":"import { serialize } from './serializer'","lineNumber":2},{"chunk":"import { Parser, MessageCallback } from './parser'","lineNumber":3},{"chunk":"","lineNumber":4},{"chunk":"export function parse(stream: NodeJS.ReadableStream, callback: MessageCallback): Promise<void> {","lineNumber":5},{"chunk":"  const parser = new Parser()","lineNumber":6},{"chunk":"  stream.on('data', (buffer: Buffer) => parser.parse(buffer, callback))","lineNumber":7},{"chunk":"  return new Promise((resolve) => stream.on('end', () => resolve()))","lineNumber":8},{"chunk":"}","lineNumber":9},{"chunk":"","lineNumber":10},{"chunk":"export { serialize, DatabaseError }","lineNumber":11},{"chunk":"","lineNumber":12}]},{"functionName":"Socket.emit","fileName":"node:events","lineNumber":514,"columnNumber":28,"raw":"    at Socket.emit (node:events:514:28)","type":"native","fileType":"fs"},{"functionName":"addChunk","fileName":"node:internal/streams/readable","lineNumber":568,"columnNumber":12,"raw":"    at addChunk (node:internal/streams/readable:568:12)","type":"native","fileType":"fs"},{"functionName":"readableAddChunkPushByteMode","fileName":"node:internal/streams/readable","lineNumber":519,"columnNumber":3,"raw":"    at readableAddChunkPushByteMode (node:internal/streams/readable:519:3)","type":"native","fileType":"fs"},{"functionName":"Readable.push","fileName":"node:internal/streams/readable","lineNumber":399,"columnNumber":5,"raw":"    at Readable.push (node:internal/streams/readable:399:5)","type":"native","fileType":"fs"},{"functionName":"TCP.onStreamRead","fileName":"node:internal/stream_base_commons","lineNumber":189,"columnNumber":23,"raw":"    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)","type":"native","fileType":"fs"}],"code":"23503","stack":"error: insert into \"user_activities\" (\"category\", \"created_at\", \"event_type\", \"occurred_at\", \"product_id\", \"query\", \"user_id\") values ($1, $2, $3, $4, $5, $6, $7) returning \"id\" - insert or update on table \"user_activities\" violates foreign key constraint \"user_activities_product_id_foreign\"\n    at parseErrorMessage (/app/node_modules/pg-protocol/src/parser.ts:395:9)\n    at Parser.handlePacket (/app/node_modules/pg-protocol/src/parser.ts:212:19)\n    at Parser.parse (/app/node_modules/pg-protocol/src/parser.ts:105:30)\n    at Socket.<anonymous> (/app/node_modules/pg-protocol/src/index.ts:7:48)\n    at Socket.emit (node:events:514:28)\n    at addChunk (node:internal/streams/readable:568:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:519:3)\n    at Readable.push (node:internal/streams/readable:399:5)\n    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)","raw":{"length":308,"name":"error","severity":"ERROR","code":"23503","detail":"Key (product_id)=(tl-167564) is not present in table \"products\".","schema":"public","table":"user_activities","constraint":"user_activities_product_id_foreign","file":"ri_triggers.c","line":"2608","routine":"ri_ReportViolation","status":500}}

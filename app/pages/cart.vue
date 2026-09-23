@@ -99,7 +99,10 @@
         </div>
 
         <aside class="lg:col-span-4">
-          <TheCartSummary v-if="step === 0" />
+          <TheCartSummary
+            v-if="step === 0"
+            @next="onNext"
+          />
           <TheCartPaySummary v-else />
         </aside>
       </div>
@@ -140,11 +143,20 @@ const {
 const { site, currencyLabel, fetchSite } = useSiteSettings()
 await fetchSite()
 
-if (import.meta.client && isLoggedIn.value) {
-  await Promise.all([hydrateShop(), store.fetchAddresses()])
+if (import.meta.client) {
+  if (isLoggedIn.value) {
+    await Promise.all([hydrateShop(), store.fetchAddresses()])
+  }
+  else {
+    await hydrateShop()
+  }
 }
 
 useMobileBackwardTitle(() => {
+  // Empty cart uses normal navbar + bottom nav — no back header title
+  if (cartLines.value.length === 0 && step.value === 0 && !placedOrderId.value) {
+    return null
+  }
   if (placedOrderId.value) return t('ثبت سفارش')
   const stepName = checkoutSteps[step.value]?.name
   return stepName ? t(stepName) : t('سبد خرید')
@@ -174,8 +186,8 @@ async function onNext() {
   if (!canProceed.value) return
 
   if (step.value === 0) {
-    if (site.value.guestCheckoutEnabled === false && !requireAuth()) {
-      toast.error(t('برای ادامه خرید وارد شوید'))
+    if (!requireAuth()) {
+      toast.info(t('برای ادامه خرید وارد شوید'))
       return
     }
     const minOrder = Number(site.value.minOrderAmount) || 0

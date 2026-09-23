@@ -1,3 +1,5 @@
+import type { SeoMeta } from '~/data/seo'
+
 export type CategorySub = {
   name: string
   items: string[]
@@ -10,7 +12,18 @@ export type Category = {
   icon: string
   image?: string | null
   text?: string | null
+  /** Null / omitted = root category */
+  parentId?: string | null
+  sortOrder?: number
   subs: CategorySub[]
+  seo?: Partial<SeoMeta> | null
+}
+
+/** Chip shown in search header — always a real taxonomy category. */
+export type SearchSubcategoryChip = {
+  id: string
+  name: string
+  image?: string | null
 }
 
 /** Tabler icon name per category id (without i-tabler- prefix) */
@@ -32,6 +45,7 @@ export const categories: Category[] = [
     id: 'mobile',
     name: 'موبایل',
     icon: 'mobile',
+    parentId: null,
     image: '/images/mock/iphone16pro-desert.jpg',
     text: 'در ویتسل می‌توانید انواع گوشی موبایل از برندهای اپل، سامسونگ، شیائومی، هوآوی و سایر سازندگان معتبر را با بهترین قیمت و ارسال سریع تهیه کنید. از پرچمدارهای پرقدرت تا گوشی‌های اقتصادی، همه در یکجا.',
     subs: [
@@ -40,9 +54,19 @@ export const categories: Category[] = [
     ],
   },
   {
+    id: 'mobile-accessories',
+    name: 'لوازم جانبی موبایل',
+    icon: 'mobile',
+    parentId: 'mobile',
+    image: '/images/mock/iphone16pro-desert.jpg',
+    text: 'قاب، گلس، شارژر، کابل و پاوربانک برای گوشی موبایل.',
+    subs: [],
+  },
+  {
     id: 'laptop',
     name: 'لپ‌تاپ',
     icon: 'laptop',
+    parentId: null,
     image: '/images/mock/macbook-m4-spaceblack.jpg',
     text: 'مجموعه‌ای گسترده از لپ‌تاپ‌های اپل، ایسوس، لنوو، اچ‌پی و سایر برندها برای برنامه‌نویسی، طراحی، گیمینگ و استفاده روزمره.',
     subs: [
@@ -51,9 +75,37 @@ export const categories: Category[] = [
     ],
   },
   {
+    id: 'laptop-gaming',
+    name: 'لپ‌تاپ گیمینگ',
+    icon: 'laptop',
+    parentId: 'laptop',
+    image: '/images/mock/macbook-m4-spaceblack.jpg',
+    text: 'لپ‌تاپ‌های مخصوص بازی با کارت گرافیک قدرتمند.',
+    subs: [],
+  },
+  {
+    id: 'laptop-ultrabook',
+    name: 'اولترابوک',
+    icon: 'laptop',
+    parentId: 'laptop',
+    image: '/images/mock/macbook-m4-spaceblack.jpg',
+    text: 'لپ‌تاپ‌های سبک و باریک برای حمل روزمره.',
+    subs: [],
+  },
+  {
+    id: 'laptop-student',
+    name: 'لپ‌تاپ دانشجویی',
+    icon: 'laptop',
+    parentId: 'laptop',
+    image: '/images/mock/macbook-m4-spaceblack.jpg',
+    text: 'گزینه‌های اقتصادی و مناسب تحصیل و کارهای روزمره.',
+    subs: [],
+  },
+  {
     id: 'audio',
     name: 'صوتی و هدفون',
     icon: 'audio',
+    parentId: null,
     image: '/images/mock/sony-xm5-midnight.jpg',
     text: 'از هدفون‌های بی‌سیم نویزکنسلینگ تا اسپیکرهای قابل حمل و ساندبار خانگی — همه در دسته صوتی ویتسل.',
     subs: [
@@ -62,9 +114,28 @@ export const categories: Category[] = [
     ],
   },
   {
+    id: 'audio-headphones',
+    name: 'هدفون و ایرپاد',
+    icon: 'audio',
+    parentId: 'audio',
+    image: '/images/mock/sony-xm5-midnight.jpg',
+    text: 'هدفون بلوتوثی، ایرپاد و هدست.',
+    subs: [],
+  },
+  {
+    id: 'audio-speakers',
+    name: 'اسپیکر و ساندبار',
+    icon: 'audio',
+    parentId: 'audio',
+    image: '/images/mock/sony-xm5-midnight.jpg',
+    text: 'اسپیکر قابل حمل و ساندبار خانگی.',
+    subs: [],
+  },
+  {
     id: 'tv',
     name: 'تلویزیون',
     icon: 'tv',
+    parentId: null,
     image: '/images/mock/ipad-pro-m4.jpg',
     text: 'تلویزیون‌های سامسونگ، ال‌جی و سونی با پنل QLED، OLED و Mini LED برای تجربه تصویری بی‌نظیر.',
     subs: [],
@@ -73,6 +144,7 @@ export const categories: Category[] = [
     id: 'camera',
     name: 'دوربین',
     icon: 'camera',
+    parentId: null,
     image: '/images/mock/apple-watch-ultra.jpg',
     text: 'دوربین‌های بدون آینه، کامپکت و اکشن‌کم از برندهای کانن، سونی، گوپرو و DJI.',
     subs: [],
@@ -81,6 +153,7 @@ export const categories: Category[] = [
     id: 'watch',
     name: 'ساعت هوشمند',
     icon: 'watch',
+    parentId: null,
     image: '/images/mock/apple-watch-ultra.jpg',
     text: 'ساعت‌های هوشمند با قابلیت ردیابی سلامت، GPS، پرداخت و اتصال بلوتوث.',
     subs: [],
@@ -89,6 +162,7 @@ export const categories: Category[] = [
     id: 'gaming',
     name: 'کنسول بازی',
     icon: 'gaming',
+    parentId: null,
     image: '/images/mock/ps5-pro.jpg',
     text: 'کنسول‌های نسل جدید، دسته بازی، هدست گیمینگ و اکسسوری‌های مرتبط.',
     subs: [],
@@ -97,6 +171,7 @@ export const categories: Category[] = [
     id: 'home',
     name: 'لوازم خانگی',
     icon: 'home',
+    parentId: null,
     image: '/images/mock/hero-tech-ecosystem.jpg',
     text: 'لوازم خانگی برندهای دایسون، ال‌جی، سامسونگ و شیائومی با ارسال سریع.',
     subs: [],
@@ -105,6 +180,7 @@ export const categories: Category[] = [
     id: 'fashion',
     name: 'مد و پوشاک',
     icon: 'fashion',
+    parentId: null,
     image: '/images/mock/galaxy-s25-ultra.jpg',
     text: 'کالکشن‌های فصل جدید از برندهای معتبر داخلی و بین‌المللی.',
     subs: [],
@@ -113,6 +189,7 @@ export const categories: Category[] = [
     id: 'beauty',
     name: 'زیبایی و سلامت',
     icon: 'beauty',
+    parentId: null,
     image: '/images/mock/sony-xm5-midnight.jpg',
     text: 'محصولات اصل برندهای معتبر آرایشی و بهداشتی.',
     subs: [],
@@ -163,6 +240,10 @@ export function toSearchRoute(query: {
   minPrice?: number
   maxPrice?: number
   attrs?: Record<string, string[]>
+  onlyDiscount?: boolean
+  onlyInStock?: boolean
+  fastDelivery?: boolean
+  minRating?: number
 }) {
   const q = query.q?.trim()
   const category = query.category?.trim()
@@ -172,6 +253,7 @@ export function toSearchRoute(query: {
     .filter(Boolean)
   const minPrice = Number(query.minPrice || 0) || 0
   const maxPrice = Number(query.maxPrice || 0) || 0
+  const minRating = Number(query.minRating || 0) || 0
   const attrs = query.attrs || {}
   const attrsClean: Record<string, string[]> = {}
   for (const [slug, values] of Object.entries(attrs)) {
@@ -189,6 +271,10 @@ export function toSearchRoute(query: {
     ...(minPrice > 0 ? { minPrice: String(minPrice) } : {}),
     ...(maxPrice > 0 ? { maxPrice: String(maxPrice) } : {}),
     ...(Object.keys(attrsClean).length ? { attrs: JSON.stringify(attrsClean) } : {}),
+    ...(query.onlyDiscount ? { onlyDiscount: 'true' } : {}),
+    ...(query.onlyInStock ? { onlyInStock: 'true' } : {}),
+    ...(query.fastDelivery ? { fastDelivery: 'true' } : {}),
+    ...(minRating > 0 ? { minRating: String(minRating) } : {}),
   }
 
   if (category) {
@@ -202,6 +288,14 @@ export function toSearchRoute(query: {
     path: '/search',
     query: searchQuery,
   }
+}
+
+/** Serialize `toSearchRoute` result to a path+query string (redirects / absolute building). */
+export function searchRouteToHref(route: { path: string, query?: Record<string, string> }) {
+  const qs = new URLSearchParams(
+    Object.entries(route.query || {}).filter(([, v]) => v != null && v !== '') as [string, string][],
+  ).toString()
+  return `${route.path}${qs ? `?${qs}` : ''}`
 }
 
 function storefrontHref(storeUrl: string, route: { path: string, query: Record<string, string> }) {

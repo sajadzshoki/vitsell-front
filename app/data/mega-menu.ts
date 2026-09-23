@@ -180,6 +180,10 @@ export function megaMenuFilterToSearchRoute(filter: MegaMenuFilterDefinition) {
     minPrice: filter.minPrice,
     maxPrice: filter.maxPrice,
     attrs: filter.attrs,
+    onlyDiscount: filter.onlyDiscount,
+    onlyInStock: filter.onlyInStock,
+    fastDelivery: filter.fastDelivery,
+    minRating: filter.minRating,
   })
 }
 
@@ -191,8 +195,27 @@ export function isExternalMegaHref(to: MegaMenuRoute | null | undefined): boolea
 }
 
 /**
+ * Legacy Digikala-style mega SEO paths (`/category/menu/section/…`).
+ * Single-segment `/category/{id}` is the category landing — keep it.
+ */
+export function isLegacyMegaSeoPath(href: string): boolean {
+  const path = String(href || '').split('?')[0] || ''
+  const match = path.match(/^\/category\/(.+)$/i)
+  if (!match?.[1]) return false
+  return match[1].split('/').filter(Boolean).length >= 2
+}
+
+function usableMegaHref(href: string | null | undefined): string | null {
+  const next = href?.trim()
+  if (!next) return null
+  if (isLegacyMegaSeoPath(next)) return null
+  return next
+}
+
+/**
  * Resolve item → NuxtLink target.
- * Prefer API SEO `href` (`/category/...`); fall back to search / external url.
+ * Catalog targets always go to `/search` (or `/search/category-{id}`);
+ * ignore legacy multi-segment `/category/...` hrefs from older API payloads.
  */
 export function megaMenuItemToRoute(
   item: Pick<PublicMegaMenuItem, 'type' | 'category' | 'filter' | 'url' | 'href'>,
@@ -200,33 +223,30 @@ export function megaMenuItemToRoute(
   if (item.type === 'link' && item.url?.trim()) {
     return item.url.trim()
   }
-  if (item.href?.trim()) {
-    return item.href.trim()
-  }
   if (item.type === 'category' && item.category?.id) {
     return toSearchRoute({ category: item.category.id })
   }
   if (item.type === 'filter' && item.filter) {
     return megaMenuFilterToSearchRoute(item.filter)
   }
-  return null
+  return usableMegaHref(item.href)
 }
 
-/** Root menu column — API href, else first section, else linked category search. */
+/** Root menu column — landing `/category/{id}` when set, else search. */
 export function megaMenuRootToRoute(menu: PublicMegaMenu): MegaMenuRoute | null {
-  if (menu.href?.trim()) return menu.href.trim()
-  const firstHref = menu.sections[0]?.href?.trim()
+  const href = usableMegaHref(menu.href)
+  if (href) return href
+  const firstHref = usableMegaHref(menu.sections[0]?.href)
   if (firstHref) return firstHref
   const catId = menu.sections.find(s => s.category?.id)?.category?.id
   if (catId) return toSearchRoute({ category: catId })
   return null
 }
 
-/** Section column / group title — API href first, else category search. */
+/** Section column / group title — category search (not legacy SEO path). */
 export function megaMenuSectionToRoute(section: PublicMegaMenuSection): MegaMenuRoute | null {
-  if (section.href?.trim()) return section.href.trim()
   if (section.category?.id) return toSearchRoute({ category: section.category.id })
-  return null
+  return usableMegaHref(section.href)
 }
 
 export type MegaMenuResolvePayload = {

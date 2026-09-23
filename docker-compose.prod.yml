@@ -1,0 +1,48 @@
+# Production frontend — joins the same Docker network as the API (`main`).
+#
+# Required on the host (or CI deploy env):
+#   NUXT_PUBLIC_API_BASE=https://api.vitsell.ir/api/v1
+#   NUXT_PUBLIC_STORE_URL=https://vitsell.ir
+#   NUXT_PUBLIC_ADMIN_URL=https://seller.vitsell.ir
+#   STORE_IMAGE=registry.example.com/vitsell-store:gitsha   # when deploying a prebuilt image
+#
+# Create the network once (if API compose has not):
+#   docker network create main
+#
+# Update:
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Or after CI push:
+#   docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
+
+services:
+  store:
+    image: ${STORE_IMAGE:-vitsell-store:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NUXT_PUBLIC_APP_MODE: ${NUXT_PUBLIC_APP_MODE:-store}
+        NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-https://api.vitsell.ir/api/v1}
+        NUXT_PUBLIC_STORE_URL: ${NUXT_PUBLIC_STORE_URL:-https://vitsell.ir}
+        NUXT_PUBLIC_ADMIN_URL: ${NUXT_PUBLIC_ADMIN_URL:-https://seller.vitsell.ir}
+        NUXT_PUBLIC_APP_VERSION: ${NUXT_PUBLIC_APP_VERSION:-beta.0.1}
+    container_name: store
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      NITRO_PORT: 3000
+      NITRO_HOST: 0.0.0.0
+      NODE_ENV: production
+      NUXT_PUBLIC_APP_MODE: ${NUXT_PUBLIC_APP_MODE:-store}
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-https://api.vitsell.ir/api/v1}
+      NUXT_PUBLIC_STORE_URL: ${NUXT_PUBLIC_STORE_URL:-https://vitsell.ir}
+      NUXT_PUBLIC_ADMIN_URL: ${NUXT_PUBLIC_ADMIN_URL:-https://seller.vitsell.ir}
+      NUXT_PUBLIC_APP_VERSION: ${NUXT_PUBLIC_APP_VERSION:-beta.0.1}
+    ports:
+      - '${STORE_PORT:-3000}:3000'
+
+networks:
+  default:
+    external: true
+    name: main

@@ -91,7 +91,7 @@
               variant="solid"
               size="sm"
               square
-              class="absolute start-2 top-1/2 -translate-y-1/2 z-20 rounded-full shadow-md !opacity-80 hover:!opacity-100"
+              class="hidden md:flex absolute start-2 top-1/2 -translate-y-1/2 z-20 rounded-full shadow-md !opacity-80 hover:!opacity-100"
               :disabled="active <= 0"
               :aria-label="$t('تصویر قبلی')"
               @click.stop="goPrev"
@@ -103,7 +103,7 @@
               variant="solid"
               size="sm"
               square
-              class="absolute end-2 top-1/2 -translate-y-1/2 z-20 rounded-full shadow-md !opacity-80 hover:!opacity-100"
+              class="hidden md:flex absolute end-2 top-1/2 -translate-y-1/2 z-20 rounded-full shadow-md !opacity-80 hover:!opacity-100"
               :disabled="active >= gallery.length - 1"
               :aria-label="$t('تصویر بعدی')"
               @click.stop="goNext"

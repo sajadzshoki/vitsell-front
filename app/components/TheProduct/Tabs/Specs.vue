@@ -36,7 +36,7 @@
             class="flex justify-between gap-3 border-b border-muted/60 last:border-0 py-2 md:py-3"
           >
             <span class="text-[11px] md:text-xs text-muted shrink-0">{{ $t(spec.key) }}</span>
-            <span class="text-[11px] leading-6 md:text-xs text-highlighted font-medium text-end">
+            <span class="text-[11px] !leading-6 md:text-xs text-highlighted font-medium text-end">
               {{ spec.value }}
             </span>
           </div>

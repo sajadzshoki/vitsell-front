@@ -13,7 +13,7 @@
       :is-search-query="isSearchQuery"
       :category-id="categoryId"
       :category-image="categoryImage"
-      :subs="showSubcategories ? categorySubs : []"
+      :subs="showSubcategories ? subcategoryChips : []"
     />
 
     <TheSearchMobileBar
@@ -82,6 +82,8 @@
 import { getCategoryImage } from '~/data/category-pages'
 
 const { t } = useI18n()
+const route = useRoute()
+const { settings } = useSellerSeoSettings()
 
 const {
   q,
@@ -111,12 +113,20 @@ const {
   goToPage,
 } = await useSearchCatalog()
 
-/** Entered via main category path (`/search/category-{id}`) → subcategory chips inside header */
-const showSubcategories = computed(() =>
-  Boolean(categoryId.value && category.value?.subs?.length),
-)
+/** Entered via main category path (`/search/category-{id}`) → child taxonomy chips inside header */
+const { getChildCategories } = useCategories()
 
-const categorySubs = computed(() => category.value?.subs ?? [])
+const subcategoryChips = computed(() => {
+  const id = categoryId.value
+  if (!id) return []
+  return getChildCategories(id).map(c => ({
+    id: c.id,
+    name: c.name,
+    image: c.image ?? null,
+  }))
+})
+
+const showSubcategories = computed(() => subcategoryChips.value.length > 0)
 
 const categoryImage = computed(() =>
   categoryId.value
@@ -131,8 +141,51 @@ const emptyTitle = computed(() => {
   return t('هیچ محصولی یافت نشد')
 })
 
+const indexingQueryKeys = [
+  'q',
+  'brands',
+  'brand',
+  'minPrice',
+  'maxPrice',
+  'attrs',
+  'sort',
+  'page',
+  'onlyDiscount',
+  'onlyInStock',
+  'fastDelivery',
+  'minRating',
+]
+
+const hasIndexingQuery = computed(() => indexingQueryKeys.some((key) => {
+  const value = route.query[key]
+  if (Array.isArray(value)) return value.some(item => String(item || '').trim())
+  return String(value || '').trim().length > 0
+}))
+
+const canonicalPath = computed(() =>
+  categoryId.value ? `/search/category-${categoryId.value}` : '/search',
+)
+
+const canonicalUrl = computed(() => {
+  const base = settings.value.siteUrl.replace(/\/+$/, '')
+  return base ? `${base}${canonicalPath.value}` : canonicalPath.value
+})
+
+const indexableListing = computed(() =>
+  Boolean(categoryId.value) && !hasIndexingQuery.value,
+)
+
 useSeoMeta({
   title: () => heading.value,
   description: () => categorySeo.value?.paragraphs?.[0],
+  robots: () => indexableListing.value ? 'index,follow' : 'noindex,follow',
+  ogTitle: () => heading.value,
+  ogDescription: () => categorySeo.value?.paragraphs?.[0],
+  ogUrl: () => canonicalUrl.value,
+  ogImage: () => categoryImage.value || undefined,
 })
+
+useHead(() => ({
+  link: [{ rel: 'canonical', href: canonicalUrl.value }],
+}))
 </script>

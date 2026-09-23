@@ -1,19 +1,21 @@
 import type { Product } from '~/data/products'
 import type { ShopNotification } from '~/data/notifications'
 import type { AccountProfile } from '~/data/account'
+import {
+  clearGuestCartStorage,
+  guestCartLineId,
+  productForGuestLine,
+  readGuestCart,
+  writeGuestCart,
+  type CartLine,
+} from '~/composables/guest-cart'
 
-export type CartLine = {
-  id: string
-  qty: number
-  product: Product
-  variantId?: string | null
-  variantLabel?: string
-}
+export type { CartLine }
 
 export function useShop() {
   const { token, logoutRemote, fetchMe, setToken } = useAuth()
   const { profile, fetchProfile, fetchOrders } = useAccount()
-  const { remember } = useProducts()
+  const { remember, getCachedProduct, fetchProduct } = useProducts()
   const router = useRouter()
 
   const cartLines = useState<CartLine[]>('shop-cart-lines', () => [])
@@ -58,6 +60,22 @@ export function useShop() {
     cartBump.value += 1
   }
 
+  function isGuestSession() {
+    return !token.value || !isLoggedIn.value
+  }
+
+  function persistGuestCart(lines: CartLine[]) {
+    cartLines.value = lines
+    writeGuestCart(lines)
+    remember(lines.map(l => l.product))
+  }
+
+  function loadGuestCart() {
+    const lines = readGuestCart()
+    cartLines.value = lines
+    if (lines.length) remember(lines.map(l => l.product))
+  }
+
   function isInWishlist(id: string) {
     return wishlistProducts.value.some(p => p.id === id)
   }
@@ -89,7 +107,7 @@ export function useShop() {
 
   async function fetchCart() {
     if (!token.value) {
-      cartLines.value = []
+      loadGuestCart()
       return { ok: true as const, error: null as null }
     }
     const { result, error } = await useGet<CartLine[]>('/cart', {
@@ -133,9 +151,28 @@ export function useShop() {
     notificationList.value = Array.isArray(result) ? result : []
   }
 
+  /** Push guest lines into server cart (qty merges server-side), then refresh. */
+  async function mergeGuestCartIntoServer() {
+    const guest = readGuestCart()
+    if (!guest.length || !token.value) return
+
+    await Promise.all(guest.map(line =>
+      usePost<CartLine>('/cart', {
+        productId: line.product.id,
+        qty: line.qty,
+        ...(line.variantId ? { variantId: line.variantId } : {}),
+      }, {
+        headers: { 'no-error': true },
+      }),
+    ))
+
+    clearGuestCartStorage()
+    await fetchCart()
+  }
+
   async function hydrateShop() {
     if (!token.value) {
-      cartLines.value = []
+      loadGuestCart()
       wishlistProducts.value = []
       notificationList.value = []
       return
@@ -149,6 +186,7 @@ export function useShop() {
         fetchDiscountCodes(),
         fetchOrders(),
       ])
+      await mergeGuestCartIntoServer()
       const { syncToServer } = useUserActivity()
       void syncToServer()
     }
@@ -160,7 +198,10 @@ export function useShop() {
   /** Ensure cart badge has fresh data after login / on navbar mount */
   async function ensureCartLoaded() {
     if (!import.meta.client) return
-    if (!token.value || !isLoggedIn.value) return
+    if (isGuestSession()) {
+      loadGuestCart()
+      return
+    }
     await fetchCart()
   }
 
@@ -178,8 +219,12 @@ export function useShop() {
         else if (error) {
           setToken(null)
           isLoggedIn.value = false
+          loadGuestCart()
         }
       })
+    }
+    else {
+      loadGuestCart()
     }
   }
 
@@ -208,8 +253,44 @@ export function useShop() {
     }
   }
 
+  async function resolveProduct(id: string) {
+    const cached = getCachedProduct(id)
+    if (cached) return cached
+    const { result } = await fetchProduct(id)
+    return result ?? null
+  }
+
+  async function addGuestToCart(id: string, qty = 1, variantId?: string | null) {
+    const base = await resolveProduct(id)
+    if (!base) return
+
+    const { product, variantLabel } = productForGuestLine(base, variantId)
+    const lineId = guestCartLineId(id, variantId)
+    const existing = cartLines.value.find(l => l.id === lineId)
+    const nextQty = (existing?.qty ?? 0) + qty
+    const line: CartLine = {
+      id: lineId,
+      qty: nextQty,
+      product,
+      variantId: variantId ?? null,
+      variantLabel,
+    }
+    const others = cartLines.value.filter(l => l.id !== lineId)
+    persistGuestCart([...others, line])
+    bumpCart()
+    const { track } = useUserActivity()
+    void track({
+      type: 'add_to_cart',
+      productId: product.id,
+      category: product.category,
+    })
+  }
+
   async function addToCart(id: string, qty = 1, variantId?: string | null) {
-    if (!requireAuth()) return
+    if (isGuestSession()) {
+      await addGuestToCart(id, qty, variantId)
+      return
+    }
     const { result } = await usePost<CartLine>('/cart', {
       productId: id,
       qty,
@@ -236,12 +317,21 @@ export function useShop() {
   }
 
   async function updateQty(id: string, qty: number) {
-    if (!requireAuth()) return
-    const prev = getCartQty(id)
     if (qty <= 0) {
       await removeFromCart(id)
       return
     }
+
+    if (isGuestSession()) {
+      const prev = cartLines.value.find(l => l.id === id)?.qty ?? 0
+      const next = cartLines.value.map(l => (l.id === id ? { ...l, qty } : l))
+      if (!next.some(l => l.id === id)) return
+      persistGuestCart(next)
+      if (qty > prev) bumpCart()
+      return
+    }
+
+    const prev = cartLines.value.find(l => l.id === id)?.qty ?? 0
     const { result } = await usePatch<CartLine | { removed: true }>(
       `/cart/${encodeURIComponent(id)}`,
       { qty },
@@ -258,13 +348,20 @@ export function useShop() {
   }
 
   async function removeFromCart(id: string) {
-    if (!requireAuth()) return
+    if (isGuestSession()) {
+      persistGuestCart(cartLines.value.filter(l => l.id !== id))
+      return
+    }
     await useDelete(`/cart/${encodeURIComponent(id)}`, { headers: { 'no-error': true } })
     cartLines.value = cartLines.value.filter(l => l.id !== id)
   }
 
   async function clearCart() {
-    if (!requireAuth()) return
+    if (isGuestSession()) {
+      clearGuestCartStorage()
+      cartLines.value = []
+      return
+    }
     await useDelete('/cart', { headers: { 'no-error': true } })
     cartLines.value = []
   }
@@ -325,6 +422,7 @@ export function useShop() {
     wishlistProducts.value = []
     notificationList.value = []
     discountCode.value = null
+    clearGuestCartStorage()
     profile.value = {
       firstName: '',
       lastName: '',

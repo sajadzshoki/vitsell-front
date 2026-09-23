@@ -148,7 +148,7 @@ CRUD کامل روی `CategorySchema` و مدیریت زیردسته‌ها (`su
 
 منبع حقیقت مدل: `types/models.ts` → `CategorySchema`  
 نوع فرانت لیست: `app/data/categories.ts` → `Category` / `CategorySub`  
-مصرف استورفرانت: MegaMenu، Search chips، `/category/:catId`، `useCategories`.
+مصرف استورفرانت: MegaMenu، Search chips، لندینگ `/category/:catId`، لیست محصول `/search/category-{id}`، `useCategories`.
 
 ### فیلدهای مدل (همه باید در فرم قابل تنظیم باشند)
 

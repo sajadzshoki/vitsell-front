@@ -159,6 +159,7 @@
 <script setup lang="ts">
 import type { EditorCustomHandlers, EditorToolbarItem } from '@nuxt/ui'
 import type { Editor } from '@tiptap/vue-3'
+import { stripDefaultLinkRel } from '~/data/seller-blog'
 
 export type TextEditorVariant = 'full' | 'simple'
 
@@ -201,6 +202,20 @@ const editorUi = computed(() => ({
   content: 'ds-text-editor-content',
 }))
 
+watch(model, (html) => {
+  const cleaned = stripDefaultLinkRel(html)
+  if (cleaned !== html) model.value = cleaned
+})
+
+function disableDefaultLinkRel(editor: Editor) {
+  const link = editor.extensionManager.extensions.find(ext => ext.name === 'link') as
+    | { options?: { HTMLAttributes?: Record<string, unknown> } }
+    | undefined
+  if (link?.options?.HTMLAttributes) {
+    link.options.HTMLAttributes.rel = null
+  }
+}
+
 function normalizeHref(raw: string) {
   const value = raw.trim()
   if (!value) return ''
@@ -209,6 +224,7 @@ function normalizeHref(raw: string) {
 }
 
 function openLinkModal(editor: Editor) {
+  disableDefaultLinkRel(editor)
   pendingEditor.value = editor
   const current = String(editor.getAttributes('link').href || '')
   editingLink.value = Boolean(current)
@@ -249,11 +265,13 @@ function confirmLink() {
     toast.warning(t('ابتدا متن مورد نظر را انتخاب کنید'))
     return
   }
+  disableDefaultLinkRel(editor)
   editor
     .chain()
     .focus()
     .extendMarkRange('link')
-    .setLink({ href, target: '_blank', rel: 'noopener noreferrer' })
+    .setLink({ href, target: '_blank' })
+    .updateAttributes('link', { rel: null })
     .run()
   cancelLink()
   pendingEditor.value = null
