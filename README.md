@@ -80,3 +80,7 @@ docker compose -f docker-compose.prod.yml build --progress=plain
 docker compose -f docker-compose.prod.yml up -d
 
 docker exec -it api node ace migration:run
+
+
+front update : 
+docker compose -f docker-compose.prebuilt.yml up -d

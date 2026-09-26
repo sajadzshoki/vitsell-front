@@ -232,21 +232,39 @@ export function megaMenuItemToRoute(
   return usableMegaHref(item.href)
 }
 
+/** Deepest-first catalog target inside a section tree (own category → items → children). */
+function sectionCatalogRoute(section: PublicMegaMenuSection): MegaMenuRoute | null {
+  if (section.category?.id) return toSearchRoute({ category: section.category.id })
+  const ownHref = usableMegaHref(section.href)
+  if (ownHref) return ownHref
+  for (const item of section.items) {
+    const to = megaMenuItemToRoute(item)
+    if (to) return to
+  }
+  for (const child of section.sections) {
+    const to = sectionCatalogRoute(child)
+    if (to) return to
+  }
+  return null
+}
+
 /** Root menu column — landing `/category/{id}` when set, else search. */
 export function megaMenuRootToRoute(menu: PublicMegaMenu): MegaMenuRoute | null {
   const href = usableMegaHref(menu.href)
   if (href) return href
-  const firstHref = usableMegaHref(menu.sections[0]?.href)
-  if (firstHref) return firstHref
-  const catId = menu.sections.find(s => s.category?.id)?.category?.id
-  if (catId) return toSearchRoute({ category: catId })
+  for (const section of menu.sections) {
+    const to = sectionCatalogRoute(section)
+    if (to) return to
+  }
   return null
 }
 
-/** Section column / group title — category search (not legacy SEO path). */
+/**
+ * Section column / group title — own category/href, else first catalog target
+ * under items or nested sections (container rows in admin often have no categoryId).
+ */
 export function megaMenuSectionToRoute(section: PublicMegaMenuSection): MegaMenuRoute | null {
-  if (section.category?.id) return toSearchRoute({ category: section.category.id })
-  return usableMegaHref(section.href)
+  return sectionCatalogRoute(section)
 }
 
 export type MegaMenuResolvePayload = {

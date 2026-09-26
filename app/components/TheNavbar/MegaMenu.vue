@@ -146,7 +146,7 @@
                 : {}"
               class="font-bold text-highlighted text-base"
               :class="activeSectionTo ? 'hover:text-primary transition cursor-pointer' : ''"
-              @click="activeSectionTo ? close() : undefined"
+              @click="activeSectionTo ? closeAfterNavigate() : undefined"
             >
               {{ $t(activeSection.title) }}
             </component>
@@ -158,7 +158,7 @@
               size="xs"
               trailing-icon="i-tabler-arrow-left"
               class="font-bold shrink-0 cursor-pointer"
-              @click="close"
+              @click="closeAfterNavigate"
             >
               {{ $t('صفحه دسته') }}
             </UButton>
@@ -181,7 +181,7 @@
                   :target="isExternalMegaHref(itemTo(item)) ? '_blank' : undefined"
                   rel="noopener"
                   class="text-sm text-toned hover:bg-primary/10 hover:text-primary transition rounded-lg px-2 py-1.5 text-start w-full block cursor-pointer"
-                  @click="close"
+                  @click="closeAfterNavigate"
                 >
                   {{ item.title }}
                 </NuxtLink>
@@ -202,7 +202,7 @@
                 v-for="group in layer3Groups"
                 :key="group.id"
                 :section="group"
-                @navigate="close"
+                @navigate="closeAfterNavigate"
               />
             </div>
           </template>
@@ -239,7 +239,7 @@ import {
   type PublicMegaMenuSection,
 } from '~/data/mega-menu'
 import { resolveSellerAdminIconName } from '~/data/seller-admin-icons'
-import { getCategoryIcon, toSearchRoute } from '~/data/categories'
+import { getCategoryIcon } from '~/data/categories'
 
 const { menus, pending, loadError, fetchMegaMenu } = useMegaMenu()
 await fetchMegaMenu()
@@ -289,10 +289,7 @@ const layer3Groups = computed((): PublicMegaMenuSection[] => {
   return []
 })
 
-const activeSectionCategoryTo = computed(() => {
-  const id = activeSection.value?.category?.id
-  return id ? toSearchRoute({ category: id }) : null
-})
+const activeSectionCategoryTo = computed(() => activeSectionTo.value)
 
 const activeSectionTo = computed(() => sectionTo(activeSection.value))
 
@@ -307,6 +304,13 @@ function menuIcon(menu: PublicMegaMenu) {
 
 function close() {
   megaOpen.value = false
+}
+
+/** Close after NuxtLink handles the click — sync close unmounts the link and aborts navigation. */
+function closeAfterNavigate() {
+  nextTick(() => {
+    megaOpen.value = false
+  })
 }
 
 function menuRootTo(menu: PublicMegaMenu | null | undefined): MegaMenuRoute | null {
@@ -348,12 +352,12 @@ function sectionLinkAttrs(section: PublicMegaMenuSection) {
 function onRootActivate(menu: PublicMegaMenu | null | undefined) {
   if (!menu) return
   selectMenu(menu.id)
-  if (menuRootTo(menu)) close()
+  if (menuRootTo(menu)) closeAfterNavigate()
 }
 
 function onSectionActivate(section: PublicMegaMenuSection) {
   activeSectionId.value = section.id
-  if (sectionTo(section)) close()
+  if (sectionTo(section)) closeAfterNavigate()
 }
 
 async function retry() {
