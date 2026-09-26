@@ -129,39 +129,39 @@
               v-if="isSubExpanded(section.id)"
               class="pb-2 bg-muted/40"
             >
-              <template v-if="section.sections.length">
+              <template v-if="section.sections.length || section.items.length">
+                <ul
+                  v-if="section.items.length"
+                  class="pb-1"
+                >
+                  <li
+                    v-for="item in section.items"
+                    :key="item.id"
+                  >
+                    <NuxtLink
+                      v-if="itemTo(item)"
+                      :to="itemTo(item)!"
+                      :external="isExternalMegaHref(itemTo(item))"
+                      :target="isExternalMegaHref(itemTo(item)) ? '_blank' : undefined"
+                      rel="noopener"
+                      class="block px-4 py-2.5 ps-6 text-xs text-toned hover:(bg-muted text-primary) transition cursor-pointer"
+                    >
+                      {{ item.title }}
+                    </NuxtLink>
+                    <span
+                      v-else
+                      class="block px-4 py-2.5 ps-6 text-xs text-toned"
+                    >
+                      {{ item.title }}
+                    </span>
+                  </li>
+                </ul>
                 <TheNavbarMobileMenuSection
                   v-for="child in section.sections"
                   :key="child.id"
                   :section="child"
                 />
               </template>
-              <ul
-                v-else-if="section.items.length"
-                class="pb-1"
-              >
-                <li
-                  v-for="item in section.items"
-                  :key="item.id"
-                >
-                  <NuxtLink
-                    v-if="itemTo(item)"
-                    :to="itemTo(item)!"
-                    :external="isExternalMegaHref(itemTo(item))"
-                    :target="isExternalMegaHref(itemTo(item)) ? '_blank' : undefined"
-                    rel="noopener"
-                    class="block px-4 py-2.5 ps-6 text-xs text-toned hover:(bg-muted text-primary) transition cursor-pointer"
-                  >
-                    {{ item.title }}
-                  </NuxtLink>
-                  <span
-                    v-else
-                    class="block px-4 py-2.5 ps-6 text-xs text-toned"
-                  >
-                    {{ item.title }}
-                  </span>
-                </li>
-              </ul>
               <p
                 v-else
                 class="px-4 py-3 text-xs text-dimmed"

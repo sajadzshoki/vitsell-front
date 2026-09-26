@@ -158,43 +158,46 @@
           </UButton>
         </div>
 
-        <div
-          v-if="activeSection && layer3Groups.length"
-          class="grid grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-6"
-        >
-          <TheNavbarMegaMenuSection
-            v-for="group in layer3Groups"
-            :key="group.id"
-            :section="group"
-          />
-        </div>
-
-        <ul
-          v-else-if="activeSection?.items.length"
-          class="grid grid-cols-2 gap-x-8 gap-y-1"
-        >
-          <li
-            v-for="item in activeSection.items"
-            :key="item.id"
+        <template v-if="activeSection && (layer3Groups.length || activeSection.items.length)">
+          <ul
+            v-if="activeSection.items.length"
+            class="grid grid-cols-2 gap-x-8 gap-y-1"
+            :class="layer3Groups.length ? 'mb-6' : ''"
           >
-            <NuxtLink
-              v-if="itemTo(item)"
-              :to="itemTo(item)!"
-              :external="isExternalMegaHref(itemTo(item))"
-              :target="isExternalMegaHref(itemTo(item)) ? '_blank' : undefined"
-              rel="noopener"
-              class="text-sm text-toned hover:(bg-primary/10 text-primary) transition rounded-lg px-2 py-1.5 text-start w-full block cursor-pointer"
+            <li
+              v-for="item in activeSection.items"
+              :key="item.id"
             >
-              {{ item.title }}
-            </NuxtLink>
-            <span
-              v-else
-              class="text-sm text-toned rounded-lg px-2 py-1.5 block"
-            >
-              {{ item.title }}
-            </span>
-          </li>
-        </ul>
+              <NuxtLink
+                v-if="itemTo(item)"
+                :to="itemTo(item)!"
+                :external="isExternalMegaHref(itemTo(item))"
+                :target="isExternalMegaHref(itemTo(item)) ? '_blank' : undefined"
+                rel="noopener"
+                class="text-sm text-toned hover:(bg-primary/10 text-primary) transition rounded-lg px-2 py-1.5 text-start w-full block cursor-pointer"
+              >
+                {{ item.title }}
+              </NuxtLink>
+              <span
+                v-else
+                class="text-sm text-toned rounded-lg px-2 py-1.5 block"
+              >
+                {{ item.title }}
+              </span>
+            </li>
+          </ul>
+
+          <div
+            v-if="layer3Groups.length"
+            class="grid grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-6"
+          >
+            <TheNavbarMegaMenuSection
+              v-for="group in layer3Groups"
+              :key="group.id"
+              :section="group"
+            />
+          </div>
+        </template>
 
         <div
           v-else-if="activeSection"
