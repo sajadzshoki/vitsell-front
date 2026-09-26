@@ -53,7 +53,10 @@ export function useAccountWallet() {
 
     const { result, error } = await usePost<{ paymentUrl: string, transactionId: string }>(
       '/account/wallet/topup',
-      { amount },
+      {
+        amount,
+        ...(import.meta.client ? { returnOrigin: window.location.origin } : {}),
+      },
       { headers: { 'no-error': true } },
     )
 

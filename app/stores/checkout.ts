@@ -200,6 +200,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
       shippingMethod: shippingMethod.value,
       paymentMethod: paymentMethod.value,
       ...(discountCode ? { discountCode } : {}),
+      ...(import.meta.client ? { returnOrigin: window.location.origin } : {}),
     }, { headers: { 'no-error': true } })
 
     if (error || !result) return null

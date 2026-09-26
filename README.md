@@ -83,4 +83,4 @@ docker exec -it api node ace migration:run
 
 
 front update : 
-docker compose -f docker-compose.prebuilt.yml up -d
+docker compose -f docker-compose.prod.yml up -d
