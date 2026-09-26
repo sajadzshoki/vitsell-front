@@ -116,6 +116,16 @@
   box-sizing: border-box;
 }
 
+/*
+  Classic scrollbars (Chrome/Edge) make 100vw wider than the layout viewport,
+  so full-bleed breakouts (w-screen + ms-[calc(50%-50vw)]) cause a tiny
+  horizontal scroll. Firefox overlay scrollbars usually hide it.
+  clip (not hidden) avoids creating a scroll container so position:sticky still works.
+*/
+html {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   padding: 0;
