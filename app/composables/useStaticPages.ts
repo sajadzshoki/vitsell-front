@@ -9,7 +9,7 @@ export function useStaticPages() {
     'static-pages-pending',
     () => ({}),
   )
-  const inFlight = useState<Partial<Record<StaticPageId, Promise<{
+  const inFlight = useRequestRef<Partial<Record<StaticPageId, Promise<{
     result: StaticPage | null
     error: any
   }> | undefined>>>('static-pages-inflight', () => ({}))

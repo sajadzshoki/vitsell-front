@@ -8,6 +8,18 @@
         <template #actions>
           <div class="flex items-center gap-2 flex-wrap">
             <UButton
+              v-if="can('products.update')"
+              type="button"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              icon="i-tabler-percentage"
+              class="cursor-pointer"
+              @click="priceOpen = true"
+            >
+              {{ $t('تغییر قیمت') }}
+            </UButton>
+            <UButton
               v-if="can('products.create')"
               type="button"
               color="neutral"
@@ -58,6 +70,18 @@
         class="cursor-pointer font-medium"
       >
         {{ $t('افزودن محصول') }}
+      </UButton>
+      <UButton
+        v-if="can('products.update')"
+        type="button"
+        color="neutral"
+        variant="soft"
+        block
+        icon="i-tabler-percentage"
+        class="cursor-pointer"
+        @click="priceOpen = true"
+      >
+        {{ $t('تغییر قیمت') }}
       </UButton>
       <UButton
         v-if="can('products.create')"
@@ -382,6 +406,14 @@
       </template>
     </UModal>
 
+    <TheSellerProductBulkPrice
+      v-model:open="priceOpen"
+      :selected-ids="selectedIds"
+      :categories="categories"
+      :brands="brandNames"
+      @applied="loadProducts"
+    />
+
     <TheSellerCsvImportPanel
       v-model:open="importOpen"
       entity="products"
@@ -425,6 +457,7 @@ const filters = useSellerFilters(filterDefs)
 const loading = ref(true)
 const exporting = ref(false)
 const importOpen = ref(false)
+const priceOpen = ref(false)
 const showAdvanced = ref(false)
 const applyingFilters = ref(false)
 const selectedIds = ref<string[]>([])
@@ -558,6 +591,11 @@ const categoryFilterItems = computed(() => [
   { value: 'all', label: t('همه') },
   ...categories.value.map(c => ({ value: c.id, label: c.name })),
 ])
+
+const brandNames = computed(() => {
+  const fromListings = listings.value.map(item => resolveProduct(item.productId).brand).filter(Boolean)
+  return [...new Set([...brands.value.map(item => item.name), ...fromListings])]
+})
 
 const brandFilterItems = computed(() => {
   const fromListings = new Set(listings.value.map(l => resolveProduct(l.productId).brand).filter(Boolean))

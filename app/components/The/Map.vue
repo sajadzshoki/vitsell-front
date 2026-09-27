@@ -2,8 +2,8 @@
   <ClientOnly>
     <NeshanMap
         ref="map"
-        mapKey="web.e700c29d8d1a401486bfaeb3e73b2aae"
-        service-key="service.fb1104a0cb8042ce86199bef4d827934"
+        :map-key="mapKey"
+        :service-key="serviceKey"
         :poi="true"
         :traffic="true"
         default-type="dreamy-gold"
@@ -30,6 +30,10 @@ import {fromLonLat,transform} from "ol/proj";
 import {Polyline} from "ol/format";
 
 import type {Point as PointType} from '~/@types/app'
+
+const config = useRuntimeConfig()
+const mapKey = config.public.neshanMapKey
+const serviceKey = config.public.neshanServiceKey
 
 const emit = defineEmits(['select-point'])
 const props = defineProps<{

@@ -26,7 +26,7 @@ export function useCategories() {
   const productCounts = useState<Record<string, number>>('categories-product-counts', () => ({}))
   const loaded = useState('categories-loaded', () => false)
   const pending = useState('categories-pending', () => false)
-  const inFlight = useState<Promise<{
+  const inFlight = useRequestRef<Promise<{
     categories: Category[]
     productCounts: Record<string, number>
   }> | null>('categories-inflight', () => null)

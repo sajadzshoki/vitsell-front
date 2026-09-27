@@ -45,6 +45,7 @@ export type AboutSectionVisibility = {
   values: boolean
   milestones: boolean
   team: boolean
+  map: boolean
   cta: boolean
 }
 
@@ -65,6 +66,9 @@ export type AboutPagePayload = {
   teamTitle: string
   teamSubtitle: string
   team: AboutTeamMember[]
+  /** WGS84. Both required for the Neshan map on /about. */
+  mapLat: number | null
+  mapLng: number | null
   cta: AboutCta
   seo: SeoMeta
   sectionVisibility: AboutSectionVisibility
@@ -78,6 +82,7 @@ export function defaultAboutSectionVisibility(): AboutSectionVisibility {
     values: true,
     milestones: true,
     team: true,
+    map: true,
     cta: true,
   }
 }
@@ -195,6 +200,8 @@ export function buildDefaultAboutPage(): AboutPagePayload {
         description: 'گسترش به لپ‌تاپ، گیمینگ، صوتی و پوشیدنی‌های هوشمند.',
       },
     ],
+    mapLat: null,
+    mapLng: null,
     teamTitle: 'تیم ویتسل',
     teamSubtitle: 'افرادی که هر روز برای تجربه بهتر خرید شما تلاش می‌کنند',
     team: [

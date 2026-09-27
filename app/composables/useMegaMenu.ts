@@ -76,7 +76,7 @@ export function useMegaMenu() {
   const loaded = useState('public-mega-menu-loaded', () => false)
   const pending = useState('public-mega-menu-pending', () => false)
   const loadError = useState<string | null>('public-mega-menu-error', () => null)
-  const inFlight = useState<Promise<PublicMegaMenu[]> | null>('public-mega-menu-inflight', () => null)
+  const inFlight = useRequestRef<Promise<PublicMegaMenu[]> | null>('public-mega-menu-inflight', () => null)
 
   const menus = computed(() => items.value)
 

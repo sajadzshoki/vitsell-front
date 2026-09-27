@@ -76,7 +76,7 @@ export function useSellerQuestions() {
   }))
   const seeded = useState('seller-product-questions-seeded', () => false)
   const pending = useState('seller-product-questions-pending', () => false)
-  const inFlight = useState<Promise<void> | null>('seller-product-questions-inflight', () => null)
+  const inFlight = useRequestRef<Promise<void> | null>('seller-product-questions-inflight', () => null)
 
   const { fetchProduct, getCachedProduct } = useProducts()
 

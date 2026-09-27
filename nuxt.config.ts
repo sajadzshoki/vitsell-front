@@ -183,6 +183,8 @@ export default defineNuxtConfig({
             adminUrl: process.env.NUXT_PUBLIC_ADMIN_URL || "https://seller.vitsell.ir",
             /** Front app version `{channel}.{major}.{minor}` e.g. beta.0.1 — combine with API APP_VERSION in admin sidebar */
             appVersion: process.env.NUXT_PUBLIC_APP_VERSION || "beta.0.1",
+            neshanMapKey: process.env.NUXT_PUBLIC_NESHAN_MAP_KEY || "web.37352c820ec747ed91a5d0f0a41062bc",
+            neshanServiceKey: process.env.NUXT_PUBLIC_NESHAN_SERVICE_KEY || "service.be5378e73c174469993104db8b41a771",
         },
     },
 

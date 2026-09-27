@@ -398,7 +398,7 @@ export const geoCodingAddress = async (address: string, coords: Coordinate) => {
         {
             method: 'GET',
             headers: {
-                'Api-Key': NESHAN_API_KEY,
+                'Api-Key': useRuntimeConfig().public.neshanServiceKey,
             },
         })
 }

@@ -29,8 +29,11 @@
           <h1 class="text-lg font-bold text-highlighted">
             {{ $t(page.title) }}
           </h1>
-          <p class="text-xs text-muted mt-1">
-            {{ $t(page.subtitle) }}
+          <p
+            v-if="headerSubtitle"
+            class="text-xs text-muted mt-1"
+          >
+            {{ headerSubtitle }}
           </p>
         </div>
       </div>
@@ -270,6 +273,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useAppToast()
 const { fetchStaticPage, getPage } = useStaticPages()
+const { contact: storeContact } = await useStoreContact()
 
 function isRichParagraphs(items: string[]) {
   return isRichBlogContent(items)
@@ -302,9 +306,14 @@ const { data: page, pending } = await useAsyncData<StaticPage | null>(
   },
 )
 
+const headerSubtitle = computed(() => {
+  if (props.pageId === 'contact') return storeContact.value.workingHours
+  return page.value?.subtitle ? t(page.value.subtitle) : ''
+})
+
 useEntitySeo(() => ({
   fallbackTitle: page.value?.title ? t(page.value.title) : t('صفحه'),
-  fallbackDescription: page.value?.subtitle ? t(page.value.subtitle) : '',
+  fallbackDescription: headerSubtitle.value,
   path: page.value?.path || staticPagePaths[props.pageId],
 }))
 

@@ -219,7 +219,7 @@
       </div>
     </section>
 
-    <!-- Team -->
+    <!-- Team
     <section
       v-if="visibility.team && about.team.length"
       class="flex flex-col gap-4"
@@ -276,6 +276,20 @@
           </div>
         </div>
       </div>
+    </section>
+    -->
+
+    <section
+      v-if="visibility.map && hasMapPoint"
+      class="flex flex-col gap-4"
+    >
+      <h2 class="text-lg font-bold text-highlighted">
+        {{ $t('موقعیت ما') }}
+      </h2>
+      <TheAboutMap
+        :latitude="mapPoint.lat"
+        :longitude="mapPoint.lng"
+      />
     </section>
 
     <!-- CTA -->
@@ -340,6 +354,14 @@ const props = defineProps<{
 const { about, ensureLoaded } = useAbout()
 
 await ensureLoaded()
+
+const hasMapPoint = computed(() =>
+  about.value.mapLat != null && about.value.mapLng != null,
+)
+const mapPoint = computed(() => ({
+  lat: about.value.mapLat ?? 0,
+  lng: about.value.mapLng ?? 0,
+}))
 
 const visibility = computed<AboutSectionVisibility>(() => ({
   ...defaultAboutSectionVisibility(),

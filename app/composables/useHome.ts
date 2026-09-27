@@ -111,7 +111,7 @@ export function useHome() {
   const loaded = useState('home-loaded', () => false)
   const pending = useState('home-pending', () => false)
   const error = useState<string | null>('home-error', () => null)
-  const inFlight = useState<Promise<{ home: HomePayload }> | null>('home-inflight', () => null)
+  const inFlight = useRequestRef<Promise<{ home: HomePayload }> | null>('home-inflight', () => null)
   const { categories, fetchCategories } = useCategories()
 
   const heroSlides = computed(() => home.value.heroSlides)

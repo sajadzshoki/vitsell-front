@@ -47,7 +47,7 @@ export function useSeller() {
   const sales = useState<SellerSalesPoint[]>('seller-sales', () => [])
   const loaded = useState('seller-loaded', () => false)
   const pending = useState('seller-pending', () => false)
-  const inFlight = useState<Promise<void> | null>('seller-inflight', () => null)
+  const inFlight = useRequestRef<Promise<void> | null>('seller-inflight', () => null)
 
   const shopInitial = computed(() => shop.value.name.trim().charAt(0) || 'ف')
 
@@ -832,6 +832,43 @@ export function useSeller() {
     }
   }
 
+  async function bulkAdjustListingPrices(payload: {
+    direction: 'increase' | 'decrease'
+    percent: number
+    ids?: string[]
+    category?: string
+    brand?: string
+    dryRun?: boolean
+  }) {
+    const body = {
+      direction: payload.direction,
+      percent: payload.percent,
+      ...(payload.ids?.length ? { ids: payload.ids } : {}),
+      ...(payload.category ? { category: payload.category } : {}),
+      ...(payload.brand ? { brand: payload.brand } : {}),
+      ...(payload.dryRun ? { dryRun: true } : {}),
+    }
+    const { result, error } = await usePost<{ count: number, updated: number }>(
+      '/seller/listings/bulk-price',
+      body,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result) {
+      return {
+        ok: false as const,
+        error: listingApiError(error, 'تغییر قیمت گروهی ناموفق بود'),
+        count: 0,
+        updated: 0,
+      }
+    }
+    return {
+      ok: true as const,
+      error: null as null,
+      count: Number(result.count) || 0,
+      updated: Number(result.updated) || 0,
+    }
+  }
+
   type ListingProductExtras = {
     featured?: boolean
     published?: boolean
@@ -1394,6 +1431,7 @@ export function useSeller() {
     setListingStatus,
     deleteListing,
     bulkDeleteListings,
+    bulkAdjustListingPrices,
     updateListingProduct,
     updateListingStock,
     addListingProduct,

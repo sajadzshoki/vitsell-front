@@ -13,6 +13,13 @@ function apiErrorMessage(error: any, fallback: string) {
   )
 }
 
+function parseMapCoord(value: unknown, min: number, max: number): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(String(value).trim().replace(',', '.'))
+  if (!Number.isFinite(n) || n < min || n > max) return null
+  return n
+}
+
 function mergeAbout(result: Partial<AboutPagePayload> | null | undefined): AboutPagePayload {
   const defaults = buildDefaultAboutPage()
   if (!result || typeof result !== 'object') return defaults
@@ -26,6 +33,8 @@ function mergeAbout(result: Partial<AboutPagePayload> | null | undefined): About
       ? result.milestones
       : defaults.milestones,
     team: Array.isArray(result.team) && result.team.length ? result.team : defaults.team,
+    mapLat: parseMapCoord(result.mapLat, -90, 90),
+    mapLng: parseMapCoord(result.mapLng, -180, 180),
     cta: { ...defaults.cta, ...(result.cta || {}) },
     seo: { ...defaults.seo, ...(result.seo || {}) },
     sectionVisibility: {

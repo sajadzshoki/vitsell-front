@@ -133,6 +133,35 @@
         </div>
       </div>
 
+      <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0">
+        <h2 class="font-bold text-highlighted mb-1">
+          {{ $t('موقعیت روی نقشه') }}
+        </h2>
+        <p class="text-xs text-muted mb-4 leading-6">
+          {{ $t('عرض و طول جغرافیایی دفتر را وارد کنید تا در صفحه درباره ما روی نشان نمایش داده شود.') }}
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TheFormInput
+            v-model="form.mapLat"
+            :label="$t('عرض جغرافیایی (lat)')"
+            dir="ltr"
+            inputmode="decimal"
+            icon="i-tabler-map-pin"
+            placeholder="35.7219"
+            :error="errors.mapLat"
+          />
+          <TheFormInput
+            v-model="form.mapLng"
+            :label="$t('طول جغرافیایی (lng)')"
+            dir="ltr"
+            inputmode="decimal"
+            icon="i-tabler-map-pin"
+            placeholder="51.3347"
+            :error="errors.mapLng"
+          />
+        </div>
+      </div>
+
       <!-- Stats -->
       <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 space-y-4">
         <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -499,6 +528,8 @@ type AboutFormState = {
   cta: AboutPagePayload['cta']
   seo: SeoMeta
   sectionVisibility: AboutSectionVisibility
+  mapLat: string
+  mapLng: string
 }
 
 const { t } = useI18n()
@@ -515,7 +546,7 @@ const aboutViewHref = computed(() => {
 const ready = ref(false)
 const saving = ref(false)
 const form = ref<AboutFormState>(payloadToForm(buildDefaultAboutPage()))
-const errors = ref<Partial<Record<'title' | 'subtitle' | 'heroImage' | 'storyText' | 'mission' | 'vision', string>>>({})
+const errors = ref<Partial<Record<'title' | 'subtitle' | 'heroImage' | 'storyText' | 'mission' | 'vision' | 'mapLat' | 'mapLng', string>>>({})
 
 const sectionVisibilityItems: { key: keyof AboutSectionVisibility, label: string }[] = [
   { key: 'hero', label: 'هیرو' },
@@ -524,6 +555,7 @@ const sectionVisibilityItems: { key: keyof AboutSectionVisibility, label: string
   { key: 'values', label: 'ارزش‌ها' },
   { key: 'milestones', label: 'مسیر رشد' },
   { key: 'team', label: 'تیم' },
+  { key: 'map', label: 'نقشه' },
   { key: 'cta', label: 'دعوت به اقدام' },
 ]
 
@@ -548,7 +580,17 @@ function payloadToForm(payload: AboutPagePayload): AboutFormState {
     cta: cloneAboutPage(payload).cta,
     seo: { ...emptySeoMeta(), ...(payload.seo || {}) },
     sectionVisibility: { ...defaultAboutSectionVisibility(), ...(payload.sectionVisibility || {}) },
+    mapLat: payload.mapLat == null ? '' : String(payload.mapLat),
+    mapLng: payload.mapLng == null ? '' : String(payload.mapLng),
   }
+}
+
+function parseFormCoord(raw: string, min: number, max: number) {
+  const text = raw.trim().replace(',', '.')
+  if (!text) return { value: null as number | null, invalid: false }
+  const n = Number(text)
+  if (!Number.isFinite(n) || n < min || n > max) return { value: null, invalid: true }
+  return { value: n, invalid: false }
 }
 
 function formToPayload(state: AboutFormState): AboutPagePayload {
@@ -610,6 +652,8 @@ function formToPayload(state: AboutFormState): AboutPagePayload {
     },
     seo: { ...emptySeoMeta(), ...state.seo },
     sectionVisibility: { ...state.sectionVisibility },
+    mapLat: parseFormCoord(state.mapLat, -90, 90).value,
+    mapLng: parseFormCoord(state.mapLng, -180, 180).value,
   }
 }
 
@@ -636,6 +680,14 @@ function validate() {
   if (isEmptyHtml(form.value.storyText)) next.storyText = t('متن داستان الزامی است')
   if (isEmptyHtml(form.value.mission)) next.mission = t('ماموریت الزامی است')
   if (isEmptyHtml(form.value.vision)) next.vision = t('چشم‌انداز الزامی است')
+  const lat = parseFormCoord(form.value.mapLat, -90, 90)
+  const lng = parseFormCoord(form.value.mapLng, -180, 180)
+  if (lat.invalid) next.mapLat = t('عرض جغرافیایی معتبر نیست')
+  if (lng.invalid) next.mapLng = t('طول جغرافیایی معتبر نیست')
+  if ((lat.value == null) !== (lng.value == null)) {
+    if (lat.value == null && !lat.invalid) next.mapLat = t('عرض جغرافیایی را هم وارد کنید')
+    if (lng.value == null && !lng.invalid) next.mapLng = t('طول جغرافیایی را هم وارد کنید')
+  }
   errors.value = next
   return !Object.keys(next).length
 }

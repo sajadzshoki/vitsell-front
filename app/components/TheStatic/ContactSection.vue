@@ -3,7 +3,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
       <div class="lg:col-span-2 flex flex-col gap-4">
         <div
-          v-for="(item, index) in items"
+          v-for="(item, index) in displayItems"
           :key="index"
           class="flex items-start gap-3 p-4 rounded-xl bg-muted/50 border border-muted transition"
           :class="item.href ? 'hover:(border-primary/30 bg-primary/5)' : ''"
@@ -25,13 +25,16 @@
                 :class="item.href ? 'num' : ''"
                 :dir="item.href?.startsWith('tel:') || item.href?.startsWith('mailto:') ? 'ltr' : undefined"
               >
-                {{ $t(item.value) }}
+                {{ item.raw ? item.value : $t(item.value) }}
               </div>
             </div>
           </component>
         </div>
 
-        <div class="p-4 rounded-xl border border-dashed border-muted bg-muted/30">
+        <div
+          v-if="storeContact.address"
+          class="p-4 rounded-xl border border-dashed border-muted bg-muted/30"
+        >
           <div class="flex items-center gap-2 text-sm font-semibold text-highlighted mb-2">
             <UIcon name="i-tabler-map-2" class="size-4 text-primary" />
             {{ $t('موقعیت دفتر مرکزی') }}
@@ -40,7 +43,7 @@
             <div class="text-center px-4">
               <UIcon name="i-tabler-map-pin" class="size-8 mx-auto mb-2 opacity-60" />
               <p class="text-xs leading-6">
-                {{ $t('تهران، خیابان ولیعصر، بالاتر از پارک ساعی') }}
+                {{ storeContact.address }}
               </p>
             </div>
           </div>
@@ -149,9 +152,50 @@
 import type { StaticContactItem } from '~/data/static-pages'
 import { contactFormSubjects } from '~/data/static-pages'
 
-defineProps<{
+const props = defineProps<{
   items: StaticContactItem[]
 }>()
+
+const { contact: storeContact } = await useStoreContact()
+
+function isFooterContactField(item: StaticContactItem) {
+  const label = item.label || ''
+  const href = item.href || ''
+  if (item.icon === 'i-tabler-phone' || href.startsWith('tel:') || label.includes('تلفن')) return true
+  if (item.icon === 'i-tabler-clock' || label.includes('پاسخ') || label.includes('ساعت')) return true
+  if (item.icon === 'i-tabler-map-pin' || label.includes('آدرس')) return true
+  return false
+}
+
+const displayItems = computed(() => {
+  const live = storeContact.value
+  const extras = props.items.filter(item => !isFooterContactField(item))
+  const phones = live.phones.map(phone => ({
+    icon: 'i-tabler-phone',
+    label: 'تلفن پشتیبانی',
+    value: phone.label,
+    href: phone.href,
+    raw: true,
+  }))
+  const address = live.address
+    ? [{
+        icon: 'i-tabler-map-pin',
+        label: 'آدرس',
+        value: live.address,
+        raw: true as const,
+      }]
+    : []
+  const hours = live.workingHours
+    ? [{
+        icon: 'i-tabler-clock',
+        label: 'ساعات پاسخگویی',
+        value: live.workingHours,
+        raw: true as const,
+      }]
+    : []
+
+  return [...phones, ...extras, ...address, ...hours]
+})
 
 const { t } = useI18n()
 const toast = useAppToast()

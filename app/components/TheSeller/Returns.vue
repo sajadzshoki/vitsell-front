@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 !bg-red">
+  <div class="bg-default max-lg:(bg-transparent border-0 rounded-none) border border-muted rounded-2xl p-5 md:p-6 max-lg:p-0 ">
     <div class="hidden lg:block">
       <TheSellerPageHeader
         :title="$t('مرجوعی‌ها')"

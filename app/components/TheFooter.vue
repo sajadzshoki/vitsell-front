@@ -183,7 +183,7 @@
         <div
           class="py-8 border-t border-muted flex flex-col md:(flex-row items-end justify-between) gap-8"
         >
-          <div v-if="downloadStores.length">
+          <div v-if="appStores.length">
             <h4 class="flex items-center gap-2 text-sm font-bold text-highlighted mb-4 text-start">
               <span
                 class="size-1.5 rounded-full bg-primary shrink-0"
@@ -192,21 +192,35 @@
               {{ $t('دانلود اپلیکیشن ما از') }}
             </h4>
             <div class="flex flex-wrap items-center gap-2.5">
-              <a
-                v-for="store in downloadStores"
+              <component
+                :is="storeHref(store) ? 'a' : 'div'"
+                v-for="store in appStores"
                 :key="store.id"
-                :href="store.href"
+                :href="storeHref(store) || undefined"
                 :aria-label="$t(store.label)"
-                class="inline-flex items-center cursor-pointer transition-all hover:opacity-90 focus-visible:(outline-none ring-2 ring-primary/40) rounded-xl"
-                target="_blank"
-                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 h-12 transition-all rounded-xl"
+                :class="storeHref(store) ? 'cursor-pointer hover:opacity-90 focus-visible:(outline-none ring-2 ring-primary/40)' : ''"
+                :target="storeHref(store) ? '_blank' : undefined"
+                :rel="storeHref(store) ? 'noopener noreferrer' : undefined"
               >
-                <TheIcon
-                  :name="store.icon"
-                  icon-type="svg"
-                  class="footer-store-badge !h-12 !w-auto !text-[2.5rem] leading-none [&_.nuxt-icon]:(!h-full !w-full) [&_svg]:(!h-full !w-auto !mb-0 !max-w-none)"
-                />
-              </a>
+                <img
+                  v-if="isSellerAdminIconImage(store.icon)"
+                  :src="resolveMediaUrl(store.icon)"
+                  :alt="$t(store.label)"
+                  class="h-12 w-auto max-w-40 object-contain"
+                  loading="lazy"
+                >
+                <span
+                  v-else
+                  class="inline-flex items-center gap-2 h-12 px-3 rounded-xl border border-muted bg-elevated text-sm text-toned"
+                >
+                  <UIcon
+                    :name="resolveSellerAdminIconName(store.icon)"
+                    class="size-5 shrink-0"
+                  />
+                  {{ $t(store.label) }}
+                </span>
+              </component>
             </div>
           </div>
 
@@ -298,13 +312,6 @@ function useProductionEnamadSeal() {
 
 const enamadSrc = ref(useProductionEnamadSeal() ? ENAMAD_REMOTE : TRUST_BADGES.enamad)
 
-/** Temporary store badges — App Store / Google Play / Microsoft */
-const FALLBACK_DOWNLOAD_STORES = [
-  { id: 'appstore', label: 'App Store', icon: 'store-appstore', href: '#' },
-  { id: 'googleplay', label: 'Google Play', icon: 'store-googleplay', href: '#' },
-  { id: 'microsoft', label: 'Microsoft', icon: 'store-microsoft', href: '#' },
-] as const
-
 const { t } = useI18n()
 const { footer, fetchFooter } = useFooter()
 const { site, fetchSite } = useSiteSettings()
@@ -332,38 +339,20 @@ const aboutText = computed(() =>
   || site.value.about?.trim()
   || '',
 )
-const contact = computed(() => {
-  const fromFooter = footer.value.contact
-  const phones = (fromFooter?.phones || [])
-    .filter(p => p?.label && p?.href)
-  const emailLabel = fromFooter?.email?.label?.trim()
-    || site.value.supportEmail?.trim()
-    || site.value.email?.trim()
-    || ''
-  const emailHref = fromFooter?.email?.href?.trim()
-    || (emailLabel ? `mailto:${emailLabel}` : '')
-
-  // If footer phones empty, fall back to site/platform contact phones
-  const fallbackPhones: { label: string, href: string }[] = []
-  if (!phones.length) {
-    const support = site.value.supportPhone?.trim() || site.value.phone?.trim()
-    const sales = site.value.salesPhone?.trim()
-    if (support) fallbackPhones.push({ label: support, href: `tel:${support.replace(/\D/g, '') || support}` })
-    if (sales) fallbackPhones.push({ label: sales, href: `tel:${sales.replace(/\D/g, '') || sales}` })
-  }
-
-  return {
-    phones: phones.length ? phones : fallbackPhones,
-    email: { label: emailLabel, href: emailHref },
-  }
-})
+const storeContact = computed(() => resolveStoreContact(footer.value, site.value))
+const contact = computed(() => ({
+  phones: storeContact.value.phones,
+  email: storeContact.value.email,
+}))
 const appStores = computed(() =>
-  (footer.value.appStores || []).filter(s => s?.id && s?.label && s?.icon && s?.href),
+  (footer.value.appStores || []).filter(s => s?.id && s?.label && s?.icon),
 )
-/** Prefer CMS app stores; fall back to temporary store badge icons. */
-const downloadStores = computed(() =>
-  appStores.value.length ? appStores.value : [...FALLBACK_DOWNLOAD_STORES],
-)
+
+function storeHref(store: { href?: string }) {
+  const href = store.href?.trim() || ''
+  if (!href || href === '#') return ''
+  return href
+}
 const badges = computed(() =>
   (footer.value.badges || []).filter(b => b?.id && b?.label && b?.icon),
 )
@@ -372,8 +361,8 @@ const displayBadges = computed(() =>
   badges.value.filter(b => b.id !== 'enamad'),
 )
 
-const address = computed(() => site.value.address?.trim() || '')
-const workingHours = computed(() => site.value.workingHours?.trim() || '')
+const address = computed(() => storeContact.value.address)
+const workingHours = computed(() => storeContact.value.workingHours)
 
 const hasContact = computed(() =>
   contact.value.phones.length > 0
