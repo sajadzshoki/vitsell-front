@@ -22,6 +22,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
+        # Docker Hub often answers 403 from this server; Arvan mirrors library/node.
+        NODE_IMAGE: ${NODE_IMAGE:-docker.arvancloud.ir/library/node:24-bookworm-slim}
         NUXT_PUBLIC_APP_MODE: ${NUXT_PUBLIC_APP_MODE:-store}
         NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-https://api.vitsell.ir/api/v1}
         NUXT_PUBLIC_STORE_URL: ${NUXT_PUBLIC_STORE_URL:-https://vitsell.ir}
@@ -49,6 +51,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
+        NODE_IMAGE: ${NODE_IMAGE:-docker.arvancloud.ir/library/node:24-bookworm-slim}
         NUXT_PUBLIC_APP_MODE: admin
         NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-https://api.vitsell.ir/api/v1}
         NUXT_PUBLIC_STORE_URL: ${NUXT_PUBLIC_STORE_URL:-https://vitsell.ir}

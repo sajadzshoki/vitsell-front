@@ -3,7 +3,8 @@
 # Then copy `.output` + this file + docker-compose.prebuilt.yml to the server.
 # (No `# syntax=docker/dockerfile:1` — Docker Hub often returns 403 for that frontend image.)
 
-FROM node:24-bookworm-slim
+ARG NODE_IMAGE=node:24-bookworm-slim
+FROM ${NODE_IMAGE}
 WORKDIR /app
 
 ENV NODE_ENV=production \

@@ -1,13 +1,15 @@
 # vitsell storefront — Nuxt 4 SSR (Nitro)
 # CI/CD: pass NUXT_PUBLIC_* as --build-arg. Do not COPY .env into the image.
 # (No `# syntax=docker/dockerfile:1` — Docker Hub often returns 403 for that frontend image.)
+# NODE_IMAGE: override when registry-1.docker.io returns 403 (see docker-compose.prod.yml).
 
-FROM node:24-bookworm-slim AS deps
+ARG NODE_IMAGE=node:24-bookworm-slim
+FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
 COPY package.json ./
 RUN npm install
 
-FROM node:24-bookworm-slim AS build
+FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 
 ARG NUXT_PUBLIC_APP_MODE=store
@@ -28,7 +30,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:24-bookworm-slim AS runner
+FROM ${NODE_IMAGE} AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \
