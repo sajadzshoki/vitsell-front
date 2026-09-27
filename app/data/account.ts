@@ -10,7 +10,16 @@ export type AccountTabId =
   | 'addresses'
   | 'profile'
 
-export type OrderStatus = 'delivered' | 'shipping' | 'processing' | 'cancelled'
+/** Storefront status follows the seller fulfillment status. Legacy buyer values stay for older rows. */
+export type OrderStatus =
+  | 'new'
+  | 'packing'
+  | 'shipped'
+  | 'delivered'
+  | 'returned'
+  | 'cancelled'
+  | 'shipping'
+  | 'processing'
 
 export type OrderItem = {
   productId: string
@@ -76,31 +85,60 @@ export const accountNavItems: {
 
 export const orderStatusMeta: Record<
   OrderStatus,
-  { label: string; color: 'success' | 'info' | 'warning' | 'neutral'; icon: string; step: number }
+  {
+    label: string
+    color: 'success' | 'info' | 'warning' | 'primary' | 'error' | 'neutral'
+    icon: string
+    step: number
+  }
 > = {
+  new: {
+    label: 'سفارش جدید',
+    color: 'warning',
+    icon: 'i-tabler-bell',
+    step: 0,
+  },
+  packing: {
+    label: 'در حال آماده‌سازی',
+    color: 'info',
+    icon: 'i-tabler-box',
+    step: 1,
+  },
+  shipped: {
+    label: 'ارسال شده',
+    color: 'primary',
+    icon: 'i-tabler-truck-delivery',
+    step: 2,
+  },
   delivered: {
     label: 'تحویل شده',
     color: 'success',
     icon: 'i-tabler-check',
     step: 3,
   },
-  shipping: {
-    label: 'در حال ارسال',
-    color: 'info',
-    icon: 'i-tabler-truck-delivery',
-    step: 2,
-  },
-  processing: {
-    label: 'در حال پردازش',
-    color: 'warning',
-    icon: 'i-tabler-clock',
-    step: 1,
+  returned: {
+    label: 'مرجوعی',
+    color: 'error',
+    icon: 'i-tabler-arrow-back-up',
+    step: 0,
   },
   cancelled: {
     label: 'لغو شده',
     color: 'neutral',
     icon: 'i-tabler-x',
     step: 0,
+  },
+  shipping: {
+    label: 'ارسال شده',
+    color: 'primary',
+    icon: 'i-tabler-truck-delivery',
+    step: 2,
+  },
+  processing: {
+    label: 'در حال آماده‌سازی',
+    color: 'info',
+    icon: 'i-tabler-box',
+    step: 1,
   },
 }
 

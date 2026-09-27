@@ -40,7 +40,7 @@
       </div>
 
       <div
-        v-if="order.status !== 'cancelled'"
+        v-if="order.status !== 'cancelled' && order.status !== 'returned'"
         class="bg-muted rounded-2xl p-4 sm:p-5"
       >
         <div class="flex items-start justify-between gap-1 overflow-hidden">
@@ -248,7 +248,7 @@ const loading = ref(true)
 
 const order = computed(() => getOrderById(props.orderId))
 const statusMeta = computed(() =>
-  order.value ? orderStatusMeta[order.value.status] : orderStatusMeta.processing,
+  (order.value && orderStatusMeta[order.value.status]) || orderStatusMeta.processing,
 )
 
 const lineItems = computed(() =>

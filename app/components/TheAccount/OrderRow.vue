@@ -85,7 +85,9 @@ const { getCachedProduct } = useProducts()
 
 const orderLink = computed(() => `/order/${encodeURIComponent(props.order.id)}`)
 
-const statusMeta = computed(() => orderStatusMeta[props.order.status])
+const statusMeta = computed(() =>
+  orderStatusMeta[props.order.status] ?? orderStatusMeta.processing,
+)
 
 const visibleItems = computed(() =>
   props.order.items.slice(0, 3).map(item => ({

@@ -74,17 +74,46 @@ bun run preview
 
 Check out the [deployment documentation](https://nuxt.com/docs/4.x/getting-started/deployment) for more information.
 
-backend update : 
+## Production deploy (vitsell)
+
+### Backend (API)
+
+```bash
 docker compose -f docker-compose.prod.yml build --progress=plain
-
 docker compose -f docker-compose.prod.yml up -d
-
 docker exec -it api node ace migration:run
+```
 
+### Frontend (store)
 
-front update : 
+**A — Build on the server** (full Nuxt source present; recommended if the repo is on the VPS):
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build --force-recreate
+```
+
+**B — Prebuilt `.output` only** (`docker-compose.prebuilt.yml`):
+
+On your **local/CI** machine first:
+
+```bash
+npm ci
+npm run build:store:prod
+```
+
+Then copy to the server folder **at least**:
+
+- `.output/`  (required — without this, Docker fails with `/.output: not found`)
+- `Dockerfile.prebuilt`
+- `docker-compose.prebuilt.yml`
+
+On the server:
+
+```bash
+# confirm .output exists
+ls -la .output/server/index.mjs
 
 docker compose -f docker-compose.prebuilt.yml up -d --build --force-recreate
+```
 
-
-docker compose -f docker-compose.prod.yml up -d
+Do **not** run `prebuilt` on a folder that only has compose/Dockerfile and no `.output`.
