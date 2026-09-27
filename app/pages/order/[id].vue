@@ -15,6 +15,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const { t } = useI18n()
+const toast = useAppToast()
 
 const orderId = computed(() => String(route.params.id ?? ''))
 
@@ -25,4 +26,9 @@ definePageMeta({
 useSeoMeta({
   title: () => t('جزئیات سفارش'),
 })
+
+if (import.meta.client && route.query.payment === 'ok') {
+  toast.success(t('پرداخت با موفقیت انجام شد'))
+  navigateTo({ path: route.path, query: {} }, { replace: true })
+}
 </script>

@@ -125,6 +125,7 @@ import { formatPrice } from '~/data/products'
 
 const { t } = useI18n()
 const toast = useAppToast()
+const route = useRoute()
 
 const store = useCheckoutStore()
 const { step, placedOrderId } = storeToRefs(store)
@@ -149,6 +150,16 @@ if (import.meta.client) {
   }
   else {
     await hydrateShop()
+  }
+
+  const payment = typeof route.query.payment === 'string' ? route.query.payment : ''
+  if (payment === 'failed') {
+    toast.error(t('پرداخت ناموفق بود. در صورت کسر وجه، تا ۷۲ ساعت برگشت می‌خورد.'))
+    navigateTo({ path: '/cart', query: {} }, { replace: true })
+  }
+  else if (payment === 'cancelled') {
+    toast.info(t('پرداخت لغو شد'))
+    navigateTo({ path: '/cart', query: {} }, { replace: true })
   }
 }
 
@@ -210,6 +221,11 @@ async function onNext() {
   const id = await store.placeOrder(total.value, discountCode.value)
   if (!id) {
     toast.error(t('ثبت سفارش ناموفق بود'))
+    return
+  }
+  // Online payment navigates away to Zarinpal — don't clear cart / toast yet;
+  // callback clears cart after successful verify and redirects to /order/:id.
+  if (store.paymentMethod === 'online') {
     return
   }
   await clearCart()
