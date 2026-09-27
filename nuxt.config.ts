@@ -35,8 +35,11 @@ const privateNoindex = {
 export default defineNuxtConfig({
     devtools: {enabled: false},
     ssr: true,
-    /** Separate dirs so `dev:store` + `dev:admin` don't clobber each other's prepared config */
-    buildDir: isAdminApp ? '.nuxt-admin' : '.nuxt',
+    /**
+     * Dev only: store and admin can run together without sharing `.nuxt`.
+     * Production builds (Docker) must use `.nuxt` — Vite looks up `.nuxt/tsconfig.json`.
+     */
+    buildDir: isAdminApp && process.env.NODE_ENV !== 'production' ? '.nuxt-admin' : '.nuxt',
     devServer: {
         port: isAdminApp ? 4001 : 4000,
       },
