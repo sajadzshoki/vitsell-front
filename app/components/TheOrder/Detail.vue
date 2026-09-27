@@ -28,15 +28,27 @@
             {{ $t('ثبت‌شده در تاریخ') }} {{ order.date }}
           </div>
         </div>
-        <UBadge
-          :color="statusMeta.color"
-          variant="subtle"
-          size="md"
-          class="font-bold"
-        >
-          <UIcon :name="statusMeta.icon" class="size-4 shrink-0" />
-          {{ $t(statusMeta.label) }}
-        </UBadge>
+        <div class="flex items-center gap-2 flex-wrap">
+          <UButton
+            v-if="canReturn"
+            color="primary"
+            variant="soft"
+            icon="i-tabler-arrow-back-up"
+            class="cursor-pointer"
+            @click="returnOpen = true"
+          >
+            {{ $t('مرجوع کردن') }}
+          </UButton>
+          <UBadge
+            :color="statusMeta.color"
+            variant="subtle"
+            size="md"
+            class="font-bold"
+          >
+            <UIcon :name="statusMeta.icon" class="size-4 shrink-0" />
+            {{ $t(statusMeta.label) }}
+          </UBadge>
+        </div>
       </div>
 
       <div
@@ -76,6 +88,59 @@
           </div>
         </div>
       </div>
+
+      <div
+        v-if="orderReturns.length"
+        class="mt-5 space-y-2"
+      >
+        <h2 class="text-sm font-bold text-highlighted">{{ $t('درخواست‌های مرجوعی') }}</h2>
+        <div
+          v-for="request in orderReturns"
+          :key="request.id"
+          class="rounded-xl border border-muted bg-muted/40 p-3"
+        >
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <span class="num text-xs text-muted" dir="ltr">{{ request.id }}</span>
+            <UBadge
+              :color="returnStatusMeta(request.status).color"
+              variant="subtle"
+              size="xs"
+            >
+              {{ $t(returnStatusMeta(request.status).label) }}
+            </UBadge>
+          </div>
+          <p class="text-sm text-default mt-2">{{ request.reason }}</p>
+          <ul class="mt-2 space-y-1">
+            <li
+              v-for="(line, index) in request.items"
+              :key="`${request.id}-${line.productId}-${index}`"
+              class="text-xs text-toned"
+            >
+              {{ line.productTitle }}
+              <span v-if="line.variantLabel"> · {{ line.variantLabel }}</span>
+              · {{ line.qty.toLocaleString('fa-IR') }} {{ $t('عدد') }}
+            </li>
+          </ul>
+          <p
+            v-if="request.adminNote"
+            class="text-xs text-muted mt-2"
+          >
+            {{ $t('پاسخ فروشنده') }}: {{ request.adminNote }}
+          </p>
+          <div
+            v-if="request.photos.length"
+            class="flex gap-2 mt-2"
+          >
+            <img
+              v-for="url in request.photos"
+              :key="url"
+              :src="mediaSrc(url)"
+              alt=""
+              class="size-14 rounded-lg object-cover border border-muted"
+            >
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -85,7 +150,7 @@
           <div class="space-y-4">
             <div
               v-for="item in lineItems"
-              :key="item.productId"
+              :key="`${item.productId}-${item.variantId || ''}`"
               class="flex gap-3 pb-4 border-b border-muted last:(border-b-0 pb-0)"
             >
               <NuxtLink
@@ -229,10 +294,23 @@
       {{ $t('بازگشت به سفارش‌ها') }}
     </UButton>
   </div>
+
+  <TheOrderReturnModal
+    v-model:open="returnOpen"
+    :order-id="orderId"
+    :lines="returnableLines"
+    @submitted="loadOrder"
+  />
 </template>
 
 <script setup lang="ts">
-import { orderStatusMeta, orderTrackingSteps } from '~/data/account'
+import {
+  orderReturnHoldStatuses,
+  orderStatusMeta,
+  orderTrackingSteps,
+  type AccountOrderReturn,
+} from '~/data/account'
+import { sellerReturnStatusMeta } from '~/data/seller-returns-refunds'
 import { formatPrice } from '~/data/products'
 
 const props = defineProps<{
@@ -241,10 +319,12 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { getOrderById, fetchOrder } = useAccount()
+const { getOrderById, fetchOrder, fetchOrderReturns } = useAccount()
 const { getCachedProduct } = useProducts()
 
 const loading = ref(true)
+const returnOpen = ref(false)
+const orderReturns = ref<AccountOrderReturn[]>([])
 
 const order = computed(() => getOrderById(props.orderId))
 const statusMeta = computed(() =>
@@ -257,6 +337,38 @@ const lineItems = computed(() =>
     product: getCachedProduct(item.productId),
   })),
 )
+
+const returnableLines = computed(() =>
+  lineItems.value.flatMap((item) => {
+    const held = orderReturns.value
+      .filter(row => (orderReturnHoldStatuses as readonly string[]).includes(row.status))
+      .flatMap(row => row.items)
+      .filter(row => row.productId === item.productId && (row.variantId || '') === (item.variantId || ''))
+      .reduce((sum, row) => sum + row.qty, 0)
+    const maxQty = item.qty - held
+    if (maxQty <= 0) return []
+    return [{
+      key: `${item.productId}-${item.variantId || item.variantLabel || ''}`,
+      productId: item.productId,
+      variantId: item.variantId,
+      variantLabel: item.variantLabel,
+      title: item.product?.title || item.productId,
+      image: item.product?.image,
+      maxQty,
+    }]
+  }),
+)
+
+const canReturn = computed(() => order.value?.status === 'delivered' && returnableLines.value.length > 0)
+
+function returnStatusMeta(status: string) {
+  return sellerReturnStatusMeta[status as keyof typeof sellerReturnStatusMeta]
+    ?? { label: status, color: 'neutral' as const }
+}
+
+function mediaSrc(url: string) {
+  return resolveMediaUrl(url) || url
+}
 
 const subtotal = computed(() =>
   lineItems.value.reduce((sum, item) => sum + item.price * item.qty, 0),
@@ -278,6 +390,8 @@ async function loadOrder() {
     if (error && !getOrderById(props.orderId)) {
       toast.error(apiErrorMessage(error, t('بارگذاری سفارش ناموفق بود')))
     }
+    const returns = await fetchOrderReturns(props.orderId)
+    orderReturns.value = returns.result || []
   }
   finally {
     loading.value = false

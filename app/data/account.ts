@@ -25,6 +25,48 @@ export type OrderItem = {
   productId: string
   qty: number
   price: number
+  variantId?: string | null
+  variantLabel?: string
+}
+
+export const accountOrderStatusFilters = [
+  { id: 'all', label: 'همه', statuses: null },
+  { id: 'new', label: 'سفارش جدید', statuses: ['new'] },
+  { id: 'packing', label: 'در حال آماده‌سازی', statuses: ['packing', 'processing'] },
+  { id: 'shipped', label: 'ارسال شده', statuses: ['shipped', 'shipping'] },
+  { id: 'delivered', label: 'تحویل شده', statuses: ['delivered'] },
+  { id: 'returned', label: 'مرجوعی', statuses: ['returned'] },
+  { id: 'cancelled', label: 'لغو شده', statuses: ['cancelled'] },
+] as const
+
+export type AccountOrderStatusFilterId = (typeof accountOrderStatusFilters)[number]['id']
+
+export const orderReturnHoldStatuses = [
+  'requested',
+  'approved',
+  'received',
+  'processing',
+  'completed',
+] as const
+
+export type AccountOrderReturnItem = {
+  productId: string
+  productTitle: string
+  variantId?: string | null
+  variantLabel?: string | null
+  qty: number
+  unitPrice: number
+}
+
+export type AccountOrderReturn = {
+  id: string
+  orderId: string
+  status: string
+  reason: string
+  adminNote: string
+  requestedAt: string
+  photos: string[]
+  items: AccountOrderReturnItem[]
 }
 
 export type ShopOrder = {

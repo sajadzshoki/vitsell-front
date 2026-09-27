@@ -1,4 +1,4 @@
-import type { AccountProfile, ShopOrder } from '~/data/account'
+import type { AccountOrderReturn, AccountProfile, ShopOrder } from '~/data/account'
 
 const emptyProfile = (): AccountProfile => ({
   firstName: '',
@@ -122,6 +122,59 @@ export function useAccount() {
     return { result, error: null as null }
   }
 
+  function toOrderReturn(raw: any): AccountOrderReturn {
+    return {
+      id: String(raw.id),
+      orderId: String(raw.orderId || ''),
+      status: String(raw.status || 'requested'),
+      reason: String(raw.reason || ''),
+      adminNote: String(raw.adminNote || ''),
+      requestedAt: String(raw.requestedAt || ''),
+      photos: Array.isArray(raw.photos) ? raw.photos.map((url: unknown) => String(url)) : [],
+      items: Array.isArray(raw.items)
+        ? raw.items.map((item: any) => ({
+            productId: String(item.productId || ''),
+            productTitle: String(item.productTitle || item.productId || ''),
+            variantId: item.variantId ?? null,
+            variantLabel: item.variantLabel ?? null,
+            qty: Number(item.qty) || 1,
+            unitPrice: Number(item.unitPrice) || 0,
+          }))
+        : [],
+    }
+  }
+
+  async function fetchOrderReturns(orderId: string) {
+    const { result, error } = await useGet<AccountOrderReturn[]>(
+      `/account/orders/${encodeURIComponent(orderId)}/returns`,
+      { headers: { 'no-error': true } },
+    )
+    if (error) return { result: null as AccountOrderReturn[] | null, error }
+    return {
+      result: Array.isArray(result) ? result.map(toOrderReturn) : [],
+      error: null as null,
+    }
+  }
+
+  async function createOrderReturn(
+    orderId: string,
+    payload: {
+      reason: string
+      photos?: string[]
+      items: { productId: string, qty: number, variantId?: string | null }[]
+    },
+  ) {
+    const { result, error } = await usePost<AccountOrderReturn[]>(
+      `/account/orders/${encodeURIComponent(orderId)}/returns`,
+      payload,
+      { headers: { 'no-error': true } },
+    )
+    if (error || !Array.isArray(result)) {
+      return { result: null as AccountOrderReturn[] | null, error }
+    }
+    return { result: result.map(toOrderReturn), error: null as null }
+  }
+
   return {
     profile,
     orders,
@@ -136,5 +189,7 @@ export function useAccount() {
     setPassword,
     fetchOrders,
     fetchOrder,
+    fetchOrderReturns,
+    createOrderReturn,
   }
 }

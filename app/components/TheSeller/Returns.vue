@@ -102,6 +102,32 @@
             <div class="text-xs text-toned mt-2">
               {{ item.reason }}
             </div>
+            <ul
+              v-if="item.items.length"
+              class="mt-2 space-y-1"
+            >
+              <li
+                v-for="(line, index) in item.items"
+                :key="`${item.id}-${line.productId}-${index}`"
+                class="text-xs text-default"
+              >
+                {{ line.productTitle }}
+                <span v-if="line.variantLabel" class="text-muted"> · {{ line.variantLabel }}</span>
+                <span class="text-muted num"> · {{ line.qty.toLocaleString('fa-IR') }} {{ $t('عدد') }}</span>
+              </li>
+            </ul>
+            <div
+              v-if="item.photos?.length"
+              class="flex gap-2 mt-2 flex-wrap"
+            >
+              <img
+                v-for="url in item.photos"
+                :key="url"
+                :src="mediaSrc(url)"
+                alt=""
+                class="size-14 rounded-lg object-cover border border-muted"
+              >
+            </div>
             <div
               v-if="item.adminNote"
               class="text-[11px] text-muted mt-1"
@@ -212,6 +238,10 @@ const pendingStatus = ref<SellerReturnStatus | null>(null)
 const pendingLabel = ref('')
 
 const canManage = computed(() => can('returns.manage'))
+
+function mediaSrc(url: string) {
+  return resolveMediaUrl(url) || url
+}
 
 const statusTabs = computed(() => {
   const c = listMeta.value.statusCounts

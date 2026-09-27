@@ -17,6 +17,7 @@ export type SellerRefundStatus =
 export type SellerReturnItem = {
   productId: string
   productTitle: string
+  variantId?: string | null
   variantLabel: string | null
   sku: string
   qty: number
@@ -33,6 +34,7 @@ export type SellerReturn = {
   adminNote: string
   requestedAt: string
   items: SellerReturnItem[]
+  photos: string[]
 }
 
 export type SellerRefundItem = {
@@ -106,6 +108,7 @@ export function buildDefaultReturns(): SellerReturn[] {
           unitPrice: 98_000_000,
         },
       ],
+      photos: [],
     },
     {
       id: 'RET-1002',
@@ -126,6 +129,7 @@ export function buildDefaultReturns(): SellerReturn[] {
           unitPrice: 18_500_000,
         },
       ],
+      photos: [],
     },
   ]
 }
