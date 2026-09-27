@@ -92,6 +92,8 @@ docker exec -it api node ace migration:run
 docker compose -f docker-compose.prod.yml up -d --build --force-recreate
 ```
 
+This rebuilds **store** (`:3000`) and **admin** (`:3001`, `NUXT_PUBLIC_APP_MODE=admin`). Point `seller.vitsell.ir` at port `3001` (or `ADMIN_PORT`).
+
 **B — Prebuilt `.output` only** (`docker-compose.prebuilt.yml`):
 
 On your **local/CI** machine first:
