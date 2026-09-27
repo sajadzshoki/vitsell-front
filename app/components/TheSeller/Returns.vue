@@ -102,32 +102,21 @@
             <div class="text-xs text-toned mt-2">
               {{ item.reason }}
             </div>
-            <ul
-              v-if="item.items.length"
-              class="mt-2 space-y-1"
+            <UButton
+              type="button"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              icon="i-tabler-list-details"
+              class="cursor-pointer mt-2"
+              @click="openDetail(item)"
             >
-              <li
-                v-for="(line, index) in item.items"
-                :key="`${item.id}-${line.productId}-${index}`"
-                class="text-xs text-default"
-              >
-                {{ line.productTitle }}
-                <span v-if="line.variantLabel" class="text-muted"> · {{ line.variantLabel }}</span>
-                <span class="text-muted num"> · {{ line.qty.toLocaleString('fa-IR') }} {{ $t('عدد') }}</span>
-              </li>
-            </ul>
-            <div
-              v-if="item.photos?.length"
-              class="flex gap-2 mt-2 flex-wrap"
-            >
-              <img
-                v-for="url in item.photos"
-                :key="url"
-                :src="mediaSrc(url)"
-                alt=""
-                class="size-14 rounded-lg object-cover border border-muted"
-              >
-            </div>
+              {{ $t('جزئیات') }}
+              · {{ item.items.length.toLocaleString('fa-IR') }} {{ $t('کالا') }}
+              <template v-if="item.photos?.length">
+                · {{ item.photos.length.toLocaleString('fa-IR') }} {{ $t('عکس') }}
+              </template>
+            </UButton>
             <div
               v-if="item.adminNote"
               class="text-[11px] text-muted mt-1"
@@ -165,6 +154,154 @@
       v-model:page-size="pageSize"
       :total="listMeta.total"
     />
+
+    <UModal
+      v-model:open="detailOpen"
+      :title="$t('جزئیات مرجوعی')"
+      :ui="{ content: 'sm:max-w-lg' }"
+    >
+      <template #body>
+        <div
+          v-if="detailItem"
+          class="space-y-4"
+        >
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <span class="num font-medium text-highlighted" dir="ltr">{{ detailItem.id }}</span>
+            <UBadge
+              :color="sellerReturnStatusMeta[detailItem.status]?.color || 'neutral'"
+              variant="subtle"
+              size="sm"
+            >
+              {{ $t(sellerReturnStatusMeta[detailItem.status]?.label || detailItem.status) }}
+            </UBadge>
+          </div>
+          <div class="text-sm text-toned space-y-1">
+            <div>{{ detailItem.customerName }}</div>
+            <div>
+              {{ $t('سفارش') }}
+              <NuxtLink
+                :to="`/seller/orders/${detailItem.orderId}`"
+                class="num text-primary hover:underline cursor-pointer"
+                dir="ltr"
+              >
+                {{ detailItem.orderId }}
+              </NuxtLink>
+            </div>
+            <div class="text-xs text-muted num" dir="ltr">{{ detailItem.requestedAt.slice(0, 10) }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted mb-1">{{ $t('دلیل') }}</div>
+            <p class="text-sm text-default">{{ detailItem.reason }}</p>
+          </div>
+          <div>
+            <div class="text-xs text-muted mb-2">{{ $t('کالاهای سفارش') }}</div>
+            <div
+              v-if="!detailItem.items.length"
+              class="text-sm text-muted"
+            >
+              {{ $t('کالایی ثبت نشده') }}
+            </div>
+            <div
+              v-else
+              class="space-y-2"
+            >
+              <div
+                v-for="(line, index) in detailItem.items"
+                :key="`${detailItem.id}-${line.productId}-${index}`"
+                class="flex items-center gap-3 rounded-xl border border-muted bg-muted/40 p-3"
+              >
+                <img
+                  v-if="lineImage(line.productId)"
+                  :src="lineImage(line.productId)"
+                  :alt="lineTitle(line)"
+                  class="size-14 rounded-lg object-cover bg-muted shrink-0"
+                >
+                <div
+                  v-else
+                  class="size-14 rounded-lg bg-muted grid place-items-center shrink-0"
+                >
+                  <TheIcon
+                    icon-type="img"
+                    name="noImage.png"
+                    class="size-6 opacity-60"
+                  />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium text-default line-clamp-2">{{ lineTitle(line) }}</div>
+                  <div
+                    v-if="line.variantLabel"
+                    class="text-[11px] text-muted mt-0.5"
+                  >
+                    {{ line.variantLabel }}
+                  </div>
+                  <div class="text-xs text-toned num mt-1">
+                    {{ line.qty.toLocaleString('fa-IR') }} {{ $t('عدد') }}
+                    · {{ formatPrice(line.unitPrice) }} {{ $t('تومان') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-muted mb-2">{{ $t('عکس‌ها') }}</div>
+            <div
+              v-if="detailItem.photos?.length"
+              class="flex gap-2 flex-wrap"
+            >
+              <a
+                v-for="url in detailItem.photos"
+                :key="url"
+                :href="mediaSrc(url)"
+                target="_blank"
+                rel="noopener"
+                class="cursor-pointer"
+              >
+                <img
+                  :src="mediaSrc(url)"
+                  alt=""
+                  class="size-24 rounded-xl object-cover border border-muted"
+                >
+              </a>
+            </div>
+            <p
+              v-else
+              class="text-sm text-muted"
+            >
+              {{ $t('عکسی پیوست نشده') }}
+            </p>
+          </div>
+          <p
+            v-if="detailItem.adminNote"
+            class="text-xs text-muted"
+          >
+            {{ $t('یادداشت ادمین') }}: {{ detailItem.adminNote }}
+          </p>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex items-center justify-end gap-2 w-full flex-wrap">
+          <UButton
+            v-for="action in detailItem ? availableActions(detailItem) : []"
+            :key="action.status"
+            type="button"
+            :color="action.color"
+            variant="soft"
+            class="cursor-pointer"
+            @click="detailItem && openConfirm(detailItem, action.status, action.label)"
+          >
+            {{ $t(action.label) }}
+          </UButton>
+          <UButton
+            color="neutral"
+            variant="outline"
+            class="cursor-pointer"
+            @click="detailOpen = false"
+          >
+            {{ $t('بستن') }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
 
     <UModal
       v-model:open="confirmOpen"
@@ -212,6 +349,8 @@
 
 <script setup lang="ts">
 import { downloadSellerCsv } from '~/data/seller-export'
+import { formatPrice } from '~/data/products'
+import type { SellerReturnItem } from '~/data/seller-returns-refunds'
 import {
   sellerReturnStatusMeta,
   type SellerReturn,
@@ -224,6 +363,7 @@ const toast = useAppToast()
 const route = useRoute()
 const { can } = useSellerPermissions()
 const { returns, listMeta, pending, fetchList, setStatus } = useSellerReturns()
+const { fetchProduct, getCachedProduct } = useProducts()
 const { search, status, page, pageSize, hasActiveFilters, clearFilters } = useSellerListQuery({
   defaultStatus: 'all',
   defaultPageSize: 10,
@@ -233,6 +373,8 @@ const loading = ref(true)
 const exporting = ref(false)
 const saving = ref(false)
 const confirmOpen = ref(false)
+const detailOpen = ref(false)
+const detailItem = ref<SellerReturn | null>(null)
 const pendingItem = ref<SellerReturn | null>(null)
 const pendingStatus = ref<SellerReturnStatus | null>(null)
 const pendingLabel = ref('')
@@ -241,6 +383,25 @@ const canManage = computed(() => can('returns.manage'))
 
 function mediaSrc(url: string) {
   return resolveMediaUrl(url) || url
+}
+
+function lineTitle(line: SellerReturnItem) {
+  return getCachedProduct(line.productId)?.title || line.productTitle || line.productId
+}
+
+function lineImage(productId: string) {
+  return getCachedProduct(productId)?.image || ''
+}
+
+function hydrateReturnProducts(rows: SellerReturn[]) {
+  const ids = [...new Set(rows.flatMap(row => row.items.map(line => line.productId)).filter(Boolean))]
+  for (const id of ids) void fetchProduct(id)
+}
+
+function openDetail(item: SellerReturn) {
+  detailItem.value = item
+  detailOpen.value = true
+  hydrateReturnProducts([item])
 }
 
 const statusTabs = computed(() => {
@@ -314,6 +475,11 @@ async function loadReturns() {
     })
     if (!ok) {
       toast.error(apiErrorMessage(error, t('بارگذاری مرجوعی‌ها ناموفق بود')))
+      return
+    }
+    hydrateReturnProducts(returns.value)
+    if (detailItem.value) {
+      detailItem.value = returns.value.find(row => row.id === detailItem.value?.id) || detailItem.value
     }
   }
   finally {
