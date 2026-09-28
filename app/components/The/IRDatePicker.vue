@@ -146,3 +146,13 @@ const rangeClass = computed(() => (showDate.value ? 'text-default' : 'text-dimme
 
 const getMaximum = computed(() => moment().format('YYYY-MM-DDTHH:mm:ssZ'))
 </script>
+
+<style>
+/* Tailwind preflight sets svg { display: block }, so arrows sit on the left of the 50px buttons. */
+.vpd-next,
+.vpd-prev {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+</style>

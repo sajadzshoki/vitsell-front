@@ -28,14 +28,36 @@
           type="email"
           dir="ltr"
         />
-        <TheFormInput
-          v-model="form.phone"
-          :label="$t('شماره موبایل')"
-          dir="ltr"
-          digits-only
-          maxlength="11"
-          disabled
-        />
+        <div class="flex flex-col gap-2">
+          <TheFormInput
+            v-model="phoneDraft"
+            :label="$t('شماره موبایل')"
+            name="phone"
+            :error="phoneError"
+            dir="ltr"
+            digits-only
+            type="tel"
+            inputmode="numeric"
+            maxlength="11"
+            icon="i-tabler-device-mobile"
+            :help="phoneHelp"
+            @update:model-value="onPhoneDraft"
+          />
+          <UButton
+            v-if="phoneDirty && phoneStep === 'edit'"
+            type="button"
+            color="primary"
+            variant="soft"
+            size="md"
+            block
+            class="font-bold"
+            :loading="sendingPhoneOtp"
+            :disabled="!phoneValid || sendingPhoneOtp"
+            @click="sendPhoneOtp"
+          >
+            {{ $t('ارسال کد تأیید') }}
+          </UButton>
+        </div>
 
         <div class="flex flex-col gap-1.5">
           <label class="text-sm font-medium text-default">{{ $t('تاریخ تولد') }}</label>
@@ -60,6 +82,98 @@
             }"
           />
         </UFormField>
+      </div>
+
+      <div
+        v-if="phoneStep === 'otp'"
+        class="mt-5 flex flex-col gap-4 rounded-xl border border-muted bg-muted p-4"
+      >
+        <div class="text-start">
+          <h3 class="text-sm font-bold text-highlighted">
+            {{ $t('کد تأیید را وارد کنید') }}
+          </h3>
+          <p class="mt-1.5 text-sm text-muted leading-relaxed">
+            {{ $t('کد ارسال‌شده به') }}
+            <span class="num text-highlighted font-medium" dir="ltr">{{ phoneDraft }}</span>
+            {{ $t('را وارد کنید.') }}
+          </p>
+        </div>
+
+        <div class="flex justify-center py-1" dir="ltr">
+          <UPinInput
+            v-model="otp"
+            dir="ltr"
+            otp
+            :length="5"
+            size="lg"
+            placeholder=""
+            autofocus
+            :color="otpError ? 'error' : 'primary'"
+            :highlight="!!otpError"
+            :ui="{
+              root: 'flex-row',
+              base: 'size-11 text-center',
+            }"
+            @complete="confirmPhoneChange"
+          />
+        </div>
+
+        <UAlert
+          v-if="devCode"
+          color="warning"
+          variant="subtle"
+          :title="$t('کد توسعه')"
+          :description="devCode"
+          class="text-center"
+          :ui="{ description: 'num text-lg font-bold tracking-widest text-highlighted', title: 'text-xs' }"
+          dir="ltr"
+        />
+
+        <p v-if="otpError" class="text-sm text-error text-center">
+          {{ otpError }}
+        </p>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <UButton
+            type="button"
+            color="primary"
+            size="lg"
+            class="font-bold"
+            :loading="confirmingPhone"
+            :disabled="!canConfirmPhone"
+            @click="confirmPhoneChange"
+          >
+            {{ $t('تأیید شماره') }}
+          </UButton>
+          <UButton
+            type="button"
+            color="neutral"
+            variant="outline"
+            size="lg"
+            :disabled="confirmingPhone || sendingPhoneOtp"
+            @click="cancelPhoneChange"
+          >
+            {{ $t('انصراف') }}
+          </UButton>
+        </div>
+
+        <div class="flex items-center gap-2 text-sm">
+          <template v-if="phoneResendLeft > 0">
+            <span class="text-muted">{{ $t('ارسال مجدد تا') }}</span>
+            <span class="num font-medium text-highlighted" dir="ltr">{{ phoneResendLabel }}</span>
+          </template>
+          <UButton
+            v-else
+            type="button"
+            color="primary"
+            variant="link"
+            size="sm"
+            :loading="sendingPhoneOtp"
+            @click="sendPhoneOtp"
+          >
+            {{ $t('ارسال مجدد کد') }}
+          </UButton>
+        </div>
       </div>
 
       <div class="mt-6 flex items-center gap-3 flex-wrap">
@@ -170,7 +284,7 @@ import type { AccountProfile } from '~/data/account'
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { profile, fetchProfile, updateProfile, setPassword } = useAccount()
+const { profile, fetchProfile, updateProfile, setPassword, requestPhoneOtp, confirmPhone } = useAccount()
 
 const loading = ref(true)
 const saving = ref(false)
@@ -178,6 +292,16 @@ const saved = ref(false)
 const savingPassword = ref(false)
 const form = ref<AccountProfile>({ ...profile.value })
 const birthIso = ref<string | null>(parseBirthToIso(profile.value.birth))
+const phoneDraft = ref(profile.value.phone)
+const phoneStep = ref<'edit' | 'otp'>('edit')
+const phoneError = ref('')
+const otp = ref<string[]>([])
+const otpError = ref('')
+const devCode = ref<string | null>(null)
+const sendingPhoneOtp = ref(false)
+const confirmingPhone = ref(false)
+const phoneResendLeft = ref(0)
+let phoneTimer: ReturnType<typeof setInterval> | null = null
 
 const passwordForm = ref({
   currentPassword: '',
@@ -196,6 +320,21 @@ const genderItems = computed(() => [
   { label: t('مرد'), value: 'مرد', icon: 'i-tabler-man' },
   { label: t('زن'), value: 'زن', icon: 'i-tabler-woman' },
 ])
+
+const phoneValid = computed(() => /^09\d{9}$/.test(phoneDraft.value))
+const phoneDirty = computed(() => phoneDraft.value !== profile.value.phone)
+const otpCode = computed(() => p2e(otp.value.join('')).replace(/\D/g, ''))
+const canConfirmPhone = computed(() => otpCode.value.length === 5 && !confirmingPhone.value)
+const phoneResendLabel = computed(() => {
+  const minutes = Math.floor(phoneResendLeft.value / 60).toString().padStart(2, '0')
+  const seconds = (phoneResendLeft.value % 60).toString().padStart(2, '0')
+  return `${minutes}:${seconds}`
+})
+const phoneHelp = computed(() => {
+  if (phoneStep.value === 'otp') return undefined
+  if (phoneDirty.value) return t('کد تأیید به این شماره ارسال می‌شود.')
+  return t('تغییر شماره پس از تأیید کد پیامکی اعمال می‌شود.')
+})
 
 watch(birthIso, (value) => {
   if (!value) {
@@ -244,6 +383,116 @@ function fieldError(error: any, field: string) {
 function syncFormFromProfile() {
   form.value = { ...profile.value }
   birthIso.value = parseBirthToIso(profile.value.birth)
+  phoneDraft.value = profile.value.phone
+  phoneError.value = ''
+  resetPhoneFlow()
+}
+
+function stopPhoneTimer() {
+  if (phoneTimer) {
+    clearInterval(phoneTimer)
+    phoneTimer = null
+  }
+}
+
+function startPhoneTimer(seconds: number) {
+  stopPhoneTimer()
+  phoneResendLeft.value = seconds
+  phoneTimer = setInterval(() => {
+    if (phoneResendLeft.value > 0) phoneResendLeft.value -= 1
+    else stopPhoneTimer()
+  }, 1000)
+}
+
+function resetPhoneFlow() {
+  phoneStep.value = 'edit'
+  otp.value = []
+  otpError.value = ''
+  devCode.value = null
+  phoneResendLeft.value = 0
+  stopPhoneTimer()
+}
+
+function onPhoneDraft() {
+  phoneError.value = ''
+  if (phoneStep.value === 'otp') resetPhoneFlow()
+}
+
+watch(otp, (cells) => {
+  let changed = false
+  const next = cells.map((cell) => {
+    if (!cell) return cell
+    const digit = p2e(String(cell)).replace(/\D/g, '').slice(-1)
+    if (digit !== cell) changed = true
+    return digit
+  })
+  if (changed) otp.value = next
+  if (otpError.value) otpError.value = ''
+}, { deep: true })
+
+async function sendPhoneOtp() {
+  phoneError.value = ''
+  if (!phoneValid.value) {
+    phoneError.value = t('شماره موبایل معتبر نیست')
+    return
+  }
+  if (!phoneDirty.value) return
+
+  sendingPhoneOtp.value = true
+  try {
+    const { result, error } = await requestPhoneOtp(phoneDraft.value)
+    if (error || !result) {
+      phoneError.value = fieldError(error, 'phone') || apiErrorMessage(error, t('ارسال کد تأیید ناموفق بود'))
+      toast.error(phoneError.value)
+      return
+    }
+    phoneStep.value = 'otp'
+    otp.value = []
+    otpError.value = ''
+    devCode.value = result.devCode || null
+    startPhoneTimer(result.expiresIn || 120)
+    if (result.devCode) {
+      toast.success(`${t('کد توسعه')}: ${result.devCode}`, t('کد تأیید ارسال شد'))
+    }
+    else {
+      toast.success(t('کد تأیید ارسال شد'))
+    }
+  }
+  finally {
+    sendingPhoneOtp.value = false
+  }
+}
+
+async function confirmPhoneChange() {
+  if (otpCode.value.length !== 5 || confirmingPhone.value) return
+  confirmingPhone.value = true
+  otpError.value = ''
+  const snapshot = { ...form.value }
+  const birth = birthIso.value
+  try {
+    const { result, error } = await confirmPhone(phoneDraft.value, otpCode.value)
+    if (error || !result) {
+      otpError.value = fieldError(error, 'code')
+      phoneError.value = fieldError(error, 'phone')
+      toast.error(apiErrorMessage(error, t('تغییر شماره ناموفق بود')))
+      return
+    }
+    form.value = { ...snapshot, phone: result.phone }
+    birthIso.value = birth
+    phoneDraft.value = result.phone
+    phoneError.value = ''
+    resetPhoneFlow()
+    toast.success(t('شماره موبایل به‌روز شد'))
+  }
+  finally {
+    confirmingPhone.value = false
+  }
+}
+
+function cancelPhoneChange() {
+  phoneDraft.value = profile.value.phone
+  phoneError.value = ''
+  resetPhoneFlow()
 }
 
 function resetPasswordForm() {
@@ -275,6 +524,13 @@ async function loadProfile() {
 }
 
 async function onSave() {
+  if (phoneDraft.value !== profile.value.phone) {
+    phoneError.value = phoneValid.value
+      ? t('برای تغییر شماره، ابتدا کد تأیید را وارد کنید')
+      : t('شماره موبایل معتبر نیست')
+    return
+  }
+
   saving.value = true
   saved.value = false
   try {
@@ -345,6 +601,10 @@ async function onSavePassword() {
 
 onMounted(() => {
   loadProfile()
+})
+
+onUnmounted(() => {
+  stopPhoneTimer()
 })
 
 definePageMeta({

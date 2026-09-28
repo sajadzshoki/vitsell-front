@@ -71,6 +71,27 @@ export function useAccount() {
     return { result, error }
   }
 
+  async function requestPhoneOtp(phone: string) {
+    return usePost<{ message: string, expiresIn: number, devCode?: string }>(
+      '/account/phone/otp',
+      { phone },
+      { headers: { 'no-error': true } },
+    )
+  }
+
+  async function confirmPhone(phone: string, code: string) {
+    const { result, error } = await usePut<AccountProfile, { phone: string, code: string }>(
+      '/account/phone',
+      { phone, code },
+      { headers: { 'no-error': true } },
+    )
+    if (result) {
+      profile.value = result
+      profileLoaded.value = true
+    }
+    return { result, error }
+  }
+
   async function setPassword(payload: {
     password: string
     passwordConfirmation: string
@@ -186,6 +207,8 @@ export function useAccount() {
     getOrderById,
     fetchProfile,
     updateProfile,
+    requestPhoneOtp,
+    confirmPhone,
     setPassword,
     fetchOrders,
     fetchOrder,

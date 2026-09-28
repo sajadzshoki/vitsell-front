@@ -69,7 +69,7 @@
       {{ $t('سوالی در این دسته یافت نشد.') }}
     </div>
 
-    <div class="mt-6 pt-5 border-t border-muted flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <div v-if="route.path == '/faq'" class="mt-6 pt-5 border-t border-muted flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <p class="text-sm text-toned">
         {{ $t('پاسخ سوال خود را پیدا نکردید؟') }}
       </p>
@@ -93,7 +93,7 @@ const props = defineProps<{
   categories: StaticFaqCategory[]
   items: StaticFaqItem[]
 }>()
-
+const route = useRoute()
 const activeCategory = ref('all')
 const openIndex = ref<number | null>(0)
 

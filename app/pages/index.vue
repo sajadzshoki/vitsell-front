@@ -70,7 +70,7 @@
     <!-- <TheHomePromos /> -->
 
     <!-- دانلود اپ -->
-    <TheHomeAppDownload />
+    <!-- <TheHomeAppDownload /> -->
 
     <!-- متن سئو -->
     <TheHomeSeoText />

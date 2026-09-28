@@ -3,7 +3,12 @@
     v-model:open="open"
     :title="$t('درخواست برداشت')"
     :description="$t('مبلغ از موجودی کسر و پس از بررسی به حساب شما واریز می‌شود.')"
-    :ui="{ content: 'sm:max-w-md' }"
+    :ui="{
+      content: 'sm:max-w-lg',
+      header: 'items-center justify-between gap-3',
+      wrapper: 'min-w-0 text-start',
+      close: 'static shrink-0',
+    }"
   >
     <template #body>
       <div class="space-y-4">

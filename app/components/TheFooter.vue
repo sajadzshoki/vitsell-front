@@ -236,7 +236,7 @@
                 class="size-full flex items-center justify-center cursor-pointer"
               >
                 <img
-                  :src="enamadSrc"
+                  src="https://trustseal.enamad.ir/logo.aspx?id=7752576&Code=GJIvNk4R5oCAI3eidsnOUmgFz3hq9ZCT"
                   alt="نماد اعتماد الکترونیکی"
                   class="size-full object-contain cursor-pointer"
                   width="56"

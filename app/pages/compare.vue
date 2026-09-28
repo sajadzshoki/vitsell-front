@@ -501,15 +501,9 @@ const tableGridStyle = computed(() => {
   const n = items.value.length
   const label = 100
   const col = n <= 3 ? 180 : 160
-  if (n <= 3) {
-    return {
-      gridTemplateColumns: `${label}px repeat(${n}, ${col}px)`,
-      width: 'max-content',
-      marginInline: 'auto',
-    }
-  }
   return {
     gridTemplateColumns: `${label}px repeat(${n}, minmax(${col}px, 1fr))`,
+    width: '100%',
     minWidth: `${label + col * n}px`,
   }
 })

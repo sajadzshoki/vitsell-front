@@ -8,7 +8,7 @@
       >
         <span class="num">{{ reviews.length.toLocaleString('fa-IR') }}</span>
         {{ $t('نظر') }}
-        <span class="mx-1 text-dimmed">·</span>
+        <span class="mx-1 text-dimmed"></span>
         <span class="num">{{ questions.length.toLocaleString('fa-IR') }}</span>
         {{ $t('پرسش') }}
       </div>
