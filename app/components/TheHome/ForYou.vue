@@ -64,6 +64,7 @@
 
 <script setup lang="ts">
 const {
+  events,
   recommendations,
   personalized,
   recCategories,
@@ -72,15 +73,16 @@ const {
   pending,
 } = useUserActivity()
 
-hydrateLocal()
+await useAsyncData('home-for-you', () => fetchRecommendations({ limit: 12 }))
 
-const ready = ref(false)
-fetchRecommendations({ limit: 12 }).finally(() => {
-  ready.value = true
+onMounted(() => {
+  hydrateLocal()
+  if (!events.value.length) return
+  void fetchRecommendations({ force: true, limit: 12 })
 })
 
 const products = computed(() => recommendations.value)
-const showSkeleton = computed(() => (!ready.value || pending.value) && !products.value.length)
+const showSkeleton = computed(() => pending.value && !products.value.length)
 
 const viewAllTo = computed(() => {
   const cat = recCategories.value[0]

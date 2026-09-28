@@ -178,41 +178,53 @@ export function useUserActivity() {
 
   async function fetchRecommendations(options?: { force?: boolean, limit?: number }) {
     hydrateLocal()
-    if (pending.value && !options?.force) return recommendations.value
+
+    // In-flight lock lives on the request (not useState). A pending flag
+    // serialized from an aborted SSR fetch would otherwise block the client forever.
+    const slot = useNuxtApp() as ReturnType<typeof useNuxtApp> & {
+      _recInflight?: Promise<Product[]>
+    }
+    if (slot._recInflight && !options?.force) return slot._recInflight
 
     pending.value = true
-    try {
-      const categories = topCategories(3)
-      const exclude = viewedProductIds(events.value).slice(0, 20)
-      const query: Record<string, string> = {
-        limit: String(options?.limit ?? 12),
+    const run = loadRecommendations(options?.limit ?? 12).finally(() => {
+      if (slot._recInflight === run) {
+        slot._recInflight = undefined
+        pending.value = false
       }
-      if (categories.length) query.categories = categories.join(',')
-      if (exclude.length) query.exclude = exclude.join(',')
+    })
 
-      const qs = new URLSearchParams(query).toString()
-      const { result } = await useGet<RecommendationsPayload>(`/recommendations?${qs}`, {
-        headers: { 'no-error': true },
-      })
+    slot._recInflight = run
+    return run
+  }
 
-      if (result?.items?.length) {
-        recommendations.value = result.items
-        personalized.value = Boolean(result.personalized)
-        recCategories.value = result.categories ?? categories
-        remember(result.items)
-        return recommendations.value
-      }
-
-      // client fallback from home bestsellers
-      const fallback = bestSellers.value.slice(0, options?.limit ?? 12)
-      recommendations.value = fallback
-      personalized.value = false
-      recCategories.value = []
-      return fallback
+  async function loadRecommendations(limit: number) {
+    const categories = topCategories(3)
+    const exclude = viewedProductIds(events.value).slice(0, 20)
+    const query: Record<string, string> = {
+      limit: String(limit),
     }
-    finally {
-      pending.value = false
+    if (categories.length) query.categories = categories.join(',')
+    if (exclude.length) query.exclude = exclude.join(',')
+
+    const qs = new URLSearchParams(query).toString()
+    const { result } = await useGet<RecommendationsPayload>(`/recommendations?${qs}`, {
+      headers: { 'no-error': true },
+    })
+
+    if (result?.items?.length) {
+      recommendations.value = result.items
+      personalized.value = Boolean(result.personalized)
+      recCategories.value = result.categories ?? categories
+      remember(result.items)
+      return recommendations.value
     }
+
+    const fallback = bestSellers.value.slice(0, limit)
+    recommendations.value = fallback
+    personalized.value = false
+    recCategories.value = []
+    return fallback
   }
 
   return {
