@@ -1221,6 +1221,30 @@ export function useSeller() {
     return { ok: true as const, order, detail: result }
   }
 
+  async function assignOrderCourier(id: string, courierId: number | null) {
+    const { result, error } = await usePatch<any>(
+      `/seller/orders/${encodeURIComponent(id)}/courier`,
+      { courierId },
+      { headers: { 'no-error': true } },
+    )
+    if (error || !result?.id) {
+      return {
+        ok: false as const,
+        order: null as SellerOrder | null,
+        message:
+          error?.data?.errors?.map((e: { message?: string }) => e.message).filter(Boolean).join(' ، ')
+          || 'انتساب پیک ناموفق بود',
+      }
+    }
+    const order = toSellerOrder(result)
+    upsertOrder(order)
+    if (result.commerce) {
+      const { saveCommerce } = useSellerOrderCommerce()
+      saveCommerce(order.id, result.commerce)
+    }
+    return { ok: true as const, order, message: '' }
+  }
+
   async function setOrderStatus(id: string, status: SellerOrderStatus) {
     const { result, error } = await usePatch<any>(
       `/seller/orders/${encodeURIComponent(id)}/status`,
@@ -1446,6 +1470,7 @@ export function useSeller() {
     advanceOrder,
     revertOrder,
     setOrderStatus,
+    assignOrderCourier,
     deleteOrder,
     replyToReview,
     updateShop,

@@ -200,6 +200,7 @@ watch(productId, () => {
   colorIndex.value = 0
   selectedOptions.value = {}
   activeTab.value = 'desc'
+  openedWithVariantQuery.value = variantQueryPresent()
 })
 
 useMobileBackwardTitle(() => product.value?.title ?? '')
@@ -289,6 +290,13 @@ function variantQueryPresent() {
   return String(raw || '').trim().length > 0
 }
 
+/**
+ * Noindex only when the visitor opened /product/:id?v=…
+ * The page later writes ?v= itself for the selected variant; that must not
+ * flip the clean URL to noindex (Google renders JS and would drop the page).
+ */
+const openedWithVariantQuery = ref(variantQueryPresent())
+
 useEntitySeo(() => {
   const seo = productSeo.value
   const siteUrl = settings.value.siteUrl
@@ -302,7 +310,7 @@ useEntitySeo(() => {
     entity: {
       ...(seo || {}),
       canonicalUrl: stripUrlQuery(seo?.canonicalUrl || ''),
-      robots: variantQueryPresent() ? 'noindex,follow' : (seo?.robots || 'index,follow'),
+      robots: openedWithVariantQuery.value ? 'noindex,follow' : (seo?.robots || 'index,follow'),
       ogImage,
       twitterImage,
     },

@@ -250,6 +250,20 @@
               <span class="text-muted">{{ $t('کد پیگیری') }}</span>
               <span class="num text-default" dir="ltr">{{ order.trackingCode }}</span>
             </div>
+            <div
+              v-for="row in order.deliveryCodes || []"
+              :key="row.id"
+              class="flex justify-between gap-3"
+            >
+              <span class="text-muted">
+                {{ $t('کد تحویل') }}
+                <template v-if="(order.deliveryCodes || []).length > 1">({{ row.id }})</template>
+              </span>
+              <span
+                class="num text-highlighted font-bold"
+                dir="ltr"
+              >{{ row.code }}</span>
+            </div>
           </div>
           <div class="border-t border-muted mt-3 pt-3 space-y-2 text-xs">
             <div class="flex justify-between gap-3">
@@ -353,6 +367,14 @@
         <div>{{ $t('پرداخت') }}: {{ order.paymentMethod }} · {{ $t('ارسال') }}: {{ order.shippingMethod }}</div>
         <div v-if="order.trackingCode">
           {{ $t('کد پیگیری') }}: <span class="num" dir="ltr">{{ order.trackingCode }}</span>
+        </div>
+        <div
+          v-for="row in order.deliveryCodes || []"
+          :key="`print-${row.id}`"
+        >
+          {{ $t('کد تحویل') }}
+          <template v-if="(order.deliveryCodes || []).length > 1">({{ row.id }})</template>:
+          <span class="num" dir="ltr">{{ row.code }}</span>
         </div>
       </div>
     </div>

@@ -30,10 +30,10 @@ export function useAuth() {
     )
   }
 
-  async function verifyOtp(phone: string, code: string) {
+  async function verifyOtp(phone: string, code: string, panel?: 'courier') {
     return usePost<AuthVerifyResult>(
       '/auth/otp/verify',
-      { phone, code },
+      panel ? { phone, code, panel } : { phone, code },
       { headers: { 'no-error': true } },
     )
   }

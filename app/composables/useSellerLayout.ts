@@ -170,6 +170,12 @@ export function useSellerLayout() {
     if (isContentPromoEdit.value) {
       return 'ویرایش پرومو'
     }
+    if (route.path === '/seller/couriers/new' || route.path === '/seller/couriers/new/') {
+      return 'افزودن پیک'
+    }
+    if (/^\/seller\/couriers\/[^/]+/.test(route.path)) {
+      return 'ویرایش پیک'
+    }
     const matches = sellerLiveNavItems.filter(
       i => i.to && i.to !== '/seller' && (route.path === i.to || route.path.startsWith(`${i.to}/`)),
     )

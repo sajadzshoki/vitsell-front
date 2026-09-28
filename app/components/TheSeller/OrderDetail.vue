@@ -707,6 +707,58 @@
           </div>
         </div>
 
+        <div class="bg-default border border-muted rounded-2xl p-5">
+          <h3 class="font-bold text-highlighted mb-3 text-sm">
+            {{ $t('پیک') }}
+          </h3>
+          <div
+            v-if="order.deliveryCode"
+            class="flex justify-between gap-3 text-xs mb-3"
+          >
+            <span class="text-muted">{{ $t('کد تحویل') }}</span>
+            <span
+              class="num text-highlighted font-bold"
+              dir="ltr"
+            >{{ order.deliveryCode }}</span>
+          </div>
+          <template v-if="canUpdateOrder && order.status !== 'delivered'">
+            <USelect
+              v-model="courierDraft"
+              :items="courierItems"
+              value-key="value"
+              class="w-full"
+            />
+            <div class="flex items-center gap-2 mt-3">
+              <UButton
+                color="primary"
+                size="sm"
+                class="cursor-pointer"
+                :loading="savingCourier"
+                @click="saveCourier"
+              >
+                {{ $t('ذخیره') }}
+              </UButton>
+              <UButton
+                v-if="order.courierId"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                class="cursor-pointer"
+                :disabled="savingCourier"
+                @click="clearCourier"
+              >
+                {{ $t('حذف انتساب') }}
+              </UButton>
+            </div>
+          </template>
+          <p
+            v-else
+            class="text-xs text-default"
+          >
+            {{ order.courierName || $t('بدون پیک') }}
+          </p>
+        </div>
+
         <!-- Payment -->
         <div class="bg-default border border-muted rounded-2xl p-5">
           <h3 class="font-bold text-highlighted mb-3 text-sm">
@@ -944,7 +996,8 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const toast = useAppToast()
-const { fetchOrder, advanceOrder, revertOrder, setOrderStatus, resolveProduct, updateOrderTracking, addOrderNote, createOrderRefund, deleteOrder } = useSeller()
+const { fetchOrder, advanceOrder, revertOrder, setOrderStatus, assignOrderCourier, resolveProduct, updateOrderTracking, addOrderNote, createOrderRefund, deleteOrder } = useSeller()
+const { fetchCouriers } = useSellerCouriers()
 const { getCommerce } = useSellerOrderCommerce()
 const { customers, ensureLoaded: ensureCustomers } = useSellerCustomers()
 const { can } = useSellerPermissions()
@@ -954,6 +1007,10 @@ void ensureCustomers()
 
 const order = ref<SellerOrder | null>(null)
 const loading = ref(true)
+const NO_COURIER = 'none'
+const courierDraft = ref(NO_COURIER)
+const savingCourier = ref(false)
+const activeCouriers = ref<{ id: number, name: string, phone: string, status: string }[]>([])
 const noteDraft = ref('')
 const trackingDraft = ref('')
 const carrierDraft = ref('')
@@ -1011,6 +1068,11 @@ async function loadOrder() {
   try {
     const { ok, order: fetched } = await fetchOrder(props.orderId, { force: true })
     order.value = ok ? fetched : null
+    courierDraft.value = order.value?.courierId ? String(order.value.courierId) : NO_COURIER
+    if (canUpdateOrder.value && order.value && order.value.status !== 'delivered') {
+      const couriers = await fetchCouriers('active')
+      activeCouriers.value = couriers.ok ? couriers.items : []
+    }
     if (order.value) {
       const c = getCommerce(order.value)
       trackingDraft.value = c.trackingCode || ''
@@ -1021,6 +1083,50 @@ async function loadOrder() {
   finally {
     loading.value = false
   }
+}
+
+const courierItems = computed(() => {
+  const items = [{ label: t('بدون پیک'), value: NO_COURIER }]
+  for (const courier of activeCouriers.value) {
+    items.push({
+      label: `${courier.name} (${courier.phone})`,
+      value: String(courier.id),
+    })
+  }
+  const currentId = order.value?.courierId ? String(order.value.courierId) : ''
+  if (currentId && !items.some(item => item.value === currentId)) {
+    items.push({
+      label: order.value?.courierName || currentId,
+      value: currentId,
+    })
+  }
+  return items
+})
+
+async function saveCourier() {
+  if (!order.value || order.value.status === 'delivered') return
+  savingCourier.value = true
+  try {
+    const courierId = courierDraft.value && courierDraft.value !== NO_COURIER
+      ? Number(courierDraft.value)
+      : null
+    const result = await assignOrderCourier(order.value.id, courierId)
+    if (!result.ok || !result.order) {
+      toast.error(result.message)
+      return
+    }
+    order.value = result.order
+    courierDraft.value = result.order.courierId ? String(result.order.courierId) : NO_COURIER
+    toast.success(t('پیک سفارش ذخیره شد'))
+  }
+  finally {
+    savingCourier.value = false
+  }
+}
+
+async function clearCourier() {
+  courierDraft.value = NO_COURIER
+  await saveCourier()
 }
 
 watch(

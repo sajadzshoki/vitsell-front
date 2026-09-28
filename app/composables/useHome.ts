@@ -30,6 +30,7 @@ export type HomePayload = {
   dealsOfTheDay: Product[]
   bestSellers: Product[]
   newArrivals: Product[]
+  seoBlocks: HomeSeoBlock[]
 }
 
 function emptyHome(): HomePayload {
@@ -45,6 +46,7 @@ function emptyHome(): HomePayload {
     dealsOfTheDay: [],
     bestSellers: [],
     newArrivals: [],
+    seoBlocks: [],
   }
 }
 
@@ -94,6 +96,24 @@ function asCategoryShelves(raw: unknown): HomeCategoryShelfPayload[] {
     .filter(shelf => shelf.category && shelf.title)
 }
 
+function asSeoBlocks(raw: unknown): HomeSeoBlock[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((block: any) => {
+      const title = String(block?.title || '').trim()
+      const paragraphs = Array.isArray(block?.paragraphs)
+        ? block.paragraphs.map((item: unknown) => String(item || '').trim()).filter(Boolean)
+        : []
+      const label = String(block?.inlineLink?.label || '').trim()
+      const to = String(block?.inlineLink?.to || '').trim()
+      if (!title || !paragraphs.length) return null
+      const next: HomeSeoBlock = { title, paragraphs }
+      if (label && to) next.inlineLink = { label, to }
+      return next
+    })
+    .filter((block): block is HomeSeoBlock => Boolean(block))
+}
+
 function asTopMobileBrands(raw: unknown): HomeTopBrand[] {
   if (!Array.isArray(raw)) return []
   return raw
@@ -137,7 +157,9 @@ export function useHome() {
   const categoryShelves = computed<HomeCategoryShelf[]>(() =>
     home.value.categoryShelves.map(({ products: _p, ...shelf }) => shelf),
   )
-  const seoBlocks = computed<HomeSeoBlock[]>(() => homeSeoBlocks)
+  const seoBlocks = computed<HomeSeoBlock[]>(() =>
+    home.value.seoBlocks.length ? home.value.seoBlocks : homeSeoBlocks,
+  )
 
   const { footer, fetchFooter } = useFooter()
   const appStores = computed<HomeAppStore[]>(() => {
@@ -220,6 +242,7 @@ export function useHome() {
           dealsOfTheDay: homeResult.dealsOfTheDay ?? [],
           bestSellers: homeResult.bestSellers ?? [],
           newArrivals: homeResult.newArrivals ?? [],
+          seoBlocks: asSeoBlocks(homeResult.seoBlocks),
         }
         loaded.value = true
         return { home: home.value, categories: categories.value }

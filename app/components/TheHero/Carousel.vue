@@ -57,12 +57,11 @@
               {{ $t(item.eyebrow) }}
             </span>
 
-            <component
-              :is="index === 0 ? 'h1' : 'h2'"
+            <h2
               class="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-black leading-snug md:leading-tight mb-1.5 md:mb-3 text-inverted drop-shadow-sm line-clamp-2"
             >
               {{ $t(item.title) }}
-            </component>
+            </h2>
 
             <p class="text-inverted/90 text-xs md:text-base leading-5 md:leading-7 mb-3 md:mb-5 max-w-md line-clamp-2">
               {{ $t(item.subtitle) }}

@@ -25,6 +25,12 @@
               class="text-toned font-medium"
             >{{ order.id }}</span>
           </div>
+          <div
+            v-if="order.courierName"
+            class="text-[11px] text-muted"
+          >
+            {{ $t('پیک') }}: {{ order.courierName }}
+          </div>
           <div class="text-[11px] text-muted num hidden sm:block">
             {{ order.date }}
           </div>

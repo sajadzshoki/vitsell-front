@@ -79,12 +79,11 @@
 
 <script lang="ts" setup>
 import { organizationJsonLd, useJsonLd } from '~/composables/useJsonLd'
-import { homeSeoBlocks } from '~/data/home'
-
 const {
   fetchHome,
   bannerRows,
   categoryShelves,
+  seoBlocks,
 } = useHome()
 
 await useAsyncData('home-page', () => fetchHome({ force: true }))
@@ -95,12 +94,12 @@ const { settings } = useSellerSeoSettings()
 const homeDescription = computed(() =>
   site.value.brandDescription
   || site.value.about
-  || homeSeoBlocks[0]?.paragraphs[0]
+  || seoBlocks.value[0]?.paragraphs[0]
   || '',
 )
 
 useEntitySeo(() => ({
-  fallbackTitle: homeSeoBlocks[0]?.title || settings.value.siteName || site.value.brandName || site.value.name || 'vitsell',
+  fallbackTitle: seoBlocks.value[0]?.title || settings.value.siteName || site.value.brandName || site.value.name || 'vitsell',
   fallbackDescription: homeDescription.value,
   fallbackImage: settings.value.defaultOgImage || site.value.defaultOgImage || site.value.logoUrl || '',
   path: '/',

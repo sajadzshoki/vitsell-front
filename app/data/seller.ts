@@ -21,7 +21,9 @@ export type SellerTabId =
   | 'discounts'
   | 'campaigns'
   | 'footer'
+  | 'home_seo'
   | 'orders'
+  | 'couriers'
   | 'returns'
   | 'refunds'
   | 'shipping'
@@ -122,6 +124,10 @@ export type SellerOrder = {
   shippingMethod: string
   paymentMethod: string
   note?: string
+  courierId?: number | null
+  courierName?: string | null
+  /** Seller order detail only. Omitted from list payloads. */
+  deliveryCode?: string
 }
 
 const sellerOrderStatuses: SellerOrderStatus[] = [
@@ -181,6 +187,11 @@ export function toSellerOrder(raw: Partial<SellerOrder> & { id: string }): Selle
     shippingMethod: String(raw.shippingMethod ?? ''),
     paymentMethod: String(raw.paymentMethod ?? ''),
     ...(raw.note ? { note: String(raw.note) } : {}),
+    courierId: raw.courierId == null || Number.isNaN(Number(raw.courierId))
+      ? null
+      : Number(raw.courierId),
+    courierName: raw.courierName ? String(raw.courierName) : null,
+    ...(raw.deliveryCode ? { deliveryCode: String(raw.deliveryCode) } : {}),
   }
 }
 
@@ -322,6 +333,7 @@ export const sellerNavGroups: SellerNavGroup[] = [
     label: 'سفارش‌ها',
     items: [
       { id: 'orders', label: 'سفارش‌ها', icon: 'i-tabler-shopping-bag', to: '/seller/orders' },
+      { id: 'couriers', label: 'پیک‌ها', icon: 'i-tabler-motorbike', to: '/seller/couriers' },
       { id: 'returns', label: 'مرجوعی‌ها', icon: 'i-tabler-arrow-back-up', to: '/seller/returns' },
       { id: 'refunds', label: 'بازپرداخت‌ها', icon: 'i-tabler-receipt-refund', to: '/seller/refunds' },
       { id: 'shipping', label: 'ارسال', icon: 'i-tabler-truck-delivery', to: '/seller/shipping' },
@@ -359,6 +371,7 @@ export const sellerNavGroups: SellerNavGroup[] = [
       { id: 'about', label: 'درباره ما', icon: 'i-tabler-building-store', to: '/seller/about' },
       { id: 'media', label: 'کتابخانه رسانه', icon: 'i-tabler-photo-cog', to: '/seller/media' },
       { id: 'footer', label: 'فوتر', icon: 'i-tabler-layout-bottombar', to: '/seller/footer' },
+      { id: 'home_seo', label: 'متن صفحه اصلی', icon: 'i-tabler-home-edit', to: '/seller/home-seo' },
     ],
   },
   {

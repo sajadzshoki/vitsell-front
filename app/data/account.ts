@@ -80,6 +80,8 @@ export type ShopOrder = {
   address: CheckoutAddress
   trackingCode?: string
   carrier?: string
+  /** Present on order detail only. One code per seller sub-order. */
+  deliveryCodes?: { id: string, code: string }[]
 }
 
 export type AccountProfile = {
@@ -91,7 +93,7 @@ export type AccountProfile = {
   gender: string
   avatar?: string
   hasPassword?: boolean
-  role?: 'customer' | 'seller' | 'admin'
+  role?: 'customer' | 'seller' | 'admin' | 'courier'
   /** Staff admin id (users.id) when role=admin */
   adminId?: string
   adminStatus?: 'active' | 'inactive' | 'suspended'

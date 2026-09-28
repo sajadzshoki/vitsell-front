@@ -1,9 +1,9 @@
 <template>
   <section v-if="preview" class="text-start">
     <article>
-      <h2 class="text-base md:text-lg font-bold text-highlighted mb-2">
+      <h1 class="text-base md:text-lg font-bold text-highlighted mb-2">
         {{ $t(preview.title) }}
-      </h2>
+      </h1>
       <p
         v-for="(paragraph, pIndex) in preview.paragraphs"
         :key="pIndex"
