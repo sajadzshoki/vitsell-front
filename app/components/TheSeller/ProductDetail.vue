@@ -85,8 +85,9 @@
                 {{ $t(statusMeta.label) }}
               </UBadge>
               <UButton
-                :to="`/product/${productId}`"
+                :to="storeProductHref"
                 target="_blank"
+                external
                 color="primary"
                 variant="soft"
                 size="sm"
@@ -531,6 +532,13 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useAppToast()
 const route = useRoute()
+const { isAdminApp, storeUrl } = useAppMode()
+
+const storeProductHref = computed(() => {
+  const path = `/product/${props.productId}`
+  if (!isAdminApp) return path
+  return `${storeUrl.replace(/\/+$/, '')}${path}`
+})
 
 const {
   getListing,

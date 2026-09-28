@@ -35,6 +35,7 @@ function toReturn(raw: any): SellerReturn {
           qty: Number(item.qty) || 1,
           unitPrice: Number(item.unitPrice) || 0,
           variantId: item.variantId ?? null,
+          image: String(item.image || ''),
         }))
       : [],
     photos: Array.isArray(raw.photos) ? raw.photos.map((url: unknown) => String(url)).filter(Boolean) : [],

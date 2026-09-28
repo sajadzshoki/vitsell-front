@@ -86,6 +86,8 @@ docker exec -it api node ace migration:run
 
 ### Frontend (store)
 
+docker compose -f docker-compose.prod.yml up -d --build --force-recreate
+
 **A — Build on the server** (full Nuxt source present; recommended if the repo is on the VPS):
 
 ```bash

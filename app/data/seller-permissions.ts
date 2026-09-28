@@ -163,6 +163,8 @@ export type SellerPermission =
   | 'system.manage'
   | 'navigation.view'
   | 'navigation.update'
+  | 'top_strip.view'
+  | 'top_strip.update'
   | 'mega_menu.view'
   | 'mega_menu.create'
   | 'mega_menu.update'
@@ -405,9 +407,11 @@ export const sellerPermissionCatalog: SellerPermissionMeta[] = [
   { key: 'seo.view', label: 'مشاهده سئو', group: 'system' },
   { key: 'seo.update', label: 'ویرایش سئو', group: 'system' },
   { key: 'system.view', label: 'مشاهده نمای سیستم', group: 'system' },
-  { key: 'system.manage', label: 'مدیریت پیکربندی سیستم', group: 'system', expandsTo: ['settings.update', 'navigation.update'] },
+  { key: 'system.manage', label: 'مدیریت پیکربندی سیستم', group: 'system', expandsTo: ['settings.update', 'navigation.update', 'top_strip.update'] },
   { key: 'navigation.view', label: 'مشاهده منوی عمومی', group: 'system' },
   { key: 'navigation.update', label: 'ویرایش منوی عمومی', group: 'system' },
+  { key: 'top_strip.view', label: 'مشاهده نوار بالا', group: 'system' },
+  { key: 'top_strip.update', label: 'ویرایش نوار بالا', group: 'system' },
   { key: 'mega_menu.view', label: 'مشاهده مگا منو', group: 'system' },
   { key: 'mega_menu.create', label: 'ایجاد مگا منو', group: 'system' },
   { key: 'mega_menu.update', label: 'ویرایش مگا منو', group: 'system' },
@@ -481,6 +485,7 @@ export const sellerNavPermissionMap: Record<string, SellerPermission> = {
   settings: 'settings.view',
   system: 'system.view',
   navigation: 'navigation.view',
+  top_strip: 'top_strip.view',
   mega_menu: 'mega_menu.view',
   permissions: 'permissions.view',
   seo: 'seo.view',
@@ -529,6 +534,7 @@ export const sellerRoutePermissionMap: { prefix: string, permission: SellerPermi
   { prefix: '/seller/system', permission: 'system.view' },
   { prefix: '/seller/settings', permission: 'settings.view' },
   { prefix: '/seller/navigation', permission: 'navigation.view' },
+  { prefix: '/seller/top-strip', permission: 'top_strip.view' },
   { prefix: '/seller/mega-menus', permission: 'mega_menu.view' },
   { prefix: '/seller/roles/permissions', permission: 'permissions.view' },
   { prefix: '/seller/activity', permission: 'activity.view' },
@@ -593,6 +599,7 @@ export const sellerDefaultRolePermissions: Record<SellerSystemRoleKey, SellerPer
     'seo.view', 'seo.update',
     'mega_menu.view', 'mega_menu.create', 'mega_menu.update', 'mega_menu.delete',
     'navigation.view', 'navigation.update',
+    'top_strip.view', 'top_strip.update',
   ],
   MARKETING_MANAGER: [
     'dashboard.view', 'analytics.view',

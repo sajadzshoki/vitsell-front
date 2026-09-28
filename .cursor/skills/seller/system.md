@@ -23,5 +23,6 @@ description: Super admin system settings, RBAC, search, import/export for vitsel
 | `/seller/system` | نمای سیستم |
 | `/seller/settings` | هاب تنظیمات |
 | `/seller/navigation` | منوی عمومی |
+| `/seller/top-strip` | نوار بالای هدر (روشن/خاموش + متن و لینک) |
 | `/seller/products` و … | ورود/خروج CSV داخل همان صفحات (مراکز جدا حذف شدند) |
 | Ctrl+K | جستجوی سراسری با RBAC |

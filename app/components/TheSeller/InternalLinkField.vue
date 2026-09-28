@@ -70,11 +70,14 @@ const props = withDefaults(defineProps<{
   placeholder?: string
   required?: boolean
   disabled?: boolean
+  /** Keep an empty value instead of falling back to `/`. */
+  allowEmpty?: boolean
 }>(), {
   label: '',
   placeholder: '',
   required: false,
   disabled: false,
+  allowEmpty: false,
 })
 
 const model = defineModel<string>({ default: '' })
@@ -136,7 +139,7 @@ function applyFromModel(value: string) {
   }
   else {
     mode.value = 'internal'
-    selectedValue.value = v || '/'
+    selectedValue.value = v || (props.allowEmpty ? '' : '/')
   }
   nextTick(() => {
     syncing.value = false
@@ -147,7 +150,7 @@ function setMode(next: LinkMode) {
   if (props.disabled || mode.value === next) return
   mode.value = next
   if (next === 'internal') {
-    model.value = selectedValue.value || '/'
+    model.value = selectedValue.value || (props.allowEmpty ? '' : '/')
   }
   else {
     model.value = externalUrl.value.trim()
@@ -156,7 +159,7 @@ function setMode(next: LinkMode) {
 
 watch(selectedValue, (value) => {
   if (syncing.value || mode.value !== 'internal') return
-  model.value = value || '/'
+  model.value = value || (props.allowEmpty ? '' : '/')
 })
 
 watch(externalUrl, (value) => {

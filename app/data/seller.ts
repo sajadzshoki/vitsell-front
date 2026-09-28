@@ -48,6 +48,7 @@ export type SellerTabId =
   | 'settings'
   | 'system'
   | 'navigation'
+  | 'top_strip'
   | 'mega_menu'
 
 export type SellerNavItem = {
@@ -391,6 +392,7 @@ export const sellerNavGroups: SellerNavGroup[] = [
     label: 'سیستم',
     items: [
       { id: 'settings', label: 'تنظیمات پلتفرم', icon: 'i-tabler-settings', to: '/seller/settings' },
+      { id: 'top_strip', label: 'نوار بالا', icon: 'i-tabler-layout-navbar', to: '/seller/top-strip' },
       { id: 'navigation', label: 'منوی سایت', icon: 'i-tabler-menu-2', to: '/seller/navigation' },
       { id: 'account', label: 'حساب ادمین', icon: 'i-tabler-user-circle', to: '/seller/account' },
       { id: 'seo', label: 'تنظیمات سئو', icon: 'i-tabler-world-search', to: '/seller/seo' },

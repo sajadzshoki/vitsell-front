@@ -102,6 +102,83 @@
             <div class="text-xs text-toned mt-2">
               {{ item.reason }}
             </div>
+            <div class="mt-3 space-y-2">
+              <div class="text-[11px] text-muted">
+                {{ $t('کالاهای مرجوع‌شده') }}
+              </div>
+              <div
+                v-if="!item.items.length"
+                class="text-xs text-muted"
+              >
+                {{ $t('کالایی ثبت نشده') }}
+              </div>
+              <div
+                v-for="(line, index) in item.items"
+                :key="`${item.id}-card-${line.productId}-${index}`"
+                class="flex items-center gap-3 rounded-xl border border-muted bg-default p-2.5"
+              >
+                <img
+                  v-if="lineImage(line)"
+                  :src="mediaSrc(lineImage(line))"
+                  :alt="lineTitle(line)"
+                  class="size-12 rounded-lg object-cover bg-muted shrink-0"
+                >
+                <div
+                  v-else
+                  class="size-12 rounded-lg bg-muted grid place-items-center shrink-0"
+                >
+                  <TheIcon
+                    icon-type="img"
+                    name="noImage.png"
+                    class="size-5 opacity-60"
+                  />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium text-default line-clamp-2">
+                    {{ lineTitle(line) }}
+                  </div>
+                  <div
+                    v-if="line.variantLabel"
+                    class="text-[11px] text-muted mt-0.5"
+                  >
+                    {{ line.variantLabel }}
+                  </div>
+                  <div class="text-xs text-toned num mt-1">
+                    {{ line.qty.toLocaleString('fa-IR') }} {{ $t('عدد') }}
+                    · {{ formatPrice(line.unitPrice) }} {{ $t('تومان') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="text-[11px] text-muted mb-1.5">
+                {{ $t('عکس‌های مشتری') }}
+              </div>
+              <div
+                v-if="item.photos?.length"
+                class="flex gap-2 flex-wrap"
+              >
+                <button
+                  v-for="(url, index) in item.photos"
+                  :key="`${item.id}-photo-${index}`"
+                  type="button"
+                  class="cursor-pointer rounded-lg overflow-hidden border border-muted"
+                  @click="openPhoto(item.photos, index)"
+                >
+                  <img
+                    :src="mediaSrc(url)"
+                    :alt="$t('عکس مرجوعی')"
+                    class="size-16 object-cover bg-muted"
+                  >
+                </button>
+              </div>
+              <p
+                v-else
+                class="text-xs text-muted"
+              >
+                {{ $t('عکسی پیوست نشده') }}
+              </p>
+            </div>
             <UButton
               type="button"
               color="neutral"
@@ -112,10 +189,6 @@
               @click="openDetail(item)"
             >
               {{ $t('جزئیات') }}
-              · {{ item.items.length.toLocaleString('fa-IR') }} {{ $t('کالا') }}
-              <template v-if="item.photos?.length">
-                · {{ item.photos.length.toLocaleString('fa-IR') }} {{ $t('عکس') }}
-              </template>
             </UButton>
             <div
               v-if="item.adminNote"
@@ -158,7 +231,7 @@
     <UModal
       v-model:open="detailOpen"
       :title="$t('جزئیات مرجوعی')"
-      :ui="{ content: 'sm:max-w-lg' }"
+      :ui="{ content: 'sm:max-w-3xl' }"
     >
       <template #body>
         <div
@@ -194,7 +267,7 @@
             <p class="text-sm text-default">{{ detailItem.reason }}</p>
           </div>
           <div>
-            <div class="text-xs text-muted mb-2">{{ $t('کالاهای سفارش') }}</div>
+            <div class="text-xs text-muted mb-2">{{ $t('کالاهای مرجوع‌شده') }}</div>
             <div
               v-if="!detailItem.items.length"
               class="text-sm text-muted"
@@ -211,14 +284,14 @@
                 class="flex items-center gap-3 rounded-xl border border-muted bg-muted/40 p-3"
               >
                 <img
-                  v-if="lineImage(line.productId)"
-                  :src="lineImage(line.productId)"
+                  v-if="lineImage(line)"
+                  :src="mediaSrc(lineImage(line))"
                   :alt="lineTitle(line)"
-                  class="size-14 rounded-lg object-cover bg-muted shrink-0"
+                  class="size-16 rounded-lg object-cover bg-muted shrink-0"
                 >
                 <div
                   v-else
-                  class="size-14 rounded-lg bg-muted grid place-items-center shrink-0"
+                  class="size-16 rounded-lg bg-muted grid place-items-center shrink-0"
                 >
                   <TheIcon
                     icon-type="img"
@@ -227,41 +300,57 @@
                   />
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="text-sm font-medium text-default line-clamp-2">{{ lineTitle(line) }}</div>
+                  <NuxtLink
+                    :to="`/seller/products/${line.productId}`"
+                    class="text-sm font-medium text-default hover:text-primary line-clamp-2 cursor-pointer"
+                  >
+                    {{ lineTitle(line) }}
+                  </NuxtLink>
                   <div
                     v-if="line.variantLabel"
                     class="text-[11px] text-muted mt-0.5"
                   >
                     {{ line.variantLabel }}
                   </div>
-                  <div class="text-xs text-toned num mt-1">
-                    {{ line.qty.toLocaleString('fa-IR') }} {{ $t('عدد') }}
-                    · {{ formatPrice(line.unitPrice) }} {{ $t('تومان') }}
+                  <div
+                    v-if="line.sku"
+                    class="text-[11px] text-muted num mt-0.5"
+                    dir="ltr"
+                  >
+                    {{ line.sku }}
                   </div>
+                </div>
+                <div class="text-end shrink-0">
+                  <div class="text-xs text-toned num">
+                    {{ line.qty.toLocaleString('fa-IR') }} {{ $t('عدد') }}
+                  </div>
+                  <div class="text-sm font-bold text-highlighted num mt-1">
+                    {{ formatPrice(line.qty * line.unitPrice) }}
+                  </div>
+                  <div class="text-[10px] text-muted">{{ $t('تومان') }}</div>
                 </div>
               </div>
             </div>
           </div>
           <div>
-            <div class="text-xs text-muted mb-2">{{ $t('عکس‌ها') }}</div>
+            <div class="text-xs text-muted mb-2">{{ $t('عکس‌های مشتری') }}</div>
             <div
               v-if="detailItem.photos?.length"
               class="flex gap-2 flex-wrap"
             >
-              <a
-                v-for="url in detailItem.photos"
-                :key="url"
-                :href="mediaSrc(url)"
-                target="_blank"
-                rel="noopener"
-                class="cursor-pointer"
+              <button
+                v-for="(url, index) in detailItem.photos"
+                :key="`${detailItem.id}-detail-photo-${index}`"
+                type="button"
+                class="cursor-pointer rounded-xl overflow-hidden border border-muted"
+                @click="openPhoto(detailItem.photos, index)"
               >
                 <img
                   :src="mediaSrc(url)"
-                  alt=""
-                  class="size-24 rounded-xl object-cover border border-muted"
+                  :alt="$t('عکس مرجوعی')"
+                  class="size-28 object-cover bg-muted"
                 >
-              </a>
+              </button>
             </div>
             <p
               v-else
@@ -299,6 +388,47 @@
           >
             {{ $t('بستن') }}
           </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="photoOpen"
+      :title="$t('عکس مرجوعی')"
+      :ui="{ content: 'sm:max-w-3xl' }"
+    >
+      <template #body>
+        <img
+          v-if="activePhoto"
+          :src="mediaSrc(activePhoto)"
+          :alt="$t('عکس مرجوعی')"
+          class="w-full max-h-[70vh] object-contain rounded-xl bg-muted"
+        >
+        <div
+          v-if="photoUrls.length > 1"
+          class="mt-3 flex items-center justify-between gap-2"
+        >
+          <UButton
+            type="button"
+            color="neutral"
+            variant="soft"
+            icon="i-tabler-chevron-right"
+            class="cursor-pointer"
+            :disabled="photoIndex === 0"
+            @click="photoIndex -= 1"
+          />
+          <span class="text-xs text-muted num">
+            {{ (photoIndex + 1).toLocaleString('fa-IR') }} / {{ photoUrls.length.toLocaleString('fa-IR') }}
+          </span>
+          <UButton
+            type="button"
+            color="neutral"
+            variant="soft"
+            icon="i-tabler-chevron-left"
+            class="cursor-pointer"
+            :disabled="photoIndex >= photoUrls.length - 1"
+            @click="photoIndex += 1"
+          />
         </div>
       </template>
     </UModal>
@@ -375,6 +505,10 @@ const saving = ref(false)
 const confirmOpen = ref(false)
 const detailOpen = ref(false)
 const detailItem = ref<SellerReturn | null>(null)
+const photoOpen = ref(false)
+const photoUrls = ref<string[]>([])
+const photoIndex = ref(0)
+const activePhoto = computed(() => photoUrls.value[photoIndex.value] || '')
 const pendingItem = ref<SellerReturn | null>(null)
 const pendingStatus = ref<SellerReturnStatus | null>(null)
 const pendingLabel = ref('')
@@ -389,8 +523,14 @@ function lineTitle(line: SellerReturnItem) {
   return getCachedProduct(line.productId)?.title || line.productTitle || line.productId
 }
 
-function lineImage(productId: string) {
-  return getCachedProduct(productId)?.image || ''
+function lineImage(line: SellerReturnItem) {
+  return line.image || getCachedProduct(line.productId)?.image || ''
+}
+
+function openPhoto(urls: string[], index: number) {
+  photoUrls.value = urls.filter(Boolean)
+  photoIndex.value = Math.min(Math.max(index, 0), Math.max(photoUrls.value.length - 1, 0))
+  photoOpen.value = photoUrls.value.length > 0
 }
 
 function hydrateReturnProducts(rows: SellerReturn[]) {

@@ -22,6 +22,7 @@ export type SellerReturnItem = {
   sku: string
   qty: number
   unitPrice: number
+  image?: string
 }
 
 export type SellerReturn = {
