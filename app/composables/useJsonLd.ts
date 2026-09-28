@@ -95,7 +95,7 @@ export type ProductJsonLdReview = {
 export type ProductJsonLdOptions = {
   name: string
   description?: string
-  image?: string | string[]
+  image?: string | Array<string | { url: string, caption?: string }>
   url?: string
   sku?: string
   /** Only pass a real GTIN-13; never invent */
@@ -136,10 +136,18 @@ export function barcodeToGtin13(barcode?: string | null) {
  */
 export function productJsonLd(opts: ProductJsonLdOptions) {
   const url = opts.url || undefined
-  const images = (Array.isArray(opts.image) ? opts.image : [opts.image])
-    .map(src => String(src || '').trim())
-    .filter(Boolean)
-  const uniqueImages = [...new Set(images)].slice(0, 10)
+  const rawImages = Array.isArray(opts.image) ? opts.image : [opts.image]
+  const uniqueImages: { url: string, caption?: string }[] = []
+  const seenImages = new Set<string>()
+  for (const item of rawImages) {
+    const imageUrl = String(typeof item === 'string' ? item : item?.url || '').trim()
+    if (!imageUrl || seenImages.has(imageUrl)) continue
+    seenImages.add(imageUrl)
+    const captionRaw = typeof item === 'string' ? '' : String(item?.caption || '').trim()
+    const caption = captionRaw && !/technolife|تکنولایف/i.test(captionRaw) ? captionRaw : undefined
+    uniqueImages.push({ url: imageUrl, caption })
+    if (uniqueImages.length >= 10) break
+  }
 
   const priceNum = opts.price != null && opts.price !== ''
     ? Number(opts.price)
@@ -198,7 +206,13 @@ export function productJsonLd(opts: ProductJsonLdOptions) {
     name: opts.name,
     url,
     description: opts.description || undefined,
-    image: uniqueImages.length ? uniqueImages : undefined,
+    image: uniqueImages.length
+      ? uniqueImages.map(img => ({
+          '@type': 'ImageObject',
+          url: img.url,
+          ...(img.caption ? { caption: img.caption } : {}),
+        }))
+      : undefined,
     sku: opts.sku || undefined,
     gtin13: opts.gtin13 || undefined,
     brand: opts.brand ? { '@type': 'Brand', name: opts.brand } : undefined,

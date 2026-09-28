@@ -125,14 +125,14 @@
 
       <button
         type="button"
-        class="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted hover:(bg-error/10 rounded-xl) transition-all  text-start border-t border-muted mt-1 pt-3 cursor-pointer"
+        class="!w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted hover:(bg-error/10 rounded-xl) transition-all  text-start border-t border-muted mt-1 pt-3 cursor-pointer"
         @click="onLogout"
       >
         <UIcon
           name="i-tabler-logout"
           class="size-5 shrink-0 text-error"
         />
-        <span class="text-error">{{ $t('خروج از حساب') }}</span>
+        <span class="text-error text-nowrap">{{ $t('خروج از حساب') }}</span>
       </button>
 
       <div

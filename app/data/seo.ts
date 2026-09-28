@@ -112,6 +112,81 @@ export function joinSiteUrl(siteUrl: string, path: string): string {
   return `${base}${p}`
 }
 
+const TECHNOLIFE_NAME_RE = /technolife|تکنولایف/i
+const LOOPBACK_HOST_RE = /^(?:localhost|127\.0\.0\.1|\[::1\])$/i
+
+export function containsTechnolifeName(value: string | null | undefined) {
+  return TECHNOLIFE_NAME_RE.test(String(value || ''))
+}
+
+/** Drop query and hash so canonical / schema URLs stay on the product path. */
+export function stripUrlQuery(url: string | null | undefined): string {
+  const raw = String(url || '').trim()
+  if (!raw) return ''
+  try {
+    const parsed = new URL(raw)
+    parsed.search = ''
+    parsed.hash = ''
+    return parsed.toString()
+  }
+  catch {
+    return raw.split('#')[0]?.split('?')[0] || raw
+  }
+}
+
+/**
+ * Absolute public image URL for meta and JSON-LD.
+ * Relative paths join siteUrl. http upgrades to https when the site is https,
+ * except loopback hosts. URLs that mention technolife are omitted.
+ */
+export function toPublicSeoImage(url: string | null | undefined, siteUrl: string): string {
+  const raw = String(url || '').trim()
+  if (!raw || containsTechnolifeName(raw)) return ''
+
+  const base = siteUrl.replace(/\/+$/, '')
+  let absolute = raw
+  if (!/^https?:\/\//i.test(raw)) {
+    if (!base) return raw.startsWith('/') ? raw : `/${raw}`
+    const path = raw.startsWith('/') ? raw : `/${raw}`
+    absolute = `${base}${path}`
+  }
+
+  if (!/^http:\/\//i.test(absolute)) return absolute
+
+  let siteIsHttps = base.startsWith('https://')
+  try {
+    if (base) siteIsHttps = new URL(base).protocol === 'https:'
+  }
+  catch {
+    /* keep prefix check */
+  }
+  if (!siteIsHttps) return absolute
+
+  try {
+    const host = new URL(absolute).hostname
+    if (LOOPBACK_HOST_RE.test(host)) return absolute
+  }
+  catch {
+    return absolute
+  }
+
+  return absolute.replace(/^http:\/\//i, 'https://')
+}
+
+/** Catalog prices are تومان; Product schema currency is IRR (×10). */
+export function tomanToRial(price: number | string | null | undefined) {
+  const amount = Number(price)
+  if (!Number.isFinite(amount)) return undefined
+  return Math.round(amount * 10)
+}
+
+export function productImageCaption(alt: string | null | undefined, fallback: string) {
+  const text = String(alt || '').trim()
+  const title = fallback.trim()
+  if (!text || containsTechnolifeName(text)) return title || undefined
+  return text
+}
+
 export function applyTitlePattern(pattern: string, title: string, siteName: string): string {
   const t = title.trim()
   const name = siteName.trim() || 'vitsell'

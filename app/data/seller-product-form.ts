@@ -29,6 +29,7 @@ export type SellerProductFormValues = {
   image: string
   imageDark: string
   gallery: string[]
+  imageAlts: Record<string, string>
   badge: string
   fastDelivery: boolean
   /** Display colors derived from variant axes (read-only in UI). */
@@ -128,11 +129,24 @@ export function emptySellerProductForm(category = ''): SellerProductFormValues {
     image: '',
     imageDark: '',
     gallery: [],
+    imageAlts: {},
     badge: SELLER_BADGE_NONE,
     fastDelivery: false,
     colors: [],
     specs: [emptySpecRow()],
   }
+}
+
+function pruneImageAlts(alts: Record<string, string> | null | undefined, urls: string[]) {
+  const allow = new Set(urls.map(url => url.trim()).filter(Boolean))
+  const next: Record<string, string> = {}
+  for (const [url, alt] of Object.entries(alts || {})) {
+    const key = url.trim()
+    const text = String(alt || '').trim()
+    if (!allow.has(key) || !text) continue
+    next[key] = text
+  }
+  return next
 }
 
 export function parsePriceInput(value: string): number {
@@ -228,6 +242,7 @@ export function productToSellerForm(
     image: product.image || '',
     imageDark: product.imageDark || '',
     gallery: product.gallery ? [...product.gallery] : [],
+    imageAlts: { ...(product.imageAlts || {}) },
     badge: product.badge || SELLER_BADGE_NONE,
     fastDelivery: Boolean(product.fastDelivery),
     colors: product.colors ? [...product.colors] : [],
@@ -299,6 +314,11 @@ export function buildSellerProductFromForm(
     image: form.image.trim() || form.gallery[0] || '/images/noImage.png',
     ...(form.imageDark.trim() ? { imageDark: form.imageDark.trim() } : { imageDark: undefined }),
     ...(form.gallery.length ? { gallery: [...form.gallery] } : { gallery: undefined }),
+    imageAlts: pruneImageAlts(form.imageAlts, [
+      form.image,
+      form.imageDark,
+      ...form.gallery,
+    ]),
     badge: form.badge && form.badge !== SELLER_BADGE_NONE ? form.badge : undefined,
     colors: colors.length ? colors : undefined,
     inStock: stock > 0,

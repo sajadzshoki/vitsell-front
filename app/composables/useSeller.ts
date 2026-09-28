@@ -898,6 +898,7 @@ export function useSeller() {
       image: product.image,
       imageDark: product.imageDark,
       gallery: product.gallery,
+      imageAlts: product.imageAlts ?? null,
       colors: product.colors,
       shortDesc: product.shortDesc,
       description: product.description,

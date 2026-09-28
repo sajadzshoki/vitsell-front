@@ -12,9 +12,9 @@
       class="shrink-0 size-11"
       @click="goBack"
     />
-    <h1 class="flex-1 min-w-0 text-sm font-500 text-highlighted truncate text-start">
+    <p class="flex-1 min-w-0 text-sm font-500 text-highlighted truncate text-start">
       {{ title }}
-    </h1>
+    </p>
     <div
       v-if="$slots.trailing"
       class="shrink-0 flex items-center gap-1"

@@ -18,23 +18,17 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-5 items-start">
         <section class="order-1 lg:col-span-9 md:bg-default md:rounded-3xl md:border md:border-muted md:p-4 lg:p-6 min-w-0">
-          <TheProductHeader
-            :product="product"
-            class="hidden md:block mb-4 pb-2  border-b border-muted"
-            size="lg"
-          />
-
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3 lg:gap-5">
-            <div class="md:col-span-5 flex flex-col gap-2">
+            <TheProductHeader
+              :product="product"
+              class="order-2 md:(order-1 col-span-12 pb-2 border-b border-muted)"
+            />
+
+            <div class="order-1 md:(order-2 col-span-5) flex flex-col gap-2">
               <TheProductGallery :product="product" />
-              <TheProductHeader
-                :product="product"
-                class="md:hidden"
-                size="sm"
-              />
             </div>
 
-            <div class="md:col-span-7">
+            <div class="order-3 md:col-span-7">
               <TheProductInfo
                 v-model:color-index="colorIndex"
                 v-model:selected-options="selectedOptions"
@@ -83,7 +77,13 @@ import { barcodeToGtin13, productJsonLd, useJsonLd } from '~/composables/useJson
 import { useEntitySeo } from '~/composables/useEntitySeo'
 import { useSellerSeoSettings } from '~/composables/useSellerSeoSettings'
 import { useSellerProductCommerce } from '~/composables/useSellerProductCommerce'
-import { htmlToPlainText } from '~/data/seo'
+import {
+  htmlToPlainText,
+  productImageCaption,
+  stripUrlQuery,
+  tomanToRial,
+  toPublicSeoImage,
+} from '~/data/seo'
 import {
   findVariantByQuery,
   preferredProductVariant,
@@ -283,13 +283,35 @@ const productSeo = computed(() =>
   product.value?.seo || commerce.value?.seo || null,
 )
 
-useEntitySeo(() => ({
-  entity: productSeo.value,
-  fallbackTitle: product.value?.title ?? '',
-  fallbackDescription: htmlToPlainText(product.value?.shortDesc) || product.value?.title || '',
-  fallbackImage: product.value?.image ?? '',
-  path: productId.value ? `/product/${productId.value}` : undefined,
-}))
+function variantQueryPresent() {
+  const value = route.query[PRODUCT_VARIANT_QUERY_KEY]
+  const raw = Array.isArray(value) ? value[0] : value
+  return String(raw || '').trim().length > 0
+}
+
+useEntitySeo(() => {
+  const seo = productSeo.value
+  const siteUrl = settings.value.siteUrl
+  const image = toPublicSeoImage(product.value?.image || '', siteUrl)
+  const ogImage = toPublicSeoImage(seo?.ogImage || product.value?.image || '', siteUrl)
+  const twitterImage = toPublicSeoImage(
+    seo?.twitterImage || seo?.ogImage || product.value?.image || '',
+    siteUrl,
+  )
+  return {
+    entity: {
+      ...(seo || {}),
+      canonicalUrl: stripUrlQuery(seo?.canonicalUrl || ''),
+      robots: variantQueryPresent() ? 'noindex,follow' : (seo?.robots || 'index,follow'),
+      ogImage,
+      twitterImage,
+    },
+    fallbackTitle: product.value?.title ?? '',
+    fallbackDescription: htmlToPlainText(product.value?.shortDesc) || product.value?.title || '',
+    fallbackImage: image,
+    path: productId.value ? `/product/${productId.value}` : undefined,
+  }
+})
 
 useJsonLd(() => {
   const p = product.value
@@ -304,10 +326,7 @@ useJsonLd(() => {
   }
   const offerProduct = displayProduct.value
   const variant = selectedVariant.value
-  const canonical = absolute(`/product/${p.id}`)
-  const pageUrl = variant?.id && canonical
-    ? `${canonical}?${PRODUCT_VARIANT_QUERY_KEY}=${encodeURIComponent(variant.id)}`
-    : canonical
+  const canonical = stripUrlQuery(absolute(`/product/${p.id}`) || '')
   const color = variantOptionLabel(variant, /رنگ|color/i)
     || p.colors?.[colorIndex.value]?.name
     || undefined
@@ -318,8 +337,16 @@ useJsonLd(() => {
     ...(p.gallery || []),
     p.image,
   ]
-    .map(src => absolute(String(src || '').trim()))
-    .filter((src): src is string => Boolean(src))
+    .map((src) => {
+      const stored = String(src || '').trim()
+      const url = toPublicSeoImage(stored, settings.value.siteUrl)
+      if (!url) return null
+      return {
+        url,
+        caption: productImageCaption(p.imageAlts?.[stored] || p.imageAlts?.[url], p.title),
+      }
+    })
+    .filter((item): item is { url: string, caption: string | undefined } => Boolean(item))
 
   return productJsonLd({
     name: p.title,
@@ -327,7 +354,7 @@ useJsonLd(() => {
       || htmlToPlainText(p.description)
       || p.title,
     image: imageSources,
-    url: pageUrl,
+    url: canonical || undefined,
     sku: offerProduct.sku || p.sku || commerce.value?.sku || undefined,
     gtin13,
     brand: p.brand || undefined,
@@ -337,7 +364,7 @@ useJsonLd(() => {
     additionalProperty: (p.specs || [])
       .map(spec => ({ name: spec.key, value: spec.value }))
       .filter(spec => spec.name && spec.value),
-    price: offerProduct.price,
+    price: tomanToRial(offerProduct.price),
     currency: 'IRR',
     inStock: offerProduct.inStock !== false,
     itemCondition: 'NewCondition',
@@ -355,7 +382,7 @@ useJsonLd(() => {
       { name: t('خانه'), url: absolute('/') },
       { name: t(p.categoryLabel), url: absolute(`/category/${p.category}`) },
       ...(p.brand ? [{ name: p.brand }] : []),
-      { name: p.title, url: pageUrl },
+      { name: p.title, url: canonical || undefined },
     ],
   })
 })

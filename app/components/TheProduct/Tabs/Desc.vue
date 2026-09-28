@@ -48,13 +48,13 @@
       </h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
         <figure
-          v-for="(src, i) in mediaImages"
-          :key="`${src}-${i}`"
+          v-for="(item, i) in mediaImages"
+          :key="`${item.src}-${i}`"
           class="overflow-hidden rounded-2xl bg-muted border border-muted"
         >
           <img
-            :src="src"
-            :alt="`${product.title} — ${$t('تصویر')} ${(i + 1).toLocaleString('fa-IR')}`"
+            :src="item.src"
+            :alt="item.alt"
             class="w-full aspect-[4/3] object-cover"
             loading="lazy"
             decoding="async"
@@ -67,16 +67,36 @@
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
+import { productImageAlt } from '~/data/products'
 import { contentToHtml, isEmptyHtml, sanitizeBlogHtml } from '~/data/seller-blog'
 
 const props = defineProps<{
   product: Product
 }>()
 
+function escapeAttr(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+}
+
+function rewriteLeakedImageAlts(html: string, title: string) {
+  const safeTitle = escapeAttr(title.trim())
+  return html.replace(/<img\b[^>]*>/gi, (tag) => {
+    if (!/\balt\s*=/i.test(tag)) return tag
+    return tag.replace(/\balt\s*=\s*(["'])([\s\S]*?)\1/i, (full, quote: string, alt: string) => {
+      if (!/technolife|تکنولایف/i.test(alt)) return full
+      return `alt=${quote}${safeTitle}${quote}`
+    })
+  })
+}
+
 function toSafeHtml(raw: string | null | undefined) {
   const value = raw?.trim()
   if (!value || isEmptyHtml(value)) return ''
-  return resolveHtmlMediaUrls(sanitizeBlogHtml(contentToHtml([value])))
+  const html = resolveHtmlMediaUrls(sanitizeBlogHtml(contentToHtml([value])))
+  return rewriteLeakedImageAlts(html, props.product.title)
 }
 
 function resolveHtmlMediaUrls(html: string) {
@@ -95,6 +115,9 @@ const safeBodyHtml = computed(() => toSafeHtml(props.product.description))
 const mediaImages = computed(() => {
   return (props.product.descImages ?? [])
     .filter(Boolean)
-    .map(src => resolveMediaUrl(src) || src)
+    .map(src => ({
+      src: resolveMediaUrl(src) || src,
+      alt: productImageAlt(props.product.imageAlts, src, props.product.title),
+    }))
 })
 </script>

@@ -70,6 +70,9 @@
       <div
         v-for="(url, index) in model"
         :key="itemKey(url, index)"
+        class="flex flex-col gap-1.5 min-w-0"
+      >
+      <div
         class="relative aspect-square rounded-xl border overflow-hidden bg-muted group"
         :class="{
           'border-primary ring-2 ring-primary/30': isPrimary(index),
@@ -164,6 +167,15 @@
           </div>
         </div>
       </div>
+        <TheFormInput
+          :model-value="alts[url] || ''"
+          size="sm"
+          :placeholder="$t('متن جایگزین')"
+          @update:model-value="setAlt(url, String($event ?? ''))"
+          @click.stop
+          @pointerdown.stop
+        />
+      </div>
     </TransitionGroup>
 
     <p
@@ -188,6 +200,7 @@ withDefaults(defineProps<{
 const model = defineModel<string[]>({ default: () => [] })
 /** Optional sync with product main image (`form.image`). */
 const primary = defineModel<string>('primary', { default: '' })
+const alts = defineModel<Record<string, string>>('alts', { default: () => ({}) })
 
 const { t } = useI18n()
 const toast = useAppToast()
@@ -233,6 +246,10 @@ function revokeBlob(url: string) {
   preferBlob.value = restPrefer
   const { [url]: _k, ...restKeys } = keyByUrl.value
   keyByUrl.value = restKeys
+}
+
+function setAlt(url: string, value: string) {
+  alts.value = { ...alts.value, [url]: value }
 }
 
 function syncPrimaryFromGallery() {

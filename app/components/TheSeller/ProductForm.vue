@@ -521,23 +521,27 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <TheSellerImageUpload
                 v-model="form.image"
+                v-model:alt-text="primaryImageAlt"
+                editable-alt
                 :label="$t('تصویر اصلی (تم روشن)')"
                 :badge="$t('لایت')"
                 badge-color="warning"
                 icon="i-tabler-sun"
                 theme-preview="light"
-                :alt="form.title || $t('پیش‌نمایش لایت')"
+                :alt="primaryImageAlt || form.title || $t('پیش‌نمایش لایت')"
                 :error="errors.image"
                 @error="form.image = ''"
               />
               <TheSellerImageUpload
                 v-model="form.imageDark"
+                v-model:alt-text="darkImageAlt"
+                editable-alt
                 :label="$t('تصویر تم تاریک')"
                 :badge="$t('دارک')"
                 badge-color="neutral"
                 icon="i-tabler-moon"
                 theme-preview="dark"
-                :alt="form.title || $t('پیش‌نمایش دارک')"
+                :alt="darkImageAlt || form.title || $t('پیش‌نمایش دارک')"
                 :error="errors.imageDark"
                 @error="form.imageDark = ''"
               />
@@ -545,6 +549,7 @@
             <TheSellerGalleryUpload
               v-model="form.gallery"
               v-model:primary="form.image"
+              v-model:alts="form.imageAlts"
               :label="$t('گالری تصاویر')"
               :hint="$t('با کشیدن یا دکمه‌ها ترتیب را عوض کنید؛ «اصلی کردن» همان تصویر اصلی محصول را تنظیم می‌کند')"
             />
@@ -718,6 +723,23 @@ void ensureAttributes({ force: false })
 
 const isEdit = computed(() => props.mode === 'edit' && Boolean(props.productId))
 const form = ref<SellerProductFormValues>(emptySellerProductForm())
+
+function imageAltModel(url: () => string) {
+  return computed({
+    get: () => {
+      const key = url().trim()
+      return key ? (form.value.imageAlts?.[key] || '') : ''
+    },
+    set: (value: string) => {
+      const key = url().trim()
+      if (!key) return
+      form.value.imageAlts = { ...(form.value.imageAlts || {}), [key]: value }
+    },
+  })
+}
+
+const primaryImageAlt = imageAltModel(() => form.value.image)
+const darkImageAlt = imageAltModel(() => form.value.imageDark)
 const commerce = ref<SellerProductCommerce>(emptyProductCommerce())
 const slugManual = ref(false)
 const categorySpecKeys = ref<string[]>([])

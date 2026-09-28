@@ -30,6 +30,8 @@ export type Product = {
   /** Optional product image for dark color mode */
   imageDark?: string
   gallery?: string[]
+  /** Alt text keyed by stored image URL (main, dark, gallery). */
+  imageAlts?: Record<string, string>
   /** تصاویر اختصاصی سکشن معرفی (در غیر این صورت از gallery استفاده می‌شود) */
   descImages?: string[]
   /** آدرس ویدیو معرفی محصول */
@@ -338,6 +340,19 @@ const seededProducts: Product[] = catalogSeeds.map((seed) => ({
 }))
 
 export const products: Product[] = [...featuredProducts, ...seededProducts]
+
+const LEAKED_IMAGE_NAME_RE = /technolife|تکنولایف/i
+
+export function productImageAlt(
+  alts: Record<string, string> | null | undefined,
+  src: string,
+  fallback: string,
+) {
+  const key = String(src || '').trim()
+  const raw = key ? String(alts?.[key] || '').trim() : ''
+  if (!raw || LEAKED_IMAGE_NAME_RE.test(raw)) return fallback.trim()
+  return raw
+}
 
 export const formatPrice = (n: number) => {
   let locale = 'fa-IR'

@@ -32,21 +32,35 @@
         </div>
 
         <div
-          v-if="storeContact.address"
+          v-if="locationAddress || hasMapPoint"
           class="p-4 rounded-xl border border-dashed border-muted bg-muted/30"
         >
           <div class="flex items-center gap-2 text-sm font-semibold text-highlighted mb-2">
             <UIcon name="i-tabler-map-2" class="size-4 text-primary" />
             {{ $t('موقعیت دفتر مرکزی') }}
           </div>
-          <div class="aspect-video rounded-lg bg-muted border border-muted grid place-items-center text-muted">
+          <TheAboutMap
+            v-if="hasMapPoint"
+            :latitude="mapPoint.lat"
+            :longitude="mapPoint.lng"
+          />
+          <div
+            v-else
+            class="aspect-video rounded-lg bg-muted border border-muted grid place-items-center text-muted"
+          >
             <div class="text-center px-4">
               <UIcon name="i-tabler-map-pin" class="size-8 mx-auto mb-2 opacity-60" />
               <p class="text-xs leading-6">
-                {{ storeContact.address }}
+                {{ locationAddress }}
               </p>
             </div>
           </div>
+          <p
+            v-if="hasMapPoint && locationAddress"
+            class="text-xs text-muted leading-6 mt-2"
+          >
+            {{ locationAddress }}
+          </p>
         </div>
       </div>
 
@@ -157,6 +171,28 @@ const props = defineProps<{
 }>()
 
 const { contact: storeContact } = await useStoreContact()
+const { about, ensureLoaded } = useAbout()
+await ensureLoaded()
+
+function addressFromItems(items: StaticContactItem[]) {
+  const item = items.find(entry =>
+    entry.icon === 'i-tabler-map-pin' || (entry.label || '').includes('آدرس'),
+  )
+  return item?.value?.trim() || ''
+}
+
+const locationAddress = computed(() =>
+  storeContact.value.address || addressFromItems(props.items),
+)
+
+const hasMapPoint = computed(() =>
+  about.value.mapLat != null && about.value.mapLng != null,
+)
+
+const mapPoint = computed(() => ({
+  lat: about.value.mapLat ?? 0,
+  lng: about.value.mapLng ?? 0,
+}))
 
 function isFooterContactField(item: StaticContactItem) {
   const label = item.label || ''
@@ -177,11 +213,11 @@ const displayItems = computed(() => {
     href: phone.href,
     raw: true,
   }))
-  const address = live.address
+  const address = locationAddress.value
     ? [{
         icon: 'i-tabler-map-pin',
         label: 'آدرس',
-        value: live.address,
+        value: locationAddress.value,
         raw: true as const,
       }]
     : []

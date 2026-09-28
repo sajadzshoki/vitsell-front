@@ -145,6 +145,15 @@
       </UButton>
     </div>
 
+    <TheFormInput
+      v-if="editableAlt && String(model || '').trim()"
+      v-model="altText"
+      class="mt-3"
+      size="sm"
+      :label="$t('متن جایگزین (alt)')"
+      :placeholder="$t('توضیح کوتاه این تصویر')"
+    />
+
     <p
       v-if="error"
       class="text-[11px] text-error mt-2"
@@ -175,12 +184,15 @@ const props = withDefaults(defineProps<{
   themePreview?: 'light' | 'dark'
   /** How the image fills the preview box */
   fit?: 'cover' | 'contain'
+  /** Show an editable alt field bound to the current image URL */
+  editableAlt?: boolean
 }>(), {
   alt: '',
   badgeColor: 'neutral',
   themePreview: 'light',
   disabled: false,
   fit: 'cover',
+  editableAlt: false,
 })
 
 const emit = defineEmits<{
@@ -188,6 +200,7 @@ const emit = defineEmits<{
 }>()
 
 const model = defineModel<string>({ default: '' })
+const altText = defineModel<string>('altText', { default: '' })
 
 const { t } = useI18n()
 const toast = useAppToast()

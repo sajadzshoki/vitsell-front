@@ -268,14 +268,93 @@
         </div>
 
         <UButton
+          type="button"
           color="neutral"
           variant="soft"
           block
           size="lg"
+          icon="i-tabler-download"
+          class="cursor-pointer"
+          @click="downloadInvoice"
         >
           {{ $t('دانلود فاکتور') }}
         </UButton>
       </aside>
+    </div>
+
+    <div
+      id="customer-order-invoice"
+      class="hidden print:block bg-white text-black p-8"
+      data-print-target="customer-invoice"
+    >
+      <div class="flex items-start justify-between gap-4 mb-6 border-b border-gray-300 pb-4">
+        <div>
+          <h1 class="text-xl font-bold">
+            {{ $t('فاکتور فروش') }}
+          </h1>
+          <div class="text-sm mt-1 num" dir="ltr">
+            {{ order.id }}
+          </div>
+          <div class="text-xs mt-1">
+            {{ $t('تاریخ') }}: {{ order.date }}
+          </div>
+        </div>
+        <div class="text-sm text-end">
+          <div>{{ order.address.fullName }}</div>
+          <div class="num" dir="ltr">{{ order.address.phone }}</div>
+        </div>
+      </div>
+      <table class="w-full text-sm mb-6">
+        <thead>
+          <tr class="border-b border-gray-300 text-start">
+            <th class="py-2 text-start">{{ $t('کالا') }}</th>
+            <th class="py-2 text-start">{{ $t('تعداد') }}</th>
+            <th class="py-2 text-start">{{ $t('فی') }}</th>
+            <th class="py-2 text-start">{{ $t('جمع') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="item in lineItems"
+            :key="`${item.productId}-${item.variantId || ''}`"
+            class="border-b border-gray-200"
+          >
+            <td class="py-2">
+              {{ item.product?.title || item.productId }}
+              <span v-if="item.variantLabel"> · {{ item.variantLabel }}</span>
+            </td>
+            <td class="py-2 num">{{ item.qty.toLocaleString('fa-IR') }}</td>
+            <td class="py-2 num">{{ formatPrice(item.price) }}</td>
+            <td class="py-2 num">{{ formatPrice(item.price * item.qty) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="text-sm space-y-1 max-w-xs ms-auto">
+        <div class="flex justify-between gap-6">
+          <span>{{ $t('جمع کالاها') }}</span>
+          <span class="num">{{ formatPrice(subtotal) }}</span>
+        </div>
+        <div class="flex justify-between gap-6">
+          <span>{{ $t('هزینه ارسال') }}</span>
+          <span>{{ $t('رایگان') }}</span>
+        </div>
+        <div class="flex justify-between gap-6 font-bold pt-2 border-t border-gray-300">
+          <span>{{ $t('مبلغ نهایی') }}</span>
+          <span class="num">{{ formatPrice(order.total) }} {{ $t('تومان') }}</span>
+        </div>
+      </div>
+      <div class="mt-6 text-xs space-y-1">
+        <div>
+          {{ $t('آدرس') }}: {{ order.address.province }}، {{ order.address.city }}، {{ order.address.address }}
+        </div>
+        <div class="num">
+          {{ $t('کدپستی') }}: {{ order.address.postalCode }}
+        </div>
+        <div>{{ $t('پرداخت') }}: {{ order.paymentMethod }} · {{ $t('ارسال') }}: {{ order.shippingMethod }}</div>
+        <div v-if="order.trackingCode">
+          {{ $t('کد پیگیری') }}: <span class="num" dir="ltr">{{ order.trackingCode }}</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -374,6 +453,17 @@ const subtotal = computed(() =>
   lineItems.value.reduce((sum, item) => sum + item.price * item.qty, 0),
 )
 
+function downloadInvoice() {
+  document.body.dataset.printTarget = 'customer-invoice'
+  const cleanup = () => {
+    delete document.body.dataset.printTarget
+    window.removeEventListener('afterprint', cleanup)
+  }
+  window.addEventListener('afterprint', cleanup)
+  window.print()
+  window.setTimeout(cleanup, 1000)
+}
+
 function apiErrorMessage(error: any, fallback: string) {
   const fromFields = error?.data?.errors?.map((e: any) => e.message).filter(Boolean).join(' ، ')
   return fromFields || error?.data?.message || fallback
@@ -402,3 +492,27 @@ watch(() => props.orderId, () => {
   loadOrder()
 }, { immediate: true })
 </script>
+
+<style>
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  body[data-print-target='customer-invoice'] #customer-order-invoice,
+  body[data-print-target='customer-invoice'] #customer-order-invoice * {
+    visibility: visible !important;
+  }
+
+  body[data-print-target='customer-invoice'] #customer-order-invoice {
+    display: block !important;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+  }
+}
+
+@page {
+  margin: 8mm;
+}
+</style>

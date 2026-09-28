@@ -64,11 +64,12 @@
             >
               <img
                 :src="imageSrc(item)"
-                :alt="product.title"
+                :alt="imageAlt(item)"
                 class="size-full object-cover will-change-transform transition-[scale] duration-150 ease-out pointer-events-none"
                 :style="active === index ? zoomStyle : undefined"
                 draggable="false"
-                loading="eager"
+                :loading="index === 0 ? 'eager' : 'lazy'"
+                :fetchpriority="index === 0 ? 'high' : undefined"
                 decoding="async"
               >
             </div>
@@ -149,7 +150,7 @@
           >
             <img
               :src="imageSrc(image)"
-              :alt="product.title"
+              :alt="imageAlt(image)"
               class="size-full object-cover"
               loading="lazy"
               decoding="async"
@@ -274,7 +275,7 @@
           <div class="relative flex-1 min-h-0 flex items-center justify-center">
             <img
               :src="imageSrc(gallery[active] || '')"
-              :alt="product.title"
+              :alt="imageAlt(gallery[active] || '')"
               class="max-h-full w-auto max-w-full object-contain rounded-2xl"
               loading="eager"
               decoding="async"
@@ -326,7 +327,7 @@
             >
               <img
                 :src="imageSrc(image)"
-                :alt="product.title"
+                :alt="imageAlt(image)"
                 class="size-full object-cover"
                 loading="lazy"
                 decoding="async"
@@ -341,7 +342,7 @@
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
-import { products as localProducts } from '~/data/products'
+import { productImageAlt, products as localProducts } from '~/data/products'
 import { collectBuyerPhotos } from '~/data/product-detail'
 
 const props = defineProps<{
@@ -432,6 +433,11 @@ watch(galleryTab, () => {
 function setGalleryTab(tab: 'official' | 'buyers') {
   if (tab === 'buyers' && !buyerPhotos.value.length) return
   galleryTab.value = tab
+}
+
+function imageAlt(src: string) {
+  if (galleryTab.value === 'buyers') return props.product.title
+  return productImageAlt(props.product.imageAlts, src, props.product.title)
 }
 
 function imageSrc(name: string) {
