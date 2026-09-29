@@ -2,7 +2,7 @@
   <div class="min-h-dvh bg-muted text-default flex flex-col">
     <TheNavbar />
     <div
-      class="mx-auto max-w-8xl w-full px-3 py-4 sm:px-4 lg:px-6 flex-1 pb-24 md:pb-4"
+      class="mx-auto max-w-8xl w-full px-3 py-4 sm:px-4 lg:px-6 flex-1 pb-4"
       :class="isMobile ? 'pt-2' : ''"
     >
       <nav class="hidden md:flex items-center gap-2 text-xs text-muted mb-4 flex-wrap">

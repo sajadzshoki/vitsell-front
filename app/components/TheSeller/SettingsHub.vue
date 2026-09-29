@@ -58,6 +58,26 @@
         v-if="activeTab === 'general'"
         class="space-y-4"
       >
+        <section class="bg-muted border border-muted rounded-2xl p-4 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="font-bold text-highlighted">
+              {{ $t('کارت محصول جدید') }}
+            </p>
+            <p class="text-xs text-muted mt-1 leading-5">
+              {{
+                platform.productCardStyle === 'showcase'
+                  ? $t('کارت تصویری در کل سایت نمایش داده می‌شود')
+                  : $t('کارت کلاسیک فروشگاه در کل سایت نمایش داده می‌شود')
+              }}
+            </p>
+          </div>
+          <USwitch
+            :model-value="platform.productCardStyle === 'showcase'"
+            :disabled="!canSave"
+            class="cursor-pointer shrink-0"
+            @update:model-value="setProductCardStyle"
+          />
+        </section>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <TheFormInput
             v-model="shopForm.name"
@@ -903,6 +923,10 @@ const securityInfo = computed(() => {
   }
 })
 
+function setProductCardStyle(value: boolean) {
+  platform.value.productCardStyle = value ? 'showcase' : 'classic'
+}
+
 function resetDraft() {
   shopForm.value = { ...shop.value }
   platform.value = { ...settings.value }
@@ -961,6 +985,7 @@ async function onSave() {
       onlinePaymentEnabled: platform.value.onlinePaymentEnabled,
       codPaymentEnabled: platform.value.codPaymentEnabled,
       installmentPaymentEnabled: platform.value.installmentPaymentEnabled,
+      productCardStyle: platform.value.productCardStyle,
     })
     try {
       await fetchFooter({ force: true, admin: true })

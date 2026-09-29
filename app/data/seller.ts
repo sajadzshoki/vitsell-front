@@ -266,6 +266,8 @@ export type SellerShop = {
   onlinePaymentEnabled?: boolean
   codPaymentEnabled?: boolean
   installmentPaymentEnabled?: boolean
+  /** Storefront product cards */
+  productCardStyle?: 'classic' | 'showcase'
 }
 
 export type SellerSalesPoint = {

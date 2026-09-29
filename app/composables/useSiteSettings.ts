@@ -66,6 +66,7 @@ function normalizeSite(raw: Partial<SiteSettings> | null | undefined): SiteSetti
     onlinePaymentEnabled: raw?.onlinePaymentEnabled !== false,
     codPaymentEnabled: raw?.codPaymentEnabled !== false,
     installmentPaymentEnabled: raw?.installmentPaymentEnabled !== false,
+    productCardStyle: raw?.productCardStyle === 'showcase' ? 'showcase' : 'classic',
   }
   syncPlatformPrefs(next)
   return next

@@ -50,6 +50,6 @@ const contentClass = computed(() => {
   if (isBackwardPage.value) {
     return 'px-3 py-3 sm:px-4 md:(px-4 py-4) lg:px-6 md:pb-4 pb-6'
   }
-  return 'px-3 py-4 sm:px-4 lg:px-6 pb-24 md:pb-4'
+  return 'px-3 py-4 sm:px-4 lg:px-6 pb-4'
 })
 </script>

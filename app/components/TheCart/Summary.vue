@@ -120,7 +120,7 @@
       {{ $t('با ثبت سفارش،') }}
       <NuxtLink
         to="/terms"
-        class="text-primary hover:underline"
+        class="!text-primary underline hover:scale-105"
       >
         {{ $t('شرایط استفاده') }}
       </NuxtLink>

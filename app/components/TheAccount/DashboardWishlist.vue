@@ -17,8 +17,11 @@
       </NuxtLink>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <TheProductCard
+    <div :class="showcase
+      ? 'grid grid-cols-1 min-[480px]:grid-cols-2 gap-3'
+      : 'grid grid-cols-2 sm:grid-cols-4 gap-3'"
+    >
+      <TheProductStoreCard
         v-for="product in preview"
         :key="product.id"
         :product="product"
@@ -29,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+const { showcase } = useProductCardStyle()
 const { wishlistProducts } = useShop()
 
 const preview = computed(() => wishlistProducts.value.slice(0, 4))

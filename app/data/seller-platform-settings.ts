@@ -44,6 +44,7 @@ export type SellerPlatformSettings = {
   onlinePaymentEnabled: boolean
   codPaymentEnabled: boolean
   installmentPaymentEnabled: boolean
+  productCardStyle: 'classic' | 'showcase'
 }
 
 export const defaultPlatformSettings: SellerPlatformSettings = {
@@ -83,6 +84,7 @@ export const defaultPlatformSettings: SellerPlatformSettings = {
   onlinePaymentEnabled: true,
   codPaymentEnabled: true,
   installmentPaymentEnabled: true,
+  productCardStyle: 'classic',
 }
 
 export const platformSettingsTabs = [

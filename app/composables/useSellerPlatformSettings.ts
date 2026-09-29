@@ -79,6 +79,7 @@ function toSettings(raw: any): SellerPlatformSettings {
     notifyCustomerPayment: Boolean(src.notifyCustomerPayment ?? true),
     notifyCustomerShipping: Boolean(src.notifyCustomerShipping ?? true),
     notifyCustomerMarketing: Boolean(src.notifyCustomerMarketing ?? false),
+    productCardStyle: src.productCardStyle === 'showcase' ? 'showcase' : 'classic',
   }
 }
 

@@ -40,29 +40,28 @@
         v-slot="{ item }"
         :items="products"
         arrows
-        :per-view="[2, 3, 4, 5, 6]"
+        :per-view="carouselPerView"
         :prev="{ color: 'neutral', variant: 'solid', size: 'md' }"
         :next="{ color: 'neutral', variant: 'solid', size: 'md' }"
         prev-icon="i-tabler-chevron-right"
         next-icon="i-tabler-chevron-left"
         :ui="{
-          item: 'basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 ps-3 first:ps-0 flex',
+          item: carouselItemClass,
           container: 'ms-0   items-stretch',
           prev: 'start-1 sm:start-2 z-20',
           next: 'end-1 sm:end-2 z-20',
         }"
         class="w-full"
       >
-        <TheProductCard
-          :product="item"
-          compact
-        />
+        <TheProductStoreCard :product="item" />
       </TheCarousel>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+const { carouselPerView, carouselItemClass } = useProductCardStyle()
+
 const {
   events,
   recommendations,

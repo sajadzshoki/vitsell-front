@@ -31,8 +31,8 @@
         prev-icon="i-tabler-chevron-right"
         next-icon="i-tabler-chevron-left"
         :ui="{
-          item: ' sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 ps-3 first:ps-0',
-          container: 'ms-0',
+          item: 'basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5 ps-3 first:ps-0 flex',
+          container: 'ms-0 items-stretch',
           prev: 'start-0 z-20',
           next: 'end-0 z-20',
         }"
@@ -40,17 +40,24 @@
       >
         <NuxtLink
           :to="getBlogPostPath(item.id)"
-          class="block relative overflow-hidden rounded-xl aspect-[4/3] w-full h-full group cursor-pointer"
+          class="group relative block h-44 w-full cursor-pointer overflow-hidden rounded-xl bg-muted md:h-48"
         >
           <img
-            :src="item.image"
+            v-if="item.image"
+            :src="resolveMediaUrl(item.image)"
             :alt="$t(item.title)"
             class="absolute inset-0 size-full object-cover transition-all duration-400 group-hover:scale-105"
             loading="lazy"
             decoding="async"
           >
-          <div class="absolute inset-x-0 bottom-0 bg-inverted/75 backdrop-blur-sm px-3 py-2.5 min-h-14 flex items-center justify-center">
-            <p class="text-xs sm:text-sm text-inverted text-center line-clamp-1 font-medium leading-relaxed">
+          <TheIcon
+            v-else
+            icon-type="img"
+            name="noImage.png"
+            class="absolute inset-0 m-auto size-16 opacity-60"
+          />
+          <div class="absolute inset-x-0 bottom-0 flex h-14 items-center justify-center bg-inverted/75 px-3 backdrop-blur-sm">
+            <p class="line-clamp-2 text-center text-xs font-medium leading-relaxed text-inverted sm:text-sm">
               {{ $t(item.title) }}
             </p>
           </div>

@@ -41,9 +41,11 @@
 
     <div
       v-else
-      class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4"
+      :class="showcase
+        ? 'grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4'
+        : 'grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4'"
     >
-      <TheProductCard
+      <TheProductStoreCard
         v-for="product in products"
         :key="product.id"
         :product="product"
@@ -54,6 +56,8 @@
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
+
+const { showcase } = useProductCardStyle()
 
 withDefaults(defineProps<{
   title: string

@@ -1,11 +1,11 @@
 <template>
-  <div class="bg-default border border-muted rounded-2xl overflow-hidden">
-    <div class="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-muted">
+  <div class="bg-default border !border-muted rounded-2xl overflow-hidden">
+    <div class="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x !divide-muted  ">
       <NuxtLink
         v-for="stat in stats"
         :key="stat.label"
         :to="stat.to"
-        class="group flex flex-col items-center gap-1.5 p-3 sm:(gap-2 p-4) lg:p-5 text-center transition-all  hover:bg-muted/60 min-w-0 cursor-pointer"
+        class="group flex flex-col items-center gap-1.5 p-3 sm:(gap-2 p-4) lg:p-5 text-center transition-all !last:border-l-none hover:bg-muted/60 min-w-0 cursor-pointer"
       >
         <div
           class="size-9 sm:size-10 lg:size-12 rounded-xl lg:rounded-2xl grid place-items-center transition-all  group-hover:scale-105 shrink-0"

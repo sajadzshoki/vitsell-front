@@ -219,7 +219,7 @@ export function useHome() {
         const [{ result: homeResult, error: homeError }] = await Promise.all([
           useGet<HomePayload>('/home', { headers: { 'no-error': true } }),
           fetchCategories({ withCounts: false }),
-          ensureBlogLoaded(),
+          ensureBlogLoaded(options?.force ? { force: true } : undefined),
           fetchFooter(),
         ])
 

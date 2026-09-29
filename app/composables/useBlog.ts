@@ -8,11 +8,7 @@ import {
   type SellerBlogPost,
   type SellerBlogStatus,
 } from '~/data/seller-blog'
-import {
-  getMoreBlogPosts as getMoreFromStatic,
-  getRelatedBlogPosts as getRelatedFromStatic,
-  type StaticBlogPost,
-} from '~/data/static-pages'
+import { type StaticBlogPost } from '~/data/static-pages'
 
 function clonePosts(list: SellerBlogPost[]): SellerBlogPost[] {
   return JSON.parse(JSON.stringify(list)) as SellerBlogPost[]
@@ -87,21 +83,16 @@ export function useBlog() {
 
     pending.value = true
     try {
-      const { result } = await useGet<StaticBlogPost[]>('/blog', {
+      const { result, error } = await useGet<StaticBlogPost[]>('/blog', {
         headers: { 'no-error': true },
       })
-      if (Array.isArray(result) && result.length) {
-        const defaults = buildDefaultSellerBlogPosts()
-        const byId = new Map(defaults.map(p => [p.id, p]))
-        items.value = result.map(post => fromApiPost(post, byId.get(post.id)))
-      }
-      else {
-        items.value = buildDefaultSellerBlogPosts()
-      }
+      items.value = !error && Array.isArray(result)
+        ? result.map(post => fromApiPost(post))
+        : []
       loaded.value = true
     }
     catch {
-      items.value = buildDefaultSellerBlogPosts()
+      items.value = []
       loaded.value = true
     }
     finally {
@@ -225,7 +216,7 @@ export function useBlog() {
 
   function relatedForCategory(categoryId: string, limit = 4): StaticBlogPost[] {
     const list = asStaticList()
-    if (!list.length) return getRelatedFromStatic(categoryId, limit)
+    if (!list.length) return []
     const specific = list.filter(p => p.relatedCategories.includes(categoryId))
     const general = list.filter(p => !p.relatedCategories.length)
     const rest = list.filter(
@@ -244,7 +235,7 @@ export function useBlog() {
 
   function morePosts(currentId: string, limit = 3): StaticBlogPost[] {
     const list = asStaticList()
-    if (!list.length) return getMoreFromStatic(currentId, limit)
+    if (!list.length) return []
     const current = list.find(p => p.id === currentId)
     if (!current) return list.filter(p => p.id !== currentId).slice(0, limit)
 

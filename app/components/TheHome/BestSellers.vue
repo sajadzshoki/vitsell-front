@@ -21,8 +21,11 @@
       </UButton>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-      <TheProductCard
+    <div :class="showcase
+      ? 'grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4'
+      : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4'"
+    >
+      <TheProductStoreCard
         v-for="product in products"
         :key="product.id"
         :product="product"
@@ -32,6 +35,7 @@
 </template>
 
 <script setup lang="ts">
+const { showcase } = useProductCardStyle()
 const { bestSellers, catalogProducts } = useHome()
 
 const products = computed(() => {

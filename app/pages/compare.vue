@@ -25,7 +25,7 @@
             v-if="items.length === 1 && items[0]"
             class="max-w-xs mx-auto mb-6 text-start"
           >
-            <TheProductCard :product="items[0]" />
+            <TheProductStoreCard :product="items[0]" />
           </div>
 
           <UButton

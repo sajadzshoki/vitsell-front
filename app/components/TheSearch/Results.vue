@@ -41,7 +41,7 @@
 
     <template v-else>
       <div :class="gridClass">
-        <TheProductCard
+        <TheProductStoreCard
           v-for="product in items"
           :key="product.id"
           :product="product"
@@ -125,11 +125,15 @@ const emit = defineEmits<{
 
 const sentinelRef = ref<HTMLElement | null>(null)
 
-const gridClass = computed(() =>
-  props.layout === 'list'
-    ? 'flex flex-col gap-2'
-    : 'grid grid-cols-2 gap-1 md:(grid-cols-3 gap-4) xl:grid-cols-4',
-)
+const { showcase } = useProductCardStyle()
+
+const gridClass = computed(() => {
+  if (props.layout === 'list') return 'flex flex-col gap-3'
+  if (showcase.value) {
+    return 'grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4'
+  }
+  return 'grid grid-cols-2 gap-1 md:(grid-cols-3 gap-4) xl:grid-cols-4'
+})
 
 function onPageChange(next: number) {
   emit('pageChange', next)

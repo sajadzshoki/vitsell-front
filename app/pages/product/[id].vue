@@ -101,6 +101,15 @@ function variantOptionLabel(
   return variant?.options?.find(option => patterns.test(option.attributeName))?.label?.trim() || undefined
 }
 
+/** Warranty text Torob shows when the product page defines a guarantee. */
+function guaranteeLabel(product: Product) {
+  const spec = product.specs?.find(item => /گارانتی|guarantee|warranty/i.test(item.key))
+  const fromSpec = spec?.value?.trim()
+  if (fromSpec) return fromSpec
+  const note = product.buyNotes?.find(item => /گارانتی|guarantee|warranty/i.test(item.text))
+  return note?.text?.trim() || ''
+}
+
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -296,6 +305,37 @@ function variantQueryPresent() {
  * flip the clean URL to noindex (Google renders JS and would drop the page).
  */
 const openedWithVariantQuery = ref(variantQueryPresent())
+
+useHead(() => {
+  const current = product.value
+  if (!current) return {}
+  const offer = displayProduct.value
+  const price = Math.round(Number(offer.price))
+  const image = toPublicSeoImage(
+    productSeo.value?.ogImage || current.image || '',
+    settings.value.siteUrl,
+  )
+  const guarantee = guaranteeLabel(current)
+  const meta: Array<{ key: string, name?: string, property?: string, content: string }> = [
+    { key: 'product_id', name: 'product_id', content: current.id },
+    { key: 'product_name', name: 'product_name', content: current.title },
+    {
+      key: 'availability',
+      name: 'availability',
+      content: offer.inStock === false ? 'outofstock' : 'instock',
+    },
+  ]
+  if (Number.isFinite(price)) {
+    meta.push({ key: 'product_price', name: 'product_price', content: String(price) })
+  }
+  if (image) {
+    meta.push({ key: 'og:image', property: 'og:image', content: image })
+  }
+  if (guarantee) {
+    meta.push({ key: 'guarantee', name: 'guarantee', content: guarantee })
+  }
+  return { meta }
+})
 
 useEntitySeo(() => {
   const seo = productSeo.value

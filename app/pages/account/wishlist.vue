@@ -50,9 +50,11 @@
 
     <div
       v-else
-      class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+      :class="showcase
+        ? 'grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4'
+        : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4'"
     >
-      <TheProductCard
+      <TheProductStoreCard
         v-for="product in wishlistProducts"
         :key="product.id"
         :product="product"
@@ -62,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+const { showcase } = useProductCardStyle()
 const { t } = useI18n()
 const toast = useAppToast()
 const { wishlistProducts, fetchWishlist } = useShop()

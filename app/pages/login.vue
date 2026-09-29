@@ -74,6 +74,7 @@
             block
             :loading="loading"
             :disabled="!canSubmitPhone"
+            :ui="{ base: '!justify-center', trailingIcon: '!ms-0' }"
             trailing-icon="i-tabler-arrow-left"
           >
             {{ $t('ادامه') }}
@@ -182,6 +183,7 @@
             block
             :loading="loading"
             :disabled="!canSubmitPassword"
+            :ui="{ base: '!justify-center' }"
           >
             {{ $t('ورود') }}
           </UButton>
