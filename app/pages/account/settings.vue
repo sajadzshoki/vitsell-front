@@ -7,7 +7,15 @@ const { t } = useI18n()
 
 definePageMeta({
   layout: 'account',
-  middleware: 'auth',
+  middleware: [
+    'auth',
+    function () {
+      const device = useDevice()
+      if (!device.isMobile) {
+        return navigateTo('/account', { replace: true })
+      }
+    },
+  ],
 })
 
 useSeoMeta({

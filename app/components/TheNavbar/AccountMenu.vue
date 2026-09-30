@@ -149,7 +149,6 @@ const links = computed(() => [
   { label: t('نظرات و پرسش‌ها'), icon: 'i-tabler-message-2', to: '/account/reviews' },
   { label: t('آدرس‌ها'), icon: 'i-tabler-map-pin', to: '/account/addresses' },
   { label: t('اطلاعات حساب'), icon: 'i-tabler-user', to: '/account/profile' },
-  { label: t('تنظیمات'), icon: 'i-tabler-settings', to: '/account/settings' },
 ])
 
 function isDesktop() {

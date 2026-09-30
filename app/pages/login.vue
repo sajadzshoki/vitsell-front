@@ -410,7 +410,7 @@ definePageMeta({
 
 const { t } = useI18n()
 const route = useRoute()
-const { isAdminApp, storeUrl, adminUrl } = useAppMode()
+const { isAdminApp, storeUrl } = useAppMode()
 const { isLoggedIn, login } = useShop()
 const { checkPhone, requestOtp, verifyOtp, loginWithPassword, resetPassword } = useAuth()
 const toast = useAppToast()
@@ -579,14 +579,6 @@ async function submitPhone() {
       password.value = ''
       passwordError.value = ''
       showPassword.value = false
-      return
-    }
-
-    if (result?.isAdmin) {
-      phoneError.value = adminUrl
-        ? t('حساب مدیر است؛ از پنل ادمین وارد شوید')
-        : t('حساب مدیر از فروشگاه قابل ورود نیست')
-      toast.error(phoneError.value)
       return
     }
 

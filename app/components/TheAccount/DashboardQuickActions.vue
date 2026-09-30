@@ -9,7 +9,7 @@
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
       <NuxtLink
-        v-for="action in accountQuickActions"
+        v-for="action in actions"
         :key="action.id"
         :to="action.to"
         class="group flex flex-col gap-3 rounded-2xl border border-muted bg-muted/40 p-3.5 sm:p-4 transition-all  hover:(border-primary/25 bg-primary/5) cursor-pointer text-start"
@@ -38,4 +38,10 @@
 
 <script setup lang="ts">
 import { accountQuickActions } from '~/data/account-dashboard'
+
+const { isMobile } = useAccountLayout()
+
+const actions = computed(() =>
+  accountQuickActions.filter(action => action.id !== 'settings' || isMobile.value),
+)
 </script>
