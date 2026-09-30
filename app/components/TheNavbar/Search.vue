@@ -2,17 +2,17 @@
   <div ref="wrapRef" class="relative flex-1 w-full md:max-w-xl">
     <!-- Border on wrapper so global input{border:none} cannot kill it; flex = icon/text align -->
     <label
-      class="group flex items-center gap-2.5 md:h-12 h-10 w-full ps-4 md:pe-4 rounded-xl md:rounded-2xl  bg-elevated hover:bg-muted focus-within:bg-default border-2 border-default focus-within:border-primary transition-all  cursor-text"
+      class="group flex items-center gap-2.5 md:h-12 h-10 w-full ps-4 md:pe-4 rounded-xl md:rounded-2xl bg-elevated hover:bg-muted focus-within:bg-default border-2 border-default focus-within:border-primary transition-all cursor-text"
     >
       <UIcon
         name="i-tabler-search"
-        class="size-5 shrink-0 text-dimmed transition-all  group-focus-within:text-primary"
+        class="size-5 shrink-0 text-dimmed transition-all group-focus-within:text-primary"
       />
       <input
         v-model="query"
         type="search"
         :placeholder="$t('جستجو در ویتسل...')"
-        class="flex-1 min-w-0 h-full bg-transparent border-0 text-sm leading-none  text-default placeholder:text-dimmed"
+        class="flex-1 min-w-0 h-full bg-transparent border-0 text-sm leading-none text-default placeholder:text-dimmed"
         @focus="onFocus"
         @keydown.enter="doSearch"
       >
@@ -20,9 +20,12 @@
 
     <div
       v-if="open"
-      class="absolute top-full inset-x-0 mt-2 z-30 bg-default border border-muted rounded-2xl shadow-xl overflow-hidden"
+      class="absolute top-full inset-x-0 mt-2 z-50 bg-default border border-muted rounded-2xl shadow-xl overflow-hidden"
     >
-      <div v-if="!query.trim()" class="p-3">
+      <div
+        v-if="!query.trim()"
+        class="p-3"
+      >
         <div class="text-[11px] text-dimmed mb-2 px-2">
           {{ $t('جستجوهای پرطرفدار') }}
         </div>
@@ -57,7 +60,10 @@
               class="inline-flex items-center gap-1.5 text-xs bg-elevated hover:(bg-primary/10 text-primary) text-toned px-3 py-1.5 rounded-lg transition cursor-pointer"
               @click="pickTerm(s)"
             >
-              <UIcon name="i-tabler-history" class="size-3.5 shrink-0 text-dimmed" />
+              <UIcon
+                name="i-tabler-history"
+                class="size-3.5 shrink-0 text-dimmed"
+              />
               {{ s }}
             </button>
           </div>
@@ -65,14 +71,14 @@
       </div>
 
       <div
-        v-else-if="suggestPending"
+        v-else-if="suggestPending && !scopeHints.length && !suggestions.length"
         class="px-4 py-6 text-center text-xs text-muted"
       >
         {{ $t('در حال جستجو...') }}
       </div>
 
       <div
-        v-else-if="suggestions.length === 0"
+        v-else-if="!suggestPending && scopeHints.length === 0 && suggestions.length === 0"
         class="px-4 py-6 text-center text-xs text-muted"
       >
         {{ $t('نتیجه‌ای یافت نشد') }}
@@ -89,23 +95,69 @@
         v-else
         class="py-2"
       >
-        <button
-          v-for="s in suggestions"
-          :key="s.id"
-          type="button"
-          class="w-full flex items-center gap-3 px-3 py-2 text-start hover:bg-muted transition cursor-pointer"
-          @click="goProduct(s.id)"
+        <div
+          v-if="scopeHints.length"
+          class="pb-1"
         >
-          <TheIcon
-            :name="s.image || 'noImage.png'"
-            icon-type="img"
-            class="!size-10 rounded-lg object-cover bg-muted shrink-0"
-          />
-          <div class="flex-1 min-w-0">
-            <div class="text-xs text-default truncate">{{ s.title }}</div>
-            <div class="text-[10px] text-dimmed">{{ s.brand }}</div>
+          <div class="text-[11px] text-dimmed mb-1 px-3">
+            {{ $t('جستجو در') }}
           </div>
-        </button>
+          <button
+            v-for="hint in scopeHints"
+            :key="hint.id"
+            type="button"
+            class="w-full flex items-center gap-3 px-3 py-2 text-start hover:(bg-primary/10 text-primary) text-toned transition cursor-pointer"
+            @click="goHint(hint)"
+          >
+            <span class="size-10 rounded-lg bg-muted grid place-items-center shrink-0">
+              <UIcon
+                :name="hint.icon"
+                class="size-5 text-primary"
+              />
+            </span>
+            <span class="flex-1 min-w-0 text-xs text-default truncate">
+              {{ hint.label }}
+            </span>
+            <UIcon
+              name="i-tabler-chevron-left"
+              class="size-4 shrink-0 text-dimmed"
+            />
+          </button>
+        </div>
+
+        <div
+          v-if="suggestions.length"
+          :class="scopeHints.length ? 'border-t border-muted pt-1' : ''"
+        >
+          <div
+            v-if="scopeHints.length"
+            class="text-[11px] text-dimmed mb-1 px-3 pt-2"
+          >
+            {{ $t('محصولات مرتبط') }}
+          </div>
+          <button
+            v-for="s in suggestions"
+            :key="s.id"
+            type="button"
+            class="w-full flex items-center gap-3 px-3 py-2 text-start hover:bg-muted transition cursor-pointer"
+            @click="goProduct(s.id)"
+          >
+            <TheIcon
+              :name="s.image || 'noImage.png'"
+              icon-type="img"
+              class="!size-10 rounded-lg object-cover bg-muted shrink-0"
+            />
+            <div class="flex-1 min-w-0">
+              <div class="text-xs text-default truncate">
+                {{ s.title }}
+              </div>
+              <div class="text-[10px] text-dimmed">
+                {{ s.brand }}
+              </div>
+            </div>
+          </button>
+        </div>
+
         <button
           type="button"
           class="w-full px-3 py-2.5 text-xs text-primary hover:bg-primary/10 border-t border-muted text-start cursor-pointer"
@@ -121,6 +173,10 @@
 <script setup lang="ts">
 import { popularSearches, toSearchRoute } from '~/data/categories'
 import type { Product } from '~/data/products'
+import {
+  buildSearchScopeHints,
+  type SearchScopeHint,
+} from '~/data/search-hints'
 
 const MAX_RECENT = 8
 
@@ -130,15 +186,23 @@ const open = ref(false)
 const wrapRef = ref<HTMLElement | null>(null)
 const recentSearches = useLocalStorage<string[]>('vitsell-recent-searches', [])
 const suggestions = ref<Product[]>([])
+const scopeHints = ref<SearchScopeHint[]>([])
 const suggestPending = ref(false)
 const { fetchProducts } = useProducts()
+const { categories, getCategoryById, fetchCategories } = useCategories()
+const { t } = useI18n()
 
 let suggestSeq = 0
+
+onMounted(() => {
+  void fetchCategories({ withCounts: false })
+})
 
 async function loadSuggestions(raw: string) {
   const q = raw.trim()
   if (!q) {
     suggestions.value = []
+    scopeHints.value = []
     suggestPending.value = false
     return
   }
@@ -146,9 +210,21 @@ async function loadSuggestions(raw: string) {
   const seq = ++suggestSeq
   suggestPending.value = true
   try {
-    const { result } = await fetchProducts({ q, pageSize: 5, page: 1 })
+    if (!categories.value.length) {
+      await fetchCategories({ withCounts: false })
+    }
+    const { result } = await fetchProducts({ q, pageSize: 8, page: 1 })
     if (seq !== suggestSeq) return
-    suggestions.value = result.items.slice(0, 5)
+    const items = result.items || []
+    suggestions.value = items.slice(0, 5)
+    scopeHints.value = buildSearchScopeHints({
+      query: q,
+      categories: categories.value,
+      products: items,
+      getCategoryById,
+      t,
+      max: 5,
+    })
   }
   finally {
     if (seq === suggestSeq) suggestPending.value = false
@@ -166,7 +242,7 @@ watchDebounced(
 function onFocus() {
   open.value = true
   const q = query.value.trim()
-  if (q && !suggestions.value.length && !suggestPending.value) {
+  if (q && !suggestions.value.length && !scopeHints.value.length && !suggestPending.value) {
     void loadSuggestions(q)
   }
 }
@@ -203,6 +279,13 @@ function pickTerm(s: string) {
 function goProduct(id: string) {
   navigateTo({ name: 'product-id', params: { id } })
   query.value = ''
+  close()
+}
+
+function goHint(hint: SearchScopeHint) {
+  const q = query.value.trim()
+  if (q) pushRecent(q)
+  navigateTo(hint.to)
   close()
 }
 

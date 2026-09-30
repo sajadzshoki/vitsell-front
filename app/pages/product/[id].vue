@@ -10,6 +10,16 @@
     v-else-if="product"
     class="w-screen max-w-[100vw] ms-[calc(50%-50vw)] px-3 sm:px-4 lg:px-6 max-lg:pb-28"
   >
+    <noscript>
+      <meta
+        name="product_id"
+        :content="torobId"
+      >
+      <meta
+        name="productid"
+        :content="torobId"
+      >
+    </noscript>
     <div class="mx-auto max-w-9xl w-full">
       <UBreadcrumb
         :items="breadcrumbItems"
@@ -84,6 +94,7 @@ import {
   tomanToRial,
   toPublicSeoImage,
 } from '~/data/seo'
+import { torobProductHeadMeta, torobStableProductId } from '~/data/torob-meta'
 import {
   findVariantByQuery,
   preferredProductVariant,
@@ -101,15 +112,6 @@ function variantOptionLabel(
   return variant?.options?.find(option => patterns.test(option.attributeName))?.label?.trim() || undefined
 }
 
-/** Warranty text Torob shows when the product page defines a guarantee. */
-function guaranteeLabel(product: Product) {
-  const spec = product.specs?.find(item => /گارانتی|guarantee|warranty/i.test(item.key))
-  const fromSpec = spec?.value?.trim()
-  if (fromSpec) return fromSpec
-  const note = product.buyNotes?.find(item => /گارانتی|guarantee|warranty/i.test(item.text))
-  return note?.text?.trim() || ''
-}
-
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -118,7 +120,7 @@ const { fetchProduct } = useProducts()
 const productId = computed(() => String(route.params.id ?? ''))
 
 const { data: product, pending } = await useAsyncData(
-  () => `product-${productId.value}`,
+  `product-${productId.value}`,
   async () => {
     const id = productId.value
     if (!id) {
@@ -306,36 +308,22 @@ function variantQueryPresent() {
  */
 const openedWithVariantQuery = ref(variantQueryPresent())
 
-useHead(() => {
+const torobId = computed(() =>
+  product.value ? torobStableProductId(product.value.id) : '',
+)
+
+const torobHead = computed(() => {
   const current = product.value
   if (!current) return {}
-  const offer = displayProduct.value
-  const price = Math.round(Number(offer.price))
-  const image = toPublicSeoImage(
-    productSeo.value?.ogImage || current.image || '',
-    settings.value.siteUrl,
-  )
-  const guarantee = guaranteeLabel(current)
-  const meta: Array<{ key: string, name?: string, property?: string, content: string }> = [
-    { key: 'product_id', name: 'product_id', content: current.id },
-    { key: 'product_name', name: 'product_name', content: current.title },
-    {
-      key: 'availability',
-      name: 'availability',
-      content: offer.inStock === false ? 'outofstock' : 'instock',
-    },
-  ]
-  if (Number.isFinite(price)) {
-    meta.push({ key: 'product_price', name: 'product_price', content: String(price) })
-  }
-  if (image) {
-    meta.push({ key: 'og:image', property: 'og:image', content: image })
-  }
-  if (guarantee) {
-    meta.push({ key: 'guarantee', name: 'guarantee', content: guarantee })
-  }
-  return { meta }
+  return torobProductHeadMeta({
+    product: current,
+    offer: displayProduct.value,
+    siteUrl: settings.value.siteUrl,
+    ogImage: productSeo.value?.ogImage || current.image,
+  })
 })
+
+useHead(() => torobHead.value)
 
 useEntitySeo(() => {
   const seo = productSeo.value

@@ -177,7 +177,7 @@
           :key="brand"
           :model-value="filters.brands.includes(brand)"
           :label="brand"
-          @update:model-value="toggleBrand(brand)"
+          @update:model-value="(checked) => setBrand(brand, checked === true)"
         />
       </div>
     </section>
@@ -210,7 +210,7 @@
         >
           <UCheckbox
             :model-value="isAttrSelected(attr.slug, option.value)"
-            @update:model-value="toggleAttr(attr.slug, option.value)"
+            @update:model-value="(checked) => setAttr(attr.slug, option.value, checked === true)"
           />
           <span
             v-if="attr.type === 'color' && option.meta"
@@ -408,10 +408,10 @@ function reset() {
   }
 }
 
-function toggleBrand(brand: string) {
+function setBrand(brand: string, on: boolean) {
   const next = new Set(filters.value.brands)
-  if (next.has(brand)) next.delete(brand)
-  else next.add(brand)
+  if (on) next.add(brand)
+  else next.delete(brand)
   filters.value = { ...filters.value, brands: Array.from(next) }
 }
 
@@ -419,10 +419,10 @@ function isAttrSelected(slug: string, value: string) {
   return (filters.value.attrs?.[slug] || []).includes(value)
 }
 
-function toggleAttr(slug: string, value: string) {
+function setAttr(slug: string, value: string, on: boolean) {
   const current = new Set(filters.value.attrs?.[slug] || [])
-  if (current.has(value)) current.delete(value)
-  else current.add(value)
+  if (on) current.add(value)
+  else current.delete(value)
   const attrs = { ...(filters.value.attrs || {}) }
   if (current.size) attrs[slug] = Array.from(current)
   else delete attrs[slug]
