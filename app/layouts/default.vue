@@ -3,7 +3,7 @@
     <TheNavbar :class="{ 'max-md:hidden': isBackwardPage }" />
 
     <TheMobileBackHeader
-      v-if="isBackwardPage"
+      v-if="isBackwardPage && !isProductDetailPage"
       :title="backwardTitle"
     />
 
@@ -31,7 +31,7 @@
 import { webSiteJsonLd } from '~/composables/useJsonLd'
 
 const route = useRoute()
-const { isBackwardPage, title: backwardTitle } = useMobileBackward()
+const { isBackwardPage, isProductDetailPage, title: backwardTitle } = useMobileBackward()
 const { settings, ensureLoaded } = useSellerSeoSettings()
 
 await ensureLoaded()
@@ -46,6 +46,9 @@ const isCategoryIndex = computed(() => route.path === '/category')
 const contentClass = computed(() => {
   if (isCategoryIndex.value) {
     return 'max-md:(px-0 py-0 pb-16) md:(px-3 py-4 sm:px-4 lg:px-6 pb-4)'
+  }
+  if (isProductDetailPage.value) {
+    return 'max-md:(px-0 py-0) px-3 py-3 sm:px-4 md:(px-4 py-4) lg:px-6 md:pb-4 pb-6'
   }
   if (isBackwardPage.value) {
     return 'px-3 py-3 sm:px-4 md:(px-4 py-4) lg:px-6 md:pb-4 pb-6'

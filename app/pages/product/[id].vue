@@ -3,13 +3,19 @@
     v-if="pending && !product"
     class="w-screen max-w-[100vw] ms-[calc(50%-50vw)] max-lg:pb-28"
   >
-    <TheSkeleton variant="product-detail" />
+    <TheProductMobileHeader :product="null" />
+    <TheSkeleton
+      variant="product-detail"
+      class="max-md:px-3"
+    />
   </main>
 
   <main
     v-else-if="product"
-    class="w-screen max-w-[100vw] ms-[calc(50%-50vw)] px-3 sm:px-4 lg:px-6 max-lg:pb-28"
+    class="w-screen max-w-[100vw] ms-[calc(50%-50vw)] max-md:px-0 px-3 sm:px-4 lg:px-6 max-lg:pb-28"
   >
+    <TheProductMobileHeader :product="product" />
+
     <noscript>
       <meta
         name="product_id"
@@ -20,25 +26,25 @@
         :content="torobId"
       >
     </noscript>
-    <div class="mx-auto max-w-9xl w-full">
+    <div class="mx-auto max-w-9xl w-full max-md:px-0 md:px-0">
       <UBreadcrumb
         :items="breadcrumbItems"
         class="hidden md:flex py-4 text-xs"
       />
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-5 items-start">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-5 items-start max-md:gap-0">
         <section class="order-1 lg:col-span-9 md:bg-default md:rounded-3xl md:border md:border-muted md:p-4 lg:p-6 min-w-0">
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 lg:gap-5">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 lg:gap-5 max-md:gap-0">
             <TheProductHeader
               :product="product"
-              class="order-2 md:(order-1 col-span-12 pb-2 border-b border-muted)"
+              class="order-2 md:(order-1 col-span-12 pb-2 border-b border-muted) max-md:(px-3 pt-3)"
             />
 
             <div class="order-1 md:(order-2 col-span-5) flex flex-col gap-2">
               <TheProductGallery :product="product" />
             </div>
 
-            <div class="order-3 md:col-span-7">
+            <div class="order-3 md:col-span-7 max-md:px-3">
               <TheProductInfo
                 v-model:color-index="colorIndex"
                 v-model:selected-options="selectedOptions"
@@ -51,14 +57,14 @@
           </div>
         </section>
 
-        <aside class="order-2 lg:col-span-3 lg:row-span-2 lg:sticky lg:top-36 lg:z-20 self-start w-full">
+        <aside class="order-2 lg:col-span-3 lg:row-span-2 lg:sticky lg:top-36 lg:z-20 self-start w-full max-md:px-3">
           <TheProductBuyBox
             :product="displayProduct"
             :variant-id="selectedVariant?.id"
           />
         </aside>
 
-        <div class="order-3 lg:col-span-9 min-w-0">
+        <div class="order-3 lg:col-span-9 min-w-0 max-md:px-3">
           <TheProductTabs
             v-model="activeTab"
             :product="product"
@@ -70,12 +76,13 @@
         v-if="detailPending && !related.length"
         variant="product-grid"
         :count="6"
-        class="mt-6 md:mt-10"
+        class="mt-6 md:mt-10 max-md:px-3"
       />
       <TheProductRelated
         v-else
         :product="product"
         :related="related"
+        class="max-md:px-3"
       />
     </div>
   </main>
@@ -213,8 +220,6 @@ watch(productId, () => {
   activeTab.value = 'desc'
   openedWithVariantQuery.value = variantQueryPresent()
 })
-
-useMobileBackwardTitle(() => product.value?.title ?? '')
 
 const selectedVariant = computed(() =>
   (product.value?.variants ?? []).find(variant =>

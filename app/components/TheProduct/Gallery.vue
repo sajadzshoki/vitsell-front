@@ -5,11 +5,11 @@
       <div class="order-1 md:order-2 flex-1 min-w-0 flex flex-col gap-2">
         <div
           v-if="buyerPhotos.length"
-          class="flex items-center gap-4 px-0.5"
+          class="hidden md:flex items-center gap-4 px-0.5"
         >
           <button
             type="button"
-            class="relative pb-1.5 text-sm font-medium transition-all  cursor-pointer"
+            class="relative pb-1.5 text-sm font-medium transition-all cursor-pointer"
             :class="galleryTab === 'official' ? 'text-highlighted' : 'text-muted hover:text-toned'"
             @click="setGalleryTab('official')"
           >
@@ -21,7 +21,7 @@
           </button>
           <button
             type="button"
-            class="relative pb-1.5 text-sm font-medium transition-all  cursor-pointer"
+            class="relative pb-1.5 text-sm font-medium transition-all cursor-pointer"
             :class="galleryTab === 'buyers' ? 'text-highlighted' : 'text-muted hover:text-toned'"
             @click="setGalleryTab('buyers')"
           >
@@ -34,19 +34,16 @@
           </button>
         </div>
 
-        <div class="relative w-full rounded-2xl overflow-hidden bg-muted">
+        <div class="relative w-full md:(rounded-2xl overflow-hidden) bg-muted">
           <UCarousel
             ref="carousel"
             v-slot="{ item, index }"
             :items="gallery"
             :start-index="active"
+            :align="gallery.length > 1 ? 'center' : 'start'"
             wheel-gestures
             class="w-full"
-            :ui="{
-              item: 'basis-full min-w-full ps-0',
-              container: 'ms-0',
-              viewport: 'overflow-hidden',
-            }"
+            :ui="carouselUi"
             @select="onSelect"
           >
             <div
@@ -79,7 +76,7 @@
             v-if="discount > 0 && galleryTab === 'official'"
             color="error"
             size="lg"
-            class="absolute top-3 inset-e-3 font-bold num shadow-lg shadow-error/30 pointer-events-none z-10"
+            class="hidden md:inline-flex absolute top-3 inset-e-3 font-bold num shadow-lg shadow-error/30 pointer-events-none z-10"
           >
             {{ discount.toLocaleString('fa-IR') }}٪ {{ $t('تخفیف') }}
           </UBadge>
@@ -111,9 +108,26 @@
             />
           </template>
 
+          <!-- موبایل: شمارنده دیجی‌کالایی -->
+          <div
+            v-if="gallery.length > 1"
+            class="md:hidden absolute bottom-3 inset-e-3 z-10 pointer-events-none"
+          >
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-inverted/70 text-inverted text-xs font-medium num backdrop-blur-sm">
+              <UIcon
+                name="i-tabler-photo"
+                class="size-3.5 shrink-0"
+              />
+              <span>{{ (active + 1).toLocaleString('fa-IR') }}</span>
+              <span class="opacity-50">|</span>
+              <span>{{ gallery.length.toLocaleString('fa-IR') }}</span>
+            </span>
+          </div>
+
+          <!-- دسکتاپ: نقاط / شمارنده -->
           <div
             v-if="gallery.length > 1 && gallery.length <= 8"
-            class="absolute bottom-3 inset-x-0 z-10 flex justify-center gap-1.5 pointer-events-none"
+            class="hidden md:flex absolute bottom-3 inset-x-0 z-10 justify-center gap-1.5 pointer-events-none"
           >
             <span
               v-for="(_, index) in gallery"
@@ -124,7 +138,7 @@
           </div>
           <div
             v-else-if="gallery.length > 8"
-            class="absolute bottom-3 inset-x-0 z-10 flex justify-center pointer-events-none"
+            class="hidden md:flex absolute bottom-3 inset-x-0 z-10 justify-center pointer-events-none"
           >
             <span class="px-2 py-0.5 rounded-full bg-inverted/55 text-inverted text-[10px] font-bold num">
               {{ (active + 1).toLocaleString('fa-IR') }} / {{ gallery.length.toLocaleString('fa-IR') }}
@@ -132,9 +146,47 @@
           </div>
         </div>
 
+        <!-- موبایل: اکشن‌های ساده (like / share / نمودار) -->
+        <div class="flex md:hidden items-center justify-end gap-1 px-2">
+          <UButton
+            type="button"
+            :icon="liked ? 'i-tabler-heart-filled' : 'i-tabler-heart'"
+            :color="liked ? 'error' : 'neutral'"
+            variant="ghost"
+            size="md"
+            square
+            class="size-10"
+            :aria-label="$t('علاقه‌مندی')"
+            @click="toggleWishlist(product.id)"
+          />
+          <UButton
+            type="button"
+            icon="i-tabler-share"
+            color="neutral"
+            variant="ghost"
+            size="md"
+            square
+            class="size-10"
+            :aria-label="$t('اشتراک‌گذاری')"
+            @click="onShare"
+          />
+          <UButton
+            type="button"
+            icon="i-tabler-chart-line"
+            color="neutral"
+            variant="ghost"
+            size="md"
+            square
+            class="size-10"
+            :aria-label="$t('نمودار قیمت')"
+            @click="priceChartOpen = true"
+          />
+        </div>
+
+        <!-- دسکتاپ: بندانگشتی -->
         <div
           ref="thumbStrip"
-          class="flex gap-1.5 overflow-x-auto scrollbar-none overscroll-x-contain cursor-default"
+          class="hidden md:flex gap-1.5 overflow-x-auto scrollbar-none overscroll-x-contain cursor-default"
         >
           <button
             v-for="(image, index) in visibleThumbs"
@@ -163,55 +215,18 @@
             </span>
           </button>
         </div>
-
-        <!-- موبایل: آیکون‌ها زیر گالری بندانگشتی -->
-        <div class="flex md:hidden flex-row gap-2">
-          <UButton
-            type="button"
-            :icon="liked ? 'i-tabler-heart-filled' : 'i-tabler-heart'"
-            :color="liked ? 'error' : 'neutral'"
-            variant="outline"
-            size="md"
-            square
-            class="rounded-xl"
-            :aria-label="$t('علاقه‌مندی')"
-            @click="toggleWishlist(product.id)"
-          />
-          <UButton
-            type="button"
-            icon="i-tabler-share"
-            color="neutral"
-            variant="outline"
-            size="md"
-            square
-            class="rounded-xl"
-            :aria-label="$t('اشتراک‌گذاری')"
-            @click="onShare"
-          />
-          <UButton
-            type="button"
-            icon="i-tabler-chart-line"
-            color="neutral"
-            variant="outline"
-            size="md"
-            square
-            class="rounded-xl"
-            :aria-label="$t('نمودار قیمت')"
-            @click="priceChartOpen = true"
-          />
-        </div>
       </div>
 
-      <!-- دسکتاپ RTL: سمت راست (start) عکس -->
-      <div class="hidden md:(flex order-1 flex-col gap-2 shrink-0)">
+      <!-- دسکتاپ RTL: سمت راست (start) عکس — اکشن‌های ساده -->
+      <div class="hidden md:(flex order-1 flex-col gap-0.5 shrink-0)">
         <UButton
           type="button"
           :icon="liked ? 'i-tabler-heart-filled' : 'i-tabler-heart'"
           :color="liked ? 'error' : 'neutral'"
-          variant="outline"
+          variant="ghost"
           size="md"
           square
-          class="rounded-xl"
+          class="size-10"
           :aria-label="$t('علاقه‌مندی')"
           @click="toggleWishlist(product.id)"
         />
@@ -219,10 +234,10 @@
           type="button"
           icon="i-tabler-share"
           color="neutral"
-          variant="outline"
+          variant="ghost"
           size="md"
           square
-          class="rounded-xl"
+          class="size-10"
           :aria-label="$t('اشتراک‌گذاری')"
           @click="onShare"
         />
@@ -230,10 +245,10 @@
           type="button"
           icon="i-tabler-chart-line"
           color="neutral"
-          variant="outline"
+          variant="ghost"
           size="md"
           square
-          class="rounded-xl"
+          class="size-10"
           :aria-label="$t('نمودار قیمت')"
           @click="priceChartOpen = true"
         />
@@ -400,6 +415,14 @@ const gallery = computed(() => {
 const visibleThumbs = computed(() => gallery.value.slice(0, THUMB_LIMIT))
 
 const moreCount = computed(() => Math.max(0, gallery.value.length - THUMB_LIMIT))
+
+const carouselUi = computed(() => ({
+  item: gallery.value.length > 1
+    ? 'basis-[88%] min-w-0 ps-2 md:(basis-full min-w-full ps-0)'
+    : 'basis-full min-w-full ps-0',
+  container: 'ms-0',
+  viewport: 'overflow-hidden',
+}))
 
 const discount = computed(() => {
   const { oldPrice, price } = props.product

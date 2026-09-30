@@ -22,7 +22,7 @@
       </UButton>
     </div>
 
-    <div class="bg-default border border-muted rounded-2xl ">
+    <div class="bg-default border border-muted rounded-2xl overflow-hidden ">
       <button
         v-for="item in notificationList"
         :key="item.id"

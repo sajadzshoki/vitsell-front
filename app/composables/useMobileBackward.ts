@@ -15,12 +15,17 @@ export function useMobileBackward() {
     cartLines.value.length === 0 && step.value === 0 && !placedOrderId.value,
   )
 
+  const isProductDetailPage = computed(() => {
+    const path = route.path.replace(/\/$/, '') || '/'
+    return /^\/product\/[^/]+$/.test(path)
+  })
+
   const isBackwardPage = computed(() => {
     const path = route.path.replace(/\/$/, '') || '/'
     // Empty cart: keep main header + bottom nav on mobile
     if (path === '/cart') return !isEmptyCartLanding.value
     if (BACKWARD_EXACT.has(path)) return true
-    return /^\/product\/[^/]+$/.test(path)
+    return isProductDetailPage.value
   })
 
   const title = computed(() => {
@@ -53,6 +58,7 @@ export function useMobileBackward() {
 
   return {
     isBackwardPage,
+    isProductDetailPage,
     title,
     setTitle,
     clearTitle,
