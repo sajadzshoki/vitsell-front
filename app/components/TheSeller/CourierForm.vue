@@ -46,8 +46,14 @@
           maxlength="11"
           inputmode="tel"
           required
+          :disabled="phoneLocked"
           :error="errors.phone"
         />
+        <p class="text-sm text-muted">
+          {{ phoneLocked
+            ? $t('این شماره متعلق به حساب فروشگاه است و تغییر آن حساب کاربر را عوض نمی‌کند.')
+            : $t('اگر این شماره قبلاً کاربر سایت باشد، فقط دسترسی پیک اضافه می‌شود و حساب فروشگاه تغییر نمی‌کند.') }}
+        </p>
         <p
           v-if="formError"
           class="text-sm text-error"
@@ -91,6 +97,8 @@ const { t } = useI18n()
 const isEdit = computed(() => Boolean(props.courierId))
 const name = ref('')
 const phone = ref('')
+const shopAccount = ref(false)
+const phoneLocked = computed(() => isEdit.value && shopAccount.value)
 const saving = ref(false)
 const formError = ref('')
 const errors = reactive({ name: '', phone: '' })
@@ -131,5 +139,6 @@ onMounted(async () => {
   }
   name.value = result.courier.name
   phone.value = result.courier.phone
+  shopAccount.value = Boolean(result.courier.shopAccount)
 })
 </script>

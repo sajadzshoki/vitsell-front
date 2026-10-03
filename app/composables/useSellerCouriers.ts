@@ -5,6 +5,7 @@ export type SellerCourier = {
   name: string
   phone: string
   status: SellerCourierStatus
+  shopAccount?: boolean
 }
 
 function apiMessage(error: { data?: { errors?: { message?: string }[], message?: string } } | null | undefined, fallback: string) {
@@ -24,6 +25,7 @@ export function useSellerCouriers() {
       name: String(raw.name || ''),
       phone: String(raw.phone || ''),
       status,
+      shopAccount: Boolean(raw.shopAccount),
     }
   }
 

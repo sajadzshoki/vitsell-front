@@ -150,7 +150,7 @@ async function verify() {
   pending.value = true
   try {
     const { result, error } = await verifyOtp(phone.value.trim(), code.value.trim(), 'courier')
-    if (error || !result?.token || result.profile?.role !== 'courier') {
+    if (error || !result?.token || !(result.profile?.isCourier || result.profile?.role === 'courier')) {
       codeError.value = apiMessage(error, 'ورود به پنل پیک مجاز نیست.')
       return
     }
@@ -165,7 +165,7 @@ async function verify() {
 onMounted(async () => {
   if (!isLoggedIn.value) return
   if (!profileLoaded.value || !profile.value.role) await fetchProfile()
-  if (profile.value.role === 'courier') {
+  if (profile.value.isCourier || profile.value.role === 'courier') {
     await navigateTo('/courier')
   }
 })

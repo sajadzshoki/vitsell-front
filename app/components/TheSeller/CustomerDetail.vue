@@ -114,37 +114,38 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 text-sm">
-        <div>
-          <div class="text-[11px] text-muted">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+        <div class="rounded-xl bg-muted/50 px-3 py-2.5 flex flex-col items-center justify-center gap-1.5 min-w-0 text-center">
+          <div class="text-[11px] text-muted leading-none">
             {{ $t('تاریخ ثبت‌نام') }}
           </div>
-          <div class="num mt-1" dir="ltr">
-            {{ customer.registeredAt.slice(0, 10) }}
+          <div class="num text-sm font-medium text-highlighted leading-none">
+            <bdi>{{ customer.registeredAt.slice(0, 10) }}</bdi>
           </div>
         </div>
-        <div>
-          <div class="text-[11px] text-muted">
+        <div class="rounded-xl bg-muted/50 px-3 py-2.5 flex flex-col items-center justify-center gap-1.5 min-w-0 text-center">
+          <div class="text-[11px] text-muted leading-none">
             {{ $t('آخرین فعالیت') }}
           </div>
-          <div class="num mt-1" dir="ltr">
-            {{ customer.lastActivityAt.slice(0, 10) }}
+          <div class="num text-sm font-medium text-highlighted leading-none">
+            <bdi>{{ customer.lastActivityAt.slice(0, 10) }}</bdi>
           </div>
         </div>
-        <div>
-          <div class="text-[11px] text-muted">
+        <div class="rounded-xl bg-muted/50 px-3 py-2.5 flex flex-col items-center justify-center gap-1.5 min-w-0 text-center">
+          <div class="text-[11px] text-muted leading-none">
             {{ $t('تعداد سفارش') }}
           </div>
-          <div class="num mt-1">
+          <div class="num text-sm font-medium text-highlighted leading-none">
             {{ customer.orderCount.toLocaleString('fa-IR') }}
           </div>
         </div>
-        <div>
-          <div class="text-[11px] text-muted">
+        <div class="rounded-xl bg-muted/50 px-3 py-2.5 flex flex-col items-center justify-center gap-1.5 min-w-0 text-center">
+          <div class="text-[11px] text-muted leading-none">
             {{ $t('مجموع خرید') }}
           </div>
-          <div class="num mt-1">
-            {{ formatPrice(customer.totalSpent) }} {{ $t('تومان') }}
+          <div class="num text-sm font-medium text-highlighted leading-none">
+            {{ formatPrice(customer.totalSpent) }}
+            <span class="text-muted font-normal text-xs">{{ $t('تومان') }}</span>
           </div>
         </div>
       </div>

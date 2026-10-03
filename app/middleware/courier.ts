@@ -13,7 +13,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await fetchProfile()
   }
 
-  if (profile.value.role !== 'courier') {
+  if (!profile.value.isCourier && profile.value.role !== 'courier') {
     return navigateTo('/courier/login')
   }
 })

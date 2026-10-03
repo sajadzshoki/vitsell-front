@@ -94,6 +94,7 @@ export type AccountProfile = {
   avatar?: string
   hasPassword?: boolean
   role?: 'customer' | 'seller' | 'admin' | 'courier'
+  isCourier?: boolean
   /** Staff admin id (users.id) when role=admin */
   adminId?: string
   adminStatus?: 'active' | 'inactive' | 'suspended'

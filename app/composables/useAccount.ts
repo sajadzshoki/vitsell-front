@@ -9,6 +9,7 @@ const emptyProfile = (): AccountProfile => ({
   gender: '',
   hasPassword: false,
   role: 'customer',
+  isCourier: false,
 })
 
 export function useAccount() {
