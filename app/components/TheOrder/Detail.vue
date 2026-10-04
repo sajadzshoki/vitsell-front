@@ -33,8 +33,10 @@
             v-if="canReturn"
             color="primary"
             variant="soft"
+            class="font-semibold rounded-md"
+            size="xs"
             icon="i-tabler-arrow-back-up"
-            class="cursor-pointer"
+   
             @click="returnOpen = true"
           >
             {{ $t('مرجوع کردن') }}
@@ -42,7 +44,7 @@
           <UBadge
             :color="statusMeta.color"
             variant="subtle"
-            size="md"
+
             class="font-bold"
           >
             <UIcon :name="statusMeta.icon" class="size-4 shrink-0" />
