@@ -270,13 +270,23 @@
               <span class="text-muted">{{ $t('جمع کالاها') }}</span>
               <span class="num text-default">{{ formatPrice(subtotal) }}</span>
             </div>
+            <div
+              v-if="discountAmount > 0"
+              class="flex justify-between gap-3"
+            >
+              <span class="text-muted">{{ $t('تخفیف') }}</span>
+              <span class="num text-default">{{ formatPrice(discountAmount) }}</span>
+            </div>
             <div class="flex justify-between gap-3">
               <span class="text-muted">{{ $t('هزینه ارسال') }}</span>
-              <span class="text-success">{{ $t('رایگان') }}</span>
+              <span
+                class="num"
+                :class="shippingCost > 0 ? 'text-default' : 'text-success'"
+              >{{ shippingCost > 0 ? formatPrice(shippingCost) : $t('رایگان') }}</span>
             </div>
             <div class="flex justify-between gap-3 font-bold pt-2 border-t border-muted">
               <span class="text-default">{{ $t('مبلغ نهایی') }}</span>
-              <span class="num text-highlighted">{{ formatPrice(order.total) }} {{ $t('تومان') }}</span>
+              <span class="num text-highlighted">{{ formatPrice(payableTotal) }} {{ $t('تومان') }}</span>
             </div>
           </div>
         </div>
@@ -348,13 +358,20 @@
           <span>{{ $t('جمع کالاها') }}</span>
           <span class="num">{{ formatPrice(subtotal) }}</span>
         </div>
+        <div
+          v-if="discountAmount > 0"
+          class="flex justify-between gap-6"
+        >
+          <span>{{ $t('تخفیف') }}</span>
+          <span class="num">{{ formatPrice(discountAmount) }}</span>
+        </div>
         <div class="flex justify-between gap-6">
           <span>{{ $t('هزینه ارسال') }}</span>
-          <span>{{ $t('رایگان') }}</span>
+          <span>{{ shippingCost > 0 ? formatPrice(shippingCost) : $t('رایگان') }}</span>
         </div>
         <div class="flex justify-between gap-6 font-bold pt-2 border-t border-gray-300">
           <span>{{ $t('مبلغ نهایی') }}</span>
-          <span class="num">{{ formatPrice(order.total) }} {{ $t('تومان') }}</span>
+          <span class="num">{{ formatPrice(payableTotal) }} {{ $t('تومان') }}</span>
         </div>
       </div>
       <div class="mt-6 text-xs space-y-1">
@@ -474,6 +491,21 @@ function mediaSrc(url: string) {
 const subtotal = computed(() =>
   lineItems.value.reduce((sum, item) => sum + item.price * item.qty, 0),
 )
+
+const discountAmount = computed(() => Number(order.value?.discountAmount) || 0)
+
+const shippingCost = computed(() => {
+  const stored = Number(order.value?.shippingCost) || 0
+  if (stored > 0) return stored
+  const paid = Number(order.value?.total) || 0
+  return Math.max(0, paid - subtotal.value + discountAmount.value)
+})
+
+const payableTotal = computed(() => {
+  const paid = Number(order.value?.total) || 0
+  if (paid > 0) return paid
+  return Math.max(0, subtotal.value - discountAmount.value + shippingCost.value)
+})
 
 function downloadInvoice() {
   document.body.dataset.printTarget = 'customer-invoice'

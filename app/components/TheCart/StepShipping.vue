@@ -5,7 +5,7 @@
     </h2>
     <div class="space-y-3">
       <button
-        v-for="option in checkoutShippingOptions"
+        v-for="option in shippingOptions"
         :key="option.id"
         type="button"
         class="w-full flex items-center gap-4 p-4 rounded-2xl border text-start cursor-pointer transition"
@@ -33,7 +33,10 @@
           <div class="text-sm font-bold text-default">
             {{ $t(option.name) }}
           </div>
-          <div class="text-xs text-muted mt-0.5">
+          <div
+            v-if="option.desc"
+            class="text-xs text-muted mt-0.5"
+          >
             {{ $t(option.desc) }}
           </div>
         </div>
@@ -50,9 +53,12 @@
 </template>
 
 <script setup lang="ts">
-import { checkoutShippingOptions } from '~/data/checkout'
 import { formatPrice } from '~/data/products'
 
 const store = useCheckoutStore()
-const { shippingMethod } = storeToRefs(store)
+const { shippingMethod, shippingOptions } = storeToRefs(store)
+
+onMounted(() => {
+  void store.fetchShippingMethods()
+})
 </script>

@@ -146,10 +146,10 @@ await fetchSite()
 
 if (import.meta.client) {
   if (isLoggedIn.value) {
-    await Promise.all([hydrateShop(), store.fetchAddresses()])
+    await Promise.all([hydrateShop(), store.fetchAddresses(), store.fetchShippingMethods()])
   }
   else {
-    await hydrateShop()
+    await Promise.all([hydrateShop(), store.fetchShippingMethods()])
   }
 
   const payment = typeof route.query.payment === 'string' ? route.query.payment : ''

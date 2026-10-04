@@ -80,6 +80,9 @@ export type ShopOrder = {
   address: CheckoutAddress
   trackingCode?: string
   carrier?: string
+  shippingCost?: number
+  discountAmount?: number
+  discountCode?: string | null
   /** Present on order detail only. One code per seller sub-order. */
   deliveryCodes?: { id: string, code: string }[]
 }

@@ -1,15 +1,25 @@
 import {
   checkoutPaymentOptions,
   checkoutShippingOptions,
+  shippingOptionIcon,
   addressToForm,
   emptyAddressForm,
   type CheckoutAddress,
   type CheckoutAddressForm,
   type CheckoutPaymentId,
   type CheckoutShippingId,
+  type CheckoutShippingOption,
   type CheckoutStepId,
 } from '~/data/checkout'
 import type { ShopOrder } from '~/data/account'
+
+type StorefrontShippingMethod = {
+  id: string
+  name: string
+  carrier?: string
+  estimatedDays?: string
+  baseCost?: number
+}
 
 export const useCheckoutStore = defineStore('checkout', () => {
   const { site } = useSiteSettings()
@@ -26,13 +36,16 @@ export const useCheckoutStore = defineStore('checkout', () => {
   const placedOrderId = ref<string | null>(null)
   const lastOrderTotal = ref(0)
   const addressesLoaded = ref(false)
+  const shippingOptions = ref<CheckoutShippingOption[]>([...checkoutShippingOptions])
+  const shippingMethodsLoaded = ref(false)
 
   const selectedAddress = computed(() =>
     addresses.value.find(a => a.id === selectedAddressId.value) ?? null,
   )
 
   const shippingOption = computed(() =>
-    checkoutShippingOptions.find(o => o.id === shippingMethod.value),
+    shippingOptions.value.find(o => o.id === shippingMethod.value)
+    ?? shippingOptions.value[0],
   )
 
   const paymentOptions = computed(() =>
@@ -60,15 +73,39 @@ export const useCheckoutStore = defineStore('checkout', () => {
   )
 
   const shippingCost = computed(() => {
-    const base = shippingOption.value?.price ?? 0
-    if (!base || shippingMethod.value === 'pickup') return 0
+    const option = shippingOption.value
+    const base = option?.price ?? 0
+    const id = option?.id || shippingMethod.value
+    if (!base || id.includes('pickup') || option?.name.includes('حضوری')) return 0
     const threshold = Number(site.value.freeShippingThreshold) || 0
-    if (threshold > 0 && cartSubtotal.value >= threshold) {
-      if (shippingMethod.value === 'express') return Math.min(base, 45_000)
-      return 0
-    }
+    if (threshold > 0 && cartSubtotal.value >= threshold) return 0
     return base
   })
+
+  async function fetchShippingMethods() {
+    const { result, error } = await useGet<{ items?: StorefrontShippingMethod[] }>(
+      '/shipping-methods',
+      { headers: { 'no-error': true } },
+    )
+    const items = Array.isArray(result?.items) ? result.items : []
+    if (!error && items.length) {
+      shippingOptions.value = items.map(row => ({
+        id: String(row.id),
+        name: String(row.name || row.id),
+        desc: [row.carrier, row.estimatedDays].filter(Boolean).join(' · '),
+        price: Math.max(0, Math.round(Number(row.baseCost) || 0)),
+        icon: shippingOptionIcon(String(row.id), String(row.name || '')),
+      }))
+    }
+    else if (!shippingOptions.value.length) {
+      shippingOptions.value = [...checkoutShippingOptions]
+    }
+    shippingMethodsLoaded.value = true
+    if (!shippingOptions.value.some(o => o.id === shippingMethod.value)) {
+      shippingMethod.value = shippingOptions.value[0]?.id || 'express'
+    }
+    return { error: error ?? null }
+  }
 
   async function fetchAddresses() {
     const { result, error } = await useGet<CheckoutAddress[]>('/account/addresses', {
@@ -242,8 +279,11 @@ export const useCheckoutStore = defineStore('checkout', () => {
     shippingOption,
     paymentOptions,
     paymentOption,
+    shippingOptions,
+    shippingMethodsLoaded,
     shippingCost,
     fetchAddresses,
+    fetchShippingMethods,
     goToStep,
     canGoNext,
     nextStep,

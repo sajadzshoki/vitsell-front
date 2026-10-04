@@ -330,7 +330,7 @@
           <div class="rounded-xl border border-muted bg-muted/40 p-3 text-xs space-y-1">
             <div class="flex justify-between gap-2">
               <span class="text-muted">{{ $t('مبلغ سفارش') }}</span>
-              <span class="num">{{ formatPrice(order.total) }}</span>
+              <span class="num">{{ formatPrice(payableTotal) }}</span>
             </div>
             <div class="flex justify-between gap-2">
               <span class="text-muted">{{ $t('بازپرداخت‌شده') }}</span>
@@ -439,11 +439,11 @@
         </div>
         <div class="flex justify-between gap-6">
           <span>{{ $t('ارسال') }}</span>
-          <span class="num">{{ formatPrice(commerce.shippingCost) }}</span>
+          <span class="num">{{ shippingCost > 0 ? formatPrice(shippingCost) : $t('رایگان') }}</span>
         </div>
         <div class="flex justify-between gap-6 font-bold pt-2 border-t border-gray-300">
           <span>{{ $t('مبلغ نهایی') }}</span>
-          <span class="num">{{ formatPrice(order.total) }}</span>
+          <span class="num">{{ formatPrice(payableTotal) }}</span>
         </div>
       </div>
       <div class="mt-6 text-xs space-y-1">
@@ -920,7 +920,7 @@
             <div class="flex justify-between gap-3">
               <span class="text-muted">{{ $t('هزینه ارسال') }}</span>
               <span class="num text-default">
-                {{ commerce.shippingCost > 0 ? formatPrice(commerce.shippingCost) : $t('رایگان') }}
+                {{ shippingCost > 0 ? formatPrice(shippingCost) : $t('رایگان') }}
               </span>
             </div>
             <div
@@ -932,7 +932,7 @@
             </div>
             <div class="flex justify-between gap-3 font-bold pt-2 border-t border-muted">
               <span class="text-default">{{ $t('مبلغ نهایی') }}</span>
-              <span class="num text-highlighted">{{ formatPrice(order.total) }} {{ $t('تومان') }}</span>
+              <span class="num text-highlighted">{{ formatPrice(payableTotal) }} {{ $t('تومان') }}</span>
             </div>
             <div
               v-if="commerce.refundedAmount"
@@ -1044,8 +1044,15 @@ const commerce = computed(() =>
   }),
 )
 
+const shippingCost = computed(() => Number(commerce.value.shippingCost) || 0)
+
+const payableTotal = computed(() => {
+  const discount = Number(commerce.value.discountAmount) || 0
+  return Math.max(0, subtotal.value - discount + shippingCost.value)
+})
+
 const refundableLeft = computed(() =>
-  Math.max(0, (order.value?.total || 0) - (commerce.value.refundedAmount || 0)),
+  Math.max(0, payableTotal.value - (commerce.value.refundedAmount || 0)),
 )
 
 const paymentMeta = computed(() =>

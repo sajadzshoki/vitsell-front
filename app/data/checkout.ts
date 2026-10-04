@@ -12,8 +12,16 @@ export type CheckoutAddress = {
   isDefault?: boolean
 }
 
-export type CheckoutShippingId = 'express' | 'post' | 'pickup'
+export type CheckoutShippingId = string
 export type CheckoutPaymentId = 'online' | 'cod' | 'installment'
+
+export type CheckoutShippingOption = {
+  id: string
+  name: string
+  desc: string
+  price: number
+  icon: string
+}
 
 export type CheckoutAddressForm = {
   title: string
@@ -67,29 +75,38 @@ export const addressToForm = (address: CheckoutAddress): CheckoutAddressForm => 
   postalCode: address.postalCode,
 })
 
-export const checkoutShippingOptions = [
+export const checkoutShippingOptions: CheckoutShippingOption[] = [
   {
-    id: 'express' as CheckoutShippingId,
+    id: 'express',
     name: 'پیک اکسپرس',
     desc: 'تحویل ۲۴ ساعته در تهران',
     price: 45_000,
     icon: 'bolt',
   },
   {
-    id: 'post' as CheckoutShippingId,
+    id: 'post',
     name: 'پست پیشتاز',
     desc: '۳ تا ۵ روز کاری',
     price: 40_000,
     icon: 'truck-delivery',
   },
   {
-    id: 'pickup' as CheckoutShippingId,
+    id: 'pickup',
     name: 'دریافت حضوری',
     desc: 'از فروشگاه در تهران',
     price: 0,
     icon: 'building-store',
   },
 ]
+
+export function shippingOptionIcon(id: string, name: string) {
+  const key = `${id} ${name}`.toLowerCase()
+  if (key.includes('pickup') || name.includes('حضوری')) return 'building-store'
+  if (key.includes('express') || name.includes('پیک')) return 'bolt'
+  if (name.includes('تیپاکس') || key.includes('tipax')) return 'truck'
+  if (key.includes('post') || name.includes('پست')) return 'truck-delivery'
+  return 'truck-delivery'
+}
 
 export const checkoutPaymentOptions = [
   {

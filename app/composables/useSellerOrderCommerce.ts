@@ -18,6 +18,8 @@ export function useSellerOrderCommerce() {
       timeline: stored.timeline?.length ? stored.timeline : fallback.timeline,
       internalNotes: stored.internalNotes ?? fallback.internalNotes,
       refunds: Array.isArray(stored.refunds) ? stored.refunds : [],
+      shippingCost: Number(stored.shippingCost) || 0,
+      discountAmount: Number(stored.discountAmount) || 0,
     }
   }
 
@@ -41,6 +43,8 @@ export function useSellerOrderCommerce() {
       ...base,
       ...patch,
       orderId,
+      shippingCost: Number(patch.shippingCost ?? base.shippingCost) || 0,
+      discountAmount: Number(patch.discountAmount ?? base.discountAmount) || 0,
       timeline: patch.timeline ? [...patch.timeline] : [...(base.timeline || [])],
       internalNotes: patch.internalNotes ? [...patch.internalNotes] : [...(base.internalNotes || [])],
       refunds: patch.refunds ? [...patch.refunds] : [...((base as any).refunds || [])],

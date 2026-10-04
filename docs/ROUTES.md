@@ -166,6 +166,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET` | `/locations` | — | موقعیت‌ها / شهرها |
 | `GET` | `/compare/templates/:category` | — | قالب مقایسه بر اساس دسته |
 | `GET` | `/footer` | — | لینک‌ها و داده فوتر |
+| `GET` | `/shipping-methods` | — | روش‌های ارسال فعال (هزینه پایه برای چک‌اوت) |
 | `GET` | `/navigation` | — | لینک‌های سریع و منوی پایین (فقط فعال‌ها) |
 | `GET` | `/seo` | — | تنظیمات سئوی سراسری (عمومی) |
 | `GET` | `/seo/redirects` | — | ریدایرکت‌های فعال (عمومی) |

@@ -56,6 +56,7 @@
 | `GET` | `/locations` | — |
 | `GET` | `/compare/templates/:category` | — |
 | `GET` | `/footer` | — |
+| `GET` | `/shipping-methods` | — | روش‌های ارسال فعال فروشگاه |
 | `GET\|PUT` | `/seller/footer` | ✅ admin |
 | `GET` | `/discount-codes` | — |
 | `GET` | `/blog` | — |
