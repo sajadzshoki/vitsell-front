@@ -508,6 +508,7 @@
                 >
               </a>
             </div>
+            
             <div
               v-for="badge in displayBadges"
               :key="badge.id"
