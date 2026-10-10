@@ -167,12 +167,20 @@ const taxHint = computed(() => {
 
 function onApply() {
   if (!code.value.trim()) return
-  const ok = applyDiscount(code.value)
-  codeMsg.value = {
-    ok,
-    text: ok ? 'کد تخفیف با موفقیت اعمال شد' : 'کد تخفیف نامعتبر است',
+  const result = applyDiscount(code.value)
+  if (result.ok) {
+    codeMsg.value = { ok: true, text: 'کد تخفیف با موفقیت اعمال شد' }
+    code.value = ''
+    return
   }
-  if (ok) code.value = ''
+  if (result.reason === 'minAmount' && result.minAmount) {
+    codeMsg.value = {
+      ok: false,
+      text: `حداقل مبلغ سفارش برای این کد ${result.minAmount.toLocaleString('fa-IR')} تومان است`,
+    }
+    return
+  }
+  codeMsg.value = { ok: false, text: 'کد تخفیف نامعتبر است' }
 }
 
 function onClearDiscount() {

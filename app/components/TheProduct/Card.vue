@@ -156,7 +156,7 @@ const props = withDefaults(defineProps<{
   layout: 'vertical',
 })
 
-const { isInWishlist, toggleWishlist, addToCart } = useShop()
+const { isInWishlist, toggleWishlist, addToCart, getCartQty } = useShop()
 const compareStore = useCompareStore()
 const { toggleCompare, hasCompareItems } = useCompareActions()
 
@@ -172,7 +172,9 @@ const discount = computed(() => {
   )
 })
 
-const inStock = computed(() => props.product.inStock !== false)
+const inStock = computed(() =>
+  props.product.published !== false && props.product.inStock !== false,
+)
 const showPrice = computed(() => inStock.value)
 
 const stockCount = computed(() => {
@@ -212,8 +214,12 @@ function onToggleWishlist() {
   toggleWishlist(props.product.id)
 }
 
-function onAddToCart() {
-  addToCart(props.product.id)
+async function onAddToCart() {
+  if (!inStock.value) return
+  const stock = Number(props.product.stock)
+  const maxQty = Number.isFinite(stock) && stock >= 0 ? Math.floor(stock) : null
+  if (maxQty != null && getCartQty(props.product.id) >= maxQty) return
+  await addToCart(props.product.id)
 }
 
 function onToggleCompare() {

@@ -23,8 +23,9 @@ export function useShop() {
   const wishlistProducts = useState<Product[]>('shop-wishlist-products', () => [])
   const notificationList = useState<ShopNotification[]>('shop-notification-list', () => [])
   const isLoggedIn = useState('shop-logged-in', () => !!token.value)
+  type ShopDiscountRule = { percent: number, minAmount: number }
   const discountCode = useState<string | null>('shop-discount-code', () => null)
-  const discountCodes = useState<Record<string, number>>('shop-discount-codes', () => ({}))
+  const discountCodes = useState<Record<string, ShopDiscountRule>>('shop-discount-codes', () => ({}))
   const authHydrated = useState('shop-auth-hydrated', () => false)
   const shopPending = useState('shop-pending', () => false)
 
@@ -38,11 +39,44 @@ export function useShop() {
     cartLines.value.reduce((sum, line) => sum + line.product.price * line.qty, 0),
   )
 
+  function normalizeDiscountMap(raw: Record<string, unknown> | null | undefined) {
+    const map: Record<string, ShopDiscountRule> = {}
+    if (!raw || typeof raw !== 'object') return map
+    for (const [code, value] of Object.entries(raw)) {
+      if (typeof value === 'number') {
+        map[code] = { percent: value, minAmount: 0 }
+        continue
+      }
+      if (value && typeof value === 'object') {
+        const row = value as { percent?: number, minAmount?: number }
+        map[code] = {
+          percent: Number(row.percent) || 0,
+          minAmount: Math.max(0, Number(row.minAmount) || 0),
+        }
+      }
+    }
+    return map
+  }
+
   const discountAmount = computed(() => {
     if (!discountCode.value) return 0
-    const pct = discountCodes.value[discountCode.value] ?? 0
-    return Math.floor(cartSubtotal.value * pct)
+    const rule = discountCodes.value[discountCode.value]
+    if (!rule) return 0
+    if (rule.minAmount > 0 && cartSubtotal.value < rule.minAmount) return 0
+    return Math.floor(cartSubtotal.value * rule.percent)
   })
+
+  watch(
+    [cartSubtotal, discountCodes, discountCode],
+    () => {
+      const code = discountCode.value
+      if (!code) return
+      const rule = discountCodes.value[code]
+      if (!rule || (rule.minAmount > 0 && cartSubtotal.value < rule.minAmount)) {
+        discountCode.value = null
+      }
+    },
+  )
 
   const wishlistCount = computed(() => wishlistProducts.value.length)
 
@@ -99,10 +133,10 @@ export function useShop() {
   }
 
   async function fetchDiscountCodes() {
-    const { result } = await useGet<Record<string, number>>('/discount-codes', {
+    const { result } = await useGet<Record<string, unknown>>('/discount-codes', {
       headers: { 'no-error': true },
     })
-    discountCodes.value = result && typeof result === 'object' ? result : {}
+    discountCodes.value = normalizeDiscountMap(result)
   }
 
   async function fetchCart() {
@@ -260,14 +294,24 @@ export function useShop() {
     return result ?? null
   }
 
+  function maxPurchasableQty(product: Product) {
+    if (product.published === false || product.inStock === false) return 0
+    const stock = Number(product.stock)
+    if (Number.isFinite(stock) && stock >= 0) return Math.floor(stock)
+    return product.inStock === false ? 0 : Number.POSITIVE_INFINITY
+  }
+
   async function addGuestToCart(id: string, qty = 1, variantId?: string | null) {
     const base = await resolveProduct(id)
-    if (!base) return
+    if (!base || base.published === false || base.inStock === false) return false
 
     const { product, variantLabel } = productForGuestLine(base, variantId)
     const lineId = guestCartLineId(id, variantId)
     const existing = cartLines.value.find(l => l.id === lineId)
     const nextQty = (existing?.qty ?? 0) + qty
+    const maxQty = maxPurchasableQty(product)
+    if (Number.isFinite(maxQty) && nextQty > maxQty) return false
+
     const line: CartLine = {
       id: lineId,
       qty: nextQty,
@@ -284,14 +328,14 @@ export function useShop() {
       productId: product.id,
       category: product.category,
     })
+    return true
   }
 
   async function addToCart(id: string, qty = 1, variantId?: string | null) {
     if (isGuestSession()) {
-      await addGuestToCart(id, qty, variantId)
-      return
+      return addGuestToCart(id, qty, variantId)
     }
-    const { result } = await usePost<CartLine>('/cart', {
+    const { result, error } = await usePost<CartLine>('/cart', {
       productId: id,
       qty,
       ...(variantId ? { variantId } : {}),
@@ -309,26 +353,29 @@ export function useShop() {
         productId: result.product.id,
         category: result.product.category,
       })
+      return true
     }
-    else {
-      await fetchCart()
-      bumpCart()
-    }
+    await fetchCart()
+    if (!error) bumpCart()
+    return false
   }
 
   async function updateQty(id: string, qty: number) {
     if (qty <= 0) {
       await removeFromCart(id)
-      return
+      return true
     }
 
     if (isGuestSession()) {
-      const prev = cartLines.value.find(l => l.id === id)?.qty ?? 0
+      const current = cartLines.value.find(l => l.id === id)
+      if (!current) return false
+      const maxQty = maxPurchasableQty(current.product)
+      if (Number.isFinite(maxQty) && qty > maxQty) return false
+      const prev = current.qty
       const next = cartLines.value.map(l => (l.id === id ? { ...l, qty } : l))
-      if (!next.some(l => l.id === id)) return
       persistGuestCart(next)
       if (qty > prev) bumpCart()
-      return
+      return true
     }
 
     const prev = cartLines.value.find(l => l.id === id)?.qty ?? 0
@@ -340,11 +387,11 @@ export function useShop() {
     if (result && 'product' in result) {
       cartLines.value = cartLines.value.map(l => (l.id === id ? result : l))
       remember([result.product])
+      if (qty > prev) bumpCart()
+      return true
     }
-    else {
-      await fetchCart()
-    }
-    if (qty > prev) bumpCart()
+    await fetchCart()
+    return false
   }
 
   async function removeFromCart(id: string) {
@@ -366,13 +413,17 @@ export function useShop() {
     cartLines.value = []
   }
 
-  function applyDiscount(code: string): boolean {
+  function applyDiscount(code: string): { ok: true } | { ok: false, reason: 'invalid' | 'minAmount', minAmount?: number } {
     const normalized = code.trim().toUpperCase()
-    if (!normalized || !(normalized in discountCodes.value)) {
-      return false
+    const rule = discountCodes.value[normalized]
+    if (!normalized || !rule) {
+      return { ok: false, reason: 'invalid' }
+    }
+    if (rule.minAmount > 0 && cartSubtotal.value < rule.minAmount) {
+      return { ok: false, reason: 'minAmount', minAmount: rule.minAmount }
     }
     discountCode.value = normalized
-    return true
+    return { ok: true }
   }
 
   function clearDiscount() {

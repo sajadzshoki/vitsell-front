@@ -282,19 +282,36 @@ const questionsCount = computed(() => questions.value.length)
 const variantAxes = computed(() => {
   const variants = props.product.variants ?? []
   return (props.product.variantAxes ?? []).map((axis) => {
+    const valueIds = (axis.valueIds ?? []).map(id => String(id))
     const options = new Map<string, SellerProductVariantOption>()
+
+    // Axis valueMeta first — includes options with 0 / empty price adjustment.
+    for (const valueId of valueIds) {
+      const meta = axis.valueMeta?.[valueId] ?? axis.valueMeta?.[String(valueId)]
+      if (!meta?.label) continue
+      options.set(valueId, {
+        attributeId: axis.attributeId,
+        attributeName: meta.attributeName || axis.attributeId,
+        valueId,
+        label: meta.label,
+        ...(meta.meta ? { meta: meta.meta } : {}),
+      })
+    }
+
     for (const variant of variants) {
       for (const option of variant.options) {
-        if (option.attributeId === axis.attributeId && axis.valueIds.includes(option.valueId)) {
-          options.set(option.valueId, option)
+        const valueId = String(option.valueId)
+        if (option.attributeId === axis.attributeId && valueIds.includes(valueId)) {
+          options.set(valueId, { ...option, valueId })
         }
       }
     }
+
     const first = options.values().next().value as SellerProductVariantOption | undefined
     return {
       attributeId: axis.attributeId,
       attributeName: first?.attributeName || axis.attributeId,
-      options: axis.valueIds
+      options: valueIds
         .map(valueId => options.get(valueId))
         .filter((option): option is SellerProductVariantOption => Boolean(option)),
     }

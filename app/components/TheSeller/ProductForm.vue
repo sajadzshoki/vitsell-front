@@ -875,7 +875,23 @@ function hydrateCommerceFromProduct(productId: string, product = resolveProduct(
       : (existing.lowStockThreshold || 5),
     featured: Boolean(product.featured),
     published: product.published !== false,
-    variantAxes: (apiAxes?.length ? apiAxes : existing.variantAxes)?.map(a => ({ ...a })) ?? [],
+    variantAxes: (apiAxes?.length ? apiAxes : existing.variantAxes)?.map((a) => {
+      const attr = attributes.value.find(item => item.id === a.attributeId)
+      const valueMeta = { ...(a.valueMeta ?? {}) }
+      const priceAdjustments = { ...(a.priceAdjustments ?? {}) }
+      for (const valueId of a.valueIds ?? []) {
+        if (priceAdjustments[valueId] == null) priceAdjustments[valueId] = 0
+        if (valueMeta[valueId]?.label) continue
+        const value = attr?.values.find(v => v.id === valueId)
+        if (!value) continue
+        valueMeta[valueId] = {
+          label: value.label,
+          attributeName: attr?.name || a.attributeId,
+          ...(value.meta ? { meta: value.meta } : {}),
+        }
+      }
+      return { ...a, valueMeta, priceAdjustments }
+    }) ?? [],
     variants: (apiVariants?.length ? apiVariants : existing.variants)?.map(v => ({ ...v })) ?? [],
     warehouseId: existing.warehouseId ?? null,
     slug: existing.slug?.trim() || productId,

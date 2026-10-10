@@ -25,11 +25,22 @@ export type SellerProductVariant = {
   status: SellerProductVariantStatus
 }
 
+export type SellerProductVariantAxisValueMeta = {
+  label: string
+  attributeName: string
+  meta?: string | null
+}
+
 export type SellerProductVariantAxis = {
   attributeId: string
   valueIds: string[]
   /** Product-specific price delta for each selected value (can be negative). */
   priceAdjustments?: Record<string, number>
+  /**
+   * Denormalized option labels for the storefront.
+   * Keeps axis values visible even when price adjustment is 0 / unset.
+   */
+  valueMeta?: Record<string, SellerProductVariantAxisValueMeta>
 }
 
 /** Extended product commerce fields (persisted via listing product payload) */

@@ -98,7 +98,8 @@
             icon="i-tabler-plus"
             class="size-9 rounded-lg shrink-0"
             :aria-label="$t('افزایش تعداد')"
-            @click="cartLineId && updateQty(cartLineId, qty + 1)"
+            :disabled="atMaxStock"
+            @click="onIncreaseQty"
           />
         </div>
 
@@ -212,9 +213,22 @@ const buyNotes = computed(() => {
   }
   return notes
 })
-const outOfStock = computed(() => props.product.inStock === false)
+const outOfStock = computed(() =>
+  props.product.published === false || props.product.inStock === false,
+)
 const allowBackorder = computed(() => site.value.outOfStockBehavior === 'allow_backorder')
 const canPurchase = computed(() => !outOfStock.value || allowBackorder.value)
+const qty = computed(() => getCartQty(props.product.id, props.variantId))
+const cartLineId = computed(() => getCartLineId(props.product.id, props.variantId))
+const maxStock = computed(() => {
+  const stock = Number(props.product.stock)
+  return Number.isFinite(stock) && stock >= 0 ? Math.floor(stock) : null
+})
+const atMaxStock = computed(() =>
+  !allowBackorder.value
+  && maxStock.value != null
+  && qty.value >= maxStock.value,
+)
 
 const supportTelHref = computed(() => {
   const raw = site.value.supportPhone?.trim() || site.value.phone?.trim() || ''
@@ -222,9 +236,6 @@ const supportTelHref = computed(() => {
   const digits = raw.replace(/\D/g, '')
   return `tel:${digits || raw}`
 })
-
-const qty = computed(() => getCartQty(props.product.id, props.variantId))
-const cartLineId = computed(() => getCartLineId(props.product.id, props.variantId))
 const inCompare = computed(() => compareStore.isInCompare(props.product.id))
 
 const discount = computed(() => {
@@ -257,10 +268,48 @@ function notifyAdded() {
   })
 }
 
-function onAdd() {
+async function onAdd() {
   if (outOfStock.value) return
-  addToCart(props.product.id, 1, props.variantId)
+  if (atMaxStock.value) {
+    toast.add({
+      title: t('موجودی کافی نیست'),
+      color: 'warning',
+      icon: 'i-tabler-package-off',
+    })
+    return
+  }
+  const ok = await addToCart(props.product.id, 1, props.variantId)
+  if (ok === false) {
+    toast.add({
+      title: t('افزودن به سبد ممکن نیست'),
+      description: t('محصول غیرفعال است یا موجودی کافی نیست'),
+      color: 'warning',
+      icon: 'i-tabler-alert-circle',
+    })
+    return
+  }
   notifyAdded()
+}
+
+async function onIncreaseQty() {
+  if (!cartLineId.value || atMaxStock.value) {
+    if (atMaxStock.value) {
+      toast.add({
+        title: t('بیشتر از موجودی نمی‌توان افزود'),
+        color: 'warning',
+        icon: 'i-tabler-package-off',
+      })
+    }
+    return
+  }
+  const ok = await updateQty(cartLineId.value, qty.value + 1)
+  if (ok === false) {
+    toast.add({
+      title: t('بیشتر از موجودی نمی‌توان افزود'),
+      color: 'warning',
+      icon: 'i-tabler-package-off',
+    })
+  }
 }
 
 function onConsult() {

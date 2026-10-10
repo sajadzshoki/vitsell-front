@@ -104,6 +104,41 @@
       </div>
     </div>
 
+    <div
+      v-if="sellerReplies.length"
+      class="mt-4 space-y-2"
+    >
+      <div
+        v-for="reply in sellerReplies"
+        :key="reply.id"
+        class="rounded-xl border border-primary/15 bg-primary/5 p-3.5"
+      >
+        <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+          <UIcon
+            name="i-tabler-building-store"
+            class="size-3.5 shrink-0 text-primary"
+          />
+          <span class="text-xs font-bold text-primary">
+            {{ reply.author || $t('فروشگاه') }}
+          </span>
+          <UBadge
+            color="primary"
+            variant="soft"
+            size="xs"
+          >
+            {{ $t('پاسخ فروشنده') }}
+          </UBadge>
+          <span
+            v-if="reply.date"
+            class="text-[11px] text-dimmed num ms-auto"
+          >{{ reply.date }}</span>
+        </div>
+        <p class="text-sm text-toned leading-7">
+          {{ reply.text }}
+        </p>
+      </div>
+    </div>
+
     <div class="flex items-center justify-between mt-4 pt-3 border-t border-muted">
       <div class="flex items-center gap-3">
         <UButton
@@ -153,6 +188,20 @@ const galleryOpen = ref(false)
 const galleryStart = ref(0)
 
 const images = computed(() => getReviewImages(props.review))
+
+const sellerReplies = computed(() => {
+  const fromList = (props.review.replies ?? []).filter(r => r.role === 'seller' && r.text?.trim())
+  if (fromList.length) return fromList
+  const text = props.review.reply?.trim()
+  if (!text) return []
+  return [{
+    id: `${props.review.id}-seller-reply`,
+    author: 'فروشگاه',
+    date: props.review.date,
+    text,
+    role: 'seller' as const,
+  }]
+})
 
 const galleryPhotos = computed<ProductBuyerPhoto[]>(() => {
   const fromAll = collectBuyerPhotos(props.allReviews.length ? props.allReviews : [props.review])

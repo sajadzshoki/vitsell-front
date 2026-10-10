@@ -9,6 +9,14 @@ export type ProductSpecGroup = {
 
 export type ProductReviewSort = 'newest' | 'helpful' | 'high' | 'low'
 
+export type ProductReviewReply = {
+  id: string
+  author: string
+  date: string
+  text: string
+  role: 'seller' | 'support'
+}
+
 export type ProductReview = {
   id: string
   name: string
@@ -21,6 +29,9 @@ export type ProductReview = {
   hasImage?: boolean
   images?: string[]
   helpfulCount: number
+  /** Seller reply text (storefront convenience field) */
+  reply?: string
+  replies?: ProductReviewReply[]
 }
 
 /** Flattened buyer photo linked to its source review (product gallery / lightbox). */

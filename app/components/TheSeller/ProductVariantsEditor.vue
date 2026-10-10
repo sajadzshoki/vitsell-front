@@ -368,16 +368,39 @@ function formatSignedAdjustment(value: number | undefined) {
   return amount ? amount.toLocaleString('en-US') : '0'
 }
 
+function syncAxisValueMeta(axis: SellerProductVariantAxis): SellerProductVariantAxis {
+  const attr = scopedAttributes.value.find(a => a.id === axis.attributeId)
+    ?? activeAttributes.value.find(a => a.id === axis.attributeId)
+  if (!attr) return axis
+  const valueMeta: NonNullable<SellerProductVariantAxis['valueMeta']> = {
+    ...(axis.valueMeta ?? {}),
+  }
+  const priceAdjustments: Record<string, number> = { ...(axis.priceAdjustments ?? {}) }
+  for (const valueId of axis.valueIds) {
+    const value = attr.values.find(v => v.id === valueId)
+    if (!value) continue
+    valueMeta[valueId] = {
+      label: value.label,
+      attributeName: attr.name,
+      ...(value.meta ? { meta: value.meta } : {}),
+    }
+    if (priceAdjustments[valueId] == null || !Number.isFinite(Number(priceAdjustments[valueId]))) {
+      priceAdjustments[valueId] = 0
+    }
+  }
+  return { ...axis, valueMeta, priceAdjustments }
+}
+
 function setPriceAdjustment(axisIndex: number, valueId: string, value: string) {
   localAxes.value = localAxes.value.map((axis, index) => {
     if (index !== axisIndex) return axis
-    return {
+    return syncAxisValueMeta({
       ...axis,
       priceAdjustments: {
         ...(axis.priceAdjustments ?? {}),
         [valueId]: parseSignedAdjustment(value),
       },
-    }
+    })
   })
 }
 
@@ -427,7 +450,7 @@ function toggleValue(axisIndex: number, valueId: string) {
   const next = localAxes.value.map((axis, i) => {
     if (i !== axisIndex) return axis
     const has = axis.valueIds.includes(valueId)
-    return {
+    return syncAxisValueMeta({
       ...axis,
       valueIds: has
         ? axis.valueIds.filter(id => id !== valueId)
@@ -436,12 +459,13 @@ function toggleValue(axisIndex: number, valueId: string) {
         ...(axis.priceAdjustments ?? {}),
         [valueId]: axis.priceAdjustments?.[valueId] ?? 0,
       },
-    }
+    })
   })
   localAxes.value = next
 }
 
 function generate() {
+  localAxes.value = localAxes.value.map(syncAxisValueMeta)
   const axes = buildGenerateAxes()
   const combos = generateVariantCombinations(axes)
   const existingByKey = new Map(localVariants.value.map(v => [v.key, v]))

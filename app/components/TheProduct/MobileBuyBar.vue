@@ -26,7 +26,8 @@
             icon="i-tabler-plus"
             class="size-9 rounded-lg shrink-0"
             :aria-label="$t('افزایش تعداد')"
-            @click="cartLineId && updateQty(cartLineId, qty + 1)"
+            :disabled="atMaxStock"
+            @click="onIncreaseQty"
           />
           <span class="min-w-8 px-1 text-center text-base font-bold text-highlighted num">
             {{ qty.toLocaleString('fa-IR') }}
@@ -104,8 +105,40 @@ const { currencyLabel, site } = useSiteSettings()
 
 const qty = computed(() => getCartQty(props.product.id, props.variantId))
 const cartLineId = computed(() => getCartLineId(props.product.id, props.variantId))
-const outOfStock = computed(() => props.product.inStock === false)
+const outOfStock = computed(() =>
+  props.product.published === false || props.product.inStock === false,
+)
 const allowBackorder = computed(() => site.value.outOfStockBehavior === 'allow_backorder')
+const maxStock = computed(() => {
+  const stock = Number(props.product.stock)
+  return Number.isFinite(stock) && stock >= 0 ? Math.floor(stock) : null
+})
+const atMaxStock = computed(() =>
+  !allowBackorder.value
+  && maxStock.value != null
+  && qty.value >= maxStock.value,
+)
+
+async function onIncreaseQty() {
+  if (!cartLineId.value || atMaxStock.value) {
+    if (atMaxStock.value) {
+      toast.add({
+        title: t('بیشتر از موجودی نمی‌توان افزود'),
+        color: 'warning',
+        icon: 'i-tabler-package-off',
+      })
+    }
+    return
+  }
+  const ok = await updateQty(cartLineId.value, qty.value + 1)
+  if (ok === false) {
+    toast.add({
+      title: t('بیشتر از موجودی نمی‌توان افزود'),
+      color: 'warning',
+      icon: 'i-tabler-package-off',
+    })
+  }
+}
 
 const supportTelHref = computed(() => {
   const raw = site.value.supportPhone?.trim() || site.value.phone?.trim() || ''
