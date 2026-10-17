@@ -491,7 +491,6 @@
               <a
                 :href="ENAMAD_HREF"
                 target="_blank"
-                rel="noopener noreferrer"
                 referrerpolicy="origin"
                 class="size-full flex items-center justify-center cursor-pointer"
               >
