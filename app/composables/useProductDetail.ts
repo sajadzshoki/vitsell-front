@@ -30,7 +30,8 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
   const p = computed(() => toValue(product))
   const productId = computed(() => p.value?.id ?? '')
   const { isLoggedIn } = useShop()
-  const { fetchProducts, remember } = useProducts()
+  const { remember } = useProducts()
+  const { fetchRelatedForProduct } = useRelatedProducts()
 
   const apiReviewsByProduct = useState<Record<string, ProductReview[]>>(
     'product-api-reviews',
@@ -140,7 +141,7 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
 
     detailPending.value = true
     try {
-      const [reviewsRes, questionsRes, relatedRes] = await Promise.all([
+      const [reviewsRes, questionsRes, relatedItems] = await Promise.all([
         useGet<ProductReview[]>(
           `/products/${encodeURIComponent(id)}/reviews`,
           { headers: { 'no-error': true } },
@@ -149,11 +150,7 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
           `/products/${encodeURIComponent(id)}/questions`,
           { headers: { 'no-error': true } },
         ),
-        fetchProducts({
-          category: p.value?.category,
-          pageSize: 8,
-          page: 1,
-        }),
+        fetchRelatedForProduct(p.value),
       ])
 
       apiReviewsByProduct.value = {
@@ -166,9 +163,7 @@ export function useProductDetail(product: MaybeRefOrGetter<Product | null | unde
       }
       relatedByProduct.value = {
         ...relatedByProduct.value,
-        [id]: (relatedRes.result?.items ?? [])
-          .filter(item => item.id !== id)
-          .slice(0, 6),
+        [id]: relatedItems,
       }
       detailLoadedIds.value = { ...detailLoadedIds.value, [id]: true }
     }

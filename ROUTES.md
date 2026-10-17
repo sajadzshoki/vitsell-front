@@ -48,7 +48,8 @@
 | `GET\|POST` | `/seller/stock-movements` | ✅ admin — GET: `q`, `type`, `warehouseId`, `page` |
 | `GET\|POST` | `/seller/listings` | ✅ admin |
 | `GET\|PATCH\|DELETE` | `/seller/listings/:productId` | ✅ admin |
-| `GET` | `/products` | — |
+| `GET` | `/products` | — | فیلتر اختیاری `ids` برای محصولات مرتبط |
+
 | `GET` | `/products/:id` | — |
 | `GET` | `/products/:id/reviews` | — |
 | `GET` | `/products/:id/questions` | — |
@@ -56,7 +57,8 @@
 | `GET` | `/locations` | — |
 | `GET` | `/compare/templates/:category` | — |
 | `GET` | `/footer` | — |
-| `GET` | `/shipping-methods` | — | روش‌های ارسال فعال فروشگاه |
+| `GET` | `/shipping-methods` | — | روش‌های ارسال فعال؛ `province`/`city` اختیاری |
+| `GET` | `/shipping-methods/:id/availability` | — | ظرفیت بازه‌ها + ارسال سریع |
 | `GET\|PUT` | `/seller/footer` | ✅ admin |
 | `GET` | `/discount-codes` | — |
 | `GET` | `/blog` | — |
@@ -128,8 +130,14 @@
 | `GET\|POST` | `/seller/refunds` | ✅ admin — GET: `q`, `status`, `page`, `pageSize`, `all` · POST: ثبت بازپرداخت |
 | `GET` | `/seller/refunds/:id` | ✅ admin |
 | `PATCH` | `/seller/refunds/:id/status` | ✅ admin — pending→processing/completed/cancelled · processing→completed/failed |
-| `GET` | `/seller/shipping` | ✅ admin — روش‌های ارسال (`q`, `status`) |
-| `GET\|PATCH` | `/seller/shipping/:id` | ✅ admin — جزئیات / به‌روزرسانی هزینه و وضعیت |
+| `GET\|POST` | `/seller/shipping` | ✅ admin — لیست/ایجاد (`q`, `status`) |
+| `GET\|POST\|DELETE` | `/seller/shipping/holidays` | ✅ admin — تعطیلات تقویم |
+| `GET\|PATCH\|DELETE` | `/seller/shipping/:id` | ✅ admin — جزئیات / به‌روزرسانی / حذف |
+| `GET\|POST` | `/seller/shipping/:id/cities` | ✅ admin — شهرهای پیک |
+| `DELETE` | `/seller/shipping/:id/cities/:cityId` | ✅ admin |
+| `GET\|PUT` | `/seller/shipping/:id/weekday-slots` | ✅ admin — بازه‌های هفتگی |
+| `GET\|PUT` | `/seller/shipping/:id/holiday-slots` | ✅ admin — بازه‌های تعطیل |
+| `GET\|PUT\|DELETE` | `/seller/shipping/:id/day-overrides` | ✅ admin — بازنویسی روزانه |
 | `GET` | `/seller/customers` | ✅ admin — `q` `status` `hasOrders` `spendMin` `spendMax` `sort` `page` `pageSize` `all` |
 | `POST` | `/seller/customers/bulk-status` | ✅ admin — `{ ids, status }` |
 | `GET\|PATCH` | `/seller/customers/:id` | ✅ admin — جزئیات / ویرایش پروفایل |

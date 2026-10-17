@@ -372,7 +372,7 @@ export class ProductReviewSchema extends BaseModel {
 }
 
 export class ProductSchema extends BaseModel {
-  static $columns = ['badge', 'brand', 'category', 'categoryLabel', 'colors', 'createdAt', 'fastDelivery', 'gallery', 'id', 'image', 'imageDark', 'inStock', 'oldPrice', 'price', 'rating', 'reviews', 'scores', 'seo', 'shortDesc', 'shortName', 'soldCount', 'specs', 'tags', 'title', 'updatedAt', 'viewCount'] as const
+  static $columns = ['badge', 'brand', 'category', 'categoryLabel', 'colors', 'createdAt', 'fastDelivery', 'gallery', 'id', 'image', 'imageDark', 'inStock', 'oldPrice', 'price', 'rating', 'relatedProductIds', 'reviews', 'scores', 'seo', 'shortDesc', 'shortName', 'soldCount', 'specs', 'tags', 'title', 'updatedAt', 'viewCount'] as const
   $columns = ProductSchema.$columns
   @column()
   declare badge: string | null
@@ -404,6 +404,8 @@ export class ProductSchema extends BaseModel {
   declare price: bigint | number
   @column()
   declare rating: number
+  @column()
+  declare relatedProductIds: any
   @column()
   declare reviews: number
   @column()

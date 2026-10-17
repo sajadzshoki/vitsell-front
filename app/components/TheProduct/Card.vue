@@ -1,16 +1,22 @@
 <template>
   <NuxtLink
-    class="group card-hover text-start bg-default border border-muted rounded-2xl p-3 <md:(p-2 rounded-xl) cursor-pointer"
-    :class="isHorizontal
-      ? 'flex flex-row gap-3 sm:gap-4 items-stretch'
-      : 'flex flex-col w-full h-full'"
+    class="group card-hover text-start bg-default border border-muted cursor-pointer"
+    :class="[
+      compact ? 'rounded-xl p-1.5' : 'rounded-2xl p-3 <md:(p-2 rounded-xl)',
+      isHorizontal
+        ? 'flex flex-row gap-3 sm:gap-4 items-stretch'
+        : 'flex flex-col w-full h-full',
+    ]"
     :to="{ name: 'product-id', params: { id: product.id } }"
   >
     <div
-      class="relative overflow-hidden bg-muted rounded-xl shrink-0"
-      :class="isHorizontal
-        ? 'w-28 sm:w-36 md:w-40 aspect-square'
-        : 'aspect-square mb-3'"
+      class="relative overflow-hidden bg-muted shrink-0"
+      :class="[
+        compact ? 'rounded-lg' : 'rounded-xl',
+        isHorizontal
+          ? 'w-28 sm:w-36 md:w-40 aspect-square'
+          : (compact ? 'aspect-square mb-1.5' : 'aspect-square mb-3'),
+      ]"
     >
       <TheIcon
         v-if="imageSrc"
@@ -22,17 +28,19 @@
         v-else
         name="noImage.png"
         icon-type="img"
-        class="!w-full !h-full object-contain p-6 opacity-60"
+        class="!w-full !h-full object-contain opacity-60"
+        :class="compact ? 'p-3' : 'p-6'"
       />
 
       <span
-        v-if="categoryLabel"
+        v-if="categoryLabel && !compact"
         class="absolute top-2 right-2 bg-inverted text-inverted text-[10px] font-semibold px-2 py-1 rounded-lg"
       >
         {{ $t(categoryLabel) }}
       </span>
 
       <div
+        v-if="!compact"
         class="absolute bottom-2 inset-s-2 flex flex-col gap-2 transition-all  opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100"
         :class="{ 'sm:opacity-100': liked || inCompare }"
       >
@@ -51,7 +59,6 @@
           @click.prevent.stop="onToggleWishlist"
         />
         <UButton
-
           type="button"
           :icon="inCompare ? 'i-tabler-check' : 'i-tabler-arrows-diff'"
           color="neutral"
@@ -65,17 +72,6 @@
           :aria-label="inCompare ? $t('حذف از مقایسه') : $t('افزودن به مقایسه')"
           @click.prevent.stop="onToggleCompare"
         />
-        <!-- <UButton
-          type="button"
-          icon="i-tabler-shopping-cart"
-          color="neutral"
-          variant="solid"
-          size="sm"
-          square
-          class="rounded-full shadow-md backdrop-blur bg-default/95 text-toned hover:bg-primary hover:text-inverted"
-          :aria-label="$t('افزودن به سبد خرید')"
-          @click.prevent.stop="onAddToCart"
-        /> -->
       </div>
     </div>
 
@@ -84,24 +80,38 @@
       :class="isHorizontal ? 'py-0.5' : ''"
     >
       <h3
-        class="text-[13px] leading-6 text-default line-clamp-2 mb-2 transition-all  group-hover:text-primary"
-        :class="isHorizontal ? '' : 'min-h-12'"
+        class="text-default line-clamp-2 transition-all group-hover:text-primary"
+        :class="compact
+          ? 'text-[11px] leading-4 mb-1 min-h-8'
+          : (isHorizontal ? 'text-[13px] leading-6 mb-2' : 'text-[13px] leading-6 mb-2 min-h-12')"
       >
         {{ product.title }}
       </h3>
 
-      <div class="flex items-center gap-1 mb-2 sm:mb-3 flex-wrap min-h-6">
-        <div class="flex items-center gap-0.5 bg-warning/10 text-warning rounded-md px-1.5 py-0.5">
-          <UIcon name="i-tabler-star-filled" class="size-3" />
-          <span class="text-[11px] font-semibold num">
+      <div
+        class="flex items-center gap-1 flex-wrap"
+        :class="compact ? 'mb-1 min-h-0' : 'mb-2 sm:mb-3 min-h-6'"
+      >
+        <div class="flex items-center gap-0.5 bg-warning/10 text-warning rounded-md px-1 py-0.5">
+          <UIcon
+            name="i-tabler-star-filled"
+            :class="compact ? 'size-2.5' : 'size-3'"
+          />
+          <span
+            class="font-semibold num"
+            :class="compact ? 'text-[10px]' : 'text-[11px]'"
+          >
             {{ product.rating.toLocaleString('fa-IR') }}
           </span>
         </div>
-        <span class="text-[11px] text-dimmed num">
+        <span
+          v-if="!compact"
+          class="text-[11px] text-dimmed num"
+        >
           ({{ product.reviews.toLocaleString('fa-IR') }} {{ $t('نظر') }})
         </span>
         <span
-          v-if="product.fastDelivery"
+          v-if="product.fastDelivery && !compact"
           class="inline-flex items-center gap-1 text-[10px] text-warning"
         >
           <UIcon name="i-tabler-truck-delivery" class="size-3.5" />
@@ -114,30 +124,38 @@
         class="mt-auto flex flex-col items-end gap-0.5"
       >
         <p
-          v-if="isLowStock"
+          v-if="isLowStock && !compact"
           class="text-[10px] text-error ms-auto"
         >
           {{ (stockCount ?? 0).toLocaleString('fa-IR') }} {{ $t('محصول در انبار باقی مانده') }}
         </p>
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-1">
           <span
             v-if="product.oldPrice"
-            class="text-[11px] text-dimmed line-through num"
+            class="text-dimmed line-through num"
+            :class="compact ? 'text-[9px]' : 'text-[11px]'"
           >
             {{ formatPrice(product.oldPrice) }}
           </span>
           <span
             v-if="discount > 0"
-            class="bg-error text-inverted text-[11px] font-bold px-1.5 py-0.5 rounded-md num"
+            class="bg-error text-inverted font-bold rounded-md num"
+            :class="compact ? 'text-[9px] px-1 py-px' : 'text-[11px] px-1.5 py-0.5'"
           >
             {{ discount.toLocaleString('fa-IR') }}٪
           </span>
         </div>
-        <div class="flex items-baseline gap-1">
-          <span class="text-base font-extrabold text-highlighted num">
+        <div class="flex items-baseline gap-0.5">
+          <span
+            class="font-extrabold text-highlighted num"
+            :class="compact ? 'text-sm' : 'text-base'"
+          >
             {{ formatPrice(product.price) }}
           </span>
-          <span class="text-[10px] text-muted">{{ $t('تومان') }}</span>
+          <span
+            class="text-muted"
+            :class="compact ? 'text-[9px]' : 'text-[10px]'"
+          >{{ $t('تومان') }}</span>
         </div>
       </div>
     </div>

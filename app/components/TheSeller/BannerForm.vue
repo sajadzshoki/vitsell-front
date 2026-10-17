@@ -119,6 +119,30 @@
         </div>
 
         <UFormField
+          :label="$t('نسبت تصویر دسکتاپ')"
+          :help="$t('مثلاً ۱۶∶۹ یا ۴∶۱ — روی اسلایدر صفحه اصلی اعمال می‌شود')"
+        >
+          <USelect
+            v-model="form.aspectDesktop"
+            :items="aspectItems"
+            value-key="value"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          :label="$t('نسبت تصویر موبایل')"
+          :help="$t('نسبت فریم در عرض کمتر از ۷۶۸ پیکسل')"
+        >
+          <USelect
+            v-model="form.aspectMobile"
+            :items="aspectItems"
+            value-key="value"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
           :label="$t('نوع لینک')"
           :help="$t('بدون لینک = بدون دکمه در اسلایدر')"
         >
@@ -278,7 +302,10 @@
           <div class="text-xs font-medium text-toned mb-2">
             {{ $t('پیش‌نمایش دسکتاپ') }}
           </div>
-          <div class="relative overflow-hidden rounded-2xl border border-muted bg-muted min-h-36">
+          <div
+            class="relative overflow-hidden rounded-2xl border border-muted bg-muted w-full"
+            :style="{ aspectRatio: form.aspectDesktop || '4/1' }"
+          >
             <img
               v-if="form.image"
               :src="form.image"
@@ -295,7 +322,7 @@
                 class="size-12 opacity-60"
               />
             </div>
-            <div class="relative z-10 h-full min-h-36 flex items-end p-4">
+            <div class="relative z-10 h-full flex items-end p-4">
               <div class="rounded-xl bg-inverted/70 text-inverted text-xs px-3 py-2 max-w-full truncate">
                 {{ form.title || form.link || $t('عنوان یا لینک هنوز وارد نشده') }}
               </div>
@@ -306,7 +333,10 @@
           <div class="text-xs font-medium text-toned mb-2">
             {{ $t('پیش‌نمایش موبایل') }}
           </div>
-          <div class="relative overflow-hidden rounded-2xl border border-muted bg-muted min-h-36 max-w-xs">
+          <div
+            class="relative overflow-hidden rounded-2xl border border-muted bg-muted w-full max-w-xs"
+            :style="{ aspectRatio: form.aspectMobile || '3/1' }"
+          >
             <img
               v-if="form.imageMobile || form.image"
               :src="form.imageMobile || form.image"
@@ -375,6 +405,7 @@
 
 <script setup lang="ts">
 import type { Product } from '~/data/products'
+import { heroAspectPresets } from '~/data/hero'
 import {
   bannerIdPattern,
   emptyBannerForm,
@@ -440,6 +471,13 @@ const linkTypeItems = computed(() =>
   (Object.keys(sellerBannerLinkTypeMeta) as SellerBannerLinkType[]).map(value => ({
     label: t(sellerBannerLinkTypeMeta[value].label),
     value,
+  })),
+)
+
+const aspectItems = computed(() =>
+  heroAspectPresets.map(item => ({
+    label: t(item.label),
+    value: item.value,
   })),
 )
 

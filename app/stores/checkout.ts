@@ -6,6 +6,7 @@ import {
   emptyAddressForm,
   type CheckoutAddress,
   type CheckoutAddressForm,
+  type CheckoutAvailabilityDay,
   type CheckoutPaymentId,
   type CheckoutShippingId,
   type CheckoutShippingOption,
@@ -19,11 +20,28 @@ type StorefrontShippingMethod = {
   carrier?: string
   estimatedDays?: string
   baseCost?: number
+  coverage?: 'nationwide' | 'cities'
+  slotsEnabled?: boolean
+  expressEnabled?: boolean
+  expressPrice?: number
+  expressDeadlineHour?: number
+}
+
+type AvailabilityResponse = {
+  methodId: string
+  basePrice: number
+  express: {
+    enabled: boolean
+    available: boolean
+    price: number
+    deadlineHour: number
+  }
+  days: CheckoutAvailabilityDay[]
 }
 
 export const useCheckoutStore = defineStore('checkout', () => {
   const { site } = useSiteSettings()
-  const { cartSubtotal } = useShop()
+  const { cartSubtotal, cartLines } = useShop()
 
   const step = ref<CheckoutStepId>(0)
   const addresses = ref<CheckoutAddress[]>([])
@@ -31,7 +49,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
   const showAddressForm = ref(true)
   const editingAddressId = ref<string | null>(null)
   const addressForm = ref<CheckoutAddressForm>(emptyAddressForm())
-  const shippingMethod = ref<CheckoutShippingId>('express')
+  const shippingMethod = ref<CheckoutShippingId>('')
   const paymentMethod = ref<CheckoutPaymentId>('online')
   const placedOrderId = ref<string | null>(null)
   const lastOrderTotal = ref(0)
@@ -39,13 +57,28 @@ export const useCheckoutStore = defineStore('checkout', () => {
   const shippingOptions = ref<CheckoutShippingOption[]>([...checkoutShippingOptions])
   const shippingMethodsLoaded = ref(false)
 
+  const shippingSlotDate = ref('')
+  const shippingSlotStart = ref('')
+  const shippingSlotEnd = ref('')
+  const shippingIsExpress = ref(false)
+  const availabilityDays = ref<CheckoutAvailabilityDay[]>([])
+  const availabilityLoading = ref(false)
+  const expressAvailable = ref(false)
+  const expressPrice = ref(0)
+  const expressDeadlineHour = ref(12)
+  const slotPriceOverride = ref<number | null>(null)
+
   const selectedAddress = computed(() =>
     addresses.value.find(a => a.id === selectedAddressId.value) ?? null,
   )
 
+  const hasShippingMethod = computed(() =>
+    Boolean(shippingMethod.value)
+    && shippingOptions.value.some(o => o.id === shippingMethod.value),
+  )
+
   const shippingOption = computed(() =>
-    shippingOptions.value.find(o => o.id === shippingMethod.value)
-    ?? shippingOptions.value[0],
+    shippingOptions.value.find(o => o.id === shippingMethod.value) ?? null,
   )
 
   const paymentOptions = computed(() =>
@@ -73,19 +106,44 @@ export const useCheckoutStore = defineStore('checkout', () => {
   )
 
   const shippingCost = computed(() => {
+    if (!hasShippingMethod.value) return 0
+    if (shippingIsExpress.value && expressAvailable.value) {
+      return expressPrice.value
+    }
+    if (slotPriceOverride.value != null) return slotPriceOverride.value
     const option = shippingOption.value
-    const base = option?.price ?? 0
-    const id = option?.id || shippingMethod.value
-    if (!base || id.includes('pickup') || option?.name.includes('حضوری')) return 0
+    if (!option) return 0
+    const base = option.price ?? 0
+    const id = option.id || shippingMethod.value
+    if (!base || id.includes('pickup') || option.name.includes('حضوری')) return 0
     const threshold = Number(site.value.freeShippingThreshold) || 0
     if (threshold > 0 && cartSubtotal.value >= threshold) return 0
     return base
   })
 
+  const cartProductIds = computed(() =>
+    (cartLines.value || []).map(line => String(line.product?.id || '')).filter(Boolean),
+  )
+
+  function clearSlotSelection() {
+    shippingSlotDate.value = ''
+    shippingSlotStart.value = ''
+    shippingSlotEnd.value = ''
+    shippingIsExpress.value = false
+    slotPriceOverride.value = null
+    availabilityDays.value = []
+    expressAvailable.value = false
+  }
+
   async function fetchShippingMethods() {
+    const address = selectedAddress.value
+    const query: Record<string, string> = {}
+    if (address?.province) query.province = address.province
+    if (address?.city) query.city = address.city
+
     const { result, error } = await useGet<{ items?: StorefrontShippingMethod[] }>(
       '/shipping-methods',
-      { headers: { 'no-error': true } },
+      { query, headers: { 'no-error': true } },
     )
     const items = Array.isArray(result?.items) ? result.items : []
     if (!error && items.length) {
@@ -95,16 +153,140 @@ export const useCheckoutStore = defineStore('checkout', () => {
         desc: [row.carrier, row.estimatedDays].filter(Boolean).join(' · '),
         price: Math.max(0, Math.round(Number(row.baseCost) || 0)),
         icon: shippingOptionIcon(String(row.id), String(row.name || '')),
+        coverage: row.coverage === 'cities' ? 'cities' : 'nationwide',
+        slotsEnabled: Boolean(row.slotsEnabled),
+        expressEnabled: Boolean(row.expressEnabled),
+        expressPrice: Math.max(0, Math.round(Number(row.expressPrice) || 0)),
+        expressDeadlineHour: Math.min(23, Math.max(0, Number(row.expressDeadlineHour) || 12)),
       }))
     }
     else if (!shippingOptions.value.length) {
       shippingOptions.value = [...checkoutShippingOptions]
     }
     shippingMethodsLoaded.value = true
-    if (!shippingOptions.value.some(o => o.id === shippingMethod.value)) {
-      shippingMethod.value = shippingOptions.value[0]?.id || 'express'
+    if (shippingMethod.value && !shippingOptions.value.some(o => o.id === shippingMethod.value)) {
+      shippingMethod.value = ''
+      clearSlotSelection()
+    }
+    if (hasShippingMethod.value && shippingOption.value?.slotsEnabled) {
+      await fetchAvailability()
+    }
+    else if (!hasShippingMethod.value) {
+      clearSlotSelection()
     }
     return { error: error ?? null }
+  }
+
+  async function fetchAvailability() {
+    const methodId = shippingMethod.value
+    const opt = shippingOptions.value.find(o => o.id === methodId)
+    if (!opt?.slotsEnabled) {
+      clearSlotSelection()
+      return
+    }
+
+    availabilityLoading.value = true
+    try {
+      const address = selectedAddress.value
+      const query: Record<string, string> = {
+        days: '7',
+      }
+      if (address?.province) query.province = address.province
+      if (address?.city) query.city = address.city
+      if (cartProductIds.value.length) query.productIds = cartProductIds.value.join(',')
+
+      const { result, error } = await useGet<AvailabilityResponse>(
+        `/shipping-methods/${encodeURIComponent(methodId)}/availability`,
+        { query, headers: { 'no-error': true } },
+      )
+      if (error || !result) {
+        availabilityDays.value = []
+        expressAvailable.value = false
+        return
+      }
+
+      availabilityDays.value = Array.isArray(result.days) ? result.days : []
+      expressAvailable.value = Boolean(result.express?.available)
+      expressPrice.value = Math.max(0, Math.round(Number(result.express?.price) || 0))
+      expressDeadlineHour.value = Math.min(23, Math.max(0, Number(result.express?.deadlineHour) || 12))
+
+      if (!expressAvailable.value) shippingIsExpress.value = false
+
+      // Keep selection if still valid
+      const day = availabilityDays.value.find(d => d.date === shippingSlotDate.value)
+      if (!day || day.isClosed) {
+        const first = availabilityDays.value.find(d => d.hasSelectable)
+        shippingSlotDate.value = first?.date || ''
+        shippingSlotStart.value = ''
+        shippingSlotEnd.value = ''
+        slotPriceOverride.value = null
+      }
+      else if (shippingSlotStart.value) {
+        const slot = day.slots.find(
+          s => s.startTime === shippingSlotStart.value && s.endTime === shippingSlotEnd.value,
+        )
+        if (!slot?.selectable) {
+          shippingSlotStart.value = ''
+          shippingSlotEnd.value = ''
+          slotPriceOverride.value = null
+        }
+        else {
+          slotPriceOverride.value = slot.price
+        }
+      }
+    }
+    finally {
+      availabilityLoading.value = false
+    }
+  }
+
+  async function selectShippingMethod(id: string) {
+    shippingMethod.value = id
+    shippingSlotDate.value = ''
+    shippingSlotStart.value = ''
+    shippingSlotEnd.value = ''
+    shippingIsExpress.value = false
+    slotPriceOverride.value = null
+    if (shippingOptions.value.find(o => o.id === id)?.slotsEnabled) {
+      await fetchAvailability()
+    }
+    else {
+      clearSlotSelection()
+    }
+  }
+
+  async function selectShippingDay(date: string) {
+    shippingSlotDate.value = date
+    shippingSlotStart.value = ''
+    shippingSlotEnd.value = ''
+    slotPriceOverride.value = null
+  }
+
+  function selectShippingSlot(start: string, end: string) {
+    shippingSlotStart.value = start
+    shippingSlotEnd.value = end
+    const day = availabilityDays.value.find(d => d.date === shippingSlotDate.value)
+    const slot = day?.slots.find(s => s.startTime === start && s.endTime === end)
+    slotPriceOverride.value = slot?.price ?? null
+  }
+
+  async function setShippingExpress(value: boolean) {
+    shippingIsExpress.value = value && expressAvailable.value
+    if (shippingIsExpress.value) {
+      const today = availabilityDays.value.find(d => d.hasSelectable)
+      // Prefer first selectable today
+      const todayKey = availabilityDays.value[0]?.date
+      const day = availabilityDays.value.find(d => d.date === todayKey && d.hasSelectable)
+        || today
+      if (day) {
+        shippingSlotDate.value = day.date
+        const slot = day.slots.find(s => s.selectable)
+        if (slot) {
+          shippingSlotStart.value = slot.startTime
+          shippingSlotEnd.value = slot.endTime
+        }
+      }
+    }
   }
 
   async function fetchAddresses() {
@@ -136,7 +318,14 @@ export const useCheckoutStore = defineStore('checkout', () => {
     if (!cartHasItems && step.value === 0) return false
     if (step.value === 0) return cartHasItems
     if (step.value === 1) return !!selectedAddressId.value
-    if (step.value === 2) return !!shippingMethod.value
+    if (step.value === 2) {
+      if (!shippingMethod.value) return false
+      const opt = shippingOptions.value.find(o => o.id === shippingMethod.value)
+      if (opt?.slotsEnabled) {
+        return Boolean(shippingSlotDate.value && shippingSlotStart.value && shippingSlotEnd.value)
+      }
+      return true
+    }
     if (step.value === 3) return !!paymentMethod.value && paymentOptions.value.length > 0
     return true
   }
@@ -228,17 +417,27 @@ export const useCheckoutStore = defineStore('checkout', () => {
   async function placeOrder(total: number, discountCode?: string | null) {
     if (!selectedAddressId.value) return null
 
-    const { result, error } = await usePost<{
-      order?: ShopOrder
-      orderId?: string
-      paymentUrl?: string
-    }>('/checkout/place', {
+    const payload: Record<string, unknown> = {
       addressId: selectedAddressId.value,
       shippingMethod: shippingMethod.value,
       paymentMethod: paymentMethod.value,
       ...(discountCode ? { discountCode } : {}),
       ...(import.meta.client ? { returnOrigin: window.location.origin } : {}),
-    }, { headers: { 'no-error': true } })
+    }
+
+    const opt = shippingOptions.value.find(o => o.id === shippingMethod.value)
+    if (opt?.slotsEnabled) {
+      payload.shippingSlotDate = shippingSlotDate.value
+      payload.shippingSlotStart = shippingSlotStart.value
+      payload.shippingSlotEnd = shippingSlotEnd.value
+      payload.shippingIsExpress = shippingIsExpress.value
+    }
+
+    const { result, error } = await usePost<{
+      order?: ShopOrder
+      orderId?: string
+      paymentUrl?: string
+    }>('/checkout/place', payload, { headers: { 'no-error': true } })
 
     if (error || !result) return null
 
@@ -261,7 +460,12 @@ export const useCheckoutStore = defineStore('checkout', () => {
     step.value = 0
     placedOrderId.value = null
     lastOrderTotal.value = 0
+    clearSlotSelection()
   }
+
+  watch(selectedAddressId, () => {
+    if (step.value >= 2) void fetchShippingMethods()
+  })
 
   return {
     step,
@@ -281,9 +485,24 @@ export const useCheckoutStore = defineStore('checkout', () => {
     paymentOption,
     shippingOptions,
     shippingMethodsLoaded,
+    hasShippingMethod,
     shippingCost,
+    shippingSlotDate,
+    shippingSlotStart,
+    shippingSlotEnd,
+    shippingIsExpress,
+    availabilityDays,
+    availabilityLoading,
+    expressAvailable,
+    expressPrice,
+    expressDeadlineHour,
     fetchAddresses,
     fetchShippingMethods,
+    fetchAvailability,
+    selectShippingMethod,
+    selectShippingDay,
+    selectShippingSlot,
+    setShippingExpress,
     goToStep,
     canGoNext,
     nextStep,

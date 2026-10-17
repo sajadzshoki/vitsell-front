@@ -60,6 +60,28 @@ export type SellerRefund = {
   items: SellerRefundItem[]
 }
 
+export type SellerShippingCoverage = 'nationwide' | 'cities'
+export type SellerShippingHolidayMode = 'use_weekday' | 'custom' | 'closed'
+
+export type SellerShippingSlot = {
+  id?: number
+  startTime: string
+  endTime: string
+  capacity: number
+  priceOverride: number | null
+  sortOrder?: number
+  weekday?: number
+}
+
+export type SellerShippingCity = {
+  id: number
+  methodId: string
+  province: string
+  city: string
+  price: number
+  active: boolean
+}
+
 export type SellerShippingMethod = {
   id: string
   name: string
@@ -67,6 +89,22 @@ export type SellerShippingMethod = {
   estimatedDays: string
   baseCost: number
   status: 'active' | 'inactive'
+  coverage?: SellerShippingCoverage
+  slotsEnabled?: boolean
+  holidayMode?: SellerShippingHolidayMode
+  expressEnabled?: boolean
+  expressPrice?: number
+  expressDeadlineHour?: number
+  cities?: SellerShippingCity[]
+  weekdaySlots?: SellerShippingSlot[]
+  holidaySlots?: SellerShippingSlot[]
+}
+
+export type ShippingCalendarHoliday = {
+  id: number
+  date: string
+  title: string
+  source: 'iran' | 'manual'
 }
 
 export const sellerReturnStatusMeta: Record<SellerReturnStatus, { label: string, color: 'warning' | 'success' | 'error' | 'info' | 'neutral' | 'primary' }> = {

@@ -918,6 +918,9 @@ export function useSeller() {
       variants: extras?.variants,
       seo: product.seo ?? null,
       tags: Array.isArray(product.tags) ? product.tags : [],
+      relatedProductIds: Array.isArray(product.relatedProductIds)
+        ? product.relatedProductIds
+        : [],
     }
   }
 

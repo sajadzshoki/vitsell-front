@@ -21,6 +21,32 @@ export type CheckoutShippingOption = {
   desc: string
   price: number
   icon: string
+  coverage?: 'nationwide' | 'cities'
+  slotsEnabled?: boolean
+  expressEnabled?: boolean
+  expressPrice?: number
+  expressDeadlineHour?: number
+}
+
+export type CheckoutAvailabilitySlot = {
+  startTime: string
+  endTime: string
+  capacity: number
+  remaining: number
+  full: boolean
+  price: number
+  selectable: boolean
+}
+
+export type CheckoutAvailabilityDay = {
+  date: string
+  weekday: number
+  label: string
+  isHoliday: boolean
+  isFriday: boolean
+  isClosed: boolean
+  hasSelectable: boolean
+  slots: CheckoutAvailabilitySlot[]
 }
 
 export type CheckoutAddressForm = {

@@ -556,6 +556,14 @@
           </div>
         </template>
 
+        <template #related>
+          <TheSellerRelatedProductsPicker
+            :model-value="form.relatedProductIds ?? []"
+            :exclude-product-id="productId"
+            @update:model-value="form.relatedProductIds = $event"
+          />
+        </template>
+
         <template #seo>
           <TheSellerSeoFields
             v-model="commerce.seo"
@@ -714,7 +722,6 @@ const {
   attributes,
   ensureLoaded: ensureAttributes,
 } = useSellerAttributes()
-
 ensureBrands()
 ensureWarehouses()
 ensureProductTags()
@@ -853,6 +860,7 @@ const tabItems = computed(() => [
   { label: t('مشخصات'), value: 'specs', slot: 'specs' as const, icon: 'i-tabler-list-details' },
   { label: t('واریانت'), value: 'variants', slot: 'variants' as const, icon: 'i-tabler-versions' },
   { label: t('رسانه'), value: 'media', slot: 'media' as const, icon: 'i-tabler-photo' },
+  { label: t('محصولات مرتبط'), value: 'related', slot: 'related' as const, icon: 'i-tabler-link' },
   { label: t('سئو'), value: 'seo', slot: 'seo' as const, icon: 'i-tabler-world-search' },
 ])
 
@@ -942,10 +950,21 @@ else {
 
 watch(
   () => [props.mode, props.productId, getListing(props.productId || '')?.stock, resolveProduct(props.productId || '').title] as const,
-  () => {
+  (curr, prev) => {
     // Skip while saving — updateListingProduct mutates listing/product and would
     // rehydrate from a stale commerce map mid-submit.
     if (submitting.value) return
+    // Getter rebuilds a new array whenever product cache identity changes (e.g. related
+    // product search/select). Only rehydrate when meaningful fields actually change.
+    if (
+      prev
+      && curr[0] === prev[0]
+      && curr[1] === prev[1]
+      && curr[2] === prev[2]
+      && curr[3] === prev[3]
+    ) {
+      return
+    }
     if (props.mode === 'edit' && props.productId) {
       const listing = getListing(props.productId)
       const product = resolveProduct(props.productId)

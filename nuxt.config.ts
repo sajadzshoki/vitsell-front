@@ -130,9 +130,17 @@ export default defineNuxtConfig({
     },
     fonts: false,
     icon: {
+        // SSR loads icons via /api/_nuxt_icon; clientBundle avoids that path for static names.
+        // Include .ts — many icons live in data/ as literal strings (scan skips .ts by default).
+        clientBundle: {
+            scan: {
+                globInclude: ['**/*.{vue,jsx,tsx,md,mdc,mdx,yml,yaml,ts,js}'],
+            },
+            sizeLimitKb: 512,
+        },
         serverBundle: {
-            collections: ['tabler']
-        }
+            collections: ['tabler'],
+        },
     },
     lodash: {
         prefix: "_",

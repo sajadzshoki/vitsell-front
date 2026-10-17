@@ -8,10 +8,36 @@ export type HeroSlide = {
   cta: string
   to: string
   image: string
+  /** Optional mobile crop/image — used below md breakpoint */
+  imageMobile?: string
+  /** CSS aspect-ratio, e.g. "16/9" or "4/1" */
+  aspectDesktop?: string
+  aspectMobile?: string
   icon: string
   tone: HeroSlideTone
   discount?: number
 }
+
+/** Normalize "16:9" / "16*9" → "16/9" for CSS aspect-ratio */
+export function normalizeHeroAspect(value: string | null | undefined, fallback = '4/1') {
+  const raw = String(value || '').trim()
+  if (!raw) return fallback
+  const m = raw
+    .replace(/×/g, 'x')
+    .match(/^(\d+(?:\.\d+)?)\s*[:/*xX]\s*(\d+(?:\.\d+)?)$/)
+  if (!m) return fallback
+  return `${m[1]}/${m[2]}`
+}
+
+export const heroAspectPresets = [
+  { label: '۴∶۱ (عریض کلاسیک)', value: '4/1' },
+  { label: '۳∶۱', value: '3/1' },
+  { label: '۲∶۱', value: '2/1' },
+  { label: '۱۶∶۹', value: '16/9' },
+  { label: '۲۱∶۹', value: '21/9' },
+  { label: '۵∶۲', value: '5/2' },
+  { label: '۱∶۱', value: '1/1' },
+] as const
 
 export type HeroFeature = {
   id: string

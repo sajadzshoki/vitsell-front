@@ -33,6 +33,9 @@ export type SellerBanner = {
   image: string
   /** Optional mobile-specific image */
   imageMobile: string | null
+  /** CSS aspect-ratio e.g. "16/9" */
+  aspectDesktop: string
+  aspectMobile: string
   link: string
   linkType: SellerBannerLinkType
   productId: string | null
@@ -58,6 +61,8 @@ export type SellerBannerFormValues = {
   alt: string
   image: string
   imageMobile: string
+  aspectDesktop: string
+  aspectMobile: string
   link: string
   linkType: SellerBannerLinkType
   productId: string
@@ -173,6 +178,8 @@ export function buildDefaultSellerBanners(): SellerBanner[] {
     alt: slide.title || '',
     image: slide.image,
     imageMobile: null,
+    aspectDesktop: slide.aspectDesktop || '4/1',
+    aspectMobile: slide.aspectMobile || '3/1',
     link: slide.to,
     linkType: 'url' as const,
     productId: null,
@@ -199,6 +206,8 @@ export function buildDefaultSellerBanners(): SellerBanner[] {
       alt: '',
       image: banner.image,
       imageMobile: null,
+      aspectDesktop: '4/1',
+      aspectMobile: '3/1',
       link: banner.to,
       linkType: 'url' as const,
       productId: null,
@@ -229,6 +238,8 @@ export function emptyBannerForm(): SellerBannerFormValues {
     alt: '',
     image: '',
     imageMobile: '',
+    aspectDesktop: '4/1',
+    aspectMobile: '3/1',
     link: '',
     linkType: 'none',
     productId: '',
@@ -254,6 +265,8 @@ export function toBannerForm(banner: SellerBanner): SellerBannerFormValues {
     alt: banner.alt ?? '',
     image: banner.image,
     imageMobile: banner.imageMobile ?? '',
+    aspectDesktop: banner.aspectDesktop || '4/1',
+    aspectMobile: banner.aspectMobile || '3/1',
     link: banner.link,
     linkType: banner.linkType ?? 'url',
     productId: banner.productId ?? '',
@@ -284,6 +297,8 @@ export function formToSellerBanner(
     alt: form.alt.trim() || form.title.trim(),
     image: form.image.trim(),
     imageMobile: form.imageMobile.trim() || null,
+    aspectDesktop: form.aspectDesktop.trim() || '4/1',
+    aspectMobile: form.aspectMobile.trim() || '3/1',
     link: linkType === 'none' ? '' : form.link.trim(),
     linkType,
     productId: linkType === 'product' ? (form.productId.trim() || null) : null,

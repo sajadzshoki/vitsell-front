@@ -1,6 +1,12 @@
 import { categories, getCategoryById, getCategoryIcon } from '~/data/categories'
 import { resolveCategoryIconName } from '~/data/seller-categories'
-import { categoryLabels, type Product, type ProductColor, type ProductSpec } from '~/data/products'
+import {
+  categoryLabels,
+  normalizeRelatedProductIds,
+  type Product,
+  type ProductColor,
+  type ProductSpec,
+} from '~/data/products'
 import { isEmptyHtml, stripDefaultLinkRel } from '~/data/seller-blog'
 import type { SeoMeta } from '~/data/seo'
 import {
@@ -36,6 +42,8 @@ export type SellerProductFormValues = {
   colors: ProductColor[]
   /** Free-form product specs (key / value rows). Order = storefront order. */
   specs: SellerSpecRow[]
+  /** One-way related product ids curated by seller. */
+  relatedProductIds: string[]
 }
 
 export const SELLER_BADGE_NONE = '__none__'
@@ -134,6 +142,7 @@ export function emptySellerProductForm(category = ''): SellerProductFormValues {
     fastDelivery: false,
     colors: [],
     specs: [emptySpecRow()],
+    relatedProductIds: [],
   }
 }
 
@@ -247,6 +256,7 @@ export function productToSellerForm(
     fastDelivery: Boolean(product.fastDelivery),
     colors: product.colors ? [...product.colors] : [],
     specs: specs.length ? specs : [emptySpecRow()],
+    relatedProductIds: normalizeRelatedProductIds(product.relatedProductIds, product.id),
   }
 }
 
@@ -328,6 +338,7 @@ export function buildSellerProductFromForm(
     specs: specs.length ? specs : undefined,
     seo,
     tags,
+    relatedProductIds: normalizeRelatedProductIds(form.relatedProductIds, id),
   }
 }
 

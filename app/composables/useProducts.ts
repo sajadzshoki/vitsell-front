@@ -3,6 +3,8 @@ import type { Product } from '~/data/products'
 export type ProductsQuery = {
   q?: string
   category?: string
+  /** Comma-joined or array of product ids (order preserved by API). */
+  ids?: string[]
   brands?: string[]
   minPrice?: number
   maxPrice?: number
@@ -27,6 +29,7 @@ function toQueryString(query: ProductsQuery) {
   const params = new URLSearchParams()
   if (query.q) params.set('q', query.q)
   if (query.category) params.set('category', query.category)
+  if (query.ids?.length) params.set('ids', query.ids.join(','))
   if (query.brands?.length) params.set('brands', query.brands.join(','))
   if (query.minPrice != null) params.set('minPrice', String(query.minPrice))
   if (query.maxPrice != null) params.set('maxPrice', String(query.maxPrice))

@@ -75,7 +75,10 @@
           −{{ formatPrice(discountAmount) }}
         </span>
       </div>
-      <div class="flex items-baseline justify-between">
+      <div
+        v-if="hasShippingMethod"
+        class="flex items-baseline justify-between"
+      >
         <span class="text-xs text-muted">{{ $t('هزینه ارسال') }}</span>
         <span
           class="text-sm font-medium num"
@@ -138,7 +141,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const store = useCheckoutStore()
-const { shippingCost } = storeToRefs(store)
+const { shippingCost, hasShippingMethod } = storeToRefs(store)
 const { currencyLabel, site } = useSiteSettings()
 
 const {

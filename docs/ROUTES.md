@@ -146,7 +146,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET` | `/categories` | — | لیست دسته‌ها (`id`, `name`, `icon`, `image`, `text`, `subs`) |
 | `GET` | `/categories/:id` | — | جزئیات دسته |
 | `GET` | `/category-pages/:id` | — | متای صفحه دسته |
-| `GET` | `/products` | — | لیست/جستجو/فیلتر محصولات |
+| `GET` | `/products` | — | لیست/جستجو/فیلتر؛ `ids` اختیاری برای محصولات مرتبط |
 | `GET` | `/products/:id` | — | جزئیات محصول |
 | `GET` | `/products/:id/reviews` | — | نظرات محصول |
 | `POST` | `/products/:id/reviews` | ✅ | ثبت نظر — body: `{ rating, text, pros?, cons?, recommend? }` |
@@ -166,7 +166,8 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET` | `/locations` | — | موقعیت‌ها / شهرها |
 | `GET` | `/compare/templates/:category` | — | قالب مقایسه بر اساس دسته |
 | `GET` | `/footer` | — | لینک‌ها و داده فوتر |
-| `GET` | `/shipping-methods` | — | روش‌های ارسال فعال (هزینه پایه برای چک‌اوت) |
+| `GET` | `/shipping-methods` | — | روش‌های ارسال فعال؛ query اختیاری: `province` `city` (فیلتر پوشش شهری) |
+| `GET` | `/shipping-methods/:id/availability` | — | روز/بازهٔ ۷روزه + ظرفیت + ارسال سریع؛ query: `province` `city` `productIds` `days` |
 | `GET` | `/navigation` | — | لینک‌های سریع و منوی پایین (فقط فعال‌ها) |
 | `GET` | `/seo` | — | تنظیمات سئوی سراسری (عمومی) |
 | `GET` | `/seo/redirects` | — | ریدایرکت‌های فعال (عمومی) |
@@ -216,7 +217,7 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 
 | Method | Path | Auth | توضیح |
 |--------|------|------|--------|
-| `POST` | `/checkout/place` | ✅ | ثبت سفارش؛ برای `online` → `{ orderId, paymentUrl }` |
+| `POST` | `/checkout/place` | ✅ | ثبت سفارش؛ body: `shippingMethod` + اختیاری `shippingSlotDate/Start/End` `shippingIsExpress`؛ برای `online` → `{ orderId, paymentUrl }` |
 | `GET` | `/orders/:id/tracking` | — | فقط کد رهگیری پستی سفارش (صفحه پیگیری) |
 | `GET` | `/payments/zarinpal/callback` | — | کال‌بک زرین‌پال سفارش |
 | `GET` | `/payments/zarinpal/wallet-callback` | — | کال‌بک شارژ کیف پول |
@@ -254,8 +255,15 @@ Auth: هدر `Authorization: Bearer <token>` (middleware `auth`)
 | `GET\|POST` | `/seller/refunds` | فیلتر: `q` `status` `page` `pageSize` `all` — ایجاد بازپرداخت |
 | `GET` | `/seller/refunds/:id` | جزئیات بازپرداخت |
 | `PATCH` | `/seller/refunds/:id/status` | تغییر وضعیت بازپرداخت |
-| `GET` | `/seller/shipping` | لیست روش‌های ارسال |
-| `GET\|PATCH` | `/seller/shipping/:id` | جزئیات / به‌روزرسانی روش ارسال |
+| `GET\|POST` | `/seller/shipping` | لیست / ایجاد روش ارسال |
+| `GET\|POST\|DELETE` | `/seller/shipping/holidays` | تقویم تعطیلات (لیست/ثبت؛ حذف با `/:id`) |
+| `GET\|PATCH\|DELETE` | `/seller/shipping/:id` | جزئیات / به‌روزرسانی / حذف |
+| `GET\|POST` | `/seller/shipping/:id/cities` | شهرهای تحت پوشش پیک (+ قیمت) |
+| `DELETE` | `/seller/shipping/:id/cities/:cityId` | حذف شهر |
+| `GET\|PUT` | `/seller/shipping/:id/weekday-slots` | بازه‌های الگوی هفتگی |
+| `GET\|PUT` | `/seller/shipping/:id/holiday-slots` | بازه‌های اختصاصی تعطیل |
+| `GET\|PUT` | `/seller/shipping/:id/day-overrides` | بازنویسی روزانه (کپی از الگو + ویرایش) |
+| `DELETE` | `/seller/shipping/:id/day-overrides/:overrideId` | حذف بازنویسی روز |
 | `GET` | `/seller/customers` | فیلتر: `q` `status` `hasOrders` `spendMin/Max` `sort` `page` |
 | `POST` | `/seller/customers/bulk-status` | تغییر وضعیت گروهی |
 | `GET\|PATCH` | `/seller/customers/:id` | جزئیات / ویرایش مشتری |

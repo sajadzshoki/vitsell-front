@@ -60,6 +60,8 @@ export type Product = {
   lowStockThreshold?: number
   variantAxes?: SellerProductVariantAxis[]
   variants?: SellerProductVariant[]
+  /** Seller-curated related product ids (one-way). Empty = show nothing. */
+  relatedProductIds?: string[]
 }
 
 export const categoryLabels: Record<string, string> = {
@@ -399,7 +401,34 @@ export function registerCatalogProduct(product: Product) {
   extras.value = [product, ...extras.value]
 }
 
-export const getRelatedProducts = (product: Product, limit = 4): Product[] =>
-  products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, limit)
+/** Resolve seller-curated related ids from a product list (order preserved). */
+export function getRelatedProducts(
+  product: Product,
+  catalog: Product[] = products,
+  limit?: number,
+): Product[] {
+  const ids = Array.isArray(product.relatedProductIds) ? product.relatedProductIds : []
+  if (!ids.length) return []
+  const byId = new Map(catalog.map(p => [p.id, p]))
+  const out: Product[] = []
+  for (const id of ids) {
+    if (id === product.id) continue
+    const match = byId.get(id)
+    if (match) out.push(match)
+    if (limit != null && out.length >= limit) break
+  }
+  return out
+}
+
+export function normalizeRelatedProductIds(ids: unknown, selfId?: string): string[] {
+  if (!Array.isArray(ids)) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const item of ids) {
+    const id = String(item || '').trim()
+    if (!id || (selfId && id === selfId) || seen.has(id)) continue
+    seen.add(id)
+    out.push(id)
+  }
+  return out
+}

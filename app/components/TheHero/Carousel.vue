@@ -32,15 +32,25 @@
         dot: 'size-1.5 md:size-2 bg-default/50 data-[state=active]:bg-default data-[state=active]:w-5 md:data-[state=active]:w-8 rounded-full transition-all',
       }"
     >
-      <!--
-        Hero banner upload ratio: 4:1 desktop / 2:1 mobile (e.g. 1920×480).
-        One full-bleed image — object-cover fills the frame.
-      -->
-      <div class="relative overflow-hidden w-full aspect-[4/1] <md:aspect-[3/1] bg-inverted">
+      <div
+        class="hero-slide-frame relative overflow-hidden w-full bg-inverted"
+        :style="slideAspectStyle(item)"
+      >
+        <!-- Dual img: Tailwind md breakpoint (same as aspect CSS). More reliable than <picture> under carousel/SSR. -->
+        <img
+          v-if="item.imageMobile"
+          :src="item.imageMobile"
+          :alt="$t(item.title)"
+          class="absolute inset-0 size-full object-cover object-center md:hidden"
+          loading="eager"
+          decoding="async"
+          :fetchpriority="index === 0 ? 'high' : 'auto'"
+        >
         <img
           :src="item.image"
           :alt="$t(item.title)"
           class="absolute inset-0 size-full object-cover object-center"
+          :class="item.imageMobile ? 'hidden md:block' : ''"
           loading="eager"
           decoding="async"
           :fetchpriority="index === 0 ? 'high' : 'auto'"
@@ -100,12 +110,31 @@
 </template>
 
 <script setup lang="ts">
-import type { HeroSlideTone } from '~/data/hero'
+import { normalizeHeroAspect, type HeroSlide, type HeroSlideTone } from '~/data/hero'
 
 const { heroSlides: slides, pending, loaded } = useHome()
+
+function slideAspectStyle(item: HeroSlide) {
+  return {
+    '--hero-aspect-desktop': normalizeHeroAspect(item.aspectDesktop, '4/1'),
+    '--hero-aspect-mobile': normalizeHeroAspect(item.aspectMobile, '3/1'),
+  }
+}
 
 const toneClass = (tone: HeroSlideTone) => {
   if (tone === 'inverted') return ''
   return { primary: 'bg-primary', secondary: 'bg-secondary', success: 'bg-success' }[tone]
 }
 </script>
+
+<style scoped>
+.hero-slide-frame {
+  aspect-ratio: var(--hero-aspect-mobile, 3 / 1);
+}
+
+@media (min-width: 768px) {
+  .hero-slide-frame {
+    aspect-ratio: var(--hero-aspect-desktop, 4 / 1);
+  }
+}
+</style>

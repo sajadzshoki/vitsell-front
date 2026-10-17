@@ -24,7 +24,10 @@
       </span>
     </div>
 
-    <div class="flex items-baseline justify-between">
+    <div
+      v-if="hasShippingMethod"
+      class="flex items-baseline justify-between"
+    >
       <span class="text-xs text-muted">{{ $t('هزینه ارسال') }}</span>
       <span
         class="text-sm font-medium num"
@@ -58,7 +61,7 @@
 import { formatPrice } from '~/data/products'
 
 const store = useCheckoutStore()
-const { shippingCost } = storeToRefs(store)
+const { shippingCost, hasShippingMethod } = storeToRefs(store)
 const { currencyLabel } = useSiteSettings()
 
 const { cartSubtotal, cartLines, discountAmount } = useShop()

@@ -157,6 +157,12 @@ export function useUserActivity() {
     return scoreCategories(events.value, limit)
   }
 
+  /** Most recently viewed product ids (newest first, unique). */
+  function recentViewedProductIds(limit = 24) {
+    hydrateLocal()
+    return viewedProductIds(events.value, limit)
+  }
+
   async function syncToServer() {
     if (!token.value) return
     hydrateLocal()
@@ -236,6 +242,7 @@ export function useUserActivity() {
     synced,
     track,
     topCategories,
+    recentViewedProductIds,
     syncToServer,
     fetchRecommendations,
     hydrateLocal,

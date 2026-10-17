@@ -186,11 +186,16 @@
       :variant-id="variantId"
       @add="onAdd"
     />
+
+    <TheProductRelatedAddModal
+      v-model:open="relatedModalOpen"
+      :product="product"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { formatPrice, type Product } from '~/data/products'
+import { formatPrice, normalizeRelatedProductIds, type Product } from '~/data/products'
 
 const props = defineProps<{
   product: Product
@@ -200,6 +205,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useToast()
 const { addToCart, getCartQty, getCartLineId, updateQty } = useShop()
+const relatedModalOpen = ref(false)
 const { currencyLabel, site, fetchSite } = useSiteSettings()
 await fetchSite()
 const compareStore = useCompareStore()
@@ -289,6 +295,9 @@ async function onAdd() {
     return
   }
   notifyAdded()
+  if (normalizeRelatedProductIds(props.product.relatedProductIds, props.product.id).length) {
+    relatedModalOpen.value = true
+  }
 }
 
 async function onIncreaseQty() {

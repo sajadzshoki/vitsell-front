@@ -107,6 +107,21 @@
         </aside>
       </div>
 
+      <template v-if="step === 0">
+        <TheCartRelatedMatches
+          :product-ids="cartProductIds"
+          class="w-full"
+        />
+        <TheCartWishlistShelf
+          :exclude-ids="cartProductIds"
+          class="w-full"
+        />
+        <TheCartRecentViewsShelf
+          :exclude-ids="cartProductIds"
+          class="w-full"
+        />
+      </template>
+
       <TheCartMobileBar
         v-if="showMobileBar"
         :step="step"
@@ -174,6 +189,10 @@ useMobileBackwardTitle(() => {
 })
 
 const canProceed = computed(() => store.canGoNext(cartLines.value.length > 0))
+
+const cartProductIds = computed(() =>
+  [...new Set(cartLines.value.map(line => line.product.id).filter(Boolean))],
+)
 
 const total = computed(() =>
   Math.max(0, cartSubtotal.value - discountAmount.value + store.shippingCost),
